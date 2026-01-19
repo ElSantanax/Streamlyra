@@ -14,14 +14,9 @@ const Dashboard: React.FC = () => {
 
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
                     {/* Chat Toolbar */}
-                    <div className="h-14 flex items-center justify-between px-6 border-b border-surface-border bg-[#111318]/95 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                            <button className="px-3 py-1.5 rounded-full bg-primary text-white text-xs font-bold cursor-pointer">All Messages</button>
-                            <button className="px-3 py-1.5 rounded-full bg-surface-dark text-gray-400 hover:text-white hover:bg-surface-border text-xs font-medium border border-surface-border transition-colors cursor-pointer">Mentions</button>
-                            <button className="px-3 py-1.5 rounded-full bg-surface-dark text-gray-400 hover:text-white hover:bg-surface-border text-xs font-medium border border-surface-border transition-colors cursor-pointer">Subs Only</button>
-                        </div>
+                    <div className="h-14 flex items-center px-6 border-b border-surface-border bg-[#111318]/95 backdrop-blur-sm sticky top-0 z-10">
                         <div className="flex items-center gap-2 text-gray-400">
-                            <span className="text-xs font-medium">Auto-scroll enabled</span>
+                            <span className="text-xs font-medium">Auto-scroll habilitado</span>
                             <button className="text-primary hover:text-white transition-colors cursor-pointer">
                                 <span className="material-symbols-outlined text-[20px]">pause_circle</span>
                             </button>
@@ -32,8 +27,8 @@ const Dashboard: React.FC = () => {
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-1">
                         <ChatMessage
                             platform="system"
-                            user="System"
-                            message="Welcome to Streamlyra Chat. You are connected to Twitch, YouTube, and TikTok."
+                            user="Sistema"
+                            message="Bienvenido al Chat de Streamlyra. Estás conectado a Twitch, YouTube y TikTok."
                             time="12:00 PM"
                         />
 

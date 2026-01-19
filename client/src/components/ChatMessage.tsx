@@ -1,4 +1,5 @@
-import React from 'react';
+import { FaTwitch, FaYoutube, FaTiktok } from 'react-icons/fa';
+import { MdInfo } from 'react-icons/md';
 
 interface ChatMessageProps {
     user: string;
@@ -23,26 +24,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     specialMessage,
     highlighted
 }) => {
-    const platformIcons = {
-        twitch: { icon: 'videogame_asset', color: 'bg-[#9146FF]', textColor: 'text-[#9146FF]' },
-        youtube: { icon: 'play_arrow', color: 'bg-[#FF0000]', textColor: 'text-[#FF4E45]' },
-        tiktok: { icon: 'music_note', color: 'bg-black', textColor: 'text-blue-400' },
-        system: { icon: 'info', color: 'bg-gray-500', textColor: 'text-gray-400' }
+    const platformConfig = {
+        twitch: { Icon: FaTwitch, color: 'bg-[#9146FF]', textColor: 'text-[#9146FF]' },
+        youtube: { Icon: FaYoutube, color: 'bg-[#FF0000]', textColor: 'text-[#FF4E45]' },
+        tiktok: { Icon: FaTiktok, color: 'bg-black', textColor: 'text-white' },
+        system: { Icon: MdInfo, color: 'bg-gray-500', textColor: 'text-gray-400' }
     };
 
-    const { icon, color, textColor } = platformIcons[platform];
+    const { Icon, color, textColor } = platformConfig[platform];
 
     return (
         <div className={`flex gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors group ${highlighted ? 'bg-blue-500/5 border border-blue-500/10' : ''}`}>
             {platform === 'system' ? (
-                <div className="w-10 shrink-0 flex items-start justify-center pt-1">
-                    <span className={`material-symbols-outlined text-gray-500 text-[20px]`}>{icon}</span>
+                <div className="size-10 shrink-0 flex items-start justify-center pt-1">
+                    <Icon className={`text-gray-500 text-[20px]`} />
                 </div>
             ) : (
-                <div className="w-10 h-10 shrink-0 rounded-full bg-cover bg-center border border-surface-border relative" style={{ backgroundImage: `url(${avatar})` }}>
-                    <div className={`absolute -bottom-1 -right-1 ${color} rounded-full p-0.5 border border-[#111318]`}>
-                        <span className="material-symbols-outlined text-white text-[10px] block">{platform === 'tiktok' ? 'music_note' : icon}</span>
-                    </div>
+                <div className="size-10 shrink-0 rounded-full bg-cover bg-center border border-surface-border" style={{ backgroundImage: `url(${avatar})` }}>
                 </div>
             )}
 
@@ -50,6 +48,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className="flex items-baseline justify-between">
                     <div className="flex items-center gap-2">
                         <span className={`${textColor} font-bold text-sm`}>{user}</span>
+                        {platform !== 'system' && (
+                            <div className={`${color} rounded-md p-1 flex items-center justify-center`}>
+                                <Icon className="text-white text-[12px] block" />
+                            </div>
+                        )}
                         {isSub && (
                             <span className="bg-[#9146FF]/20 text-[#9146FF] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Sub</span>
                         )}
@@ -60,8 +63,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     </div>
                     {platform !== 'system' && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="text-gray-500 hover:text-white" title="Reply"><span className="material-symbols-outlined text-[18px]">reply</span></button>
-                            <button className="text-gray-500 hover:text-red-400" title="Ban"><span className="material-symbols-outlined text-[18px]">block</span></button>
+                            <button className="text-gray-500 hover:text-white" title="Responder"><span className="material-symbols-outlined text-[18px]">reply</span></button>
+                            <button className="text-gray-500 hover:text-red-400" title="Bloquear"><span className="material-symbols-outlined text-[18px]">block</span></button>
                         </div>
                     )}
                 </div>
