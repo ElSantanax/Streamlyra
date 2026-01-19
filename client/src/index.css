@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2b6cee;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #101622;
+  --color-card-dark: #161b26;
+  --color-input-dark: #1c212c;
+  --color-surface-dark: #1a202c;
+  --color-surface-border: #282e39;
+
+  --font-display: "Manrope", sans-serif;
+  --font-body: "Noto Sans", sans-serif;
+
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+/* Material Symbols settings */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+/* Dark mode handling if not automatic, but usually we just use the variables. 
+   The snippet used specific hex codes in the config, here mapped to variables. 
+*/
