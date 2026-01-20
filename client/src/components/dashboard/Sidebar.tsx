@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import { MdDeleteSweep, MdDeleteOutline, MdOutlineVisibility } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
+const AddPlatformModal = React.lazy(() => import('./AddPlatformModal'));
 
 // --- Local Components (KISS: Co-located for internal use) ---
 
@@ -91,6 +92,8 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, valueColor = "text-wh
 // --- Main Sidebar Component ---
 
 const Sidebar: React.FC = () => {
+    const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+
     return (
         <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
             <SidebarSection title="Conexiones">
@@ -114,7 +117,10 @@ const Sidebar: React.FC = () => {
                     status="disconnected"
                 />
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group">
+                <button
+                    onClick={() => setIsAddPlatformOpen(true)}
+                    className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group"
+                >
                     <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <FaPlus size={14} />
                     </div>
@@ -136,6 +142,15 @@ const Sidebar: React.FC = () => {
                     </button>
                 </div>
             </SidebarSection>
+
+            {isAddPlatformOpen && (
+                <React.Suspense fallback={null}>
+                    <AddPlatformModal
+                        isOpen={isAddPlatformOpen}
+                        onClose={() => setIsAddPlatformOpen(false)}
+                    />
+                </React.Suspense>
+            )}
         </aside>
     );
 };

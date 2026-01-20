@@ -1,6 +1,8 @@
 import React from 'react';
 import type { IconType } from 'react-icons';
 
+import { FaCheckCircle } from 'react-icons/fa';
+
 interface PlatformButtonProps {
     label: string;
     subtext?: string;
@@ -8,6 +10,7 @@ interface PlatformButtonProps {
     iconColor: string;
     onClick?: () => void;
     className?: string;
+    isConnected?: boolean;
 }
 
 const PlatformButton: React.FC<PlatformButtonProps> = ({
@@ -16,30 +19,44 @@ const PlatformButton: React.FC<PlatformButtonProps> = ({
     Icon,
     iconColor,
     onClick,
-    className = ''
+    className = '',
+    isConnected = false
 }) => {
     return (
         <button
             onClick={onClick}
-            className={`group relative flex items-center justify-center gap-3 bg-transparent border-2 border-[#9146FF]/20 rounded-2xl transition-all duration-300 hover:border-[#9146FF] active:scale-[0.98] cursor-pointer w-full py-4 px-6 ${className}`}
+            disabled={isConnected}
+            className={`group relative flex items-center justify-center gap-3 bg-transparent border-2 ${isConnected ? 'border-green-500/50 bg-green-500/5' : 'border-[#9146FF]/20'} rounded-2xl transition-all duration-300 ${!isConnected ? 'hover:border-[#9146FF] active:scale-[0.98] cursor-pointer' : 'cursor-default'} w-full py-4 px-6 ${className}`}
         >
             <div className="flex items-center justify-center">
                 <Icon
                     style={{ color: iconColor, fontSize: '28px' }}
                 />
             </div>
-            <div className="flex flex-col items-start text-left min-w-0">
-                <span
-                    className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate w-full"
-                >
-                    {label}
-                </span>
+            <div className="flex flex-col items-start text-left min-w-0 flex-1">
+                <div className="flex items-center gap-2 w-full">
+                    <span
+                        className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate"
+                    >
+                        {label}
+                    </span>
+                    {isConnected && (
+                        <span className="flex items-center text-green-500 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20">
+                            Conectado
+                        </span>
+                    )}
+                </div>
                 {subtext && (
                     <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">
                         {subtext}
                     </span>
                 )}
             </div>
+            {isConnected && (
+                <div className="text-green-500">
+                    <FaCheckCircle size={20} />
+                </div>
+            )}
         </button>
     );
 };
