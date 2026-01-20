@@ -19,7 +19,7 @@ const Logo: React.FC<LogoProps> = ({
                 <span className="material-symbols-outlined shrink-0" style={{ fontSize: 'inherit' }}>hub</span>
             </div>
             {showText && (
-                <h1 className={`${textSize} font-bold text-slate-900 dark:text-white uppercase tracking-widest`}>
+                <h1 className={`${textSize} font-brand text-slate-900 dark:text-white uppercase tracking-widest`}>
                     Streamlyra
                 </h1>
             )}

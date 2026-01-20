@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import Header from '../components/connection/Header';
 import PlatformButton from '../components/connection/PlatformButton';
-import { FaTwitch, FaCheckCircle, FaQuestionCircle } from 'react-icons/fa';
+import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
@@ -19,14 +19,14 @@ const PlatformConnection: React.FC = () => {
                 {/* Centered Card */}
                 <div className="relative z-10 w-full max-w-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-800 shadow-2xl rounded-3xl overflow-hidden">
                     {/* Card Header */}
-                    <div className="px-8 pt-10 pb-6 text-center flex flex-col items-center">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="size-10 text-primary flex items-center justify-center">
-                                <span className="material-symbols-outlined text-4xl">hub</span>
-                            </div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-widest">Streamlyra</h2>
-                        </div>
-                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">Bienvenido a Streamlyra</h1>
+                    <div className="px-8 pt-16 pb-6 text-center flex flex-col items-center">
+                        <h1 className="text-3xl md:text-4xl font-brand text-primary mb-6 tracking-widest uppercase">
+                            Streamlyra
+                        </h1>
+
+                        <h2 className="text-2xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mb-2">
+                            Conecta tu comunidad
+                        </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
                             Unifica todos tus chats de streaming en una sola pantalla
                         </p>
@@ -56,31 +56,15 @@ const PlatformConnection: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="w-full border-t border-gray-100 dark:border-gray-800/50"></div>
 
-                        {/* Security Features */}
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                <FaCheckCircle className="text-green-500 shrink-0" />
-                                <span>Seguro con OAuth de Twitch</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                <FaCheckCircle className="text-green-500 shrink-0" />
-                                <span>No guardamos tu contraseña</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                <FaCheckCircle className="text-green-500 shrink-0" />
-                                <span>Puedes desconectar cuando quieras</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
                 {/* Bottom Help */}
                 <div className="mt-8 text-center relative z-10">
                     <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                        <FaQuestionCircle className="text-primary" />
                         <span>¿Necesitas ayuda? <a className="text-primary hover:underline font-bold" href="#">Lee la guía</a></span>
+                        <FaQuestionCircle className="text-primary" />
                     </div>
                 </div>
             </main>

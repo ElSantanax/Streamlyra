@@ -1,6 +1,6 @@
 import React from 'react';
-import PlatformToggle from './ChatInput/PlatformToggle';
-import { PLATFORMS } from '../../constants/platforms';
+import PlatformToggle from './PlatformToggle';
+import { PLATFORMS } from '../../../constants/platforms';
 
 const ChatInput: React.FC = () => {
     return (
@@ -38,7 +38,7 @@ const ChatInput: React.FC = () => {
                     <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
                 </div>
                 <input
-                    className="w-full bg-surface-dark border border-surface-border rounded-lg pl-10 pr-24 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                    className="w-full bg-surface-dark border border-surface-border rounded-lg pl-10 pr-32 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
                     placeholder="Enviar un mensaje"
                     type="text"
                     id="chat-message-input"

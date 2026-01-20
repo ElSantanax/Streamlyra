@@ -4,7 +4,7 @@ import type { PlatformKey } from '../constants/platforms';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
 const ChatMessage = lazy(() => import('../components/dashboard/ChatMessage'));
-const ChatInput = lazy(() => import('../components/dashboard/ChatInput'));
+const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
 
 interface Message {
     platform: PlatformKey;
@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
 
                     {/* Messages Area */}
-                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:px-6 md:py-2 custom-scrollbar">
                         <div className="flex flex-col gap-2 min-h-full">
                             <Suspense fallback={
                                 <div className="flex-1 flex items-center justify-center">

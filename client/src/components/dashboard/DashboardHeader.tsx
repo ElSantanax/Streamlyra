@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MdSettings, MdLink, MdHelpOutline, MdLogout, MdNotifications } from 'react-icons/md';
-import Logo from '../common/Logo';
+
 
 const DashboardHeader: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,7 +19,9 @@ const DashboardHeader: React.FC = () => {
 
     return (
         <header className="shrink-0 border-b border-surface-border bg-background-dark/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between z-50">
-            <Logo textSize="text-xl" showText={true} />
+            <h1 className="text-2xl md:text-3xl font-brand text-primary tracking-widest uppercase select-none">
+                Streamlyra
+            </h1>
 
             <div className="flex items-center gap-3">
                 <button className="flex items-center justify-center size-9 rounded-lg bg-surface-dark text-gray-400 hover:text-white hover:bg-surface-border transition-colors cursor-pointer">

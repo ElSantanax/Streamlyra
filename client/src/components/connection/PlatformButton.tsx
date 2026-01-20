@@ -26,7 +26,6 @@ const PlatformButton: React.FC<PlatformButtonProps> = ({
             <div className="flex items-center justify-center">
                 <Icon
                     style={{ color: iconColor, fontSize: '28px' }}
-                    className="transition-transform duration-300 group-hover:scale-110"
                 />
             </div>
             <div className="flex flex-col items-start text-left min-w-0">
