@@ -3,40 +3,43 @@ import type { IconType } from 'react-icons';
 
 interface PlatformButtonProps {
     label: string;
+    subtext?: string;
     Icon: IconType;
     iconColor: string;
     onClick?: () => void;
+    className?: string;
 }
 
 const PlatformButton: React.FC<PlatformButtonProps> = ({
     label,
+    subtext,
     Icon,
     iconColor,
-    onClick
+    onClick,
+    className = ''
 }) => {
     return (
         <button
             onClick={onClick}
-            className="group relative flex items-center bg-gray-50/50 dark:bg-input-dark/50 border border-gray-200 dark:border-gray-700/50 rounded-xl overflow-hidden transition-all duration-300 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-input-dark active:scale-[0.97] cursor-pointer w-full"
+            className={`group relative flex items-center justify-center gap-3 bg-transparent border-2 border-[#9146FF]/20 rounded-2xl transition-all duration-300 hover:border-[#9146FF] active:scale-[0.98] cursor-pointer w-full py-4 px-6 ${className}`}
         >
-            <div
-                className="p-4 flex items-center justify-center border-r border-gray-200 dark:border-gray-700/50 bg-gray-100/50 dark:bg-white/5 self-stretch"
-            >
+            <div className="flex items-center justify-center">
                 <Icon
-                    style={{ color: iconColor, fontSize: '24px' }}
+                    style={{ color: iconColor, fontSize: '28px' }}
                     className="transition-transform duration-300 group-hover:scale-110"
                 />
             </div>
-            <div className="flex-1 flex flex-col items-start px-4 py-3 text-left min-w-0">
+            <div className="flex flex-col items-start text-left min-w-0">
                 <span
-                    className="text-xs font-bold uppercase tracking-widest mb-1 opacity-90 truncate w-full"
-                    style={{ color: iconColor }}
+                    className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate w-full"
                 >
                     {label}
                 </span>
-                <span className="text-slate-900 dark:text-white text-sm font-semibold whitespace-nowrap">
-                    Iniciar sesión
-                </span>
+                {subtext && (
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">
+                        {subtext}
+                    </span>
+                )}
             </div>
         </button>
     );

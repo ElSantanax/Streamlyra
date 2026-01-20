@@ -1,9 +1,10 @@
 import React from 'react';
 import PlatformToggle from './ChatInput/PlatformToggle';
+import { PLATFORMS } from '../../constants/platforms';
 
 const ChatInput: React.FC = () => {
     return (
-        <div className="p-4 border-t border-surface-border bg-[#111318]">
+        <div className="p-4 border-t border-surface-border bg-background-dark">
             <div className="flex items-center gap-3 mb-3">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Enviar A:</span>
                 <PlatformToggle
@@ -14,19 +15,19 @@ const ChatInput: React.FC = () => {
                 />
                 <PlatformToggle
                     id="toggle-twitch"
-                    label="Twitch"
-                    colorClass="text-[#9146FF] focus:ring-[#9146FF]"
+                    label={PLATFORMS.twitch.name}
+                    colorClass={`${PLATFORMS.twitch.textColor} focus:ring-[${PLATFORMS.twitch.brandColor}]`}
                     defaultChecked
                 />
                 <PlatformToggle
                     id="toggle-youtube"
-                    label="YouTube"
-                    colorClass="text-[#FF0000] focus:ring-[#FF0000]"
+                    label={PLATFORMS.youtube.name}
+                    colorClass={`${PLATFORMS.youtube.textColor} focus:ring-[${PLATFORMS.youtube.brandColor}]`}
                     defaultChecked
                 />
                 <PlatformToggle
                     id="toggle-kick"
-                    label="Kick"
+                    label={PLATFORMS.kick.name}
                     colorClass="text-gray-500"
                     disabled
                 />
