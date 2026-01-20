@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import Header from '../components/connection/Header';
-import BackgroundDecorations from '../components/common/BackgroundDecorations';
 import PlatformInput from '../components/connection/PlatformInput';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaYoutube, FaTiktok, FaArrowRight } from 'react-icons/fa';
 import { SiKick } from 'react-icons/si';
+
+const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
 const PlatformConnection: React.FC = () => {
     return (
@@ -13,7 +14,9 @@ const PlatformConnection: React.FC = () => {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col justify-center items-center p-4 relative">
-                <BackgroundDecorations />
+                <Suspense fallback={null}>
+                    <BackgroundDecorations />
+                </Suspense>
 
                 {/* Centered Card */}
                 <div className="relative z-10 w-full max-w-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-800 shadow-2xl rounded-3xl overflow-hidden">

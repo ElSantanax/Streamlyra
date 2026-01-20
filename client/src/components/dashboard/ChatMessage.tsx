@@ -1,5 +1,8 @@
+import React from 'react';
 import { FaTwitch, FaYoutube, FaTiktok, FaUserCircle } from 'react-icons/fa';
 import { MdInfo } from 'react-icons/md';
+import PlatformBadge from './ChatMessage/PlatformBadge';
+import UserBadge from './ChatMessage/UserBadge';
 
 interface ChatMessageProps {
     user: string;
@@ -13,6 +16,13 @@ interface ChatMessageProps {
     highlighted?: boolean;
 }
 
+const platformConfig = {
+    twitch: { Icon: FaTwitch, color: 'bg-[#9146FF]', textColor: 'text-[#9146FF]' },
+    youtube: { Icon: FaYoutube, color: 'bg-[#FF0000]', textColor: 'text-[#FF4E45]' },
+    tiktok: { Icon: FaTiktok, color: 'bg-black', textColor: 'text-white' },
+    system: { Icon: MdInfo, color: 'bg-gray-500', textColor: 'text-gray-400' }
+};
+
 const ChatMessage: React.FC<ChatMessageProps> = ({
     user,
     message,
@@ -24,20 +34,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     specialMessage,
     highlighted
 }) => {
-    const platformConfig = {
-        twitch: { Icon: FaTwitch, color: 'bg-[#9146FF]', textColor: 'text-[#9146FF]' },
-        youtube: { Icon: FaYoutube, color: 'bg-[#FF0000]', textColor: 'text-[#FF4E45]' },
-        tiktok: { Icon: FaTiktok, color: 'bg-black', textColor: 'text-white' },
-        system: { Icon: MdInfo, color: 'bg-gray-500', textColor: 'text-gray-400' }
-    };
-
     const { Icon, color, textColor } = platformConfig[platform];
 
     return (
         <div className={`flex gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors group ${highlighted ? 'bg-blue-500/5 border border-blue-500/10' : ''}`}>
             {platform === 'system' ? (
                 <div className="size-10 shrink-0 flex items-start justify-center pt-1">
-                    <Icon className={`text-gray-500 text-[20px]`} />
+                    <Icon className="text-gray-500 text-[20px]" />
                 </div>
             ) : (
                 <div className="size-10 shrink-0 rounded-full flex items-center justify-center bg-surface-dark border border-surface-border overflow-hidden">
@@ -54,22 +57,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     <div className="flex items-center gap-2">
                         <span className={`${textColor} font-bold text-sm`}>{user}</span>
                         {platform !== 'system' && (
-                            <div className={`${color} rounded-md p-1 flex items-center justify-center`}>
-                                <Icon className="text-white text-[12px] block" />
-                            </div>
+                            <PlatformBadge Icon={Icon} color={color} />
                         )}
-                        {isSub && (
-                            <span className="bg-[#9146FF]/20 text-[#9146FF] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Sub</span>
-                        )}
-                        {isMod && (
-                            <span className="bg-[#00AD03]/20 text-[#00AD03] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">MOD</span>
-                        )}
+                        {isSub && <UserBadge type="sub" />}
+                        {isMod && <UserBadge type="mod" />}
                         <span className="text-xs text-gray-600">{time}</span>
                     </div>
                     {platform !== 'system' && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="text-gray-500 hover:text-white" title="Responder"><span className="material-symbols-outlined text-[18px]">reply</span></button>
-                            <button className="text-gray-500 hover:text-red-400" title="Bloquear"><span className="material-symbols-outlined text-[18px]">block</span></button>
+                            <button className="text-gray-500 hover:text-white" title="Responder">
+                                <span className="material-symbols-outlined text-[18px]">reply</span>
+                            </button>
+                            <button className="text-gray-500 hover:text-red-400" title="Bloquear">
+                                <span className="material-symbols-outlined text-[18px]">block</span>
+                            </button>
                         </div>
                     )}
                 </div>
