@@ -1,4 +1,4 @@
-import { FaTwitch, FaYoutube, FaTiktok } from 'react-icons/fa';
+import { FaTwitch, FaYoutube, FaTiktok, FaUserCircle } from 'react-icons/fa';
 import { MdInfo } from 'react-icons/md';
 
 interface ChatMessageProps {
@@ -40,7 +40,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     <Icon className={`text-gray-500 text-[20px]`} />
                 </div>
             ) : (
-                <div className="size-10 shrink-0 rounded-full bg-cover bg-center border border-surface-border" style={{ backgroundImage: `url(${avatar})` }}>
+                <div className="size-10 shrink-0 rounded-full flex items-center justify-center bg-surface-dark border border-surface-border overflow-hidden">
+                    {avatar ? (
+                        <div className="size-full bg-cover bg-center" style={{ backgroundImage: `url(${avatar})` }} />
+                    ) : (
+                        <FaUserCircle className="size-8 text-gray-600" />
+                    )}
                 </div>
             )}
 

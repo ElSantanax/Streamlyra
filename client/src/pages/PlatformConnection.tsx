@@ -1,8 +1,8 @@
 import React from 'react';
-import Header from '../components/Header';
-import BackgroundDecorations from '../components/BackgroundDecorations';
-import PlatformInput from '../components/PlatformInput';
-import PlatformButton from '../components/PlatformButton';
+import Header from '../components/connection/Header';
+import BackgroundDecorations from '../components/common/BackgroundDecorations';
+import PlatformInput from '../components/connection/PlatformInput';
+import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaYoutube, FaTiktok, FaArrowRight } from 'react-icons/fa';
 import { SiKick } from 'react-icons/si';
 
@@ -74,7 +74,7 @@ const PlatformConnection: React.FC = () => {
                             <button className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-6 rounded-2xl transition-colors duration-300 flex items-center justify-center gap-3 cursor-pointer group">
                                 <span className="text-base">Ir al Panel de Control</span>
                                 <FaArrowRight className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
-                            </button>   
+                            </button>
 
                             {/* Footer Links */}
                             <div className="flex justify-center px-1">
