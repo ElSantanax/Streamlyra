@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import { useState, lazy, Suspense, type ReactNode } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import { MdDeleteSweep, MdDeleteOutline, MdOutlineVisibility } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
-const AddPlatformModal = React.lazy(() => import('./AddPlatformModal'));
+const AddPlatformModal = lazy(() => import('./AddPlatformModal'));
 
 // --- Local Components (KISS: Co-located for internal use) ---
 
 interface SidebarSectionProps {
     title: string;
-    children: React.ReactNode;
+    children: ReactNode;
     className?: string;
 }
 
-const SidebarSection: React.FC<SidebarSectionProps> = ({ title, children, className = "" }) => (
+const SidebarSection = ({ title, children, className = "" }: SidebarSectionProps) => (
     <div className={`flex flex-col gap-3 ${className}`}>
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">{title}</h3>
         {children}
@@ -27,12 +27,12 @@ interface ConnectionItemProps {
     onDisconnect?: () => void;
 }
 
-const ConnectionItem: React.FC<ConnectionItemProps> = ({
+const ConnectionItem = ({
     platformKey,
     status,
     viewers,
     onDisconnect
-}) => {
+}: ConnectionItemProps) => {
     const { name, Icon, color, iconColor } = PLATFORMS[platformKey];
     const isConnected = status === 'connected';
 
@@ -82,7 +82,7 @@ interface StatCardProps {
     className?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, valueColor = "text-white", className = "" }) => (
+const StatCard = ({ label, value, valueColor = "text-white", className = "" }: StatCardProps) => (
     <div className={`p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 ${className}`}>
         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</span>
         <span className={`text-base font-black ${valueColor}`}>{value}</span>
@@ -91,7 +91,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, valueColor = "text-wh
 
 // --- Main Sidebar Component ---
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
 
     return (
@@ -144,12 +144,12 @@ const Sidebar: React.FC = () => {
             </SidebarSection>
 
             {isAddPlatformOpen && (
-                <React.Suspense fallback={null}>
+                <Suspense fallback={null}>
                     <AddPlatformModal
                         isOpen={isAddPlatformOpen}
                         onClose={() => setIsAddPlatformOpen(false)}
                     />
-                </React.Suspense>
+                </Suspense>
             )}
         </aside>
     );

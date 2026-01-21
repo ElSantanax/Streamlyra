@@ -1,4 +1,3 @@
-import React from 'react';
 import { MdReply, MdBlock, MdDeleteOutline } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
@@ -9,7 +8,7 @@ interface UserBadgeProps {
     type: 'sub' | 'mod';
 }
 
-const UserBadge: React.FC<UserBadgeProps> = ({ type }) => {
+const UserBadge = ({ type }: UserBadgeProps) => {
     const config = {
         sub: { label: 'Sub', color: 'bg-[#9146FF]/20 text-[#9146FF]' },
         mod: { label: 'MOD', color: 'bg-[#00AD03]/20 text-[#00AD03]' }
@@ -37,7 +36,7 @@ interface ChatMessageProps {
     highlighted?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({
+const ChatMessage = ({
     user,
     message,
     time,
@@ -46,7 +45,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isMod,
     specialMessage,
     highlighted
-}) => {
+}: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage;
 

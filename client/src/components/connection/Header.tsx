@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaGlobe } from 'react-icons/fa';
 import Logo from '../common/Logo';
 
-const Header: React.FC = () => {
+const Header = () => {
     const [lang, setLang] = useState<'es' | 'en'>('es');
 
     return (

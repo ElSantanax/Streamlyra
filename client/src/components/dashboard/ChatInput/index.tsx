@@ -1,8 +1,7 @@
-import React from 'react';
 import PlatformToggle from './PlatformToggle';
 import { PLATFORMS } from '../../../constants/platforms';
 
-const ChatInput: React.FC = () => {
+const ChatInput = () => {
     return (
         <div className="p-4 border-t border-surface-border bg-background-dark">
             <div className="flex items-center gap-3 mb-3">

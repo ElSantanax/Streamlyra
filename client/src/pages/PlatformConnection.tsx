@@ -1,13 +1,13 @@
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import Header from '../components/connection/Header';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
-const PlatformConnection: React.FC = () => {
+const PlatformConnection = () => {
     return (
-        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex flex-col antialiased selection:bg-primary selection:text-white overflow-x-hidden">
+        <div className="page-base antialiased selection:bg-primary selection:text-white overflow-x-hidden">
             <Header />
 
             {/* Main Content Area */}

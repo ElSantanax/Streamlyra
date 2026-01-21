@@ -58,7 +58,10 @@
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera when not hovering if needed (optional) */
 /* .custom-scrollbar:not(:hover)::-webkit-scrollbar-thumb {
   background: transparent;
 } */
+
+.page-base {
+  @apply bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white min-h-screen flex flex-col;
+}

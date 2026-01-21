@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { MdLink, MdHelpOutline, MdLogout, MdLanguage, MdCheck, MdKeyboardArrowDown } from 'react-icons/md';
 
-const AddPlatformModal = React.lazy(() => import('./AddPlatformModal'));
+const AddPlatformModal = lazy(() => import('./AddPlatformModal'));
 
-const DashboardHeader: React.FC = () => {
+const DashboardHeader = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
@@ -125,12 +125,12 @@ const DashboardHeader: React.FC = () => {
             </header>
 
             {isAddPlatformOpen && (
-                <React.Suspense fallback={null}>
+                <Suspense fallback={null}>
                     <AddPlatformModal
                         isOpen={isAddPlatformOpen}
                         onClose={() => setIsAddPlatformOpen(false)}
                     />
-                </React.Suspense>
+                </Suspense>
             )}
         </>
     );

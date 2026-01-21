@@ -1,5 +1,6 @@
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
+import Spinner from '../components/common/Spinner';
 import type { PlatformKey } from '../constants/platforms';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
@@ -81,11 +82,10 @@ const SAMPLE_MESSAGES: Message[] = [
     }
 ];
 
-// const SAMPLE_MESSAGES: Message[] = []; // No borrar para probar
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
     return (
-        <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white h-screen flex flex-col overflow-hidden">
+        <div className="page-base h-screen overflow-hidden">
             <DashboardHeader />
 
             <div className="flex flex-1 overflow-hidden">
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
                         <div className="flex flex-col gap-2 min-h-full">
                             <Suspense fallback={
                                 <div className="flex-1 flex items-center justify-center">
-                                    <div className="size-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                                    <Spinner size="md" />
                                 </div>
                             }>
                                 {SAMPLE_MESSAGES.length > 0 ? (

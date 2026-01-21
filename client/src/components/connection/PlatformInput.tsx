@@ -1,6 +1,6 @@
 import { FaArrowRight } from 'react-icons/fa';
-import React from 'react';
 import type { IconType } from 'react-icons';
+import type { ChangeEvent, CSSProperties } from 'react';
 
 interface PlatformInputProps {
     id: string;
@@ -9,12 +9,12 @@ interface PlatformInputProps {
     iconColor: string;
     placeholder: string;
     value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
     onConnect?: () => void;
     isConnected?: boolean;
 }
 
-const PlatformInput: React.FC<PlatformInputProps> = ({
+const PlatformInput = ({
     id,
     label,
     Icon,
@@ -24,13 +24,13 @@ const PlatformInput: React.FC<PlatformInputProps> = ({
     onChange,
     onConnect,
     isConnected = false
-}) => {
+}: PlatformInputProps) => {
     return (
         <div className="group relative">
             <label className="sr-only" htmlFor={id}>Usuario de {label}</label>
             <div
                 className={`flex items-center bg-gray-50/50 dark:bg-input-dark/50 border ${isConnected ? 'border-green-500/50 bg-green-500/5' : 'border-gray-200 dark:border-gray-700/50'} rounded-xl overflow-hidden transition-all duration-300 focus-within:ring-1 focus-within:ring-(--platform-color) focus-within:border-(--platform-color) focus-within:bg-white dark:focus-within:bg-input-dark group-hover:border-gray-300 dark:group-hover:border-gray-600`}
-                style={{ '--platform-color': iconColor } as React.CSSProperties}
+                style={{ '--platform-color': iconColor } as CSSProperties}
             >
                 <div className={`p-4 flex items-center justify-center border-r ${isConnected ? 'border-green-500/20 bg-green-500/10' : 'border-gray-200 dark:border-gray-700/50 bg-gray-100/50 dark:bg-white/5'} self-stretch`}>
                     <Icon

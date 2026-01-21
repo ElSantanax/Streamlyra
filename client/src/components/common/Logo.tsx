@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface LogoProps {
     className?: string;
     iconSize?: string;
@@ -7,12 +5,12 @@ interface LogoProps {
     showText?: boolean;
 }
 
-const Logo: React.FC<LogoProps> = ({
+const Logo = ({
     className = "",
     iconSize = "size-8",
     textSize = "text-xl",
     showText = true
-}) => {
+}: LogoProps) => {
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <div className={`${iconSize} rounded-lg bg-primary/20 flex items-center justify-center text-primary`}>

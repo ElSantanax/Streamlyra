@@ -1,4 +1,3 @@
-import { table } from "node:console";
 import { Table, Column, Model, DataType, Default } from "sequelize-typescript";
 
 @Table({

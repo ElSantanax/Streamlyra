@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface PlatformToggleProps {
     id: string;
@@ -8,13 +7,13 @@ interface PlatformToggleProps {
     disabled?: boolean;
 }
 
-const PlatformToggle: React.FC<PlatformToggleProps> = ({
+const PlatformToggle = ({
     id,
     label,
     colorClass,
     defaultChecked = false,
     disabled = false
-}) => {
+}: PlatformToggleProps) => {
     return (
         <label className={`flex items-center gap-2 cursor-pointer select-none ${disabled ? 'opacity-50' : ''}`}>
             <input

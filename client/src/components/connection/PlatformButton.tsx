@@ -1,6 +1,4 @@
-import React from 'react';
 import type { IconType } from 'react-icons';
-
 import { FaCheckCircle } from 'react-icons/fa';
 
 interface PlatformButtonProps {
@@ -13,7 +11,7 @@ interface PlatformButtonProps {
     isConnected?: boolean;
 }
 
-const PlatformButton: React.FC<PlatformButtonProps> = ({
+const PlatformButton = ({
     label,
     subtext,
     Icon,
@@ -21,7 +19,7 @@ const PlatformButton: React.FC<PlatformButtonProps> = ({
     onClick,
     className = '',
     isConnected = false
-}) => {
+}: PlatformButtonProps) => {
     return (
         <button
             onClick={onClick}
