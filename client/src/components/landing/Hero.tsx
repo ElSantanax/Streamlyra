@@ -9,7 +9,7 @@ const Hero = () => {
             <div className="mx-auto flex max-w-300 flex-col lg:flex-row items-center gap-12">
                 <div className="flex flex-col gap-8 flex-1 text-center lg:text-left">
                     <h1 className="text-slate-900 dark:text-white text-5xl md:text-7xl font-black leading-[1.1] tracking-[-0.04em] font-display">
-                        Domina tus chats en <span className="text-primary">un solo lugar</span>
+                        Gestiona tus chats en <span className="text-primary">un solo lugar</span>
                     </h1>
                     <p className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-150 mx-auto lg:mx-0 font-body">
                         Gestiona las conversaciones de Twitch, YouTube, Kick y TikTok desde un único panel inteligente. Herramientas profesionales para streamers que buscan crecer.

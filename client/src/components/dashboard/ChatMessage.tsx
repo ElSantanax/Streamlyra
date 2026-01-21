@@ -33,7 +33,6 @@ interface ChatMessageProps {
     isSub?: boolean;
     isMod?: boolean;
     specialMessage?: string;
-    highlighted?: boolean;
 }
 
 const ChatMessage = ({
@@ -44,7 +43,6 @@ const ChatMessage = ({
     isSub,
     isMod,
     specialMessage,
-    highlighted
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage;
@@ -53,7 +51,6 @@ const ChatMessage = ({
         <div className={`
             flex flex-col gap-1 px-4 py-3 rounded-xl bg-white/5 group border border-surface-border relative overflow-hidden transition-all
             ${isSpecial ? `border-l-4 font-medium` : ''}
-            ${highlighted ? 'bg-blue-500/10 border-blue-500/20' : ''}
         `} style={isSpecial ? { borderLeftColor: brandColor } : undefined}>
 
             <div className="flex flex-col flex-1">

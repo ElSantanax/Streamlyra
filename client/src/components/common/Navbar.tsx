@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaGlobe, FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
+import Overlay from './Overlay';
 
 const Navbar = () => {
     const { pathname } = useLocation();
@@ -97,13 +98,12 @@ const Navbar = () => {
                 </div>
             </header>
 
-            {/* Mobile Menu Backdrop */}
-            {isMenuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-500"
-                    onClick={() => setIsMenuOpen(false)}
-                />
-            )}
+            <Overlay
+                isVisible={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                className="md:hidden"
+                zIndex={40}
+            />
 
             {/* Mobile Menu Drawer */}
             <div

@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
+import Overlay from '../components/common/Overlay';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
 const ChatMessage = lazy(() => import('../components/dashboard/ChatMessage'));
@@ -22,19 +23,17 @@ const Dashboard = () => {
             />
 
             <div className="flex flex-1 overflow-hidden relative">
-                {/* Mobile Sidebar Drawer overlay */}
-                {isAddPlatformOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
-                        onClick={() => setIsSidebarOpen(false)}
-                    />
-                )}
-                {isSidebarOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
-                        onClick={() => setIsSidebarOpen(false)}
-                    />
-                )}
+                {/* Backdrops centralizados con Overlay */}
+                <Overlay
+                    isVisible={isAddPlatformOpen}
+                    onClose={() => setIsAddPlatformOpen(false)}
+                    className="lg:hidden"
+                />
+                <Overlay
+                    isVisible={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                    className="lg:hidden"
+                />
 
                 <Suspense fallback={
                     <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto">
