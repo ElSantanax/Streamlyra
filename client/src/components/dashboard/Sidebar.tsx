@@ -1,9 +1,8 @@
-import { useState, lazy, Suspense, type ReactNode } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { type ReactNode } from 'react';
+import { FaPlus, FaTimes } from 'react-icons/fa';
 import { MdDeleteSweep, MdDeleteOutline, MdOutlineVisibility } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
-const AddPlatformModal = lazy(() => import('./AddPlatformModal'));
 
 // --- Local Components (KISS: Co-located for internal use) ---
 
@@ -90,12 +89,25 @@ const StatCard = ({ label, value, valueColor = "text-white", className = "" }: S
 );
 
 // --- Main Sidebar Component ---
+interface SidebarProps {
+    onMobileClose?: () => void;
+    onAddPlatform?: () => void;
+}
 
-const Sidebar = () => {
-    const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+const Sidebar = ({ onMobileClose, onAddPlatform }: SidebarProps) => {
 
     return (
-        <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
+        <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
+            {/* Mobile Header for Sidebar */}
+            <div className="flex items-center justify-between lg:hidden mb-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-primary">Menú de Control</span>
+                <button
+                    onClick={onMobileClose}
+                    className="p-2 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                >
+                    <FaTimes size={18} />
+                </button>
+            </div>
             <SidebarSection title="Conexiones">
                 {[
                     { key: 'twitch', status: 'connected', viewers: '850' },
@@ -112,7 +124,7 @@ const Sidebar = () => {
                 ))}
 
                 <button
-                    onClick={() => setIsAddPlatformOpen(true)}
+                    onClick={onAddPlatform}
                     className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group"
                 >
                     <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -137,15 +149,6 @@ const Sidebar = () => {
                     </button>
                 </div>
             </SidebarSection>
-
-            {isAddPlatformOpen && (
-                <Suspense fallback={null}>
-                    <AddPlatformModal
-                        isOpen={isAddPlatformOpen}
-                        onClose={() => setIsAddPlatformOpen(false)}
-                    />
-                </Suspense>
-            )}
         </aside>
     );
 };

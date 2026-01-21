@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 
@@ -8,12 +8,34 @@ const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
 
 import { SAMPLE_MESSAGES } from '../constants/sampleData';
 
+const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
+
 const Dashboard = () => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+
     return (
         <div className="page-base h-screen overflow-hidden">
-            <DashboardHeader />
+            <DashboardHeader
+                onMenuClick={() => setIsSidebarOpen(true)}
+                onAddPlatform={() => setIsAddPlatformOpen(true)}
+            />
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
+                {/* Mobile Sidebar Drawer overlay */}
+                {isAddPlatformOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+                {isSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
                 <Suspense fallback={
                     <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto">
                         <div className="h-4 w-24 bg-gray-700/50 rounded mb-6"></div>
@@ -24,7 +46,18 @@ const Dashboard = () => {
                         </div>
                     </aside>
                 }>
-                    <Sidebar />
+                    <div className={`
+                        fixed inset-y-0 left-0 w-80 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0
+                        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    `}>
+                        <Sidebar
+                            onMobileClose={() => setIsSidebarOpen(false)}
+                            onAddPlatform={() => {
+                                setIsAddPlatformOpen(true);
+                                setIsSidebarOpen(false); // Close sidebar on mobile after clicking
+                            }}
+                        />
+                    </div>
                 </Suspense>
 
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
@@ -63,6 +96,15 @@ const Dashboard = () => {
                     </Suspense>
                 </main>
             </div>
+
+            {isAddPlatformOpen && (
+                <Suspense fallback={null}>
+                    <AddPlatformModal
+                        isOpen={isAddPlatformOpen}
+                        onClose={() => setIsAddPlatformOpen(false)}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 };

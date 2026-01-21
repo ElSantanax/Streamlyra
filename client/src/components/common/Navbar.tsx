@@ -97,32 +97,72 @@ const Navbar = () => {
                 </div>
             </header>
 
-            {/* Mobile Menu Overlay - Outside header to avoid backdrop-blur containing block issues */}
+            {/* Mobile Menu Backdrop */}
+            {isMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-500"
+                    onClick={() => setIsMenuOpen(false)}
+                />
+            )}
+
+            {/* Mobile Menu Drawer */}
             <div
-                className={`fixed inset-0 top-16.25 h-[calc(100vh-4.0625rem)] bg-background-light dark:bg-background-dark transition-transform duration-300 md:hidden z-40 ${isMenuOpen ? 'translate-y-0' : '-translate-y-full pointer-events-none'
+                className={`fixed top-0 right-0 h-full w-70 bg-background-dark border-l border-surface-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden z-50 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
                     }`}
             >
-                <div className="flex flex-col p-8 gap-10 items-center justify-start h-full pt-16">
-                    <nav className="flex flex-col gap-8 w-full items-center">
-                        <div onClick={() => setIsMenuOpen(false)} className="flex flex-col gap-8 items-center text-xl">
-                            {navLinks}
+                <div className="flex flex-col h-full">
+                    {/* Drawer Header - Perfectly Balanced */}
+                    <div className="flex items-center justify-between px-6 h-18 border-b border-surface-border/30">
+                        <div className="flex items-center gap-3">
+                            <Logo textSize="text-lg" showText={false} />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5">Menú</span>
                         </div>
-                    </nav>
-
-                    <div className="w-full h-px bg-slate-100 dark:bg-surface-border"></div>
-
-                    <div className="flex flex-col gap-8 w-full items-center">
                         <button
-                            onClick={() => {
-                                setLang(prev => prev === 'es' ? 'en' : 'es');
-                                setIsMenuOpen(false);
-                            }}
-                            className="flex items-center gap-3 text-lg font-bold text-slate-600 dark:text-white/80 hover:text-primary transition-colors cursor-pointer"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="size-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer -mr-2"
                         >
-                            <FaGlobe size={20} />
-                            <span>{lang === 'es' ? 'Cambiar a Inglés' : 'Change to Spanish'}</span>
+                            <FaTimes size={18} />
                         </button>
-                        <div className="w-full" onClick={() => setIsMenuOpen(false)}>
+                    </div>
+
+                    <div className="flex flex-col p-6 gap-8 overflow-y-auto">
+                        <nav className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 ml-2 opacity-60">Explorar</span>
+                            <div className="flex flex-col gap-1.5">
+                                <div onClick={() => setIsMenuOpen(false)}>
+                                    {isAuthPage ? (
+                                        <Link to="/#features" className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Funciones</Link>
+                                    ) : (
+                                        <a href="#features" className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Funciones</a>
+                                    )}
+                                </div>
+                                <a href="#" onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Comunidad</a>
+                            </div>
+                        </nav>
+
+                        <div className="h-px bg-surface-border/40 mx-2" />
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 ml-2 opacity-60">Personalización</span>
+                            <button
+                                onClick={() => {
+                                    setLang(prev => prev === 'es' ? 'en' : 'es');
+                                }}
+                                className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white transition-all font-semibold text-[15px] cursor-pointer group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <FaGlobe size={14} />
+                                    </div>
+                                    <span>Idioma</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-surface-border/30 px-2.5 py-1 rounded-lg border border-surface-border/50">
+                                    <span className="text-[10px] font-bold text-white uppercase tracking-tighter">{lang === 'es' ? 'ES' : 'EN'}</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div className="mt-auto pt-8" onClick={() => setIsMenuOpen(false)}>
                             {actionButton}
                         </div>
                     </div>
