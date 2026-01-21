@@ -43,8 +43,8 @@ const PlatformButton = ({
                     style={{ color: iconColor, fontSize: '28px' }}
                 />
             </div>
-            <div className="flex flex-col items-start text-left min-w-0 flex-1">
-                <div className="flex items-center gap-2 w-full">
+            <div className="flex flex-col items-center text-center min-w-0">
+                <div className="flex items-center gap-2 w-full justify-center">
                     <span
                         className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate"
                     >

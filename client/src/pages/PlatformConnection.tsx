@@ -22,14 +22,10 @@ const PlatformConnection = () => {
                 {/* Centered Card */}
                 <div className="relative z-10 w-full max-w-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-800 shadow-2xl rounded-3xl overflow-hidden">
                     {/* Card Header */}
-                    <div className="px-8 pt-16 pb-6 text-center flex flex-col items-center">
-                        <h1 className="text-3xl md:text-4xl font-brand text-primary mb-6 tracking-widest uppercase">
-                            Streamlyra
-                        </h1>
-
-                        <h2 className="text-2xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mb-2">
+                    <div className="px-8 pt-12 pb-6 text-center flex flex-col items-center">
+                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mb-2">
                             Conecta tu comunidad
-                        </h2>
+                        </h1>
                         <p className="text-slate-500 dark:text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
                             Unifica todos tus chats de streaming en una sola pantalla
                         </p>

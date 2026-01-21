@@ -17,9 +17,9 @@ const Logo = ({
                 <span className="material-symbols-outlined shrink-0" style={{ fontSize: 'inherit' }}>hub</span>
             </div>
             {showText && (
-                <h1 className={`${textSize} font-brand text-slate-900 dark:text-white uppercase tracking-widest`}>
+                <span className={`${textSize} font-brand text-white uppercase tracking-widest`}>
                     Streamlyra
-                </h1>
+                </span>
             )}
         </div>
     );

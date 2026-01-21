@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { MdLink, MdHelpOutline, MdLogout, MdLanguage, MdCheck, MdKeyboardArrowDown } from 'react-icons/md';
+import Logo from '../common/Logo';
 
 const AddPlatformModal = lazy(() => import('./AddPlatformModal'));
 
@@ -31,8 +32,8 @@ const DashboardHeader = () => {
     return (
         <>
             <header className="shrink-0 border-b border-surface-border bg-background-dark/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between z-50">
-                <Link to="/" className="text-2xl md:text-3xl font-brand text-primary tracking-widest uppercase select-none hover:opacity-80 transition-opacity">
-                    Streamlyra
+                <Link to="/" className="transition-opacity hover:opacity-80">
+                    <Logo textSize="text-xl" />
                 </Link>
 
                 <div className="flex items-center gap-3">
