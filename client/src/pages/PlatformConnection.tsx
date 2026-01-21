@@ -1,14 +1,17 @@
 import { lazy, Suspense } from 'react';
-import Header from '../components/connection/Header';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/common/Navbar';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
 const PlatformConnection = () => {
+    const navigate = useNavigate();
+
     return (
         <div className="page-base antialiased selection:bg-primary selection:text-white overflow-x-hidden">
-            <Header />
+            <Navbar />
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col justify-center items-center p-4 relative">
@@ -45,7 +48,7 @@ const PlatformConnection = () => {
                                 label="Iniciar Sesión con Twitch"
                                 Icon={FaTwitch}
                                 iconColor="#9146FF"
-                                onClick={() => console.log('Twitch login')}
+                                onClick={() => navigate('/dashboard')}
                                 className="w-full transition-colors duration-300"
                             />
                         </div>

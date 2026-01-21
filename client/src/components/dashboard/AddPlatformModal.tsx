@@ -83,33 +83,24 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 
                 {/* Content */}
                 <div className="p-5 flex flex-col gap-4">
-                    <PlatformButton
-                        label={connections.twitch ? "Twitch Conectado" : "Conectar Twitch"}
-                        subtext={connections.twitch ? "Cuenta vinculada exitosamente" : "Vincula tu cuenta de streaming"}
-                        Icon={PLATFORMS.twitch.Icon}
-                        iconColor={PLATFORMS.twitch.brandColor}
-                        onClick={() => !connections.twitch && {}}
-                        isConnected={connections.twitch}
-                        className="bg-surface-dark hover:bg-surface-dark/80"
-                    />
-                    <PlatformButton
-                        label={connections.youtube ? "YouTube Conectado" : "Conectar YouTube"}
-                        subtext={connections.youtube ? "Canal vinculado exitosamente" : "Vincula tu canal de YouTube"}
-                        Icon={PLATFORMS.youtube.Icon}
-                        iconColor={PLATFORMS.youtube.brandColor}
-                        onClick={() => !connections.youtube && {}}
-                        isConnected={connections.youtube}
-                        className="bg-surface-dark hover:bg-surface-dark/80"
-                    />
-                    <PlatformButton
-                        label={connections.kick ? "Kick Conectado" : "Conectar Kick"}
-                        subtext={connections.kick ? "Cuenta vinculada exitosamente" : "Vincula tu cuenta de Kick"}
-                        Icon={PLATFORMS.kick.Icon}
-                        iconColor={PLATFORMS.kick.brandColor}
-                        onClick={() => !connections.kick && {}}
-                        isConnected={connections.kick}
-                        className="bg-surface-dark hover:bg-surface-dark/80"
-                    />
+                    {Object.entries(PLATFORMS)
+                        .filter(([key]) => key !== 'system' && key !== 'tiktok')
+                        .map(([key, platform]) => {
+                            const platformKey = key as keyof typeof connections;
+                            const isConnected = connections[platformKey];
+                            return (
+                                <PlatformButton
+                                    key={key}
+                                    label={isConnected ? `${platform.name} Conectado` : `Conectar ${platform.name}`}
+                                    subtext={isConnected ? "Cuenta vinculada exitosamente" : `Vincula tu cuenta de ${platform.name}`}
+                                    Icon={platform.Icon}
+                                    iconColor={platform.brandColor}
+                                    onClick={() => !isConnected && {}}
+                                    isConnected={isConnected}
+                                    className="bg-surface-dark hover:bg-surface-dark/80"
+                                />
+                            );
+                        })}
 
                     <div className="relative py-2">
                         <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -132,6 +123,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                         isConnected={isTiktokConnected}
                     />
                 </div>
+
             </div>
         </div>
     );

@@ -97,25 +97,19 @@ const Sidebar = () => {
     return (
         <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
             <SidebarSection title="Conexiones">
-                <ConnectionItem
-                    platformKey="twitch"
-                    status="connected"
-                    viewers="850"
-                />
-                <ConnectionItem
-                    platformKey="youtube"
-                    status="connected"
-                    viewers="320"
-                />
-                <ConnectionItem
-                    platformKey="tiktok"
-                    status="connected"
-                    viewers="70"
-                />
-                <ConnectionItem
-                    platformKey="kick"
-                    status="disconnected"
-                />
+                {[
+                    { key: 'twitch', status: 'connected', viewers: '850' },
+                    { key: 'youtube', status: 'connected', viewers: '320' },
+                    { key: 'tiktok', status: 'connected', viewers: '70' },
+                    { key: 'kick', status: 'disconnected' }
+                ].map((conn) => (
+                    <ConnectionItem
+                        key={conn.key}
+                        platformKey={conn.key as PlatformKey}
+                        status={conn.status as 'connected' | 'disconnected'}
+                        viewers={conn.viewers}
+                    />
+                ))}
 
                 <button
                     onClick={() => setIsAddPlatformOpen(true)}
@@ -127,6 +121,7 @@ const Sidebar = () => {
                     <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Agregar plataforma</span>
                 </button>
             </SidebarSection>
+
 
             <SidebarSection title="Analíticas en Vivo">
                 <div className="grid grid-cols-1 gap-3">

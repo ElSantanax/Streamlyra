@@ -12,24 +12,19 @@ const ChatInput = () => {
                     colorClass="text-primary focus:ring-primary"
                     defaultChecked
                 />
-                <PlatformToggle
-                    id="toggle-twitch"
-                    label={PLATFORMS.twitch.name}
-                    colorClass={`${PLATFORMS.twitch.textColor} focus:ring-[${PLATFORMS.twitch.brandColor}]`}
-                    defaultChecked
-                />
-                <PlatformToggle
-                    id="toggle-youtube"
-                    label={PLATFORMS.youtube.name}
-                    colorClass={`${PLATFORMS.youtube.textColor} focus:ring-[${PLATFORMS.youtube.brandColor}]`}
-                    defaultChecked
-                />
-                <PlatformToggle
-                    id="toggle-kick"
-                    label={PLATFORMS.kick.name}
-                    colorClass="text-gray-500"
-                    disabled
-                />
+
+                {Object.entries(PLATFORMS)
+                    .filter(([key]) => key !== 'system')
+                    .map(([key, platform]) => (
+                        <PlatformToggle
+                            key={key}
+                            id={`toggle-${key}`}
+                            label={platform.name}
+                            colorClass={`${platform.textColor} focus:ring-[${platform.brandColor}]`}
+                            defaultChecked={key !== 'kick'}
+                            disabled={key === 'kick'}
+                        />
+                    ))}
             </div>
 
             <div className="relative flex items-center gap-2">
@@ -53,3 +48,4 @@ const ChatInput = () => {
 };
 
 export default ChatInput;
+

@@ -1,5 +1,6 @@
 import type { IconType } from 'react-icons';
 import { FaCheckCircle } from 'react-icons/fa';
+import type { CSSProperties } from 'react';
 
 interface PlatformButtonProps {
     label: string;
@@ -24,8 +25,19 @@ const PlatformButton = ({
         <button
             onClick={onClick}
             disabled={isConnected}
-            className={`group relative flex items-center justify-center gap-3 bg-transparent border-2 ${isConnected ? 'border-green-500/50 bg-green-500/5' : 'border-[#9146FF]/20'} rounded-2xl transition-all duration-300 ${!isConnected ? 'hover:border-[#9146FF] active:scale-[0.98] cursor-pointer' : 'cursor-default'} w-full py-4 px-6 ${className}`}
+            className={`group relative flex items-center justify-center gap-3 bg-transparent border-2 rounded-2xl transition-all duration-300 ${!isConnected ? 'active:scale-[0.98] cursor-pointer' : 'cursor-default'} w-full py-4 px-6 ${className} ${isConnected ? 'border-green-500/50 bg-green-500/5' : ''}`}
+            style={{
+                borderColor: isConnected ? undefined : `${iconColor}33`,
+                backgroundColor: isConnected ? undefined : 'transparent',
+            } as CSSProperties}
+            onMouseEnter={(e) => {
+                if (!isConnected) e.currentTarget.style.borderColor = iconColor;
+            }}
+            onMouseLeave={(e) => {
+                if (!isConnected) e.currentTarget.style.borderColor = `${iconColor}33`;
+            }}
         >
+
             <div className="flex items-center justify-center">
                 <Icon
                     style={{ color: iconColor, fontSize: '28px' }}
