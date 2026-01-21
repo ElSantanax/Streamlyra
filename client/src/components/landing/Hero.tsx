@@ -8,13 +8,6 @@ const Hero = () => {
 
             <div className="mx-auto flex max-w-300 flex-col lg:flex-row items-center gap-12">
                 <div className="flex flex-col gap-8 flex-1 text-center lg:text-left">
-                    <div className="inline-flex items-center self-center lg:self-start gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                        </span>
-                        Nueva Versión 2.0
-                    </div>
                     <h1 className="text-slate-900 dark:text-white text-5xl md:text-7xl font-black leading-[1.1] tracking-[-0.04em] font-display">
                         Domina tus chats en <span className="text-primary">un solo lugar</span>
                     </h1>

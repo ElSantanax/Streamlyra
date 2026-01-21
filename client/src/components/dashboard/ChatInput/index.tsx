@@ -14,7 +14,7 @@ const ChatInput = () => {
                 />
 
                 {Object.entries(PLATFORMS)
-                    .filter(([key]) => key !== 'system')
+                    .filter(([key]) => key !== 'system' && key !== 'tiktok')
                     .map(([key, platform]) => (
                         <PlatformToggle
                             key={key}

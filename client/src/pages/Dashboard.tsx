@@ -30,7 +30,7 @@ const Dashboard = () => {
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
 
                     {/* Messages Area */}
-                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:px-6 md:py-2 custom-scrollbar">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:px-2 md:py-2 custom-scrollbar">
                         <div className="flex flex-col gap-2 min-h-full">
                             <Suspense fallback={
                                 <div className="flex-1 flex items-center justify-center">
