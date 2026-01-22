@@ -7,7 +7,7 @@ export const PLATFORMS = {
         name: 'Twitch',
         Icon: FaTwitch,
         color: 'bg-[#9146FF]',
-        textColor: 'text-[#9146FF]',
+        textColor: 'text-[#772CE8] dark:text-[#A970FF]',
         iconColor: 'text-white',
         brandColor: '#9146FF'
     },
@@ -15,7 +15,7 @@ export const PLATFORMS = {
         name: 'YouTube',
         Icon: FaYoutube,
         color: 'bg-white',
-        textColor: 'text-[#FF0000]',
+        textColor: 'text-[#CD201F] dark:text-[#FF4B4B]',
         iconColor: 'text-[#FF0000]',
         brandColor: '#FF0000'
     },
@@ -23,7 +23,7 @@ export const PLATFORMS = {
         name: 'TikTok',
         Icon: FaTiktok,
         color: 'bg-black',
-        textColor: 'text-[#FF0050]',
+        textColor: 'text-[#FF0050] dark:text-[#ff2d6b]',
         iconColor: 'text-white',
         brandColor: '#FF0050'
     },
@@ -31,7 +31,7 @@ export const PLATFORMS = {
         name: 'Kick',
         Icon: SiKick,
         color: 'bg-[#53FC18]',
-        textColor: 'text-[#53FC18]',
+        textColor: 'text-[#1A7A08] dark:text-[#53FC18]',
         iconColor: 'text-black',
         brandColor: '#53FC18'
     },

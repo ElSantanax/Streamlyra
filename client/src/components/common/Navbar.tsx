@@ -36,11 +36,6 @@ const Navbar = () => {
 
     const navLinks = (
         <>
-            {isAuthPage ? (
-                <Link to="/#features" className="text-slate-600 dark:text-white/80 hover:text-primary text-sm font-medium transition-colors">Funciones</Link>
-            ) : (
-                <a href="#features" className="text-slate-600 dark:text-white/80 hover:text-primary text-sm font-medium transition-colors">Funciones</a>
-            )}
             <a href="#" className="text-slate-600 dark:text-white/80 hover:text-primary text-sm font-medium transition-colors">Comunidad</a>
         </>
     );
@@ -52,7 +47,7 @@ const Navbar = () => {
             </button>
         </Link>
     ) : (
-        <Link to="/register" className="w-full md:w-auto">
+        <Link to="/login" className="w-full md:w-auto">
             <button className="flex w-full md:min-w-32 cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
                 <span>Iniciar Sesión</span>
             </button>
@@ -115,7 +110,7 @@ const Navbar = () => {
                     <div className="flex items-center justify-between px-6 h-18 border-b border-surface-border/30">
                         <div className="flex items-center gap-3">
                             <Logo textSize="text-lg" showText={false} />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5">Menú</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Menú</span>
                         </div>
                         <button
                             onClick={() => setIsMenuOpen(false)}
@@ -127,15 +122,8 @@ const Navbar = () => {
 
                     <div className="flex flex-col p-6 gap-8 overflow-y-auto">
                         <nav className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 ml-2 opacity-60">Explorar</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Explorar</span>
                             <div className="flex flex-col gap-1.5">
-                                <div onClick={() => setIsMenuOpen(false)}>
-                                    {isAuthPage ? (
-                                        <Link to="/#features" className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Funciones</Link>
-                                    ) : (
-                                        <a href="#features" className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Funciones</a>
-                                    )}
-                                </div>
                                 <a href="#" onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Comunidad</a>
                             </div>
                         </nav>
@@ -143,7 +131,7 @@ const Navbar = () => {
                         <div className="h-px bg-surface-border/40 mx-2" />
 
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 ml-2 opacity-60">Personalización</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Personalización</span>
                             <button
                                 onClick={() => {
                                     setLang(prev => prev === 'es' ? 'en' : 'es');

@@ -1,5 +1,15 @@
-import { Sequelize } from "sequelize";
+import { Sequelize } from "sequelize-typescript";
+import dotenv from "dotenv";
 
-const db = new Sequelize(process.env.DATABASE_URL!);
+dotenv.config();
+
+import { User } from "../models/User.model";
+import { Connection } from "../models/Connection.model";
+
+const db = new Sequelize(process.env.DATABASE_URL!, {
+    dialect: "postgres",
+    logging: false,
+    models: [User, Connection], // Modelos explícitos = Menos errores
+});
 
 export default db;

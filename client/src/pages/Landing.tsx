@@ -3,7 +3,6 @@ import Navbar from '../components/common/Navbar';
 import Hero from '../components/landing/Hero';
 
 // Lazy load sections below the fold
-const Platforms = lazy(() => import('../components/landing/Platforms'));
 const Features = lazy(() => import('../components/landing/Features'));
 const Footer = lazy(() => import('../components/landing/Footer'));
 
@@ -14,9 +13,7 @@ const Landing = () => {
 
             <main className="flex-1">
                 <Hero />
-
                 <Suspense fallback={<div className="h-64 flex items-center justify-center opacity-50">Cargando secciones...</div>}>
-                    <Platforms />
                     <Features />
                 </Suspense>
             </main>

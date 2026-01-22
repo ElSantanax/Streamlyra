@@ -26,7 +26,7 @@ const PlatformConnection = () => {
                         <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mb-2">
                             Conecta tu comunidad
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
+                        <p className="text-slate-600 dark:text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
                             Unifica todos tus chats de streaming en una sola pantalla
                         </p>
                     </div>
@@ -46,11 +46,12 @@ const PlatformConnection = () => {
                                 iconColor="#9146FF"
                                 onClick={() => navigate('/dashboard')}
                                 className="w-full transition-colors duration-300"
+                                centered={true}
                             />
                         </div>
 
                         <div className="text-center">
-                            <p className="text-slate-400 dark:text-slate-500 text-sm leading-relaxed">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                                 Tu cuenta de Twitch será tu identidad en Streamlyra. Podrás agregar YouTube, Kick y TikTok después.
                             </p>
                         </div>
@@ -61,7 +62,7 @@ const PlatformConnection = () => {
 
                 {/* Bottom Help */}
                 <div className="mt-8 text-center relative z-10">
-                    <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
+                    <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 text-sm font-medium">
                         <span>¿Necesitas ayuda? <a className="text-primary hover:underline font-bold" href="#">Lee la guía</a></span>
                         <FaQuestionCircle className="text-primary" />
                     </div>

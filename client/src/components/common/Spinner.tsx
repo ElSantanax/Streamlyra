@@ -22,7 +22,7 @@ const Spinner = ({
         <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
             <div className={`${sizeClasses[size]} border-primary/20 border-t-primary rounded-full animate-spin`}></div>
             {text && (
-                <p className="text-sm font-medium animate-pulse text-slate-500 dark:text-slate-400">
+                <p className="text-sm font-medium animate-pulse text-slate-600 dark:text-slate-400">
                     {text}
                 </p>
             )}

@@ -10,8 +10,8 @@ interface UserBadgeProps {
 
 const UserBadge = ({ type }: UserBadgeProps) => {
     const config = {
-        sub: { label: 'Sub', color: 'bg-[#9146FF]/20 text-[#9146FF]' },
-        mod: { label: 'MOD', color: 'bg-[#00AD03]/20 text-[#00AD03]' }
+        sub: { label: 'Sub', color: 'bg-[#772CE8]/10 text-[#772CE8] dark:bg-[#A970FF]/15 dark:text-[#A970FF]' },
+        mod: { label: 'MOD', color: 'bg-[#1A7A08]/10 text-[#1A7A08] dark:bg-[#00AD03]/15 dark:text-[#00AD03]' }
     };
 
     const { label, color } = config[type];

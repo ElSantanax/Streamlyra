@@ -1,6 +1,9 @@
+import { FaTwitch, FaYoutube, FaTiktok } from 'react-icons/fa';
+import { SiKick } from 'react-icons/si';
+
 const Hero = () => {
     return (
-        <section className="relative pt-16 pb-24 px-6 lg:px-40 overflow-hidden">
+        <section className="relative pt-12 pb-16 md:pt-16 md:pb-24 px-6 lg:px-40 overflow-hidden">
             {/* Background Gradient Effect */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
                 <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-250 h-150 bg-primary/10 rounded-full blur-[120px]"></div>
@@ -9,11 +12,17 @@ const Hero = () => {
             <div className="mx-auto flex max-w-300 flex-col lg:flex-row items-center gap-12">
                 <div className="flex flex-col gap-8 flex-1 text-center lg:text-left">
                     <h1 className="text-slate-900 dark:text-white text-5xl md:text-7xl font-black leading-[1.1] tracking-[-0.04em] font-display">
-                        Gestiona tus chats en <span className="text-primary">un solo lugar</span>
+                        Un chat.<span className="text-primary"> Múltiples plataformas.</span>
                     </h1>
-                    <p className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-150 mx-auto lg:mx-0 font-body">
-                        Gestiona las conversaciones de Twitch, YouTube, Kick y TikTok desde un único panel inteligente. Herramientas profesionales para streamers que buscan crecer.
-                    </p>
+                    <div className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-150 mx-auto lg:mx-0 font-body flex flex-wrap items-center justify-center lg:justify-start gap-x-2 gap-y-1">
+                        <span>Ve</span>
+                        <span className="inline-flex items-center gap-1.5 text-[#772CE8] dark:text-[#A970FF] font-semibold"><FaTwitch className="size-5" /> Twitch,</span>
+                        <span className="inline-flex items-center gap-1.5 text-[#CD201F] dark:text-[#FF4B4B] font-semibold"><FaYoutube className="size-5" /> YouTube,</span>
+                        <span className="inline-flex items-center gap-1.5 text-[#1A7A08] dark:text-[#53FC18] font-semibold"><SiKick className="size-5" /> Kick</span>
+                        <span>y</span>
+                        <span className="inline-flex items-center gap-1.5 text-slate-900 dark:text-white font-semibold"><FaTiktok className="size-5" /> TikTok</span>
+                        <span>en tiempo real.</span>
+                    </div>
                 </div>
 
                 <div className="flex-1 w-full max-w-150 lg:max-w-none relative">
@@ -30,8 +39,8 @@ const Hero = () => {
                             <div className="flex flex-1 overflow-hidden">
                                 <div className="w-12 border-r border-gray-200 dark:border-white/5 flex flex-col items-center py-4 gap-4">
                                     <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-sm">dashboard</span></div>
-                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-500"><span className="material-symbols-outlined text-sm">chat</span></div>
-                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-500"><span className="material-symbols-outlined text-sm">analytics</span></div>
+                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400"><span className="material-symbols-outlined text-sm">chat</span></div>
+                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400"><span className="material-symbols-outlined text-sm">analytics</span></div>
                                 </div>
                                 <div className="flex-1 p-4 flex flex-col gap-4">
                                     <div className="h-8 w-1/3 bg-gray-100 dark:bg-white/5 rounded-lg"></div>

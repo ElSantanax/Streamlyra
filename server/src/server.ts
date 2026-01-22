@@ -16,6 +16,12 @@ connectToDatabase();
 
 const server = express();
 
+import authRoutes from './routes/auth.routes';
+
+server.use(express.json()); // Importante para leer req.body
+
+server.use('/api/auth', authRoutes);
+
 server.get('/api/status', (req, res) => {
     res.json({ status: 'ok', message: 'Streamlyra API esta funcionando' });
 });

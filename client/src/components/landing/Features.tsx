@@ -1,8 +1,8 @@
 const Features = () => {
     return (
-        <section id="features" className="py-24 px-6 lg:px-40">
+        <section id="features" className="py-12 md:py-24 px-6 lg:px-40">
             <div className="mx-auto max-w-300">
-                <div className="flex flex-col gap-4 mb-16 text-center">
+                <div className="flex flex-col gap-4 mb-10 md:mb-16 text-center">
                     <h2 className="text-slate-900 dark:text-white text-4xl md:text-5xl font-black tracking-tight font-display">Lleva tu streaming al siguiente nivel</h2>
                     <p className="text-slate-600 dark:text-slate-400 text-lg max-w-180 mx-auto font-body">Todo lo que necesitas para gestionar tu comunidad de forma eficiente y profesional sin cambiar de pestaña.</p>
                 </div>

@@ -10,6 +10,7 @@ interface PlatformButtonProps {
     onClick?: () => void;
     className?: string;
     isConnected?: boolean;
+    centered?: boolean;
 }
 
 const PlatformButton = ({
@@ -19,13 +20,14 @@ const PlatformButton = ({
     iconColor,
     onClick,
     className = '',
-    isConnected = false
+    isConnected = false,
+    centered = false
 }: PlatformButtonProps) => {
     return (
         <button
             onClick={onClick}
             disabled={isConnected}
-            className={`group relative flex items-center justify-start gap-4 bg-transparent border-2 rounded-2xl transition-all duration-300 ${!isConnected ? 'active:scale-[0.98] cursor-pointer' : 'cursor-default'} w-full py-4 px-6 ${className} ${isConnected ? 'border-green-500/50 bg-green-500/5' : ''}`}
+            className={`group relative flex items-center ${centered ? 'justify-center' : 'justify-start'} gap-4 bg-transparent border-2 rounded-2xl transition-all duration-300 ${!isConnected ? 'active:scale-[0.98] cursor-pointer' : 'cursor-default'} w-full py-4 px-6 ${className} ${isConnected ? 'border-green-500/50 bg-green-500/5' : ''}`}
             style={{
                 borderColor: isConnected ? undefined : `${iconColor}33`,
                 backgroundColor: isConnected ? undefined : 'transparent',
@@ -44,8 +46,8 @@ const PlatformButton = ({
                 />
             </div>
 
-            <div className="flex flex-col items-start text-left min-w-0">
-                <div className="flex items-center gap-2 w-full">
+            <div className={`flex flex-col ${centered ? 'items-center text-center' : 'items-start text-left'} min-w-0`}>
+                <div className={`flex items-center gap-2 w-full ${centered ? 'justify-center' : ''}`}>
                     <span
                         className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate"
                     >
@@ -58,7 +60,7 @@ const PlatformButton = ({
                     )}
                 </div>
                 {subtext && (
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">
+                    <span className="text-slate-600 dark:text-slate-400 text-[11px] font-medium">
                         {subtext}
                     </span>
                 )}
