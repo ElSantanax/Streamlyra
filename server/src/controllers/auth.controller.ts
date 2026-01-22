@@ -118,3 +118,53 @@ export const twitchAuth = async (req: Request, res: Response): Promise<void> => 
         res.status(500).json({ error: 'Error al autenticar con Twitch' });
     }
 };
+
+export const devLogin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Buscar o crear usuario de prueba
+        const [user] = await User.findOrCreate({
+            where: { username: 'devuser' },
+            defaults: {
+                username: 'devuser',
+                displayName: 'Desarrollador (Test)',
+                avatarUrl: 'https://ui-avatars.com/api/?name=Dev+User&background=random',
+                email: 'dev@test.com'
+            }
+        });
+
+        // Asegurarnos de que tenga una conexión "falsa" de Twitch para pruebas
+        await Connection.findOrCreate({
+            where: {
+                provider: 'twitch',
+                userId: user.id
+            },
+            defaults: {
+                provider: 'twitch',
+                providerId: '123456789', // ID falso de Twitch
+                accessToken: 'mock_access_token',
+                refreshToken: 'mock_refresh_token',
+                userId: user.id
+            }
+        });
+
+        const token = jwt.sign(
+            { id: user.id, username: user.username },
+            process.env.JWT_SECRET || 'secret_super_seguro_dev',
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                displayName: user.displayName,
+                avatar: user.avatarUrl
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en Dev Login:', error);
+        res.status(500).json({ error: 'Error al crear usuario de prueba' });
+    }
+};

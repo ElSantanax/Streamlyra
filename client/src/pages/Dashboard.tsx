@@ -1,25 +1,86 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 import Overlay from '../components/common/Overlay';
+import { socket } from '../services/socket';
+import type { ChatMessageProps } from '../components/dashboard/ChatMessage';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
 const ChatMessage = lazy(() => import('../components/dashboard/ChatMessage'));
 const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
-
-import { SAMPLE_MESSAGES } from '../constants/sampleData';
 
 const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
 
 const Dashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+    const [isConnected, setIsConnected] = useState(socket.connected);
+    const [messages, setMessages] = useState<(ChatMessageProps & { id?: string })[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll al fondo cuando llegan mensajes nuevos
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        // Obtenemos el usuario guardado para identificarnos
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+
+        if (!user) return; // Si no hay usuario, no conectamos socket
+
+        // Conectar al socket al montar el dashboard
+        if (!socket.connected) {
+            socket.connect();
+        }
+
+        function onConnect() {
+            setIsConnected(true);
+            // Decirle al backend quiénes somos
+            socket.emit('identify', user.id);
+        }
+
+        function onDisconnect() {
+            setIsConnected(false);
+        }
+
+        function onChatMessage(msg: ChatMessageProps & { id?: string }) {
+            setMessages(prev => {
+                // Limitamos el historial en pantalla a 100 mensajes para rendimiento
+                if (prev.length > 100) {
+                    return [...prev.slice(1), msg];
+                }
+                return [...prev, msg];
+            });
+        }
+
+        // Listeners
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('chat_message', onChatMessage);
+
+        // Si ya estaba conectado de antes
+        if (socket.connected) {
+            onConnect();
+        }
+
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('chat_message', onChatMessage);
+            // No desconectamos al desmontar para navegación fluida
+        };
+    }, []);
 
     return (
         <div className="page-base h-screen overflow-hidden">
             <DashboardHeader
                 onMenuClick={() => setIsSidebarOpen(true)}
                 onAddPlatform={() => setIsAddPlatformOpen(true)}
+                isConnected={isConnected}
             />
 
             <div className="flex flex-1 overflow-hidden relative">
@@ -69,10 +130,12 @@ const Dashboard = () => {
                                     <Spinner size="md" />
                                 </div>
                             }>
-                                {SAMPLE_MESSAGES.length > 0 ? (
-                                    SAMPLE_MESSAGES.map((msg, idx) => (
-                                        <ChatMessage key={idx} {...msg} />
-                                    ))
+                                {messages.length > 0 ? (
+                                    <div className="flex flex-col gap-2">
+                                        {messages.map((msg, idx) => (
+                                            <ChatMessage key={msg.id || idx} {...msg} />
+                                        ))}
+                                    </div>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 select-none pb-20">
                                         <div className="bg-surface-dark p-6 rounded-full mb-4 ring-4 ring-surface-border animate-pulse">
@@ -80,12 +143,15 @@ const Dashboard = () => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                             </svg>
                                         </div>
-                                        <h3 className="text-xl font-bold text-white mb-2">Todo está muy tranquilo...</h3>
+                                        <h3 className="text-xl font-bold text-white mb-2">Conectado al servidor</h3>
                                         <p className="text-gray-400 max-w-xs mx-auto">
-                                            Esperando el primer mensaje para comenzar la conversación.
+                                            {isConnected
+                                                ? "Esperando mensajes..."
+                                                : "Conectando..."}
                                         </p>
                                     </div>
                                 )}
+                                <div ref={messagesEndRef} />
                             </Suspense>
                         </div>
                     </div>

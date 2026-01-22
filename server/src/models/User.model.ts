@@ -16,26 +16,26 @@ export class User extends Model {
         type: DataType.STRING,
         allowNull: false
     })
-    username!: string;
+    declare username: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true
     })
-    displayName!: string;
+    declare displayName: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true
     })
-    email!: string;
+    declare email: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true
     })
-    avatarUrl!: string;
+    declare avatarUrl: string;
 
     @HasMany(() => Connection)
-    connections!: Connection[];
+    declare connections: Connection[];
 }

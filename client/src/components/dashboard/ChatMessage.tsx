@@ -25,7 +25,7 @@ const UserBadge = ({ type }: UserBadgeProps) => {
 
 // --- Main ChatMessage Component ---
 
-interface ChatMessageProps {
+export interface ChatMessageProps {
     user: string;
     message: string;
     time: string;

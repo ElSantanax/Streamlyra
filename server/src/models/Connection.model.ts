@@ -15,37 +15,37 @@ export class Connection extends Model {
         type: DataType.STRING,
         allowNull: false
     })
-    provider!: string; // Ej: 'twitch', 'youtube', 'kick'
+    declare provider: string; // Ej: 'twitch', 'youtube', 'kick'
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    providerId!: string; // El ID único del usuario en esa plataforma (ej: '12345678')
+    declare providerId: string; // El ID único del usuario en esa plataforma (ej: '12345678')
 
     @Column({
         type: DataType.TEXT, // TEXT porque los tokens pueden ser muy largos
         allowNull: false
     })
-    accessToken!: string;
+    declare accessToken: string;
 
     @Column({
         type: DataType.TEXT,
         allowNull: true
     })
-    refreshToken!: string;
+    declare refreshToken: string;
 
     @Column({
         type: DataType.DATE,
         allowNull: true
     })
-    expiryDate!: Date; // Para saber cuándo renovar el token
+    declare expiryDate: Date; // Para saber cuándo renovar el token
 
     // Relación con User
     @ForeignKey(() => User)
     @Column(DataType.UUID)
-    userId!: string;
+    declare userId: string;
 
     @BelongsTo(() => User)
-    user!: User;
+    declare user: User;
 }

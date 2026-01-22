@@ -57,6 +57,27 @@ const PlatformConnection = () => {
                         </div>
 
 
+
+                        <div className="text-center pt-4">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch('/api/auth/dev-login', { method: 'POST' });
+                                        const data = await res.json();
+                                        if (data.token) {
+                                            localStorage.setItem('token', data.token);
+                                            localStorage.setItem('user', JSON.stringify(data.user));
+                                            navigate('/dashboard');
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                }}
+                                className="text-xs text-gray-400 hover:text-primary underline cursor-pointer"
+                            >
+                                [Modo Desarrollo: Entrar sin Twitch]
+                            </button>
+                        </div>
                     </div>
                 </div>
 

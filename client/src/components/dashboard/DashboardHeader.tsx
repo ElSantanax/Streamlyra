@@ -6,9 +6,10 @@ import Logo from '../common/Logo';
 interface DashboardHeaderProps {
     onMenuClick?: () => void;
     onAddPlatform?: () => void;
+    isConnected?: boolean;
 }
 
-const DashboardHeader = ({ onMenuClick, onAddPlatform }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState('es');
@@ -44,6 +45,18 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform }: DashboardHeaderProps) =
                 <Link to="/" className="transition-opacity hover:opacity-80">
                     <Logo textSize="text-xl" />
                 </Link>
+
+                {/* Connection Status Indicator */}
+                <div
+                    className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${isConnected
+                        ? 'bg-green-500/10 border-green-500/20 text-green-500'
+                        : 'bg-red-500/10 border-red-500/20 text-red-500'
+                        }`}
+                    title={isConnected ? "Conectado al servidor de chat" : "Desconectado"}
+                >
+                    <div className={`size-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span className="hidden sm:inline">{isConnected ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
             </div>
 
             <div className="flex items-center gap-3">
