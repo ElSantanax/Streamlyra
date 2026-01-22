@@ -1,158 +1,114 @@
 import { Request, Response } from 'express';
-import axios from 'axios';
-import jwt from 'jsonwebtoken';
 import { User } from '../models/User.model';
 import { Connection } from '../models/Connection.model';
+import { AuthService } from '../services/AuthService';
+import { ExternalPlatformService } from '../services/ExternalPlatformService';
+import { AuthRequest } from '../middleware/auth.middleware';
 
-export const twitchAuth = async (req: Request, res: Response): Promise<void> => {
+export const twitchAuth = async (req: AuthRequest, res: Response): Promise<void> => {
     const { code } = req.body;
-
     if (!code) {
         res.status(400).json({ error: 'Falta el código de autorización' });
         return;
     }
 
     try {
-        // 1. Intercambiar el código por un access_token de Twitch
-        const tokenResponse = await axios.post('https://id.twitch.tv/oauth2/token', null, {
-            params: {
-                client_id: process.env.TWITCH_CLIENT_ID,
-                client_secret: process.env.TWITCH_CLIENT_SECRET,
-                code,
-                grant_type: 'authorization_code',
-                redirect_uri: process.env.TWITCH_REDIRECT_URI // Debe coincidir EXACTAMENTE con el de la consola de Twitch
-            }
+        const { profile, tokens } = await ExternalPlatformService.getTwitchData(code);
+        const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
+        res.json(result);
+    } catch (error: any) {
+        console.error('Error Twitch Auth:', error.message);
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const youtubeAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { code } = req.body;
+    if (!code) {
+        res.status(400).json({ error: 'Falta el código de autorización' });
+        return;
+    }
+
+    try {
+        const { profile, tokens } = await ExternalPlatformService.getYouTubeData(code);
+        const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
+        res.json(result);
+    } catch (error: any) {
+        console.error('Error YouTube Auth:', error.message);
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+    }
+
+    try {
+        const user = await User.findByPk(req.user.id, {
+            include: [{ model: Connection, attributes: ['provider'] }]
         });
 
-        const { access_token, refresh_token, expires_in } = tokenResponse.data;
-
-        // 2. Obtener los datos del usuario de Twitch usando el token
-        const userResponse = await axios.get('https://api.twitch.tv/helix/users', {
-            headers: {
-                'Client-ID': process.env.TWITCH_CLIENT_ID,
-                'Authorization': `Bearer ${access_token}`
-            }
-        });
-
-        const twitchUser = userResponse.data.data[0];
-
-        // 3. Buscar si YA existe una conexión con este ID de Twitch
-        let connection = await Connection.findOne({
-            where: { provider: 'twitch', providerId: twitchUser.id },
-            include: [User]
-        });
-
-        let user;
-
-        if (connection) {
-            // == USUARIO EXISTENTE ==
-            console.log('Usuario existente encontrado:', twitchUser.display_name);
-            user = connection.user;
-
-            // Actualizamos los tokens por si han cambiado
-            connection.accessToken = access_token;
-            connection.refreshToken = refresh_token;
-            // calcular fecha de expiración (expires_in son segundos)
-            const expiryDate = new Date();
-            expiryDate.setSeconds(expiryDate.getSeconds() + expires_in);
-            connection.expiryDate = expiryDate;
-
-            await connection.save();
-
-            // Opcional: Actualizar datos del perfil si cambiaron en Twitch
-            if (user.avatarUrl !== twitchUser.profile_image_url || user.displayName !== twitchUser.display_name) {
-                user.avatarUrl = twitchUser.profile_image_url;
-                user.displayName = twitchUser.display_name;
-                await user.save();
-            }
-
-        } else {
-            // == USUARIO NUEVO ==
-            console.log('Creando nuevo usuario para:', twitchUser.display_name);
-
-            // Transacción: Crear Usuario Y Conexión, o ninguno.
-            // Nota: Sequelize maneja transacciones, pero por simplicidad primero creamos User y luego Connection
-
-            // Primero verificamos si existe un usuario con ese username (raro pero posible si permitimos registro por email luego)
-            user = await User.create({
-                username: twitchUser.login, // login es el username único en minúsculas
-                displayName: twitchUser.display_name,
-                avatarUrl: twitchUser.profile_image_url,
-                email: twitchUser.email // Solo viene si pedimos scope 'user:read:email'
-            });
-
-            // Creamos la conexión
-            const expiryDate = new Date();
-            expiryDate.setSeconds(expiryDate.getSeconds() + expires_in);
-
-            connection = await Connection.create({
-                provider: 'twitch',
-                providerId: twitchUser.id,
-                accessToken: access_token,
-                refreshToken: refresh_token,
-                expiryDate: expiryDate,
-                userId: user.id
-            });
+        if (!user) {
+            res.status(404).json({ error: 'Usuario no encontrado' });
+            return;
         }
 
-        // 4. Generar Token JWT para NUESTRO frontend
-        const token = jwt.sign(
-            { id: user.id, username: user.username },
-            process.env.JWT_SECRET || 'secret_super_seguro_dev', // TODO: Poner en .env
-            { expiresIn: '7d' }
-        );
-
-        // 5. Responder al frontend con el token y datos usuario
         res.json({
-            token,
             user: {
                 id: user.id,
                 username: user.username,
                 displayName: user.displayName,
                 avatar: user.avatarUrl
-            }
+            },
+            connections: user.connections.reduce((acc: any, conn) => {
+                acc[conn.provider] = true;
+                return acc;
+            }, { twitch: false, youtube: false, kick: false, tiktok: false })
         });
+    } catch (error) {
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+};
 
-    } catch (error: any) {
-        console.error('Error en autenticación Twitch:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Error al autenticar con Twitch' });
+export const disconnectPlatform = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { provider } = req.body;
+    if (!req.user || !provider) {
+        res.status(400).json({ error: 'Faltan datos requeridos' });
+        return;
+    }
+
+    try {
+        await Connection.destroy({ where: { userId: req.user.id, provider } });
+        res.json({ success: true, message: `${provider} desconectado` });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al desconectar' });
     }
 };
 
 export const devLogin = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Buscar o crear usuario de prueba
         const [user] = await User.findOrCreate({
             where: { username: 'devuser' },
             defaults: {
                 username: 'devuser',
                 displayName: 'Desarrollador (Test)',
-                avatarUrl: 'https://ui-avatars.com/api/?name=Dev+User&background=random',
-                email: 'dev@test.com'
+                avatarUrl: 'https://ui-avatars.com/api/?name=Dev+User&background=random'
             }
         });
 
-        // Asegurarnos de que tenga una conexión "falsa" de Twitch para pruebas
         await Connection.findOrCreate({
-            where: {
-                provider: 'twitch',
-                userId: user.id
-            },
+            where: { provider: 'twitch', userId: user.id },
             defaults: {
                 provider: 'twitch',
-                providerId: '123456789', // ID falso de Twitch
-                accessToken: 'mock_access_token',
-                refreshToken: 'mock_refresh_token',
+                providerId: '123456789',
+                accessToken: 'mock_token',
                 userId: user.id
             }
         });
 
-        const token = jwt.sign(
-            { id: user.id, username: user.username },
-            process.env.JWT_SECRET || 'secret_super_seguro_dev',
-            { expiresIn: '7d' }
-        );
-
+        const token = AuthService.generateToken(user);
         res.json({
             token,
             user: {
@@ -162,9 +118,7 @@ export const devLogin = async (req: Request, res: Response): Promise<void> => {
                 avatar: user.avatarUrl
             }
         });
-
     } catch (error) {
-        console.error('Error en Dev Login:', error);
-        res.status(500).json({ error: 'Error al crear usuario de prueba' });
+        res.status(500).json({ error: 'Error en Dev Login' });
     }
 };

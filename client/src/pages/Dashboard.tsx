@@ -75,6 +75,65 @@ const Dashboard = () => {
         };
     }, []);
 
+    const [userConnections, setUserConnections] = useState({
+        twitch: false,
+        youtube: false,
+        tiktok: false,
+        kick: false
+    });
+
+    // Cargar perfil y conexiones
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            if (!user) return;
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'x-user-id': user.id // Temporal hasta tener middleware de JWT
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserConnections(data.connections);
+                }
+            } catch (error) {
+                console.error('Error fetching connections:', error);
+            }
+        };
+
+        fetchUserData();
+    }, [isAddPlatformOpen]); // Re-fetch al cerrar/abrir modal por si hubo cambios
+
+    const handleDisconnect = async (provider: string) => {
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (!user) return;
+
+        try {
+            const response = await fetch('/api/auth/platform', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': user.id
+                },
+                body: JSON.stringify({ provider })
+            });
+
+            if (response.ok) {
+                // Actualizar estado local inmediatamente
+                setUserConnections(prev => ({
+                    ...prev,
+                    [provider]: false
+                }));
+            }
+        } catch (error) {
+            console.error('Error disconnecting platform:', error);
+        }
+    };
+
     return (
         <div className="page-base h-screen overflow-hidden">
             <DashboardHeader
@@ -116,6 +175,8 @@ const Dashboard = () => {
                                 setIsAddPlatformOpen(true);
                                 setIsSidebarOpen(false); // Close sidebar on mobile after clicking
                             }}
+                            connections={userConnections}
+                            onDisconnect={handleDisconnect}
                         />
                     </div>
                 </Suspense>
@@ -167,6 +228,7 @@ const Dashboard = () => {
                     <AddPlatformModal
                         isOpen={isAddPlatformOpen}
                         onClose={() => setIsAddPlatformOpen(false)}
+                        connections={userConnections}
                     />
                 </Suspense>
             )}

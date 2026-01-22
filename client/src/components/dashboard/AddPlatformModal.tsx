@@ -19,8 +19,8 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     isOpen,
     onClose,
     connections = {
-        twitch: true,
-        youtube: true,
+        twitch: false,
+        youtube: false,
         tiktok: false,
         kick: false
     }
@@ -73,10 +73,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-surface-border bg-surface-dark">
                     <h2 className="text-lg font-bold text-white">Agregar Plataforma</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-1 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
-                    >
+                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5 cursor-pointer">
                         <MdClose size={20} />
                     </button>
                 </div>
@@ -88,6 +85,33 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                         .map(([key, platform]) => {
                             const platformKey = key as keyof typeof connections;
                             const isConnected = connections[platformKey];
+
+                            const handleConnect = () => {
+                                if (isConnected) return;
+
+                                if (key === 'twitch') {
+                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
+                                    const redirectUri = `${window.location.origin}/auth/callback`;
+                                    if (!clientId) {
+                                        alert('Falta VITE_TWITCH_CLIENT_ID en .env');
+                                        return;
+                                    }
+                                    const scope = 'user:read:chat user:write:chat user:read:email';
+                                    window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
+                                }
+
+                                if (key === 'youtube') {
+                                    const clientId = import.meta.env.VITE_YOUTUBE_CLIENT_ID;
+                                    const redirectUri = `${window.location.origin}/auth/callback`;
+                                    if (!clientId) {
+                                        alert('Falta VITE_YOUTUBE_CLIENT_ID en .env');
+                                        return;
+                                    }
+                                    const scope = 'https://www.googleapis.com/auth/youtube.readonly email profile';
+                                    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=youtube`;
+                                }
+                            };
+
                             return (
                                 <PlatformButton
                                     key={key}
@@ -95,7 +119,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                     subtext={isConnected ? "Cuenta vinculada exitosamente" : `Vincula tu cuenta de ${platform.name}`}
                                     Icon={platform.Icon}
                                     iconColor={platform.brandColor}
-                                    onClick={() => !isConnected && {}}
+                                    onClick={handleConnect}
                                     isConnected={isConnected}
                                     className="bg-surface-dark hover:bg-surface-dark/80"
                                 />

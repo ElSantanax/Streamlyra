@@ -32,19 +32,31 @@ const AuthCallback = () => {
         }
 
         if (code) {
+            // Verificar state para saber provider, fallback a twitch si no hay state (retrocompatibilidad)
+            const state = searchParams.get('state') || 'twitch';
+            const endpoint = state === 'youtube' ? '/api/auth/youtube' : '/api/auth/twitch';
+
             // Intercambiar código por token con NUESTRO backend
             const authenticate = async () => {
                 try {
-                    const response = await fetch('/api/auth/twitch', {
+                    const token = localStorage.getItem('token');
+                    const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                    };
+
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(endpoint, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers,
                         body: JSON.stringify({ code }),
                     });
 
                     if (!response.ok) {
-                        throw new Error('Error en la autenticación con el servidor');
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || 'Error en la autenticación con el servidor');
                     }
 
                     const data: AuthResponse = await response.json();
@@ -56,9 +68,11 @@ const AuthCallback = () => {
                     // Éxito: Ir al dashboard
                     navigate('/dashboard');
 
-                } catch (err) {
+                } catch (err: unknown) {
                     console.error('Fallo al completar el login:', err);
-                    navigate('/login');
+                    const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
+                    alert(errorMessage);
+                    navigate('/dashboard'); // Volver al dashboard en vez de login si ya estaba ahí
                 }
             };
 

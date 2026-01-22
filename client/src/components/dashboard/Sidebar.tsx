@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
-import { MdDeleteSweep, MdDeleteOutline, MdOutlineVisibility } from 'react-icons/md';
+import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
 
@@ -61,7 +61,12 @@ const ConnectionItem = ({
             </div>
             {isConnected ? (
                 <button
-                    onClick={(e) => { e.stopPropagation(); onDisconnect?.(); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`¿Estás seguro de desconectar ${name}?`)) {
+                            onDisconnect?.();
+                        }
+                    }}
                     className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
                     title="Desconectar"
                 >
@@ -92,9 +97,21 @@ const StatCard = ({ label, value, valueColor = "text-white", className = "" }: S
 interface SidebarProps {
     onMobileClose?: () => void;
     onAddPlatform?: () => void;
+    connections: {
+        twitch: boolean;
+        youtube: boolean;
+        kick: boolean;
+        tiktok: boolean;
+    };
+    onDisconnect: (platform: PlatformKey) => void;
 }
 
-const Sidebar = ({ onMobileClose, onAddPlatform }: SidebarProps) => {
+const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: SidebarProps) => {
+
+    // Solo mostramos las plataformas que están conectadas
+    const connectedPlatforms = Object.entries(connections)
+        .filter(([, isConnected]) => isConnected)
+        .map(([key]) => key as PlatformKey);
 
     return (
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
@@ -108,20 +125,23 @@ const Sidebar = ({ onMobileClose, onAddPlatform }: SidebarProps) => {
                     <FaTimes size={18} />
                 </button>
             </div>
+
             <SidebarSection title="Conexiones">
-                {[
-                    { key: 'twitch', status: 'connected', viewers: '850' },
-                    { key: 'youtube', status: 'connected', viewers: '320' },
-                    { key: 'tiktok', status: 'connected', viewers: '70' },
-                    { key: 'kick', status: 'disconnected' }
-                ].map((conn) => (
-                    <ConnectionItem
-                        key={conn.key}
-                        platformKey={conn.key as PlatformKey}
-                        status={conn.status as 'connected' | 'disconnected'}
-                        viewers={conn.viewers}
-                    />
-                ))}
+                {connectedPlatforms.length > 0 ? (
+                    connectedPlatforms.map((key) => (
+                        <ConnectionItem
+                            key={key}
+                            platformKey={key}
+                            status="connected"
+                            viewers={key === 'twitch' ? '850' : key === 'youtube' ? '320' : undefined}
+                            onDisconnect={() => onDisconnect(key)}
+                        />
+                    ))
+                ) : (
+                    <div className="p-4 text-center border border-dashed border-surface-border rounded-lg bg-surface-dark/30">
+                        <p className="text-xs text-gray-500">No hay plataformas conectadas</p>
+                    </div>
+                )}
 
                 <button
                     onClick={onAddPlatform}
@@ -137,8 +157,8 @@ const Sidebar = ({ onMobileClose, onAddPlatform }: SidebarProps) => {
 
             <SidebarSection title="Analíticas en Vivo">
                 <div className="grid grid-cols-1 gap-3">
-                    <StatCard label="Espectadores Totales" value="1,240" />
-                    <StatCard label="Tiempo al Aire" value="12h 14m 29s" />
+                    <StatCard label="Espectadores Totales" value={connectedPlatforms.length > 0 ? "1,170" : "0"} />
+                    <StatCard label="Tiempo al Aire" value="00h 00m 00s" />
                 </div>
             </SidebarSection>
 

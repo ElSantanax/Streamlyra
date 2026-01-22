@@ -54,9 +54,9 @@ io.on('connection', (socket) => {
 
     // El cliente debe enviarnos quién es (su ID de usuario) al conectarse
     socket.on('identify', async (userId: string) => {
-        console.log(colors.cyan(`🆔 IDENTIFY recibido - UserId: ${userId} | SocketId: ${socket.id}`));
+        console.log(colors.cyan(`IDENTIFY recibido - UserId: ${userId} | SocketId: ${socket.id}`));
         socket.join(userId);
-        console.log(colors.green(`✅ Socket unido a sala: ${userId}`));
+        console.log(colors.green(`Socket unido a sala: ${userId}`));
 
         // Iniciamos la escucha de Twitch
         await chatManager.connectUser(userId, socket.id);
