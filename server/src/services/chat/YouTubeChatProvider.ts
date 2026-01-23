@@ -25,10 +25,29 @@ interface YouTubeChatMessage {
         profileImageUrl: string;
         isChatModerator: boolean;
         isChatOwner: boolean;
+        isVerified: boolean;
+        isChatSponsor: boolean;
     };
     snippet: {
+        type: string;
         displayMessage: string;
         publishedAt: string;
+        superChatDetails?: {
+            amountDisplayString: string;
+            userComment: string;
+        };
+        newMemberDetails?: {
+            memberLevelName: string;
+        };
+        membershipGiftingDetails?: {
+            giftMembershipsCount: number;
+            giftMembershipsLevelName: string;
+        };
+        memberMilestoneChatDetails?: {
+            userComment: string;
+            memberLevelName: string;
+            memberMonth: number;
+        };
     };
 }
 
@@ -112,15 +131,44 @@ export class YouTubeChatProvider implements ChatProvider {
                     items.forEach((item: YouTubeChatMessage) => {
                         if (seenIds.has(item.id)) return;
 
+                        let specialMessage: string | undefined;
+                        let displayMessage = item.snippet.displayMessage;
+                        let isSub = false;
+
+                        // Detectar eventos especiales
+                        switch (item.snippet.type) {
+                            case 'superChatEvent':
+                                specialMessage = `¡DONACIÓN DE ${item.snippet.superChatDetails?.amountDisplayString}! 💰`;
+                                displayMessage = item.snippet.superChatDetails?.userComment || '';
+                                break;
+                            case 'newMemberEvent':
+                                specialMessage = `¡NUEVO MIEMBRO: ${item.snippet.newMemberDetails?.memberLevelName}! 💎`;
+                                isSub = true;
+                                break;
+                            case 'memberMilestoneChatEvent': {
+                                const months = item.snippet.memberMilestoneChatDetails?.memberMonth;
+                                specialMessage = `¡MIEMBRO POR ${months} ${months === 1 ? 'MES' : 'MESES'}! 🔥`;
+                                displayMessage = item.snippet.memberMilestoneChatDetails?.userComment || '';
+                                isSub = true;
+                                break;
+                            }
+                            case 'membershipGiftingEvent':
+                                specialMessage = `¡HA REGALADO ${item.snippet.membershipGiftingDetails?.giftMembershipsCount} MEMBRESÍAS! 🎁`;
+                                break;
+                        }
+
                         const chatMessage = {
                             id: item.id,
                             platform: 'youtube',
                             user: item.authorDetails.displayName,
-                            message: item.snippet.displayMessage,
+                            message: displayMessage,
+                            specialMessage,
                             time: new Date(item.snippet.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             avatar: item.authorDetails.profileImageUrl,
                             isMod: item.authorDetails.isChatModerator,
-                            isOwner: item.authorDetails.isChatOwner
+                            isOwner: item.authorDetails.isChatOwner,
+                            isSub: isSub || item.authorDetails.isChatSponsor,
+                            isVIP: item.authorDetails.isVerified
                         };
 
                         seenIds.add(item.id);

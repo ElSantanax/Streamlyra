@@ -7,27 +7,22 @@ import PlatformInput from '../connection/PlatformInput';
 interface AddPlatformModalProps {
     isOpen: boolean;
     onClose: () => void;
-    connections?: {
-        twitch: boolean;
-        youtube: boolean;
-        kick: boolean;
-        tiktok: boolean;
-    };
+    connections?: Record<string, { connected: boolean; username?: string }>;
 }
 
 const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     isOpen,
     onClose,
     connections = {
-        twitch: false,
-        youtube: false,
-        tiktok: false,
-        kick: false
+        twitch: { connected: false },
+        youtube: { connected: false },
+        tiktok: { connected: false },
+        kick: { connected: false }
     }
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const [tiktokUsername, setTiktokUsername] = useState('');
-    const [isTiktokConnected, setIsTiktokConnected] = useState(connections?.tiktok ?? false);
+    const [isTiktokConnected, setIsTiktokConnected] = useState(connections?.tiktok?.connected ?? false);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -83,14 +78,13 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                     {Object.entries(PLATFORMS)
                         .filter(([key]) => key !== 'system' && key !== 'tiktok')
                         .map(([key, platform]) => {
-                            const platformKey = key as keyof typeof connections;
-                            const isConnected = connections[platformKey];
+                            const isConnected = !!connections[key]?.connected;
 
                             const handleConnect = () => {
                                 if (isConnected) return;
 
                                 if (key === 'twitch') {
-                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
+                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
                                     const redirectUri = `${window.location.origin}/auth/callback`;
                                     if (!clientId) {
                                         alert('Falta VITE_TWITCH_CLIENT_ID en .env');
@@ -101,7 +95,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                 }
 
                                 if (key === 'youtube') {
-                                    const clientId = import.meta.env.VITE_YOUTUBE_CLIENT_ID;
+                                    const clientId = import.meta.env.VITE_YOUTUBE_CLIENT_ID as string;
                                     const redirectUri = `${window.location.origin}/auth/callback`;
                                     if (!clientId) {
                                         alert('Falta VITE_YOUTUBE_CLIENT_ID en .env');

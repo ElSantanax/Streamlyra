@@ -50,13 +50,31 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 
     try {
         const user = await User.findByPk(req.user.id, {
-            include: [{ model: Connection, attributes: ['provider'] }]
+            include: [{ model: Connection, attributes: ['provider', 'providerUsername'] }]
         });
 
         if (!user) {
             res.status(404).json({ error: 'Usuario no encontrado' });
             return;
         }
+
+        interface ConnectionInfo {
+            connected: boolean;
+            username?: string;
+        }
+
+        const connections = user.connections.reduce((acc: Record<string, ConnectionInfo>, conn) => {
+            acc[conn.provider] = {
+                connected: true,
+                username: conn.providerUsername
+            };
+            return acc;
+        }, {
+            twitch: { connected: false },
+            youtube: { connected: false },
+            kick: { connected: false },
+            tiktok: { connected: false }
+        });
 
         res.json({
             user: {
@@ -65,10 +83,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
                 displayName: user.displayName,
                 avatar: user.avatarUrl
             },
-            connections: user.connections.reduce((acc: Record<string, boolean>, conn) => {
-                acc[conn.provider] = true;
-                return acc;
-            }, { twitch: false, youtube: false, kick: false, tiktok: false })
+            connections
         });
     } catch {
         res.status(500).json({ error: 'Error del servidor' });

@@ -5,19 +5,38 @@ import type { PlatformKey } from '../../constants/platforms';
 // --- Local Components (KISS: Co-located) ---
 
 interface UserBadgeProps {
-    type: 'sub' | 'mod';
+    type: 'sub' | 'mod' | 'vip' | 'streamer';
+    platform: PlatformKey;
 }
 
-const UserBadge = ({ type }: UserBadgeProps) => {
+const UserBadge = ({ type, platform }: UserBadgeProps) => {
+    const isYouTube = platform === 'youtube';
+
     const config = {
-        sub: { label: 'Sub', color: 'bg-[#772CE8]/10 text-[#772CE8] dark:bg-[#A970FF]/15 dark:text-[#A970FF]' },
-        mod: { label: 'MOD', color: 'bg-[#1A7A08]/10 text-[#1A7A08] dark:bg-[#00AD03]/15 dark:text-[#00AD03]' }
+        sub: {
+            label: isYouTube ? 'Miembro' : 'Sub',
+            color: isYouTube
+                ? 'bg-[#00E5FF]/10 text-[#00E5FF] dark:bg-[#00E5FF]/15 dark:text-[#00E5FF]' // Cyan para YT Members
+                : 'bg-[#772CE8]/10 text-[#772CE8] dark:bg-[#A970FF]/15 dark:text-[#A970FF]'  // Morado para Twitch
+        },
+        mod: {
+            label: 'MOD',
+            color: 'bg-[#00AD03]/10 text-[#00AD03] dark:bg-[#00AD03]/15 dark:text-[#00AD03]' // Verde standard
+        },
+        vip: {
+            label: isYouTube ? 'Verificado' : 'VIP',
+            color: 'bg-[#FF4081]/10 text-[#FF4081] dark:bg-[#FF4081]/15 dark:text-[#FF4081]' // Rosa/Fucsia
+        },
+        streamer: {
+            label: 'Streamer',
+            color: 'bg-[#FF0000]/10 text-[#FF0000] dark:bg-[#FF0000]/15 dark:text-[#FF0000]' // Rojo puro
+        }
     };
 
     const { label, color } = config[type];
 
     return (
-        <span className={`${color} text-[11px] px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider`}>
+        <span className={`${color} text-[10px] md:text-[11px] px-1.5 md:px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider`}>
             {label}
         </span>
     );
@@ -32,6 +51,8 @@ export interface ChatMessageProps {
     platform: PlatformKey;
     isSub?: boolean;
     isMod?: boolean;
+    isVIP?: boolean;
+    isOwner?: boolean;
     specialMessage?: string;
 }
 
@@ -42,10 +63,12 @@ const ChatMessage = ({
     platform,
     isSub,
     isMod,
+    isVIP,
+    isOwner,
     specialMessage,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
-    const isSpecial = !!specialMessage;
+    const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP;
 
     return (
         <div className={`
@@ -61,9 +84,11 @@ const ChatMessage = ({
                             <Icon size={platform === 'tiktok' ? 10 : 12} className="md:hidden" />
                             <Icon size={platform === 'tiktok' ? 12 : 14} className="hidden md:block" />
                         </div>
-                        {isSub && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="sub" /></div>}
-                        {isMod && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="mod" /></div>}
-                        <span className="text-[10px] md:text-xs text-gray-600 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
+                        {isOwner && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="streamer" platform={platform} /></div>}
+                        {isMod && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="mod" platform={platform} /></div>}
+                        {isVIP && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="vip" platform={platform} /></div>}
+                        {isSub && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="sub" platform={platform} /></div>}
+                        <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
                     </div>
                     {platform !== 'system' && (
                         <div className="flex items-center gap-1 md:gap-1.5 ml-2 md:ml-4 transition-opacity shrink-0">

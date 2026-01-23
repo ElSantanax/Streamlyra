@@ -97,12 +97,10 @@ const StatCard = ({ label, value, valueColor = "text-white", className = "" }: S
 interface SidebarProps {
     onMobileClose?: () => void;
     onAddPlatform?: () => void;
-    connections: {
-        twitch: boolean;
-        youtube: boolean;
-        kick: boolean;
-        tiktok: boolean;
-    };
+    connections: Record<string, {
+        connected: boolean;
+        username?: string;
+    }>;
     onDisconnect: (platform: PlatformKey) => void;
 }
 
@@ -110,7 +108,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
 
     // Solo mostramos las plataformas que están conectadas
     const connectedPlatforms = Object.entries(connections)
-        .filter(([, isConnected]) => isConnected)
+        .filter(([, data]) => data.connected)
         .map(([key]) => key as PlatformKey);
 
     return (

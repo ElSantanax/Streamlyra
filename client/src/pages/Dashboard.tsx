@@ -12,6 +12,23 @@ const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
 
 const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
 
+interface User {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string;
+}
+
+interface ConnectionInfo {
+    connected: boolean;
+    username?: string;
+}
+
+interface MeResponse {
+    user: User;
+    connections: Record<string, ConnectionInfo>;
+}
+
 const Dashboard = () => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,7 +47,7 @@ const Dashboard = () => {
     useEffect(() => {
         // Obtenemos el usuario guardado para identificarnos
         const userStr = localStorage.getItem('user');
-        const user = userStr ? JSON.parse(userStr) : null;
+        const user = userStr ? (JSON.parse(userStr) as User) : null;
 
         if (!user) {
             navigate('/login');
@@ -45,7 +62,7 @@ const Dashboard = () => {
         function onConnect() {
             setIsConnected(true);
             // Decirle al backend quiénes somos
-            socket.emit('identify', user.id);
+            if (user) socket.emit('identify', user.id);
         }
 
         function onDisconnect() {
@@ -53,6 +70,7 @@ const Dashboard = () => {
         }
 
         function onChatMessage(msg: ChatMessageProps & { id?: string }) {
+            console.log('📬 Mensaje recibido:', msg);
             setMessages(prev => {
                 // Limitamos el historial en pantalla a 100 mensajes para rendimiento
                 if (prev.length > 100) {
@@ -78,20 +96,20 @@ const Dashboard = () => {
             socket.off('chat_message', onChatMessage);
             // No desconectamos al desmontar para navegación fluida
         };
-    }, []);
+    }, [navigate]);
 
-    const [userConnections, setUserConnections] = useState({
-        twitch: false,
-        youtube: false,
-        tiktok: false,
-        kick: false
+    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string }>>({
+        twitch: { connected: false },
+        youtube: { connected: false },
+        tiktok: { connected: false },
+        kick: { connected: false }
     });
 
     // Cargar perfil y conexiones
     useEffect(() => {
         const fetchUserData = async () => {
             const userStr = localStorage.getItem('user');
-            const user = userStr ? JSON.parse(userStr) : null;
+            const user = userStr ? (JSON.parse(userStr) as User) : null;
             if (!user) return;
 
             try {
@@ -102,7 +120,7 @@ const Dashboard = () => {
                     }
                 });
                 if (response.ok) {
-                    const data = await response.json();
+                    const data = (await response.json()) as MeResponse;
                     setUserConnections(data.connections);
                 } else if (response.status === 401 || response.status === 404) {
                     // Si el token es inválido o el usuario no existe en DB, fuera
@@ -116,11 +134,11 @@ const Dashboard = () => {
         };
 
         fetchUserData();
-    }, [isAddPlatformOpen]); // Re-fetch al cerrar/abrir modal por si hubo cambios
+    }, [isAddPlatformOpen, navigate]); // Re-fetch al cerrar/abrir modal por si hubo cambios
 
     const handleDisconnect = async (provider: string) => {
         const userStr = localStorage.getItem('user');
-        const user = userStr ? JSON.parse(userStr) : null;
+        const user = userStr ? (JSON.parse(userStr) as User) : null;
         if (!user) return;
 
         try {
@@ -138,7 +156,7 @@ const Dashboard = () => {
                 // Actualizar estado local inmediatamente
                 setUserConnections(prev => ({
                     ...prev,
-                    [provider]: false
+                    [provider]: { connected: false }
                 }));
             }
         } catch (error) {

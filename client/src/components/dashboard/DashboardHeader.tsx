@@ -19,21 +19,19 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState('es');
-    const [user, setUser] = useState<UserData | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-    const navigate = useNavigate();
-
-    // Load user data from localStorage
-    useEffect(() => {
+    const [user] = useState<UserData | null>(() => {
         const userStr = localStorage.getItem('user');
         if (userStr) {
             try {
-                setUser(JSON.parse(userStr));
+                return JSON.parse(userStr);
             } catch (e) {
                 console.error('Error parsing user data', e);
             }
         }
-    }, []);
+        return null;
+    });
+    const menuRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
 
     // Close menu when clicking outside
     useEffect(() => {

@@ -51,7 +51,7 @@ export class AuthService {
             }
 
             // Actualizar tokens
-            this.updateConnectionTokens(connection, tokens);
+            this.updateConnectionTokens(connection, tokens, profile.username);
             await connection.save();
 
             // Actualizar perfil si es necesario
@@ -76,6 +76,7 @@ export class AuthService {
             await Connection.create({
                 provider: profile.provider,
                 providerId: profile.providerId,
+                providerUsername: profile.username,
                 accessToken: tokens.accessToken,
                 refreshToken: tokens.refreshToken || '',
                 expiryDate: this.calculateExpiry(tokens.expiresIn),
@@ -116,10 +117,11 @@ export class AuthService {
         });
     }
 
-    private static updateConnectionTokens(connection: Connection, tokens: AuthTokens) {
+    private static updateConnectionTokens(connection: Connection, tokens: AuthTokens, username?: string) {
         connection.accessToken = tokens.accessToken;
         if (tokens.refreshToken) connection.refreshToken = tokens.refreshToken;
         connection.expiryDate = this.calculateExpiry(tokens.expiresIn);
+        if (username) connection.providerUsername = username;
     }
 
     private static calculateExpiry(expiresIn: number): Date {

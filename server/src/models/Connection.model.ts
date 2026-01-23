@@ -24,6 +24,12 @@ export class Connection extends Model {
     declare providerId: string; // El ID único del usuario en esa plataforma (ej: '12345678')
 
     @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare providerUsername: string; // El nickname del usuario en esa plataforma (ej: para Twitch Chat)
+
+    @Column({
         type: DataType.TEXT, // TEXT porque los tokens pueden ser muy largos
         allowNull: false
     })

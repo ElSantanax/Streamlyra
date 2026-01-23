@@ -19,7 +19,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         const validToken = await AuthService.getValidAccessToken(userId, 'twitch');
 
-        const username = connection.user.username;
+        const username = connection.providerUsername || connection.user.username;
         const accessToken = validToken || connection.accessToken;
 
         if (this.activeClients.has(userId)) {
@@ -51,10 +51,51 @@ export class TwitchChatProvider implements ChatProvider {
                 time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 color: tags.color || '#9146FF',
                 isMod: tags.mod || false,
-                isSub: tags.subscriber || false
+                isSub: tags.subscriber || false,
+                isVIP: !!tags.vip,
+                isOwner: tags.badges?.broadcaster === '1'
             };
 
             io.to(userId).emit('chat_message', chatMessage);
+        });
+
+        // Eventos Especiales (Suscripciones, etc)
+        client.on('subscription', (_channel, username, _method, message, tags) => {
+            const now = new Date();
+            io.to(userId).emit('chat_message', {
+                id: tags?.['id'] || Date.now().toString(),
+                platform: 'twitch',
+                user: username,
+                message: message || '',
+                specialMessage: `¡NUEVA SUSCRIPCIÓN! 🥳`,
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isSub: true
+            });
+        });
+
+        client.on('resub', (_channel, username, _months, message, tags) => {
+            const now = new Date();
+            io.to(userId).emit('chat_message', {
+                id: tags?.['id'] || Date.now().toString(),
+                platform: 'twitch',
+                user: username,
+                message: message || '',
+                specialMessage: `¡RE-SUSCRIPCIÓN! 🔥`,
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isSub: true
+            });
+        });
+
+        client.on('cheer', (_channel, userstate, message) => {
+            const now = new Date();
+            io.to(userId).emit('chat_message', {
+                id: userstate.id || Date.now().toString(),
+                platform: 'twitch',
+                user: userstate['display-name'] || userstate.username || 'Unknown',
+                message: message || '',
+                specialMessage: `¡HA ENVIADO ${userstate.bits} BITS! 💎`,
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            });
         });
     }
 

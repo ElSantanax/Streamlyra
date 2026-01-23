@@ -12,6 +12,10 @@ interface AuthResponse {
     };
 }
 
+interface ErrorResponse {
+    error: string;
+}
+
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -55,11 +59,11 @@ const AuthCallback = () => {
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
+                        const errorData = (await response.json().catch(() => ({}))) as ErrorResponse;
                         throw new Error(errorData.error || 'Error en la autenticación con el servidor');
                     }
 
-                    const data: AuthResponse = await response.json();
+                    const data = (await response.json()) as AuthResponse;
 
                     // Guardar sesión (token y user) en localStorage
                     localStorage.setItem('token', data.token);
