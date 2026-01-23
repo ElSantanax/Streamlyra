@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.model';
 import { Connection } from '../models/Connection.model';
+import { TwitchService } from './platforms/TwitchService';
+import { YouTubeService } from './platforms/YouTubeService';
 
 export interface PlatformProfile {
     provider: 'twitch' | 'youtube' | 'kick' | 'tiktok';
@@ -28,12 +30,12 @@ export class AuthService {
     static async handlePlatformAuth(profile: PlatformProfile, tokens: AuthTokens, currentUserId?: string) {
 
         // 1. Buscar conexión existente
-        let connection = await Connection.findOne({
+        const connection = await Connection.findOne({
             where: { provider: profile.provider, providerId: profile.providerId },
             include: [User]
         });
 
-        let user;
+        let user: User | null = null;
 
         if (connection) {
             user = connection.user;
@@ -89,7 +91,7 @@ export class AuthService {
     }
 
     private static async createUserFromProfile(profile: PlatformProfile) {
-        let baseUsername = profile.username.replace(/\s+/g, '').toLowerCase().substring(0, 15);
+        const baseUsername = profile.username.replace(/\s+/g, '').toLowerCase().substring(0, 15);
         let username = baseUsername;
         let suffix = 1;
 
@@ -124,5 +126,40 @@ export class AuthService {
             process.env.JWT_SECRET || 'secret',
             { expiresIn: '7d' }
         );
+    }
+
+    /**
+     * Verifica si el token de una conexión ha expirado y lo refresca si es necesario
+     */
+    static async getValidAccessToken(userId: string, provider: 'twitch' | 'youtube'): Promise<string | null> {
+        const connection = await Connection.findOne({ where: { userId, provider } });
+        if (!connection) return null;
+
+        // Si falta más de 5 minutos para que expire, lo usamos tal cual
+        const now = new Date();
+        const bufferTime = 5 * 60 * 1000; // 5 minutos
+        if (connection.expiryDate && (connection.expiryDate.getTime() - now.getTime() > bufferTime)) {
+            return connection.accessToken;
+        }
+
+        // Si ha expirado o está cerca, refrescar
+        if (!connection.refreshToken) {
+            console.warn(`[AuthService] No hay refresh token para ${provider} de ${userId}`);
+            return connection.accessToken; // Intentar con el actual de todas formas
+        }
+
+        console.log(`[AuthService] Refrescando token expirado para ${provider}...`);
+        try {
+            const tokens: AuthTokens = (provider === 'twitch')
+                ? await TwitchService.refreshAccessToken(connection.refreshToken)
+                : await YouTubeService.refreshAccessToken(connection.refreshToken);
+
+            this.updateConnectionTokens(connection, tokens);
+            await connection.save();
+            return connection.accessToken;
+        } catch (error) {
+            console.error(`[AuthService] Error al refrescar token de ${provider}:`, error);
+            return connection.accessToken;
+        }
     }
 }

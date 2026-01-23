@@ -24,13 +24,13 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string, username: string };
         req.user = {
             id: decoded.id,
             username: decoded.username
         };
         next();
-    } catch (error) {
+    } catch {
         return res.status(403).json({ error: 'Token inválido o expirado.' });
     }
 };
@@ -44,13 +44,13 @@ export const optionalAuthenticate = (req: AuthRequest, res: Response, next: Next
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string, username: string };
         req.user = {
             id: decoded.id,
             username: decoded.username
         };
         next();
-    } catch (error) {
+    } catch {
         // En opcional no bloqueamos, solo ignoramos el token inválido
         next();
     }

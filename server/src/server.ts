@@ -1,6 +1,10 @@
 import express from 'express';
 import colors from 'colors';
 import db from './config/db';
+import http from 'http';
+import { Server } from 'socket.io';
+import authRoutes from './routes/auth.routes';
+import { setupSocketHandlers } from './socket/socket.handler';
 
 async function connectToDatabase() {
     try {
@@ -14,60 +18,33 @@ async function connectToDatabase() {
 
 connectToDatabase();
 
-import http from 'http';
-import { Server } from 'socket.io';
-
 const app = express();
 const server = http.createServer(app);
 
-// Configurar Socket.io con CORS permitido para el frontend
+// Configurar Socket.io
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // URL de tu frontend
+        origin: "http://localhost:5173",
         methods: ["GET", "POST"]
     }
 });
 
-import authRoutes from './routes/auth.routes';
-
+// Middlewares
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
 
-app.get('/api/status', (req, res) => {
+app.get('/api/status', (_req, res) => {
     res.json({ status: 'ok', message: 'Streamlyra API esta funcionando' });
 });
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
     res.send('Servidor funcionando');
 });
 
-import { ChatManager } from './services/ChatManager';
-
-// ... (después de configurar io)
-
-const chatManager = new ChatManager(io);
-
-// Evento de conexión de usuarios al socket
-io.on('connection', (socket) => {
-    console.log(colors.magenta('Nuevo cliente conectado al socket: ' + socket.id));
-
-    // El cliente debe enviarnos quién es (su ID de usuario) al conectarse
-    socket.on('identify', async (userId: string) => {
-        console.log(colors.cyan(`IDENTIFY recibido - UserId: ${userId} | SocketId: ${socket.id}`));
-        socket.join(userId);
-        console.log(colors.green(`Socket unido a sala: ${userId}`));
-
-        // Iniciamos la escucha de Twitch
-        await chatManager.connectUser(userId, socket.id);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Cliente desconectado');
-        // Aquí podríamos desconectar TMI, o dejarlo vivo un rato por si reconecta rápido
-        // Por simplicidad, no desconectamos TMI inmediatamente para mantener persistencia si recarga
-    });
-});
+// Setup Socket Handlers (Separation of Concerns)
+setupSocketHandlers(io);
 
 export { app, io };
 export default server;

@@ -2,40 +2,43 @@ import { Request, Response } from 'express';
 import { User } from '../models/User.model';
 import { Connection } from '../models/Connection.model';
 import { AuthService } from '../services/AuthService';
-import { ExternalPlatformService } from '../services/ExternalPlatformService';
+import { TwitchService } from '../services/platforms/TwitchService';
+import { YouTubeService } from '../services/platforms/YouTubeService';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 export const twitchAuth = async (req: AuthRequest, res: Response): Promise<void> => {
-    const { code } = req.body;
+    const { code } = req.body as { code?: string };
     if (!code) {
         res.status(400).json({ error: 'Falta el código de autorización' });
         return;
     }
 
     try {
-        const { profile, tokens } = await ExternalPlatformService.getTwitchData(code);
+        const { profile, tokens } = await TwitchService.getProfileAndTokens(code);
         const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
         res.json(result);
-    } catch (error: any) {
-        console.error('Error Twitch Auth:', error.message);
-        res.status(400).json({ error: error.message });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error('Error Twitch Auth:', err.message);
+        res.status(400).json({ error: err.message });
     }
 };
 
 export const youtubeAuth = async (req: AuthRequest, res: Response): Promise<void> => {
-    const { code } = req.body;
+    const { code } = req.body as { code?: string };
     if (!code) {
         res.status(400).json({ error: 'Falta el código de autorización' });
         return;
     }
 
     try {
-        const { profile, tokens } = await ExternalPlatformService.getYouTubeData(code);
+        const { profile, tokens } = await YouTubeService.getProfileAndTokens(code);
         const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
         res.json(result);
-    } catch (error: any) {
-        console.error('Error YouTube Auth:', error.message);
-        res.status(400).json({ error: error.message });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error('Error YouTube Auth:', err.message);
+        res.status(400).json({ error: err.message });
     }
 };
 
@@ -62,18 +65,18 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
                 displayName: user.displayName,
                 avatar: user.avatarUrl
             },
-            connections: user.connections.reduce((acc: any, conn) => {
+            connections: user.connections.reduce((acc: Record<string, boolean>, conn) => {
                 acc[conn.provider] = true;
                 return acc;
             }, { twitch: false, youtube: false, kick: false, tiktok: false })
         });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Error del servidor' });
     }
 };
 
 export const disconnectPlatform = async (req: AuthRequest, res: Response): Promise<void> => {
-    const { provider } = req.body;
+    const { provider } = req.body as { provider?: string };
     if (!req.user || !provider) {
         res.status(400).json({ error: 'Faltan datos requeridos' });
         return;
@@ -82,7 +85,7 @@ export const disconnectPlatform = async (req: AuthRequest, res: Response): Promi
     try {
         await Connection.destroy({ where: { userId: req.user.id, provider } });
         res.json({ success: true, message: `${provider} desconectado` });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Error al desconectar' });
     }
 };
@@ -118,7 +121,7 @@ export const devLogin = async (req: Request, res: Response): Promise<void> => {
                 avatar: user.avatarUrl
             }
         });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Error en Dev Login' });
     }
 };
