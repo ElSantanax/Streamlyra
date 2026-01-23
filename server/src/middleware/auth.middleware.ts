@@ -12,14 +12,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     // Buscar en Header 'Authorization: Bearer <token>' o en custom header 'x-user-id' (retrocompatibilidad temporal)
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    const legacyUserId = req.headers['x-user-id'];
 
     if (!token) {
-        // Fallback temporal para permitir pruebas sin haber migrado todo el frontend a Bearer token
-        if (legacyUserId) {
-            req.user = { id: legacyUserId as string, username: 'legacy' };
-            return next();
-        }
         return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
     }
 

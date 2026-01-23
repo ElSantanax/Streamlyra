@@ -42,7 +42,12 @@ export class AuthService {
 
             // Si el usuario ya está logueado y es distinto al dueño de la conexión, error de seguridad
             if (currentUserId && user.id !== currentUserId) {
-                throw new Error(`Esta cuenta de ${profile.provider} ya está vinculada a otro usuario.`);
+                // Verificamos si el usuario actual existe antes de lanzar error de vínculo
+                const currentUserExists = await User.findByPk(currentUserId);
+                if (currentUserExists) {
+                    throw new Error(`Esta cuenta de ${profile.provider} ya está vinculada a otro usuario.`);
+                }
+                // Si el usuario actual no existe, simplemente ignoramos el ID viejo y procedemos
             }
 
             // Actualizar tokens
@@ -59,8 +64,10 @@ export class AuthService {
             // No hay conexión, hay que vincular o crear
             if (currentUserId) {
                 user = await User.findByPk(currentUserId);
-                if (!user) throw new Error('Usuario logueado no encontrado');
-            } else {
+            }
+
+            // Si no hay usuario (porque no había ID o el ID era de un usuario borrado)
+            if (!user) {
                 // Crear usuario nuevo (con manejo de colisión de username)
                 user = await this.createUserFromProfile(profile);
             }
@@ -91,7 +98,8 @@ export class AuthService {
     }
 
     private static async createUserFromProfile(profile: PlatformProfile) {
-        const baseUsername = profile.username.replace(/\s+/g, '').toLowerCase().substring(0, 15);
+        // Usamos el username de la plataforma como base, sin truncar a 15 (Twitch permite hasta 25)
+        const baseUsername = profile.username.replace(/\s+/g, '').toLowerCase();
         let username = baseUsername;
         let suffix = 1;
 

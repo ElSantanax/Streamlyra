@@ -96,7 +96,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                         alert('Falta VITE_TWITCH_CLIENT_ID en .env');
                                         return;
                                     }
-                                    const scope = 'user:read:chat user:write:chat user:read:email';
+                                    const scope = 'chat:read chat:edit user:read:email';
                                     window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
                                 }
 

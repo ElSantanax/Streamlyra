@@ -81,8 +81,9 @@ export class YouTubeChatProvider implements ChatProvider {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
+        // Solo conectamos si hay un broadcast que esté actualmente 'live'
         const activeBroadcast = response.data.items?.find((b: YouTubeBroadcast) =>
-            b.status.lifeCycleStatus === 'live' || b.snippet.liveChatId
+            b.status.lifeCycleStatus === 'live'
         );
 
         return activeBroadcast?.snippet?.liveChatId || null;

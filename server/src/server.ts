@@ -9,7 +9,7 @@ import { setupSocketHandlers } from './socket/socket.handler';
 async function connectToDatabase() {
     try {
         await db.authenticate();
-        db.sync();
+        await db.sync();
         console.log(colors.blue.bold('Conexión exitosa a la base de datos.'));
     } catch (error) {
         console.error(colors.red.bold('Hubo un error al conectar a la base de datos:'), error);

@@ -71,8 +71,26 @@ const AuthCallback = () => {
                 } catch (err: unknown) {
                     console.error('Fallo al completar el login:', err);
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
+
+                    // Si el error es que el usuario no existe, limpiamos todo y volvemos a login
+                    if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        navigate('/login');
+                        return;
+                    }
+
+                    // Si Twitch nos da un 400 (ej: code ya usado)
+                    if (errorMessage.includes('status code 400')) {
+                        alert('El código de Twitch ha expirado o ya fue usado. Por favor, intenta conectar de nuevo.');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        navigate('/login');
+                        return;
+                    }
+
                     alert(errorMessage);
-                    navigate('/dashboard'); // Volver al dashboard en vez de login si ya estaba ahí
+                    navigate('/login');
                 }
             };
 
@@ -82,14 +100,16 @@ const AuthCallback = () => {
         }
     }, [searchParams, navigate]);
 
+    const platformName = (searchParams.get('state') === 'youtube') ? 'YouTube' : 'Twitch';
+
     return (
         <div className="h-screen bg-background-dark flex flex-col items-center justify-center p-4">
             <Spinner size="lg" />
             <p className="mt-6 text-xl text-slate-300 animate-pulse font-medium">
-                Conectando con Twitch...
+                Conectando con {platformName}...
             </p>
             <p className="mt-2 text-sm text-slate-500">
-                Estamos verificando tus credenciales
+                Estamos verificando tus credenciales en {platformName}
             </p>
         </div>
     );

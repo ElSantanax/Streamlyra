@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 import Overlay from '../components/common/Overlay';
@@ -12,6 +13,7 @@ const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
 const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
     const [isConnected, setIsConnected] = useState(socket.connected);
@@ -30,7 +32,10 @@ const Dashboard = () => {
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : null;
 
-        if (!user) return; // Si no hay usuario, no conectamos socket
+        if (!user) {
+            navigate('/login');
+            return;
+        }
 
         // Conectar al socket al montar el dashboard
         if (!socket.connected) {
@@ -90,14 +95,20 @@ const Dashboard = () => {
             if (!user) return;
 
             try {
+                const token = localStorage.getItem('token');
                 const response = await fetch('/api/auth/me', {
                     headers: {
-                        'x-user-id': user.id // Temporal hasta tener middleware de JWT
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 if (response.ok) {
                     const data = await response.json();
                     setUserConnections(data.connections);
+                } else if (response.status === 401 || response.status === 404) {
+                    // Si el token es inválido o el usuario no existe en DB, fuera
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    navigate('/login');
                 }
             } catch (error) {
                 console.error('Error fetching connections:', error);
@@ -113,11 +124,12 @@ const Dashboard = () => {
         if (!user) return;
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/auth/platform', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-id': user.id
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ provider })
             });

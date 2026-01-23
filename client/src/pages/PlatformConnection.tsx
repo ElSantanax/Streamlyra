@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
@@ -7,7 +6,7 @@ import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
 const PlatformConnection = () => {
-    const navigate = useNavigate();
+    // Component logic
 
     return (
         <div className="page-base antialiased selection:bg-primary selection:text-white overflow-x-hidden">
@@ -44,7 +43,13 @@ const PlatformConnection = () => {
                                 label="Iniciar Sesión con Twitch"
                                 Icon={FaTwitch}
                                 iconColor="#9146FF"
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => {
+                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
+                                    const redirectUri = window.location.origin + '/auth/callback';
+                                    const scope = encodeURIComponent('user:read:email chat:read chat:edit');
+                                    const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
+                                    window.location.href = authUrl;
+                                }}
                                 className="w-full transition-colors duration-300"
                                 centered={true}
                             />
@@ -57,27 +62,6 @@ const PlatformConnection = () => {
                         </div>
 
 
-
-                        <div className="text-center pt-4">
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const res = await fetch('/api/auth/dev-login', { method: 'POST' });
-                                        const data = await res.json();
-                                        if (data.token) {
-                                            localStorage.setItem('token', data.token);
-                                            localStorage.setItem('user', JSON.stringify(data.user));
-                                            navigate('/dashboard');
-                                        }
-                                    } catch (e) {
-                                        console.error(e);
-                                    }
-                                }}
-                                className="text-xs text-gray-400 hover:text-primary underline cursor-pointer"
-                            >
-                                [Modo Desarrollo: Entrar sin Twitch]
-                            </button>
-                        </div>
                     </div>
                 </div>
 

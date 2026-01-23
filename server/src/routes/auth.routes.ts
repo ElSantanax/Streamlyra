@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { twitchAuth, youtubeAuth, getMe, disconnectPlatform, devLogin } from '../controllers/auth.controller';
+import { twitchAuth, youtubeAuth, getMe, disconnectPlatform } from '../controllers/auth.controller';
 import { authenticateToken, optionalAuthenticate } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -15,8 +15,5 @@ router.post('/youtube', optionalAuthenticate, youtubeAuth);
 
 // DELETE /api/auth/platform - Requiere estar logueado
 router.delete('/platform', authenticateToken, disconnectPlatform);
-
-// Auth de desarrollo
-router.post('/dev-login', devLogin);
 
 export default router;

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { User } from '../models/User.model';
 import { Connection } from '../models/Connection.model';
 import { AuthService } from '../services/AuthService';
@@ -90,38 +90,4 @@ export const disconnectPlatform = async (req: AuthRequest, res: Response): Promi
     }
 };
 
-export const devLogin = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const [user] = await User.findOrCreate({
-            where: { username: 'devuser' },
-            defaults: {
-                username: 'devuser',
-                displayName: 'Desarrollador (Test)',
-                avatarUrl: 'https://ui-avatars.com/api/?name=Dev+User&background=random'
-            }
-        });
 
-        await Connection.findOrCreate({
-            where: { provider: 'twitch', userId: user.id },
-            defaults: {
-                provider: 'twitch',
-                providerId: '123456789',
-                accessToken: 'mock_token',
-                userId: user.id
-            }
-        });
-
-        const token = AuthService.generateToken(user);
-        res.json({
-            token,
-            user: {
-                id: user.id,
-                username: user.username,
-                displayName: user.displayName,
-                avatar: user.avatarUrl
-            }
-        });
-    } catch {
-        res.status(500).json({ error: 'Error en Dev Login' });
-    }
-};

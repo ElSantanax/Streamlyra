@@ -133,7 +133,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                             key={key}
                             platformKey={key}
                             status="connected"
-                            viewers={key === 'twitch' ? '850' : key === 'youtube' ? '320' : undefined}
+                            viewers={key === 'twitch' ? '0' : key === 'youtube' ? '0' : undefined}
                             onDisconnect={() => onDisconnect(key)}
                         />
                     ))
@@ -157,7 +157,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
 
             <SidebarSection title="Analíticas en Vivo">
                 <div className="grid grid-cols-1 gap-3">
-                    <StatCard label="Espectadores Totales" value={connectedPlatforms.length > 0 ? "1,170" : "0"} />
+                    <StatCard label="Espectadores Totales" value="0" />
                     <StatCard label="Tiempo al Aire" value="00h 00m 00s" />
                 </div>
             </SidebarSection>
