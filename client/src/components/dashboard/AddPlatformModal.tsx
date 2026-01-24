@@ -47,11 +47,32 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
         }
     };
 
-    const handleTiktokConnect = () => {
+    const handleTiktokConnect = async () => {
         if (!tiktokUsername) return;
-        // Simulamos la conexión visualmente
-        setIsTiktokConnected(true);
-        console.log(`Conectando tiktok user: ${tiktokUsername}`);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/auth/tiktok', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ username: tiktokUsername })
+            });
+
+            if (response.ok) {
+                setIsTiktokConnected(true);
+                // Opcional: Recargar datos del usuario para actualizar el dashboard
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Error al conectar TikTok');
+            }
+        } catch (error) {
+            console.error('Error connecting tiktok:', error);
+            alert('Error de red al conectar TikTok');
+        }
     };
 
     if (!isOpen) return null;

@@ -15,6 +15,7 @@ import {
 export class YouTubeChatProvider implements ChatProvider {
     private intervals: Map<string, NodeJS.Timeout> = new Map();
     private viewerIntervals: Map<string, NodeJS.Timeout> = new Map();
+    private discoveryIntervals: Map<string, NodeJS.Timeout> = new Map();
     private nextPageTokens: Map<string, string> = new Map();
     private processedIds: Map<string, Set<string>> = new Map();
 
@@ -25,38 +26,62 @@ export class YouTubeChatProvider implements ChatProvider {
 
         if (!connection) return;
 
-        const accessToken = await AuthService.getValidAccessToken(userId, 'youtube');
+        // Limpiar cualquier búsqueda o conexión previa
+        this.stopDiscovery(userId);
+        await this.disconnect(userId);
 
-        if (!accessToken) {
-            console.error(`[YouTubeChat] No se pudo obtener un token válido para ${userId}`);
-            return;
-        }
-
-        console.log(colors.red(`[YouTubeChat] Buscando Live para ${userId}...`));
-
-        try {
-            const broadcast = await this.getLiveBroadcast(accessToken);
-            if (!broadcast) {
-                console.log(colors.gray(`[YouTubeChat] No hay stream activo para ${userId}`));
+        const tryConnect = async () => {
+            // Guard: No reconectar si el usuario ya borró la plataforma
+            const stillExists = await Connection.findOne({ where: { userId, provider: 'youtube' } });
+            if (!stillExists) {
+                this.stopDiscovery(userId);
                 return;
             }
 
-            const liveChatId = broadcast.snippet?.liveChatId;
-            const broadcastId = broadcast.id;
+            const accessToken = await AuthService.getValidAccessToken(userId, 'youtube');
+            if (!accessToken) return;
 
-            if (liveChatId) {
-                console.log(colors.green(`✅ [YouTubeChat] Chat detectado: ${liveChatId}`));
-                this.startPolling(userId, liveChatId, accessToken, io);
+            try {
+                const broadcast = await this.getLiveBroadcast(accessToken);
 
-                // Start polling viewers if we have a broadcast ID
-                if (broadcastId) {
-                    this.startViewerPolling(userId, broadcastId, accessToken, io);
+                if (!broadcast) {
+                    if (!this.discoveryIntervals.has(userId)) {
+                        console.log(colors.gray(`[YouTubeChat] Buscando stream activo para ${userId}... (Reintento en 60s)`));
+                        const interval = setInterval(() => void tryConnect(), 60000);
+                        this.discoveryIntervals.set(userId, interval);
+                    }
+                    return;
+                }
+
+                const liveChatId = broadcast.snippet?.liveChatId;
+                const broadcastId = broadcast.id;
+
+                if (liveChatId) {
+                    console.log(colors.green(`✅ [YouTubeChat] Live detectado para ${userId}: ${liveChatId}`));
+                    this.stopDiscovery(userId);
+
+                    this.startPolling(userId, liveChatId, accessToken, io);
+
+                    if (broadcastId) {
+                        this.startViewerPolling(userId, broadcastId, accessToken, io);
+                    }
+                }
+            } catch {
+                if (!this.discoveryIntervals.has(userId)) {
+                    const interval = setInterval(() => void tryConnect(), 60000);
+                    this.discoveryIntervals.set(userId, interval);
                 }
             }
+        };
 
-        } catch (error: unknown) {
-            const err = error as { response?: { data: unknown }, message: string };
-            console.error('[YouTubeChat] Error al iniciar:', err.response?.data || err.message);
+        void tryConnect();
+    }
+
+    private stopDiscovery(userId: string) {
+        const interval = this.discoveryIntervals.get(userId);
+        if (interval) {
+            clearInterval(interval);
+            this.discoveryIntervals.delete(userId);
         }
     }
 
@@ -66,19 +91,14 @@ export class YouTubeChatProvider implements ChatProvider {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
-        // Solo conectamos si hay un broadcast que esté actualmente 'live'
         return response.data.items?.find((b: YouTubeBroadcast) =>
             b.status.lifeCycleStatus === 'live'
         ) || null;
     }
 
     private startPolling(userId: string, liveChatId: string, accessToken: string, io: Server) {
-        if (this.intervals.has(userId)) {
-            clearTimeout(this.intervals.get(userId));
-            this.intervals.delete(userId);
-        }
-
         const poll = async () => {
+            // Si el intervalo fue limpiado (disconnect), paramos el bucle manual
             if (!this.intervals.has(userId)) return;
 
             try {
@@ -102,7 +122,6 @@ export class YouTubeChatProvider implements ChatProvider {
                         let displayMessage = item.snippet.displayMessage;
                         let isSub = false;
 
-                        // Detectar eventos especiales
                         switch (item.snippet.type) {
                             case 'superChatEvent':
                                 specialMessage = `¡DONACIÓN DE ${item.snippet.superChatDetails?.amountDisplayString}! 💰`;
@@ -148,23 +167,36 @@ export class YouTubeChatProvider implements ChatProvider {
                     });
                 }
 
-                this.intervals.set(userId, setTimeout(poll, pollingIntervalMillis || 5000));
+                // Siguiente poll
+                const nextPoll = setTimeout(poll, pollingIntervalMillis || 5000);
+                this.intervals.set(userId, nextPoll);
 
             } catch (error: unknown) {
-                const err = error as { response?: { data: unknown }, message: string };
-                console.error('[YouTubeChat] Poll Error:', err.response?.data || err.message);
-                this.disconnect(userId);
+                const err = error as Error;
+                console.error('[YouTubeChat] Poll Error (Live finalizado?):', err.message);
+
+                // Si el poll falla, verificar si el usuario aún quiere YouTube
+                const stillConnected = await Connection.findOne({ where: { userId, provider: 'youtube' } });
+
+                if (stillConnected) {
+                    await this.disconnect(userId);
+                    void this.connect(userId, io);
+                } else {
+                    console.log(colors.gray(`[YouTubeChat] Desconexión definitiva para ${userId} (Plataforma eliminada).`));
+                    await this.disconnect(userId);
+                }
             }
         };
 
-        const initialTimeout = setTimeout(poll, 0);
-        this.intervals.set(userId, initialTimeout);
+        // Iniciamos el ciclo
+        const firstPoll = setTimeout(poll, 0);
+        this.intervals.set(userId, firstPoll);
     }
 
     private startViewerPolling(userId: string, broadcastId: string, accessToken: string, io: Server) {
-        if (this.viewerIntervals.has(userId)) clearInterval(this.viewerIntervals.get(userId));
-
         const getStats = async () => {
+            if (!this.viewerIntervals.has(userId)) return;
+
             try {
                 const response = await axios.get<YouTubeVideoResponse>('https://www.googleapis.com/youtube/v3/videos', {
                     params: { part: 'liveStreamingDetails', id: broadcastId },
@@ -179,27 +211,28 @@ export class YouTubeChatProvider implements ChatProvider {
                     count: parseInt(viewerCount)
                 });
 
-            } catch (error) {
-                console.error('[YouTubeViewer] Error fetching stats:', error);
+            } catch {
+                // Silencioso
             }
         };
 
-        // Ejecutar inmediatamente y luego cada 60s
         getStats();
-        this.viewerIntervals.set(userId, setInterval(getStats, 60000));
+        const interval = setInterval(getStats, 60000);
+        this.viewerIntervals.set(userId, interval);
     }
 
     async disconnect(userId: string): Promise<void> {
-        if (this.intervals.has(userId)) {
-            clearTimeout(this.intervals.get(userId));
-            this.intervals.delete(userId);
-            this.nextPageTokens.delete(userId);
-            this.processedIds.delete(userId);
-        }
+        this.stopDiscovery(userId);
 
-        if (this.viewerIntervals.has(userId)) {
-            clearInterval(this.viewerIntervals.get(userId));
-            this.viewerIntervals.delete(userId);
-        }
+        const chatInt = this.intervals.get(userId);
+        if (chatInt) clearTimeout(chatInt);
+        this.intervals.delete(userId);
+
+        const viewInt = this.viewerIntervals.get(userId);
+        if (viewInt) clearInterval(viewInt);
+        this.viewerIntervals.delete(userId);
+
+        this.nextPageTokens.delete(userId);
+        this.processedIds.delete(userId);
     }
 }

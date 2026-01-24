@@ -35,6 +35,10 @@ export class TwitchChatProvider implements ChatProvider {
         // --- 1. Chat Connection (TMI) ---
         const client = new tmi.Client({
             options: { debug: false },
+            connection: {
+                reconnect: true,
+                secure: true
+            },
             identity: {
                 username: username,
                 password: `oauth:${accessToken}`

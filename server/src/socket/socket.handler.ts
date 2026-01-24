@@ -3,7 +3,8 @@ import colors from 'colors';
 import { ChatManager } from '../services/ChatManager';
 
 export const setupSocketHandlers = (io: Server) => {
-    const chatManager = new ChatManager(io);
+    const chatManager = ChatManager.getInstance();
+    chatManager.setIo(io);
 
     io.on('connection', (socket: Socket) => {
         console.log(colors.magenta('Nuevo cliente conectado al socket: ' + socket.id));
