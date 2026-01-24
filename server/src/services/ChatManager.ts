@@ -1,17 +1,20 @@
 import { Server } from 'socket.io';
 import { TwitchChatProvider } from './chat/TwitchChatProvider';
 import { YouTubeChatProvider } from './chat/YouTubeChatProvider';
+import { KickChatProvider } from './chat/KickChatProvider';
 import colors from 'colors';
 
 export class ChatManager {
     private io: Server;
     private twitchProvider = new TwitchChatProvider();
     private youtubeProvider = new YouTubeChatProvider();
+    private kickProvider = new KickChatProvider();
 
     // Configuración para activar/desactivar plataformas
     private platformConfig = {
         twitch: true,
-        youtube: true
+        youtube: true,
+        kick: true
     };
 
     constructor(io: Server) {
@@ -30,6 +33,11 @@ export class ChatManager {
                 await this.twitchProvider.connect(userId, this.io);
             }
 
+            // 3. Kick
+            if (this.platformConfig.kick) {
+                await this.kickProvider.connect(userId, this.io);
+            }
+
         } catch (error) {
             console.error(colors.red('[ChatManager] Error al conectar chats:'), error);
         }
@@ -38,7 +46,8 @@ export class ChatManager {
     public async disconnectUser(userId: string) {
         await Promise.all([
             this.twitchProvider.disconnect(userId),
-            this.youtubeProvider.disconnect(userId)
+            this.youtubeProvider.disconnect(userId),
+            this.kickProvider.disconnect(userId)
         ]);
     }
 }

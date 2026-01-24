@@ -100,6 +100,7 @@ interface SidebarProps {
     connections: Record<string, {
         connected: boolean;
         username?: string;
+        viewers?: number;
     }>;
     onDisconnect: (platform: PlatformKey) => void;
 }
@@ -110,6 +111,14 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
     const connectedPlatforms = Object.entries(connections)
         .filter(([, data]) => data.connected)
         .map(([key]) => key as PlatformKey);
+
+    // Calcular espectadores totales
+    const totalViewers = Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0);
+
+    const formatNumber = (num: number) => {
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+        return num.toString();
+    };
 
     return (
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
@@ -131,7 +140,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                             key={key}
                             platformKey={key}
                             status="connected"
-                            viewers={key === 'twitch' ? '0' : key === 'youtube' ? '0' : undefined}
+                            viewers={connections[key].viewers !== undefined ? formatNumber(connections[key].viewers!) : '0'}
                             onDisconnect={() => onDisconnect(key)}
                         />
                     ))
@@ -155,7 +164,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
 
             <SidebarSection title="Analíticas en Vivo">
                 <div className="grid grid-cols-1 gap-3">
-                    <StatCard label="Espectadores Totales" value="0" />
+                    <StatCard label="Espectadores Totales" value={formatNumber(totalViewers)} />
                     <StatCard label="Tiempo al Aire" value="00h 00m 00s" />
                 </div>
             </SidebarSection>

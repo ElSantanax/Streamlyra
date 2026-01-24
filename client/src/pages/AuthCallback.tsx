@@ -38,7 +38,9 @@ const AuthCallback = () => {
         if (code) {
             // Verificar state para saber provider, fallback a twitch si no hay state (retrocompatibilidad)
             const state = searchParams.get('state') || 'twitch';
-            const endpoint = state === 'youtube' ? '/api/auth/youtube' : '/api/auth/twitch';
+            let endpoint = '/api/auth/twitch';
+            if (state === 'youtube') endpoint = '/api/auth/youtube';
+            if (state === 'kick') endpoint = '/api/auth/kick';
 
             // Intercambiar código por token con NUESTRO backend
             const authenticate = async () => {
@@ -52,10 +54,19 @@ const AuthCallback = () => {
                         headers['Authorization'] = `Bearer ${token}`;
                     }
 
+                    const body: Record<string, string> = { code };
+                    if (state === 'kick') {
+                        const verifier = localStorage.getItem('kick_verifier');
+                        if (verifier) {
+                            body.code_verifier = verifier;
+                            localStorage.removeItem('kick_verifier'); // Limpiar después de usar
+                        }
+                    }
+
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers,
-                        body: JSON.stringify({ code }),
+                        body: JSON.stringify(body),
                     });
 
                     if (!response.ok) {
@@ -104,7 +115,8 @@ const AuthCallback = () => {
         }
     }, [searchParams, navigate]);
 
-    const platformName = (searchParams.get('state') === 'youtube') ? 'YouTube' : 'Twitch';
+    const state = searchParams.get('state');
+    const platformName = state === 'youtube' ? 'YouTube' : state === 'kick' ? 'Kick' : 'Twitch';
 
     return (
         <div className="h-screen bg-background-dark flex flex-col items-center justify-center p-4">

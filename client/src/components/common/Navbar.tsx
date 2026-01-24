@@ -40,6 +40,8 @@ const Navbar = () => {
         </>
     );
 
+    const [isAuthenticated] = useState(() => !!localStorage.getItem('token'));
+
     const actionButton = isAuthPage ? (
         <Link to="/" className="w-full md:w-auto">
             <button className="flex w-full md:min-w-32 cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
@@ -47,9 +49,9 @@ const Navbar = () => {
             </button>
         </Link>
     ) : (
-        <Link to="/login" className="w-full md:w-auto">
+        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="w-full md:w-auto">
             <button className="flex w-full md:min-w-32 cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
-                <span>Iniciar Sesión</span>
+                <span>{isAuthenticated ? 'Ir al Panel' : 'Iniciar Sesión'}</span>
             </button>
         </Link>
     );

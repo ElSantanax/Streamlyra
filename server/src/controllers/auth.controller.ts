@@ -4,6 +4,7 @@ import { Connection } from '../models/Connection.model';
 import { AuthService } from '../services/AuthService';
 import { TwitchService } from '../services/platforms/TwitchService';
 import { YouTubeService } from '../services/platforms/YouTubeService';
+import { KickService } from '../services/platforms/KickService';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 export const twitchAuth = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -102,6 +103,24 @@ export const disconnectPlatform = async (req: AuthRequest, res: Response): Promi
         res.json({ success: true, message: `${provider} desconectado` });
     } catch {
         res.status(500).json({ error: 'Error al desconectar' });
+    }
+};
+
+export const kickAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { code, code_verifier } = req.body as { code?: string, code_verifier?: string };
+    if (!code) {
+        res.status(400).json({ error: 'Falta el código de autorización' });
+        return;
+    }
+
+    try {
+        const { profile, tokens } = await KickService.getProfileAndTokens(code, code_verifier);
+        const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
+        res.json(result);
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error('Error Kick Auth:', err.message);
+        res.status(400).json({ error: err.message });
     }
 };
 

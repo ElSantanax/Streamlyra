@@ -4,61 +4,17 @@ import { ChatProvider } from './ChatProvider';
 import { Connection } from '../../models/Connection.model';
 import { AuthService } from '../AuthService';
 import colors from 'colors';
-
-interface YouTubeBroadcast {
-    status: {
-        lifeCycleStatus: string;
-    };
-    snippet: {
-        liveChatId: string;
-    };
-}
-
-interface YouTubeBroadcastResponse {
-    items: YouTubeBroadcast[];
-}
-
-interface YouTubeChatMessage {
-    id: string;
-    authorDetails: {
-        displayName: string;
-        profileImageUrl: string;
-        isChatModerator: boolean;
-        isChatOwner: boolean;
-        isVerified: boolean;
-        isChatSponsor: boolean;
-    };
-    snippet: {
-        type: string;
-        displayMessage: string;
-        publishedAt: string;
-        superChatDetails?: {
-            amountDisplayString: string;
-            userComment: string;
-        };
-        newMemberDetails?: {
-            memberLevelName: string;
-        };
-        membershipGiftingDetails?: {
-            giftMembershipsCount: number;
-            giftMembershipsLevelName: string;
-        };
-        memberMilestoneChatDetails?: {
-            userComment: string;
-            memberLevelName: string;
-            memberMonth: number;
-        };
-    };
-}
-
-interface YouTubeChatMessagesResponse {
-    items: YouTubeChatMessage[];
-    nextPageToken: string;
-    pollingIntervalMillis: number;
-}
+import {
+    YouTubeBroadcast,
+    YouTubeBroadcastResponse,
+    YouTubeChatMessage,
+    YouTubeChatMessagesResponse,
+    YouTubeVideoResponse
+} from '../../types/youtube.types';
 
 export class YouTubeChatProvider implements ChatProvider {
     private intervals: Map<string, NodeJS.Timeout> = new Map();
+    private viewerIntervals: Map<string, NodeJS.Timeout> = new Map();
     private nextPageTokens: Map<string, string> = new Map();
     private processedIds: Map<string, Set<string>> = new Map();
 
@@ -79,14 +35,24 @@ export class YouTubeChatProvider implements ChatProvider {
         console.log(colors.red(`[YouTubeChat] Buscando Live para ${userId}...`));
 
         try {
-            const liveChatId = await this.getLiveChatId(accessToken);
-            if (!liveChatId) {
+            const broadcast = await this.getLiveBroadcast(accessToken);
+            if (!broadcast) {
                 console.log(colors.gray(`[YouTubeChat] No hay stream activo para ${userId}`));
                 return;
             }
 
-            console.log(colors.green(`✅ [YouTubeChat] Chat detectado: ${liveChatId}`));
-            this.startPolling(userId, liveChatId, accessToken, io);
+            const liveChatId = broadcast.snippet?.liveChatId;
+            const broadcastId = broadcast.id;
+
+            if (liveChatId) {
+                console.log(colors.green(`✅ [YouTubeChat] Chat detectado: ${liveChatId}`));
+                this.startPolling(userId, liveChatId, accessToken, io);
+
+                // Start polling viewers if we have a broadcast ID
+                if (broadcastId) {
+                    this.startViewerPolling(userId, broadcastId, accessToken, io);
+                }
+            }
 
         } catch (error: unknown) {
             const err = error as { response?: { data: unknown }, message: string };
@@ -94,22 +60,23 @@ export class YouTubeChatProvider implements ChatProvider {
         }
     }
 
-    private async getLiveChatId(accessToken: string): Promise<string | null> {
+    private async getLiveBroadcast(accessToken: string): Promise<YouTubeBroadcast | null> {
         const response = await axios.get<YouTubeBroadcastResponse>('https://www.googleapis.com/youtube/v3/liveBroadcasts', {
-            params: { part: 'snippet,status', mine: true, broadcastType: 'all', maxResults: 5 },
+            params: { part: 'snippet,status,id', mine: true, broadcastType: 'all', maxResults: 1 },
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         // Solo conectamos si hay un broadcast que esté actualmente 'live'
-        const activeBroadcast = response.data.items?.find((b: YouTubeBroadcast) =>
+        return response.data.items?.find((b: YouTubeBroadcast) =>
             b.status.lifeCycleStatus === 'live'
-        );
-
-        return activeBroadcast?.snippet?.liveChatId || null;
+        ) || null;
     }
 
     private startPolling(userId: string, liveChatId: string, accessToken: string, io: Server) {
-        if (this.intervals.has(userId)) this.disconnect(userId);
+        if (this.intervals.has(userId)) {
+            clearTimeout(this.intervals.get(userId));
+            this.intervals.delete(userId);
+        }
 
         const poll = async () => {
             if (!this.intervals.has(userId)) return;
@@ -194,12 +161,45 @@ export class YouTubeChatProvider implements ChatProvider {
         this.intervals.set(userId, initialTimeout);
     }
 
+    private startViewerPolling(userId: string, broadcastId: string, accessToken: string, io: Server) {
+        if (this.viewerIntervals.has(userId)) clearInterval(this.viewerIntervals.get(userId));
+
+        const getStats = async () => {
+            try {
+                const response = await axios.get<YouTubeVideoResponse>('https://www.googleapis.com/youtube/v3/videos', {
+                    params: { part: 'liveStreamingDetails', id: broadcastId },
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+
+                const video = response.data.items?.[0];
+                const viewerCount = video?.liveStreamingDetails?.concurrentViewers || '0';
+
+                io.to(userId).emit('viewers_update', {
+                    platform: 'youtube',
+                    count: parseInt(viewerCount)
+                });
+
+            } catch (error) {
+                console.error('[YouTubeViewer] Error fetching stats:', error);
+            }
+        };
+
+        // Ejecutar inmediatamente y luego cada 60s
+        getStats();
+        this.viewerIntervals.set(userId, setInterval(getStats, 60000));
+    }
+
     async disconnect(userId: string): Promise<void> {
         if (this.intervals.has(userId)) {
             clearTimeout(this.intervals.get(userId));
             this.intervals.delete(userId);
             this.nextPageTokens.delete(userId);
             this.processedIds.delete(userId);
+        }
+
+        if (this.viewerIntervals.has(userId)) {
+            clearInterval(this.viewerIntervals.get(userId));
+            this.viewerIntervals.delete(userId);
         }
     }
 }

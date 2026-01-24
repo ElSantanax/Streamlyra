@@ -44,6 +44,18 @@ const Dashboard = () => {
         }
     }, [messages]);
 
+    interface ViewersUpdate {
+        platform: string;
+        count: number;
+    }
+
+    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string; viewers?: number }>>({
+        twitch: { connected: false },
+        youtube: { connected: false },
+        tiktok: { connected: false },
+        kick: { connected: false }
+    });
+
     useEffect(() => {
         // Obtenemos el usuario guardado para identificarnos
         const userStr = localStorage.getItem('user');
@@ -80,10 +92,21 @@ const Dashboard = () => {
             });
         }
 
+        function onViewersUpdate(data: ViewersUpdate) {
+            setUserConnections(prev => ({
+                ...prev,
+                [data.platform]: {
+                    ...prev[data.platform],
+                    viewers: data.count
+                }
+            }));
+        }
+
         // Listeners
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('chat_message', onChatMessage);
+        socket.on('viewers_update', onViewersUpdate);
 
         // Si ya estaba conectado de antes
         if (socket.connected) {
@@ -94,16 +117,10 @@ const Dashboard = () => {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
             socket.off('chat_message', onChatMessage);
+            socket.off('viewers_update', onViewersUpdate);
             // No desconectamos al desmontar para navegación fluida
         };
     }, [navigate]);
-
-    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string }>>({
-        twitch: { connected: false },
-        youtube: { connected: false },
-        tiktok: { connected: false },
-        kick: { connected: false }
-    });
 
     // Cargar perfil y conexiones
     useEffect(() => {

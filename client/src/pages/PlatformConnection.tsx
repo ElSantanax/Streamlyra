@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
@@ -6,7 +7,13 @@ import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
 
 const PlatformConnection = () => {
-    // Component logic
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (localStorage.getItem('token')) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
 
     return (
         <div className="page-base antialiased selection:bg-primary selection:text-white overflow-x-hidden">

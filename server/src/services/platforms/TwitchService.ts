@@ -1,21 +1,6 @@
 import axios from 'axios';
 import { PlatformProfile, AuthTokens } from '../AuthService';
-
-interface TwitchTokenResponse {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-}
-
-interface TwitchUserResponse {
-    data: Array<{
-        id: string;
-        login: string;
-        display_name: string;
-        profile_image_url: string;
-        email?: string;
-    }>;
-}
+import { TwitchTokenResponse, TwitchUserResponse } from '../../types/twitch.types';
 
 export class TwitchService {
     static async getProfileAndTokens(code: string) {

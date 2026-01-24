@@ -3,6 +3,7 @@ import { User } from '../models/User.model';
 import { Connection } from '../models/Connection.model';
 import { TwitchService } from './platforms/TwitchService';
 import { YouTubeService } from './platforms/YouTubeService';
+import { KickService } from './platforms/KickService';
 
 export interface PlatformProfile {
     provider: 'twitch' | 'youtube' | 'kick' | 'tiktok';
@@ -141,7 +142,7 @@ export class AuthService {
     /**
      * Verifica si el token de una conexión ha expirado y lo refresca si es necesario
      */
-    static async getValidAccessToken(userId: string, provider: 'twitch' | 'youtube'): Promise<string | null> {
+    static async getValidAccessToken(userId: string, provider: 'twitch' | 'youtube' | 'kick'): Promise<string | null> {
         const connection = await Connection.findOne({ where: { userId, provider } });
         if (!connection) return null;
 
@@ -160,9 +161,14 @@ export class AuthService {
 
         console.log(`[AuthService] Refrescando token expirado para ${provider}...`);
         try {
-            const tokens: AuthTokens = (provider === 'twitch')
-                ? await TwitchService.refreshAccessToken(connection.refreshToken)
-                : await YouTubeService.refreshAccessToken(connection.refreshToken);
+            let tokens: AuthTokens;
+            if (provider === 'twitch') {
+                tokens = await TwitchService.refreshAccessToken(connection.refreshToken);
+            } else if (provider === 'youtube') {
+                tokens = await YouTubeService.refreshAccessToken(connection.refreshToken);
+            } else {
+                tokens = await KickService.refreshAccessToken(connection.refreshToken);
+            }
 
             this.updateConnectionTokens(connection, tokens);
             await connection.save();

@@ -1,13 +1,16 @@
 import tmi from 'tmi.js';
+import axios from 'axios';
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
 import { Connection } from '../../models/Connection.model';
 import { User } from '../../models/User.model';
 import { AuthService } from '../AuthService';
 import colors from 'colors';
+import { TwitchStreamResponse } from '../../types/twitch.types';
 
 export class TwitchChatProvider implements ChatProvider {
     private activeClients: Map<string, tmi.Client> = new Map();
+    private viewerIntervals: Map<string, NodeJS.Timeout> = new Map();
 
     async connect(userId: string, io: Server): Promise<void> {
         const connection = await Connection.findOne({
@@ -21,6 +24,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         const username = connection.providerUsername || connection.user.username;
         const accessToken = validToken || connection.accessToken;
+        const providerId = connection.providerId; // Needed for API calls
 
         if (this.activeClients.has(userId)) {
             await this.disconnect(userId);
@@ -28,6 +32,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         console.log(colors.cyan(`[TwitchChat] Conectando TMI para: ${username}`));
 
+        // --- 1. Chat Connection (TMI) ---
         const client = new tmi.Client({
             options: { debug: false },
             identity: {
@@ -40,6 +45,9 @@ export class TwitchChatProvider implements ChatProvider {
         await client.connect();
         this.activeClients.set(userId, client);
         console.log(colors.green(`✅ [TwitchChat] Conectado a chat: ${username}`));
+
+        // Start polling for viewers
+        this.startViewerPolling(userId, username, providerId, accessToken, io);
 
         client.on('message', (_channel, tags, message, _self) => {
             const now = new Date();
@@ -99,7 +107,42 @@ export class TwitchChatProvider implements ChatProvider {
         });
     }
 
+    private startViewerPolling(userId: string, username: string, providerId: string, accessToken: string, io: Server) {
+        if (this.viewerIntervals.has(userId)) clearInterval(this.viewerIntervals.get(userId));
+
+        const getStats = async () => {
+            try {
+                const clientId = process.env.TWITCH_CLIENT_ID;
+
+                const response = await axios.get<TwitchStreamResponse>('https://api.twitch.tv/helix/streams', {
+                    params: { user_login: username },
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Client-Id': clientId
+                    }
+                });
+
+                const stream = response.data.data[0];
+                const viewerCount = stream ? stream.viewer_count : 0;
+                // Si stream es undefined, es que está offline -> 0 viewers
+
+                io.to(userId).emit('viewers_update', {
+                    platform: 'twitch',
+                    count: viewerCount
+                });
+
+            } catch (error) {
+                console.error('[TwitchViewer] Error fetching stats:', error);
+            }
+        };
+
+        // Ejecutar inmediatamente y luego cada 60s
+        getStats();
+        this.viewerIntervals.set(userId, setInterval(getStats, 60000));
+    }
+
     async disconnect(userId: string): Promise<void> {
+        // Chat disconnect
         const client = this.activeClients.get(userId);
         if (client) {
             try {
@@ -108,6 +151,12 @@ export class TwitchChatProvider implements ChatProvider {
             } catch (error) {
                 console.error('[TwitchChat] Error desconectando:', error);
             }
+        }
+
+        // Viewer polling cleanup
+        if (this.viewerIntervals.has(userId)) {
+            clearInterval(this.viewerIntervals.get(userId));
+            this.viewerIntervals.delete(userId);
         }
     }
 }

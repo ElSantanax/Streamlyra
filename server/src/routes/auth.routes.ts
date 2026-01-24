@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { twitchAuth, youtubeAuth, getMe, disconnectPlatform } from '../controllers/auth.controller';
+import { twitchAuth, youtubeAuth, kickAuth, getMe, disconnectPlatform } from '../controllers/auth.controller';
 import { authenticateToken, optionalAuthenticate } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -12,6 +12,9 @@ router.post('/twitch', optionalAuthenticate, twitchAuth);
 
 // POST /api/auth/youtube - Autenticación opcional para permitir vinculación
 router.post('/youtube', optionalAuthenticate, youtubeAuth);
+
+// POST /api/auth/kick - Autenticación opcional para permitir vinculación
+router.post('/kick', optionalAuthenticate, kickAuth);
 
 // DELETE /api/auth/platform - Requiere estar logueado
 router.delete('/platform', authenticateToken, disconnectPlatform);

@@ -1,25 +1,6 @@
 import axios from 'axios';
 import { PlatformProfile, AuthTokens } from '../AuthService';
-
-interface YouTubeTokenResponse {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-}
-
-interface YouTubeChannelResponse {
-    items: Array<{
-        id: string;
-        snippet: {
-            title: string;
-            thumbnails: {
-                default?: {
-                    url: string;
-                }
-            }
-        }
-    }>;
-}
+import { YouTubeTokenResponse, YouTubeChannelResponse } from '../../types/youtube.types';
 
 export class YouTubeService {
     static async getProfileAndTokens(code: string) {

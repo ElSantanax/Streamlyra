@@ -3,6 +3,7 @@ import { MdClose } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import PlatformButton from '../connection/PlatformButton';
 import PlatformInput from '../connection/PlatformInput';
+import { generatePKCE } from '../../utils/pkce';
 
 interface AddPlatformModalProps {
     isOpen: boolean;
@@ -83,9 +84,10 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                             const handleConnect = () => {
                                 if (isConnected) return;
 
+                                const redirectUri = `${window.location.origin}/auth/callback`;
+
                                 if (key === 'twitch') {
                                     const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
-                                    const redirectUri = `${window.location.origin}/auth/callback`;
                                     if (!clientId) {
                                         alert('Falta VITE_TWITCH_CLIENT_ID en .env');
                                         return;
@@ -96,13 +98,31 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 
                                 if (key === 'youtube') {
                                     const clientId = import.meta.env.VITE_YOUTUBE_CLIENT_ID as string;
-                                    const redirectUri = `${window.location.origin}/auth/callback`;
                                     if (!clientId) {
                                         alert('Falta VITE_YOUTUBE_CLIENT_ID en .env');
                                         return;
                                     }
                                     const scope = 'https://www.googleapis.com/auth/youtube.readonly email profile';
                                     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=youtube`;
+                                }
+
+                                if (key === 'kick') {
+                                    const clientId = import.meta.env.VITE_KICK_CLIENT_ID as string;
+                                    if (!clientId) {
+                                        alert('Falta VITE_KICK_CLIENT_ID en .env');
+                                        return;
+                                    }
+
+                                    // Generar PKCE para Kick (Requerido para OAuth 2.1)
+                                    generatePKCE().then(({ verifier, challenge }) => {
+                                        localStorage.setItem('kick_verifier', verifier);
+
+                                        const state = 'kick';
+                                        const scope = 'user:read channel:read chat:write events:subscribe';
+                                        const authUrl = `https://id.kick.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
+
+                                        window.location.href = authUrl;
+                                    });
                                 }
                             };
 
