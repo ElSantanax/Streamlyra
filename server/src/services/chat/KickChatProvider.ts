@@ -4,70 +4,52 @@ import Pusher from 'pusher-js';
 import { ChatProvider } from './ChatProvider';
 import { Connection } from '../../models/Connection.model';
 import { User } from '../../models/User.model';
-import { AuthService } from '../AuthService';
+import { ConnectionService } from '../connection/ConnectionService';
 import { KickService } from '../platforms/KickService';
-import colors from 'colors';
+import { MessageDeduplicator } from '../../utils/messageDeduplicate';
+import { PollingManager } from './PollingManager';
 import { KickApiResponse, KickChannel, KickChatMessagePayload } from '../../types/kick.types';
 
 export class KickChatProvider implements ChatProvider {
     private pusherClients: Map<string, Pusher> = new Map();
-    private viewerIntervals: Map<string, NodeJS.Timeout> = new Map();
-    private messageIntervals: Map<string, NodeJS.Timeout> = new Map();
-    private processedMessages: Map<string, Set<string>> = new Map();
+    private messagePolling: PollingManager = new PollingManager();
+    private viewerPolling: PollingManager = new PollingManager();
+    private deduplicators: Map<string, MessageDeduplicator> = new Map();
 
     async connect(userId: string, io: Server): Promise<void> {
         const connection = await Connection.findOne({
-            where: { userId, provider: 'kick' },
+            where: { userId: String(userId), provider: 'kick' },
             include: [User]
         });
 
         if (!connection || !connection.user) return;
 
-        const accessToken = await AuthService.getValidAccessToken(userId, 'kick');
-        if (!accessToken) {
-            console.error(colors.red('[KickChat] No se pudo obtener el Access Token.'));
-            return;
-        }
+        const accessToken = await ConnectionService.getValidAccessToken(userId, 'kick');
+        if (!accessToken) return console.error('[KickChat] No Access Token.');
+
+        io.to(userId).emit('connection_status', { platform: 'kick', status: 'connecting' });
 
         try {
-            // 1. Obtener info oficial del canal
             const channels = await KickService.getChannelByToken(accessToken);
-            if (!channels || channels.length === 0) {
-                console.error(colors.red('[KickChat] No se encontró información del canal.'));
-                return;
-            }
+            if (!channels?.length) return console.error('[KickChat] Canal no encontrado.');
 
-            const kickChannel = channels[0];
-            const broadcasterId = kickChannel.broadcaster_user_id.toString();
-            const channelSlug = kickChannel.slug;
-
-            console.log(colors.cyan(`[KickChat] Activando servicios para: ${channelSlug} (ID: ${broadcasterId})`));
+            const { broadcaster_user_id, slug } = channels[0];
+            const broadcasterId = broadcaster_user_id.toString();
 
             await this.disconnect(userId);
 
-            // 2. INICIAR CONEXIÓN WEBSOCKET (Fallback)
-            this.setupPusher(userId, broadcasterId, channelSlug, io);
-
-            // 3. INICIAR POLLING DE SEGURIDAD (Authorized Polling)
-            this.startMessagePolling(userId, channelSlug, accessToken, io, broadcasterId);
-
-            // 4. ANALÍTICAS
+            this.setupPusher(userId, broadcasterId, slug, io);
+            this.startMessagePolling(userId, slug, accessToken, io, broadcasterId);
             this.startViewerPolling(userId, accessToken, io);
 
-            console.log(colors.green(`✅ [KickChat] Servicios iniciados para ${channelSlug}.`));
+            io.to(userId).emit('connection_status', { platform: 'kick', status: 'connected' });
 
-            // 5. AUTO-REGISTRO DE WEBHOOK (Si hay APP_URL https)
-            const appUrl = process.env.APP_URL;
-            if (appUrl && appUrl.startsWith('https://')) {
-                void KickService.subscribeToChat(accessToken, broadcasterId)
-                    .then(() => {
-                        console.log(colors.blue(`[KickChat] Suscripción a Webhooks solicitada para ${broadcasterId}`));
-                    })
-                    .catch(() => { /* Error silencioso en auto-sus */ });
+            if (process.env.APP_URL?.startsWith('https://')) {
+                void KickService.subscribeToChat(accessToken, broadcasterId).catch(() => { });
             }
-
         } catch (error) {
-            console.error('[KickChat] Error en connect:', error);
+            console.error('[KickChat] Error:', error);
+            io.to(userId).emit('connection_status', { platform: 'kick', status: 'error' });
         }
     }
 
@@ -82,13 +64,7 @@ export class KickChatProvider implements ChatProvider {
         const pusherChannel = pusher.subscribe(channelName);
 
         pusher.connection.bind('connected', () => {
-            console.log(colors.green(`✅ [KickChat] WebSocket conectado (${username})`));
-        });
-
-        pusher.connection.bind('error', (err: { error?: { data?: { code?: number, message?: string } } }) => {
-            if (err.error?.data?.code === 4001) {
-                // Silencioso, usamos polling
-            }
+            console.log(`[KickChat] ✅ WebSocket conectado (${username})`);
         });
 
         const handleMsg = (data: KickChatMessagePayload) => this.emitMessage(userId, data, io, broadcasterId);
@@ -102,16 +78,12 @@ export class KickChatProvider implements ChatProvider {
     private emitMessage(userId: string, data: KickChatMessagePayload, io: Server, broadcasterId: string) {
         const msgId = data.id || data.message_id || Date.now().toString();
 
-        if (!this.processedMessages.has(userId)) this.processedMessages.set(userId, new Set<string>());
-        const msgSet = this.processedMessages.get(userId) as Set<string>;
-
-        if (msgSet.has(msgId)) return;
-        msgSet.add(msgId);
-
-        if (msgSet.size > 500) {
-            const first = msgSet.values().next().value as string | undefined;
-            if (first !== undefined) msgSet.delete(first);
+        if (!this.deduplicators.has(userId)) {
+            this.deduplicators.set(userId, new MessageDeduplicator());
         }
+        const dedup = this.deduplicators.get(userId)!;
+
+        if (dedup.isDuplicate(msgId)) return;
 
         const chatMessage = {
             id: msgId,
@@ -125,14 +97,12 @@ export class KickChatProvider implements ChatProvider {
             isOwner: broadcasterId === data.sender.id.toString() || broadcasterId === data.sender.user_id.toString()
         };
 
-        // console.log(colors.gray(`[KickChat] Emitiendo mensaje de ${chatMessage.user} a sala ${userId}`));
         io.to(userId).emit('chat_message', chatMessage);
     }
 
     private startMessagePolling(userId: string, channelSlug: string, accessToken: string, io: Server, broadcasterId: string) {
-        const fetchMessages = async () => {
+        this.messagePolling.start(userId, async () => {
             try {
-                // console.log(`[KickChat] Polling mensajes para ${channelSlug}...`);
                 const response = await axios.get<KickApiResponse<{ messages: KickChatMessagePayload[] }>>(`https://kick.com/api/v2/channels/${channelSlug}/messages`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -147,18 +117,15 @@ export class KickChatProvider implements ChatProvider {
 
             } catch (error) {
                 const axiosErr = error as AxiosError;
-                // Ocultamos los 500 de polling ya que el Webhook está funcionando
                 if (axiosErr.response?.status !== 500) {
-                    console.error(colors.yellow(`[KickChat] Polling Error (${axiosErr.response?.status}): ${axiosErr.message}`));
+                    console.error(`[KickChat] Polling error (${axiosErr.response?.status}): ${axiosErr.message}`);
                 }
             }
-        };
-
-        this.messageIntervals.set(userId, setInterval(() => { void fetchMessages(); }, 5000));
+        }, 5000);
     }
 
     private startViewerPolling(userId: string, accessToken: string, io: Server) {
-        const getStats = async () => {
+        this.viewerPolling.start(userId, async () => {
             try {
                 const response = await axios.get<KickApiResponse<KickChannel[]>>('https://api.kick.com/public/v1/channels', {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -172,12 +139,9 @@ export class KickChatProvider implements ChatProvider {
                     });
                 }
             } catch {
-                // Silencioso
+                // Ignore errors during background polling
             }
-        };
-
-        void getStats();
-        this.viewerIntervals.set(userId, setInterval(() => { void getStats(); }, 60000));
+        });
     }
 
     async disconnect(userId: string): Promise<void> {
@@ -185,14 +149,8 @@ export class KickChatProvider implements ChatProvider {
         if (pusher) pusher.disconnect();
         this.pusherClients.delete(userId);
 
-        const msgInt = this.messageIntervals.get(userId);
-        if (msgInt) clearInterval(msgInt);
-        this.messageIntervals.delete(userId);
-
-        const viewInt = this.viewerIntervals.get(userId);
-        if (viewInt) clearInterval(viewInt);
-        this.viewerIntervals.delete(userId);
-
-        this.processedMessages.delete(userId);
+        this.messagePolling.stop(userId);
+        this.viewerPolling.stop(userId);
+        this.deduplicators.delete(userId);
     }
 }

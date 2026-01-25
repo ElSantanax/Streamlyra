@@ -3,6 +3,7 @@ import { FaPlus, FaTimes } from 'react-icons/fa';
 import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
+import Spinner from '../common/Spinner';
 
 // --- Local Components (KISS: Co-located for internal use) ---
 
@@ -21,8 +22,9 @@ const SidebarSection = ({ title, children, className = "" }: SidebarSectionProps
 
 interface ConnectionItemProps {
     platformKey: PlatformKey;
-    status: 'connected' | 'disconnected';
+    status: 'connected' | 'disconnected' | 'connecting' | 'error';
     viewers?: string;
+    statusMessage?: string;
     onDisconnect?: () => void;
 }
 
@@ -30,45 +32,60 @@ const ConnectionItem = ({
     platformKey,
     status,
     viewers,
+    statusMessage,
     onDisconnect
 }: ConnectionItemProps) => {
     const { name, Icon, color, iconColor } = PLATFORMS[platformKey];
     const isConnected = status === 'connected';
+    const isConnecting = status === 'connecting';
+    const isError = status === 'error';
 
     return (
-        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected ? 'opacity-60' : ''}`}>
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center size-8 rounded-full ${color} ${iconColor}`}>
                     <Icon size={platformKey === 'tiktok' ? 14 : 16} />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-sm font-bold leading-none">{name}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold leading-none">{name}</span>
+                        {isConnecting && <Spinner size="xs" />}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-1">
-                        <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-                            {isConnected ? 'Conectado' : 'Desconectado'}
-                        </span>
-                        {isConnected && viewers && (
+                        {isConnecting ? (
+                            <span className="text-xs text-blue-400">Conectando...</span>
+                        ) : isError ? (
+                            <span className="text-xs text-yellow-400">{statusMessage || 'Error'}</span>
+                        ) : isConnected ? (
                             <>
-                                <span className="text-[10px] text-gray-600">•</span>
-                                <div className="flex items-center gap-1 text-gray-400">
-                                    <MdOutlineVisibility size={12} />
-                                    <span className="text-xs">{viewers}</span>
-                                </div>
+                                <span className="text-xs text-green-400">Conectado</span>
+                                {viewers && (
+                                    <>
+                                        <span className="text-[10px] text-gray-600">•</span>
+                                        <div className="flex items-center gap-1 text-gray-400">
+                                            <MdOutlineVisibility size={12} />
+                                            <span className="text-xs">{viewers}</span>
+                                        </div>
+                                    </>
+                                )}
                             </>
+                        ) : (
+                            <span className="text-xs text-red-400">Desconectado</span>
                         )}
                     </div>
                 </div>
             </div>
-            {isConnected ? (
+            {(isConnected || isConnecting || isError) ? (
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`¿Estás seguro de desconectar ${name}?`)) {
+                        const action = isConnecting ? 'cancelar' : 'desconectar';
+                        if (window.confirm(`¿Estás seguro de ${action} ${name}?`)) {
                             onDisconnect?.();
                         }
                     }}
                     className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
-                    title="Desconectar"
+                    title={isConnecting ? "Cancelar conexión" : "Desconectar"}
                 >
                     <MdDeleteOutline size={18} />
                 </button>
@@ -101,16 +118,13 @@ interface SidebarProps {
         connected: boolean;
         username?: string;
         viewers?: number;
+        status?: 'connecting' | 'connected' | 'error';
+        statusMessage?: string;
     }>;
     onDisconnect: (platform: PlatformKey) => void;
 }
 
 const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: SidebarProps) => {
-
-    // Solo mostramos las plataformas que están conectadas
-    const connectedPlatforms = Object.entries(connections)
-        .filter(([, data]) => data.connected)
-        .map(([key]) => key as PlatformKey);
 
     // Calcular espectadores totales
     const totalViewers = Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0);
@@ -134,16 +148,29 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
             </div>
 
             <SidebarSection title="Conexiones">
-                {connectedPlatforms.length > 0 ? (
-                    connectedPlatforms.map((key) => (
-                        <ConnectionItem
-                            key={key}
-                            platformKey={key}
-                            status="connected"
-                            viewers={connections[key].viewers !== undefined ? formatNumber(connections[key].viewers!) : '0'}
-                            onDisconnect={() => onDisconnect(key)}
-                        />
-                    ))
+                {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error').length > 0 ? (
+                    Object.entries(connections)
+                        .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error')
+                        .map(([key, data]) => {
+                            const status = data.status === 'connecting'
+                                ? 'connecting'
+                                : data.status === 'error'
+                                    ? 'error'
+                                    : data.connected
+                                        ? 'connected'
+                                        : 'disconnected';
+
+                            return (
+                                <ConnectionItem
+                                    key={key}
+                                    platformKey={key as PlatformKey}
+                                    status={status}
+                                    viewers={data.viewers !== undefined ? formatNumber(data.viewers) : undefined}
+                                    statusMessage={data.statusMessage}
+                                    onDisconnect={() => onDisconnect(key as PlatformKey)}
+                                />
+                            );
+                        })
                 ) : (
                     <div className="p-4 text-center border border-dashed border-surface-border rounded-lg bg-surface-dark/30">
                         <p className="text-xs text-gray-500">No hay plataformas conectadas</p>

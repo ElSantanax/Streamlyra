@@ -1,26 +1,24 @@
 import { Server, Socket } from 'socket.io';
-import colors from 'colors';
 import { ChatManager } from '../services/ChatManager';
 
-export const setupSocketHandlers = (io: Server) => {
-    const chatManager = ChatManager.getInstance();
-    chatManager.setIo(io);
+export const setupSocketHandlers = (io: Server, chatManager: ChatManager) => {
 
     io.on('connection', (socket: Socket) => {
-        console.log(colors.magenta('Nuevo cliente conectado al socket: ' + socket.id));
+        console.log(`[Socket] Nuevo cliente conectado: ${socket.id}`);
 
         socket.on('identify', async (userId: string) => {
-            console.log(colors.cyan(`IDENTIFY recibido - UserId: ${userId} | SocketId: ${socket.id}`));
-            socket.join(userId);
-            console.log(colors.green(`Socket unido a sala: ${userId}`));
-
-            await chatManager.connectUser(userId);
+            try {
+                socket.join(userId);
+                console.log(`[Socket] Usuario ${userId} identificado`);
+                await chatManager.connectUser(userId);
+            } catch (error) {
+                console.error(`[Socket] Error connecting user ${userId}:`, error);
+                socket.emit('error', { message: 'Connection failed' });
+            }
         });
 
         socket.on('disconnect', () => {
             console.log('Cliente desconectado');
-            // Nota: Aquí se podría llamar a disconnectUser si queremos cerrar las conexiones inmediatamente
-            // Por ahora lo dejamos vivo por si es una recarga rápida.
         });
     });
 };

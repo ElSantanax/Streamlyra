@@ -54,4 +54,8 @@ export class Connection extends Model {
 
     @BelongsTo(() => User)
     declare user: User;
+
+    static async removeConnection(userId: string, provider: string) {
+        return this.destroy({ where: { userId, provider } });
+    }
 }

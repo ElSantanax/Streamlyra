@@ -1,19 +1,20 @@
 import express, { Request, Response } from 'express';
-import colors from 'colors';
 import db from './config/db';
 import http from 'http';
 import { Server } from 'socket.io';
-import authRoutes from './routes/auth.routes';
+import { createAuthRoutes } from './routes/auth.routes';
 import webhookRoutes from './routes/webhook.routes';
 import { setupSocketHandlers } from './socket/socket.handler';
+import { ChatManager } from './services/ChatManager';
+import { config } from './config';
 
 async function connectToDatabase() {
     try {
         await db.authenticate();
         await db.sync();
-        console.log(colors.blue.bold('Conexión exitosa a la base de datos.'));
+        console.log('[INFO] Conexión exitosa a la base de datos.');
     } catch (error) {
-        console.error(colors.red.bold('Hubo un error al conectar a la base de datos:'), error);
+        console.error('[ERROR] Hubo un error al conectar a la base de datos:', error);
     }
 }
 
@@ -22,28 +23,26 @@ connectToDatabase();
 const app = express();
 const server = http.createServer(app);
 
-// Extend Request type to include rawBody
 interface RequestWithRawBody extends Request {
     rawBody?: string;
 }
 
-// Configurar Socket.io
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: config.frontendUrl,
         methods: ["GET", "POST"]
     }
 });
 
-// Middlewares
+const chatManager = new ChatManager(io);
+
 app.use(express.json({
     verify: (req: RequestWithRawBody, _res: Response, buf: Buffer) => {
         req.rawBody = buf.toString();
     }
 }));
 
-// Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', createAuthRoutes(io, chatManager));
 app.use('/api/webhooks', webhookRoutes);
 
 app.get('/api/status', (_req, res) => {
@@ -54,8 +53,7 @@ app.get('/', (_req, res) => {
     res.send('Servidor funcionando');
 });
 
-// Setup Socket Handlers (Separation of Concerns)
-setupSocketHandlers(io);
+setupSocketHandlers(io, chatManager);
 
-export { app, io };
+export { app, io, chatManager };
 export default server;

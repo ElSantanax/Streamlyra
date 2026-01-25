@@ -1,25 +1,22 @@
 import { Router } from 'express';
+import { ChatManager } from '../services/ChatManager';
 import { twitchAuth, youtubeAuth, kickAuth, tiktokAuth, getMe, disconnectPlatform } from '../controllers/auth.controller';
 import { authenticateToken, optionalAuthenticate } from '../middleware/auth.middleware';
+import { validateBody } from '../middleware/validation.middleware';
+import { Server } from 'socket.io';
 
-const router = Router();
+export const createAuthRoutes = (io: Server, chatManager: ChatManager) => {
+    const router = Router();
 
-// GET /api/auth/me - Requiere estar logueado
-router.get('/me', authenticateToken, getMe);
+    router.get('/me', authenticateToken, getMe);
+    router.post('/twitch', optionalAuthenticate, validateBody(['code']), twitchAuth);
+    router.post('/youtube', optionalAuthenticate, validateBody(['code']), youtubeAuth);
+    router.post('/kick', optionalAuthenticate, validateBody(['code']), kickAuth);
+    router.post('/tiktok', authenticateToken, validateBody(['username']), tiktokAuth(chatManager));
+    router.delete('/platform', authenticateToken, validateBody(['provider']), disconnectPlatform(chatManager));
 
-// POST /api/auth/twitch - Autenticación opcional para permitir vinculación
-router.post('/twitch', optionalAuthenticate, twitchAuth);
+    return router;
+};
 
-// POST /api/auth/youtube - Autenticación opcional para permitir vinculación
-router.post('/youtube', optionalAuthenticate, youtubeAuth);
+export default createAuthRoutes;
 
-// POST /api/auth/kick - Autenticación opcional para permitir vinculación
-router.post('/kick', optionalAuthenticate, kickAuth);
-
-// POST /api/auth/tiktok - Requiere estar logueado para vincular por username
-router.post('/tiktok', authenticateToken, tiktokAuth);
-
-// DELETE /api/auth/platform - Requiere estar logueado
-router.delete('/platform', authenticateToken, disconnectPlatform);
-
-export default router;

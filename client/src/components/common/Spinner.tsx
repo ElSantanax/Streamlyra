@@ -1,5 +1,5 @@
 interface SpinnerProps {
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
     className?: string;
     text?: string;
     fullScreen?: boolean;
@@ -12,6 +12,7 @@ const Spinner = ({
     fullScreen = false
 }: SpinnerProps) => {
     const sizeClasses = {
+        xs: 'size-3 border-[1.5px]',
         sm: 'size-5 border-2',
         md: 'size-8 border-2',
         lg: 'size-12 border-4',

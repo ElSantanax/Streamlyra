@@ -1,61 +1,55 @@
 import axios from 'axios';
 import { PlatformProfile, AuthTokens } from '../AuthService';
 import { TwitchTokenResponse, TwitchUserResponse } from '../../types/twitch.types';
+import { config } from '../../config';
+import { OAuthUtils, OAuthExchangeOptions } from '../../utils/oauth.utils';
 
 export class TwitchService {
+    private static get oauthOptions(): OAuthExchangeOptions {
+        return {
+            baseUrl: 'https://id.twitch.tv/oauth2/token',
+            clientId: config.twitch.clientId!,
+            clientSecret: config.twitch.clientSecret!,
+            redirectUri: config.twitch.redirectUri!
+        };
+    }
+
     static async getProfileAndTokens(code: string) {
-        // 1. Token Exchange
-        const tokenResponse = await axios.post<TwitchTokenResponse>('https://id.twitch.tv/oauth2/token', null, {
-            params: {
-                client_id: process.env.TWITCH_CLIENT_ID,
-                client_secret: process.env.TWITCH_CLIENT_SECRET,
-                code,
-                grant_type: 'authorization_code',
-                redirect_uri: process.env.TWITCH_REDIRECT_URI
-            }
-        });
+        const { access_token, refresh_token, expires_in } = await OAuthUtils.exchangeCode<TwitchTokenResponse>(
+            code,
+            this.oauthOptions
+        );
 
-        const { access_token, refresh_token, expires_in } = tokenResponse.data;
-
-        // 2. Profile Fetch
         const userResponse = await axios.get<TwitchUserResponse>('https://api.twitch.tv/helix/users', {
             headers: {
-                'Client-ID': process.env.TWITCH_CLIENT_ID,
+                'Client-ID': config.twitch.clientId!,
                 'Authorization': `Bearer ${access_token}`
             }
         });
 
         const twitchUser = userResponse.data.data[0];
 
-        const profile: PlatformProfile = {
-            provider: 'twitch',
-            providerId: twitchUser.id,
-            username: twitchUser.login,
-            displayName: twitchUser.display_name,
-            avatarUrl: twitchUser.profile_image_url,
-            email: twitchUser.email
+        return {
+            profile: {
+                provider: 'twitch',
+                providerId: twitchUser.id,
+                username: twitchUser.login,
+                displayName: twitchUser.display_name,
+                avatarUrl: twitchUser.profile_image_url,
+                email: twitchUser.email
+            } as PlatformProfile,
+            tokens: {
+                accessToken: access_token,
+                refreshToken: refresh_token,
+                expiresIn: expires_in
+            } as AuthTokens
         };
-
-        const tokens: AuthTokens = {
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            expiresIn: expires_in
-        };
-
-        return { profile, tokens };
     }
 
     static async refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
-        const response = await axios.post<TwitchTokenResponse>('https://id.twitch.tv/oauth2/token', null, {
-            params: {
-                client_id: process.env.TWITCH_CLIENT_ID,
-                client_secret: process.env.TWITCH_CLIENT_SECRET,
-                grant_type: 'refresh_token',
-                refresh_token: refreshToken
-            }
-        });
+        const { access_token, refresh_token: new_refresh_token, expires_in } =
+            await OAuthUtils.refreshTokens<TwitchTokenResponse>(refreshToken, this.oauthOptions);
 
-        const { access_token, refresh_token: new_refresh_token, expires_in } = response.data;
         return {
             accessToken: access_token,
             refreshToken: new_refresh_token || refreshToken,

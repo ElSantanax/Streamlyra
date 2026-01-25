@@ -8,22 +8,25 @@ import { generatePKCE } from '../../utils/pkce';
 interface AddPlatformModalProps {
     isOpen: boolean;
     onClose: () => void;
-    connections?: Record<string, { connected: boolean; username?: string }>;
+    connections?: Record<string, {
+        connected: boolean;
+        username?: string;
+        status?: 'connecting' | 'connected' | 'error';
+        statusMessage?: string;
+    }>;
 }
 
 const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     isOpen,
     onClose,
-    connections = {
-        twitch: { connected: false },
-        youtube: { connected: false },
-        tiktok: { connected: false },
-        kick: { connected: false }
-    }
+    connections = {}
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const [tiktokUsername, setTiktokUsername] = useState('');
-    const [isTiktokConnected, setIsTiktokConnected] = useState(connections?.tiktok?.connected ?? false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const isTiktokConnected = connections.tiktok?.connected ?? false;
+    const tiktokStatus = connections.tiktok?.status;
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -48,30 +51,36 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     };
 
     const handleTiktokConnect = async () => {
-        if (!tiktokUsername) return;
+        if (!tiktokUsername || isSubmitting) return;
 
+        setIsSubmitting(true);
         try {
             const token = localStorage.getItem('token');
+            const cleanUsername = tiktokUsername.replace(/^@+/, '');
             const response = await fetch('/api/auth/tiktok', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ username: tiktokUsername })
+                body: JSON.stringify({ username: cleanUsername })
             });
 
             if (response.ok) {
-                setIsTiktokConnected(true);
-                // Opcional: Recargar datos del usuario para actualizar el dashboard
-                window.location.reload();
+                // No recargamos, dejamos que el Dashboard actualice vía socket/fetch
+                // Pero cerramos el modal para que el usuario vea el Sidebar actualizándose
+                setTimeout(() => {
+                    onClose();
+                }, 500);
             } else {
-                const data = await response.json();
+                const data = await response.json() as { error?: string };
                 alert(data.error || 'Error al conectar TikTok');
             }
         } catch (error) {
             console.error('Error connecting tiktok:', error);
             alert('Error de red al conectar TikTok');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -100,7 +109,9 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                     {Object.entries(PLATFORMS)
                         .filter(([key]) => key !== 'system' && key !== 'tiktok')
                         .map(([key, platform]) => {
-                            const isConnected = !!connections[key]?.connected;
+                            const conn = connections[key];
+                            const isConnected = !!conn?.connected;
+                            const status = conn?.status;
 
                             const handleConnect = () => {
                                 if (isConnected) return;
@@ -147,15 +158,19 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                 }
                             };
 
+                            let label = isConnected ? `${platform.name} Conectado` : `Conectar ${platform.name}`;
+                            if (status === 'connecting') label = `Conectando ${platform.name}...`;
+                            if (status === 'error') label = `Error en ${platform.name}`;
+
                             return (
                                 <PlatformButton
                                     key={key}
-                                    label={isConnected ? `${platform.name} Conectado` : `Conectar ${platform.name}`}
+                                    label={label}
                                     subtext={isConnected ? "Cuenta vinculada exitosamente" : `Vincula tu cuenta de ${platform.name}`}
                                     Icon={platform.Icon}
                                     iconColor={platform.brandColor}
                                     onClick={handleConnect}
-                                    isConnected={isConnected}
+                                    isConnected={isConnected || status === 'connecting'}
                                     className="bg-surface-dark hover:bg-surface-dark/80"
                                 />
                             );
@@ -179,7 +194,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                         value={tiktokUsername}
                         onChange={(e) => setTiktokUsername(e.target.value)}
                         onConnect={handleTiktokConnect}
-                        isConnected={isTiktokConnected}
+                        isConnected={isTiktokConnected || tiktokStatus === 'connecting'}
                     />
                 </div>
 

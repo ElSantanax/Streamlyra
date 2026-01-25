@@ -1,21 +1,25 @@
 import axios from 'axios';
 import { PlatformProfile, AuthTokens } from '../AuthService';
 import { YouTubeTokenResponse, YouTubeChannelResponse } from '../../types/youtube.types';
+import { config } from '../../config';
+import { OAuthUtils, OAuthExchangeOptions } from '../../utils/oauth.utils';
 
 export class YouTubeService {
+    private static get oauthOptions(): OAuthExchangeOptions {
+        return {
+            baseUrl: 'https://oauth2.googleapis.com/token',
+            clientId: config.youtube.clientId!,
+            clientSecret: config.youtube.clientSecret!,
+            redirectUri: config.youtube.redirectUri!
+        };
+    }
+
     static async getProfileAndTokens(code: string) {
-        // 1. Token Exchange
-        const tokenResponse = await axios.post<YouTubeTokenResponse>('https://oauth2.googleapis.com/token', {
+        const { access_token, refresh_token, expires_in } = await OAuthUtils.exchangeCode<YouTubeTokenResponse>(
             code,
-            client_id: process.env.YOUTUBE_CLIENT_ID,
-            client_secret: process.env.YOUTUBE_CLIENT_SECRET,
-            redirect_uri: process.env.YOUTUBE_REDIRECT_URI,
-            grant_type: 'authorization_code'
-        });
+            this.oauthOptions
+        );
 
-        const { access_token, refresh_token, expires_in } = tokenResponse.data;
-
-        // 2. Profile Fetch
         const userResponse = await axios.get<YouTubeChannelResponse>('https://www.googleapis.com/youtube/v3/channels', {
             params: { part: 'snippet', mine: true },
             headers: { Authorization: `Bearer ${access_token}` }
@@ -28,32 +32,26 @@ export class YouTubeService {
 
         const channel = items[0];
 
-        const profile: PlatformProfile = {
-            provider: 'youtube',
-            providerId: channel.id,
-            username: channel.snippet.title.replace(/\s+/g, '').toLowerCase().substring(0, 15),
-            displayName: channel.snippet.title,
-            avatarUrl: channel.snippet.thumbnails?.default?.url || ''
+        return {
+            profile: {
+                provider: 'youtube',
+                providerId: channel.id,
+                username: channel.snippet.title.replace(/\s+/g, '').toLowerCase().substring(0, 15),
+                displayName: channel.snippet.title,
+                avatarUrl: channel.snippet.thumbnails?.default?.url || ''
+            } as PlatformProfile,
+            tokens: {
+                accessToken: access_token,
+                refreshToken: refresh_token,
+                expiresIn: expires_in
+            } as AuthTokens
         };
-
-        const tokens: AuthTokens = {
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            expiresIn: expires_in
-        };
-
-        return { profile, tokens };
     }
 
     static async refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
-        const response = await axios.post<YouTubeTokenResponse>('https://oauth2.googleapis.com/token', {
-            refresh_token: refreshToken,
-            client_id: process.env.YOUTUBE_CLIENT_ID,
-            client_secret: process.env.YOUTUBE_CLIENT_SECRET,
-            grant_type: 'refresh_token'
-        });
+        const { access_token, refresh_token: new_refresh_token, expires_in } =
+            await OAuthUtils.refreshTokens<YouTubeTokenResponse>(refreshToken, this.oauthOptions);
 
-        const { access_token, refresh_token: new_refresh_token, expires_in } = response.data;
         return {
             accessToken: access_token,
             refreshToken: new_refresh_token || refreshToken,

@@ -49,7 +49,7 @@ const Dashboard = () => {
         count: number;
     }
 
-    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string; viewers?: number }>>({
+    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string; viewers?: number; status?: 'connecting' | 'connected' | 'error'; statusMessage?: string }>>({
         twitch: { connected: false },
         youtube: { connected: false },
         tiktok: { connected: false },
@@ -102,11 +102,29 @@ const Dashboard = () => {
             }));
         }
 
+        interface ConnectionStatusUpdate {
+            platform: string;
+            status: 'connecting' | 'connected' | 'error';
+            message?: string;
+        }
+
+        function onConnectionStatus(data: ConnectionStatusUpdate) {
+            setUserConnections(prev => ({
+                ...prev,
+                [data.platform]: {
+                    ...prev[data.platform],
+                    status: data.status,
+                    statusMessage: data.message
+                }
+            }));
+        }
+
         // Listeners
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('chat_message', onChatMessage);
         socket.on('viewers_update', onViewersUpdate);
+        socket.on('connection_status', onConnectionStatus);
 
         // Si ya estaba conectado de antes
         if (socket.connected) {
@@ -118,6 +136,7 @@ const Dashboard = () => {
             socket.off('disconnect', onDisconnect);
             socket.off('chat_message', onChatMessage);
             socket.off('viewers_update', onViewersUpdate);
+            socket.off('connection_status', onConnectionStatus);
             // No desconectamos al desmontar para navegación fluida
         };
     }, [navigate]);

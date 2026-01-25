@@ -38,4 +38,10 @@ export class User extends Model {
 
     @HasMany(() => Connection)
     declare connections: Connection[];
+
+    static async findByIdWithConnections(id: string) {
+        return this.findByPk(id, {
+            include: [{ model: Connection, attributes: ['provider', 'providerUsername'] }]
+        });
+    }
 }

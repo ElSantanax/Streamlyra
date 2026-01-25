@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import axios from 'axios';
 import { Server } from 'socket.io';
-import colors from 'colors';
 import { Connection } from '../../models/Connection.model';
 import { KickApiResponse, KickChatMessagePayload } from '../../types/kick.types';
 
@@ -22,7 +21,7 @@ export class KickWebhookService {
             this.lastKeyFetch = now;
             return this.publicKey;
         } catch (error) {
-            console.error(colors.red('[KickWebhook] Error obteniendo clave pública:'), error);
+            console.error('[KickWebhook] Error obteniendo clave pública:', error);
             return null;
         }
     }
@@ -55,7 +54,7 @@ export class KickWebhookService {
                 Buffer.from(signature, 'base64')
             );
         } catch (error) {
-            console.error(colors.red('[KickWebhook] Error verificando firma:'), error);
+            console.error('[KickWebhook] Error verificando firma:', error);
             return false;
         }
     }
@@ -83,7 +82,7 @@ export class KickWebhookService {
         try {
             const broadcasterKickId = broadcaster?.user_id;
             if (!broadcasterKickId) {
-                console.warn(colors.yellow('[KickWebhook] Payload sin broadcaster.user_id'));
+                console.warn('[KickWebhook] Payload sin broadcaster.user_id');
                 return;
             }
 
@@ -92,15 +91,13 @@ export class KickWebhookService {
             });
 
             if (!connection) {
-                console.warn(colors.yellow(`[KickWebhook] No hay Connection para broadcasterKickId=${broadcasterKickId}`));
+                console.warn(`[KickWebhook] No hay Connection para broadcasterKickId=${broadcasterKickId}`);
                 return;
             }
 
             io.to(connection.userId).emit('chat_message', chatMessage);
         } catch (error) {
-            console.error(colors.red('[KickWebhook] Error emitiendo al socket:'), error);
+            console.error('[KickWebhook] Error emitiendo al socket:', error);
         }
-
-        console.log(colors.green(`[KickWebhook] Mensaje de ${sender.username} en el canal de ${broadcaster.username}`));
     }
 }
