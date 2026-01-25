@@ -7,14 +7,17 @@ import webhookRoutes from './routes/webhook.routes';
 import { setupSocketHandlers } from './socket/socket.handler';
 import { ChatManager } from './services/ChatManager';
 import { config } from './config';
+import { errorHandler } from './middleware/error.middleware';
+import pinoHttp from 'pino-http';
+import { logger } from './utils/logger';
 
 async function connectToDatabase() {
     try {
         await db.authenticate();
         await db.sync();
-        console.log('[INFO] Conexión exitosa a la base de datos.');
+        logger.info('Conexión exitosa a la base de datos.');
     } catch (error) {
-        console.error('[ERROR] Hubo un error al conectar a la base de datos:', error);
+        logger.error({ err: error }, 'Hubo un error al conectar a la base de datos');
     }
 }
 
@@ -36,6 +39,26 @@ const io = new Server(server, {
 
 const chatManager = new ChatManager(io);
 
+app.use(pinoHttp({
+    logger,
+    serializers: {
+        req(req) {
+            const r = req as unknown as { id?: string; method?: string; url?: string };
+            return {
+                id: r.id,
+                method: r.method,
+                url: r.url
+            };
+        },
+        res(res) {
+            const r = res as unknown as { statusCode?: number };
+            return {
+                statusCode: r.statusCode
+            };
+        }
+    }
+}));
+
 app.use(express.json({
     verify: (req: RequestWithRawBody, _res: Response, buf: Buffer) => {
         req.rawBody = buf.toString();
@@ -52,6 +75,8 @@ app.get('/api/status', (_req, res) => {
 app.get('/', (_req, res) => {
     res.send('Servidor funcionando');
 });
+
+app.use(errorHandler);
 
 setupSocketHandlers(io, chatManager);
 

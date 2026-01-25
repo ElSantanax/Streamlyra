@@ -6,6 +6,7 @@ import { KickService } from '../services/platforms/KickService';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { ChatManager } from '../services/ChatManager';
 import { ResponseHandler } from '../utils/response.utils';
+import { AppError } from '../utils/AppError';
 
 // OAuth Service Registry
 interface OAuthService {
@@ -39,21 +40,15 @@ export const kickAuth = createOAuthHandler('kick');
 
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     if (!req.user) {
-        ResponseHandler.unauthorized(res);
-        return;
+        throw new AppError('No autorizado', 401);
     }
 
-    try {
-        const result = await AuthService.getUserProfile(req.user.id);
-        if (!result) {
-            ResponseHandler.notFound(res, 'Usuario no encontrado');
-            return;
-        }
-
-        ResponseHandler.success(res, result);
-    } catch (error: unknown) {
-        ResponseHandler.error(res, 'Error al obtener perfil', 500, error);
+    const result = await AuthService.getUserProfile(req.user.id);
+    if (!result) {
+        throw new AppError('Usuario no encontrado', 404);
     }
+
+    ResponseHandler.success(res, result);
 };
 
 export const disconnectPlatform = (chatManager: ChatManager) => async (req: AuthRequest, res: Response): Promise<void> => {

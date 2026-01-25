@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AppError } from '../utils/AppError';
 
 export interface AuthRequest extends Request {
     user?: {
@@ -14,7 +15,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
+        throw new AppError('Acceso denegado. Token no proporcionado.', 401);
     }
 
     try {
@@ -25,7 +26,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
         };
         next();
     } catch {
-        return res.status(403).json({ error: 'Token inválido o expirado.' });
+        throw new AppError('Token inválido o expirado.', 403);
     }
 };
 
