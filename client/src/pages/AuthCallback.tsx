@@ -39,8 +39,11 @@ const AuthCallback = () => {
             // Verificar state para saber provider, fallback a twitch si no hay state (retrocompatibilidad)
             const state = searchParams.get('state') || 'twitch';
             let endpoint = '/api/auth/twitch';
-            if (state === 'youtube') endpoint = '/api/auth/youtube';
-            if (state === 'kick') endpoint = '/api/auth/kick';
+            
+            // Detectar plataforma del state (puede incluir timestamp: youtube_123456)
+            if (state.startsWith('youtube')) endpoint = '/api/auth/youtube';
+            else if (state.startsWith('kick')) endpoint = '/api/auth/kick';
+            else if (state.startsWith('twitch')) endpoint = '/api/auth/twitch';
 
             // Intercambiar código por token con NUESTRO backend
             const authenticate = async () => {
@@ -115,8 +118,10 @@ const AuthCallback = () => {
         }
     }, [searchParams, navigate]);
 
-    const state = searchParams.get('state');
-    const platformName = state === 'youtube' ? 'YouTube' : state === 'kick' ? 'Kick' : 'Twitch';
+    const state = searchParams.get('state') || 'twitch';
+    const platformName = state.startsWith('youtube') ? 'YouTube' 
+        : state.startsWith('kick') ? 'Kick' 
+        : 'Twitch';
 
     return (
         <div className="h-screen bg-background-dark flex flex-col items-center justify-center p-4">

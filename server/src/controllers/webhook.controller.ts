@@ -1,52 +1,83 @@
 import { Request, Response } from 'express';
-import { KickWebhookService } from '../services/chat/KickWebhookService';
-import { io } from '../server';
+import { WebhookProcessor } from '../services/webhook/WebhookProcessor';
+import { AppError } from '../utils/AppError';
 import { KickChatMessagePayload } from '../types/kick.types';
 
-interface RequestWithRawBody extends Request {
-    rawBody?: string;
+interface WebhookData {
+    signature: string;
+    timestamp: string;
+    messageId: string;
+    eventType: string;
+    body: Record<string, unknown>;
 }
 
-export const handleKickWebhook = async (req: RequestWithRawBody, res: Response): Promise<void> => {
-    const signature =
-        req.header('Kick-Event-Signature') ||
-        req.header('X-Kick-Signature') ||
-        '';
-    const timestamp =
-        req.header('Kick-Event-Message-Timestamp') ||
-        req.header('X-Kick-Timestamp') ||
-        '';
-    const messageId =
-        req.header('Kick-Event-Message-Id') ||
-        req.header('X-Kick-Event-Message-Id') ||
-        '';
-    const eventType =
-        req.header('Kick-Event-Type') ||
-        req.header('X-Kick-Event-Type') ||
-        '';
+interface RequestWithWebhookData extends Request {
+    webhookData?: WebhookData;
+}
 
-    if (!signature || !timestamp || !messageId) {
-        res.status(400).send('Missing signature, timestamp, or message id');
-        return;
+/**
+ * Controlador de Webhooks
+ * Responsabilidad: Manejar peticiones/respuestas HTTP
+ * Lógica de negocio delegada a WebhookProcessor
+ */
+export class WebhookController {
+    constructor(private webhookProcessor: WebhookProcessor) { }
+
+    /**
+     * Maneja webhook genérico para cualquier plataforma
+     * 
+     * Flujo:
+     * 1. Validar que webhookData existe
+     * 2. Procesar evento según plataforma
+     * 3. Retornar OK
+     */
+    private async handleWebhook(
+        platform: string,
+        req: RequestWithWebhookData,
+        res: Response
+    ): Promise<void> {
+        const webhookData = req.webhookData;
+
+        if (!webhookData) {
+            throw new AppError('Webhook data not found', 400);
+        }
+
+        // Procesar según plataforma
+        switch (platform) {
+            case 'kick':
+                await this.webhookProcessor.processKickEvent(webhookData.body as unknown as KickChatMessagePayload);
+                break;
+            case 'youtube':
+                await this.webhookProcessor.processYouTubeEvent(webhookData.body);
+                break;
+            case 'twitch':
+                await this.webhookProcessor.processTwitchEvent(webhookData.body);
+                break;
+            default:
+                throw new AppError(`Unknown platform: ${platform}`, 400);
+        }
+
+        res.status(200).send('OK');
     }
 
-    const rawBody = req.rawBody || JSON.stringify(req.body);
+    /**
+     * Maneja webhook de Kick
+     */
+    handleKickWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
+        await this.handleWebhook('kick', req, res);
+    };
 
-    // Use config instead of direct process.env
-    const skipSignature = process.env.KICK_WEBHOOK_SKIP_SIGNATURE === 'true';
-    const isValid = skipSignature ? true : await KickWebhookService.verifySignature(signature, messageId, timestamp, rawBody);
+    /**
+     * Maneja webhook de YouTube
+     */
+    handleYouTubeWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
+        await this.handleWebhook('youtube', req, res);
+    };
 
-    if (!isValid) {
-        console.warn('[KickWebhook] Firma inválida recibida');
-        res.status(401).send('Invalid signature');
-        return;
-    }
-
-    res.status(200).send('OK');
-
-    if (eventType === 'chat.message.sent') {
-        void KickWebhookService.handleChatEvent(req.body as KickChatMessagePayload, io);
-    } else {
-        console.log(`[KickWebhook] Evento recibido: ${eventType}`);
-    }
-};
+    /**
+     * Maneja webhook de Twitch
+     */
+    handleTwitchWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
+        await this.handleWebhook('twitch', req, res);
+    };
+}

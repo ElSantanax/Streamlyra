@@ -1,55 +1,60 @@
 import { User } from '../../models/User.model';
-import { Connection } from '../../models/Connection.model';
-import { PlatformProfile } from '../AuthService';
+import { PlatformProfile } from '../../types/index';
+import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
+import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 
 export class UserService {
-    static async getById(id: string) {
-        return User.findByIdWithConnections(id);
+    constructor(
+        private userRepository: IUserRepository,
+        private connectionRepository: IConnectionRepository
+    ) { }
+
+    async getById(id: string) {
+        return this.userRepository.findByIdWithConnections(id);
     }
 
-    static async findByPlatformId(provider: string, providerId: string): Promise<User | null> {
-        const connection = await Connection.findOne({
-            where: { provider, providerId }
-        });
+    async findByPlatformId(provider: string, providerId: string): Promise<User | null> {
+        const connection = await this.connectionRepository.findByProvider(provider, providerId);
         if (!connection) return null;
-        return User.findByPk(connection.userId);
+        return this.userRepository.findById(connection.userId);
     }
 
-    static async findByEmail(email: string): Promise<User | null> {
-        return User.findOne({ where: { email } });
+    async findByEmail(email: string): Promise<User | null> {
+        return this.userRepository.findByEmail(email);
     }
 
-    static async findOrCreateFromPlatform(profile: PlatformProfile, currentUserId?: string): Promise<User> {
+    async findOrCreateFromPlatform(profile: PlatformProfile, currentUserId?: string): Promise<{ user: User, isNew: boolean }> {
         // 1. If linking (already logged in)
         if (currentUserId) {
-            const user = await User.findByPk(currentUserId);
-            if (user) return user;
+            const user = await this.userRepository.findById(currentUserId);
+            if (user) return { user, isNew: false };
         }
 
         // 2. If login/re-auth: Search by existing connection
         const existingUserByConn = await this.findByPlatformId(profile.provider, profile.providerId);
-        if (existingUserByConn) return existingUserByConn;
+        if (existingUserByConn) return { user: existingUserByConn, isNew: false };
 
         // 3. Match by Email (Ghost User Prevention)
         if (profile.email) {
             const existingUserByEmail = await this.findByEmail(profile.email);
-            if (existingUserByEmail) return existingUserByEmail;
+            if (existingUserByEmail) return { user: existingUserByEmail, isNew: false };
         }
 
         // 4. New User Registration
-        return this.createFromProfile(profile);
+        const user = await this.createFromProfile(profile);
+        return { user, isNew: true };
     }
 
-    private static async createFromProfile(profile: PlatformProfile): Promise<User> {
-        const baseUsername = profile.username.replace(/\s+/g, '').toLowerCase();
+    private async createFromProfile(profile: PlatformProfile): Promise<User> {
+        const baseUsername = profile.providerUsername.replace(/\s+/g, '').toLowerCase();
         let username = baseUsername;
         let suffix = 1;
 
-        while (await User.findOne({ where: { username } })) {
+        while (await this.userRepository.usernameExists(username)) {
             username = `${baseUsername}${suffix++}`;
         }
 
-        return User.create({
+        return this.userRepository.create({
             username,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
@@ -57,9 +62,12 @@ export class UserService {
         });
     }
 
-    static async updateAvatarAndDisplayName(user: User, profile: { avatarUrl: string, displayName: string }) {
+    async updateAvatarAndDisplayName(user: User, profile: { avatarUrl: string, displayName: string }) {
         if (user.avatarUrl !== profile.avatarUrl || user.displayName !== profile.displayName) {
-            await user.update({ avatarUrl: profile.avatarUrl, displayName: profile.displayName });
+            await this.userRepository.update(user.id, {
+                avatarUrl: profile.avatarUrl,
+                displayName: profile.displayName
+            });
         }
     }
 }

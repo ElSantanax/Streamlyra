@@ -1,154 +1,208 @@
+/**
+ * Proveedor de Chat de TikTok
+ * Responsabilidad: Orquestar conexión a chat de TikTok
+ */
+
 import { Server } from 'socket.io';
 import { WebcastPushConnection } from 'tiktok-live-connector';
 import { ChatProvider } from './ChatProvider';
+import { TikTokConnectionManager } from './tiktok/TikTokConnectionManager';
+import { TikTokEventListener } from './tiktok/TikTokEventListener';
+import { TikTokEventTransformer } from './transformers/TikTokEventTransformer';
+import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
 import { Connection } from '../../models/Connection.model';
-import { MessageDeduplicator } from '../../utils/messageDeduplicate';
 import { retryWithInterval } from '../../utils/retryWithInterval';
-import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent } from '../../types/tiktok.types';
+import { logger } from '../../utils/logger';
 
 export class TikTokChatProvider implements ChatProvider {
+    private connectingUsers: Set<string> = new Set();
     private activeConnections: Map<string, WebcastPushConnection> = new Map();
-    private deduplicators: Map<string, MessageDeduplicator> = new Map();
     private retryCleanup: Map<string, () => void> = new Map();
+    private transformer: TikTokEventTransformer;
+    private connectionManager: TikTokConnectionManager;
+    private eventListener: TikTokEventListener;
 
-    async connect(userId: string, io: Server): Promise<void> {
-        const connection = await Connection.findOne({
-            where: { userId: String(userId), provider: 'tiktok' }
-        });
-
-        if (!connection?.providerUsername) return;
-
-        const tiktokUsername = connection.providerUsername.replace(/^@+/, '');
-
-        this.retryCleanup.get(userId)?.();
-
-        if (this.activeConnections.has(userId)) {
-            await this.disconnect(userId);
-        }
-
-        if (!this.deduplicators.has(userId)) {
-            this.deduplicators.set(userId, new MessageDeduplicator());
-        }
-
-        const startConnection = async () => {
-            const stillExists = await Connection.findOne({ where: { userId: String(userId), provider: 'tiktok' } });
-            if (!stillExists) return this.retryCleanup.get(userId)?.();
-
-            io.to(userId).emit('connection_status', { platform: 'tiktok', status: 'connecting' });
-            console.log(`[TikTokChat] Intentando conectar a ${tiktokUsername}...`);
-
-            try {
-                const tiktokChat = new WebcastPushConnection(tiktokUsername);
-
-                await Promise.race([
-                    tiktokChat.connect(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión (15s)')), 15000))
-                ]);
-
-                console.log(`[TikTokChat] ✅ Conectado a ${tiktokUsername}`);
-                this.retryCleanup.get(userId)?.();
-
-                io.to(userId).emit('connection_status', { platform: 'tiktok', status: 'connected' });
-
-                this.setupListeners(userId, tiktokChat, io, tiktokUsername);
-                this.activeConnections.set(userId, tiktokChat);
-
-            } catch (error) {
-                if (this.retryCleanup.has(userId)) return;
-
-                console.error(`[TikTokChat] Error en ${tiktokUsername}:`, error);
-                io.to(userId).emit('connection_status', { platform: 'tiktok', status: 'error', message: 'Cuenta oculta o no en vivo. Reintentando...' });
-
-                const cleanup = retryWithInterval(startConnection, { intervalMs: 60000 });
-                this.retryCleanup.set(userId, cleanup);
-            }
-        };
-
-        void startConnection();
+    constructor() {
+        this.transformer = new TikTokEventTransformer();
+        this.connectionManager = new TikTokConnectionManager();
+        this.eventListener = new TikTokEventListener(this.transformer);
     }
 
-    private setupListeners(userId: string, tiktokChat: WebcastPushConnection, io: Server, tiktokUsername: string) {
-        const dedup = this.deduplicators.get(userId)!;
+    async connect(userId: string, io: Server): Promise<void> {
+        if (this.connectingUsers.has(userId)) {
+            logger.debug({ userId }, 'Already connecting to TikTok, skipping...');
+            return;
+        }
 
-        tiktokChat.on('chat', (data: TikTokChatEvent) => {
-            const msgId: string = data.msgId || `tk_${Date.now()}_${data.userId}`;
+        this.connectingUsers.add(userId);
 
-            if (dedup.isDuplicate(msgId)) return;
-
-            const chatMessage = {
-                id: msgId,
-                platform: 'tiktok',
-                user: data.uniqueId,
-                message: data.comment,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                avatar: data.profilePictureUrl,
-                isMod: data.mod,
-                isSub: data.subscriber,
-                isOwner: data.isOwner
-            };
-            io.to(userId).emit('chat_message', chatMessage);
-        });
-
-        tiktokChat.on('gift', (data: TikTokGiftEvent) => {
-            if (data.repeatEnd) {
-                const giftId = `${data.userId}_${data.giftId}_${data.timestamp || Date.now()}`;
-                const chatMessage = {
-                    id: giftId,
-                    platform: 'tiktok',
-                    user: data.uniqueId,
-                    message: '',
-                    specialMessage: `🎁 REGALO: ${data.repeatCount}x ${data.giftName}`,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    avatar: data.profilePictureUrl,
-                    isSpecial: true
-                };
-                io.to(userId).emit('chat_message', chatMessage);
-            }
-        });
-
-        tiktokChat.on('like', (_data: TikTokLikeEvent) => {
-            // Ignorado por ahora
-        });
-
-        tiktokChat.on('follow', (data: TikTokFollowEvent) => {
-            const followId = `follow_${data.userId}_${Date.now()}`;
-            const chatMessage = {
-                id: followId,
-                platform: 'tiktok',
-                user: data.uniqueId,
-                message: `¡Te ha seguido!`,
-                specialMessage: `👤 NUEVO SEGUIDOR`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                avatar: data.profilePictureUrl,
-            };
-            io.to(userId).emit('chat_message', chatMessage);
-        });
-
-        tiktokChat.on('roomUser', (info: { viewerCount: number }) => {
-            io.to(userId).emit('viewers_update', {
-                platform: 'tiktok',
-                count: info.viewerCount
+        try {
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'tiktok' }
             });
-        });
 
-        tiktokChat.on('disconnected', async () => {
-            console.log(`[TikTokChat] Desconectado de ${tiktokUsername}. Comprobando si se debe reintentar...`);
-
-            // Verificar si la conexión aún existe en la base de datos
-            const stillConnected = await Connection.findOne({ where: { userId: String(userId), provider: 'tiktok' } });
-
-            if (stillConnected) {
-                this.activeConnections.delete(userId);
-                void this.connect(userId, io);
-            } else {
-                console.log(`[TikTokChat] Desconexión definitiva para ${userId} (Plataforma eliminada).`);
-                this.activeConnections.delete(userId);
+            if (!connection?.providerUsername) {
+                this.connectingUsers.delete(userId);
+                return;
             }
+
+            const tiktokUsername = connection.providerUsername.replace(/^@+/, '');
+
+            this.retryCleanup.get(userId)?.();
+
+            if (this.activeConnections.has(userId)) {
+                // If active, we should allow reconnection?
+                // But disconnect() is async.
+                await this.disconnect(userId);
+            }
+
+            const startConnection = async () => {
+                try {
+                    const stillExists = await Connection.findOne({ where: { userId: String(userId), provider: 'tiktok' } });
+                    if (!stillExists) {
+                        this.retryCleanup.get(userId)?.();
+                        return;
+                    }
+
+                    SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting');
+                    logger.info({ username: tiktokUsername, userId }, 'Attempting TikTok connection');
+
+                    try {
+                        const tiktokConnection = await this.connectionManager.connect(tiktokUsername);
+                        logger.info({ username: tiktokUsername, userId }, 'Connected to TikTok');
+                        this.retryCleanup.get(userId)?.();
+
+                        SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+
+                        this.eventListener.setupListeners(userId, tiktokConnection, io);
+                        this.setupDisconnectionHandler(userId, tiktokConnection, io);
+                        this.activeConnections.set(userId, tiktokConnection);
+
+                    } catch (error) {
+                        if (this.retryCleanup.has(userId)) return;
+
+                        const errorInfo = this.categorizeError(error, tiktokUsername);
+
+                        // Log según severidad del error
+                        if (errorInfo.isPermanent) {
+                            logger.warn({ username: tiktokUsername, userId, errorType: errorInfo.type }, errorInfo.logMessage);
+                        } else {
+                            logger.debug({ username: tiktokUsername, userId, errorType: errorInfo.type }, errorInfo.logMessage);
+                        }
+
+                        SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'error', errorInfo.userMessage);
+
+                        // Solo reintentar si el error es recuperable
+                        if (!errorInfo.isPermanent) {
+                            const cleanup = retryWithInterval(startConnection, {
+                                intervalMs: 60000,
+                                onError: () => {
+                                    logger.debug({ username: tiktokUsername }, 'Retrying TikTok connection...');
+                                }
+                            });
+                            this.retryCleanup.set(userId, cleanup);
+                        } else {
+                            // Error permanente - no tiene sentido reintentar
+                            this.connectingUsers.delete(userId);
+                        }
+                    }
+                } finally {
+                    this.connectingUsers.delete(userId);
+                }
+            };
+
+            void startConnection();
+        } catch (error) {
+            this.connectingUsers.delete(userId);
+            throw error;
+        }
+    }
+
+    private categorizeError(error: unknown, username: string): {
+        type: string;
+        isPermanent: boolean;
+        userMessage: string;
+        logMessage: string;
+    } {
+        const errorStr = String(error);
+
+        // Type guard para errores con aggregateErrors
+        interface ErrorWithAggregates {
+            aggregateErrors?: Array<{ message?: string }>;
+        }
+
+        const errorObj = error as ErrorWithAggregates;
+
+        // Error de usuario no encontrado (permanente)
+        if (errorStr.includes('user_not_found') || errorStr.includes('User not found') ||
+            (errorObj?.aggregateErrors?.some((e) => e?.message?.includes('user_not_found')))) {
+            return {
+                type: 'user_not_found',
+                isPermanent: true,
+                userMessage: `Usuario @${username} no encontrado. Verifica el nombre de usuario.`,
+                logMessage: 'TikTok user not found'
+            };
+        }
+
+        // Error de cuenta privada/oculta (permanente)
+        if (errorStr.includes('private') || errorStr.includes('hidden')) {
+            return {
+                type: 'private_account',
+                isPermanent: true,
+                userMessage: 'Cuenta privada u oculta. No se puede acceder.',
+                logMessage: 'TikTok account is private or hidden'
+            };
+        }
+
+        // Error de bloqueo por TikTok (temporal pero requiere atención)
+        if (errorStr.includes('SIGI_STATE') || errorStr.includes('blocked by TikTok')) {
+            return {
+                type: 'blocked',
+                isPermanent: false,
+                userMessage: 'Bloqueado temporalmente por TikTok. Reintentando...',
+                logMessage: 'Temporarily blocked by TikTok'
+            };
+        }
+
+        // Usuario no está en vivo (temporal - recuperable)
+        if (errorStr.includes('not_live') || errorStr.includes('LIVE_ACCESS_ROOM_ERROR')) {
+            return {
+                type: 'not_live',
+                isPermanent: false,
+                userMessage: 'Usuario no está en vivo. Esperando...',
+                logMessage: 'TikTok user is not live'
+            };
+        }
+
+        // Timeout de conexión (temporal - recuperable)
+        if (errorStr.includes('timeout') || errorStr.includes('Connection timeout')) {
+            return {
+                type: 'timeout',
+                isPermanent: false,
+                userMessage: 'Tiempo de espera agotado. Reintentando...',
+                logMessage: 'Connection timeout'
+            };
+        }
+
+        // Error genérico (temporal - recuperable)
+        return {
+            type: 'unknown',
+            isPermanent: false,
+            userMessage: 'Error al conectar. Reintentando...',
+            logMessage: 'Unknown TikTok connection error'
+        };
+    }
+
+    private setupDisconnectionHandler(userId: string, connection: WebcastPushConnection, io: Server): void {
+        connection.on('disconnected', () => {
+            logger.info({ userId }, 'TikTok disconnected');
+            this.activeConnections.delete(userId);
+            void this.connect(userId, io);
         });
 
-        tiktokChat.on('error', (err: Error) => {
-            console.error(`[TikTokChat] Error en conexión ${tiktokUsername}:`, err.message);
-            tiktokChat.disconnect();
+        connection.on('error', (err: Error) => {
+            logger.error({ err, userId }, 'TikTok connection error');
+            connection.disconnect();
         });
     }
 
@@ -161,10 +215,9 @@ export class TikTokChatProvider implements ChatProvider {
 
         const connection = this.activeConnections.get(userId);
         if (connection) {
-            connection.disconnect();
+            connection.removeAllListeners('disconnected'); // Evitar reconexión automática
+            await this.connectionManager.disconnect(connection);
             this.activeConnections.delete(userId);
         }
-
-        this.deduplicators.delete(userId);
     }
 }

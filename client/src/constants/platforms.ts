@@ -15,7 +15,7 @@ export const PLATFORMS = {
         name: 'YouTube',
         Icon: FaYoutube,
         color: 'bg-white',
-        textColor: 'text-[#CD201F] dark:text-[#FF4B4B]',
+        textColor: 'text-[#FF0000] dark:text-[#FF0000]',
         iconColor: 'text-[#FF0000]',
         brandColor: '#FF0000'
     },

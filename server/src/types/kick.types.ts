@@ -9,27 +9,41 @@ export interface KickIdentity {
     badges: KickIdentityBadge[];
 }
 
-export interface KickSender {
-    id: number;
+export interface KickUser {
+    is_anonymous: boolean;
     user_id: number;
     username: string;
-    identity?: KickIdentity;
+    is_verified: boolean;
+    profile_picture: string;
+    channel_slug: string;
+    identity?: KickIdentity | null;
 }
 
 export interface KickBroadcaster {
+    is_anonymous: boolean;
     user_id: number;
     username: string;
+    is_verified: boolean;
+    profile_picture: string;
     channel_slug: string;
+    identity?: KickIdentity | null;
 }
 
 export interface KickChatMessagePayload {
-    id: string;
-    message_id?: string;
-    event?: string;
+    message_id: string;
     broadcaster: KickBroadcaster;
-    sender: KickSender;
+    sender: KickUser;
     content: string;
     created_at: string;
+    emotes?: Array<{
+        emote_id: string;
+        positions: Array<{ s: number; e: number }>;
+    }>;
+    replies_to?: {
+        message_id: string;
+        content: string;
+        sender: KickUser;
+    };
 }
 
 export interface KickLivestream {
@@ -47,3 +61,4 @@ export interface KickApiResponse<T> {
     data: T;
     message?: string;
 }
+

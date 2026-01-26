@@ -1,93 +1,93 @@
 import { Response } from 'express';
-import { AuthService, PlatformProfile, AuthTokens } from '../services/AuthService';
-import { TwitchService } from '../services/platforms/TwitchService';
-import { YouTubeService } from '../services/platforms/YouTubeService';
-import { KickService } from '../services/platforms/KickService';
+import { AuthService } from '../services/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { ChatManager } from '../services/ChatManager';
-import { ResponseHandler } from '../utils/response.utils';
 import { AppError } from '../utils/AppError';
+import { Platform } from '../constants/platforms';
 
-// OAuth Service Registry
-interface OAuthService {
-    getProfileAndTokens(code: string, codeVerifier?: string): Promise<{ profile: PlatformProfile, tokens: AuthTokens }>;
+/**
+ * Controlador de autenticación
+ * Responsabilidad: Manejar peticiones/respuestas HTTP
+ * Lógica de negocio delegada a AuthService
+ */
+export class AuthController {
+    constructor(private authService: AuthService) {}
+
+    /**
+     * Maneja autenticación OAuth genérica para cualquier plataforma
+     * 
+     * Flujo:
+     * 1. Extraer código y code_verifier del body
+     * 2. Delegar a AuthService
+     * 3. Retornar resultado
+     */
+    private async handleOAuthAuth(platform: Platform, req: AuthRequest, res: Response): Promise<void> {
+        const { code, code_verifier } = req.body as { code: string; code_verifier?: string };
+        const result = await this.authService.handleOAuthAuth(platform, code, code_verifier, req.user?.id);
+        res.json(result);
+    }
+
+    /**
+     * Autentica con Twitch
+     */
+    twitchAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+        await this.handleOAuthAuth('twitch', req, res);
+    };
+
+    /**
+     * Autentica con YouTube
+     */
+    youtubeAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+        await this.handleOAuthAuth('youtube', req, res);
+    };
+
+    /**
+     * Autentica con Kick
+     */
+    kickAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+        await this.handleOAuthAuth('kick', req, res);
+    };
+
+    /**
+     * Obtiene el perfil del usuario autenticado
+     */
+    getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+        if (!req.user) {
+            throw new AppError('No autorizado', 401);
+        }
+
+        const result = await this.authService.getUserProfile(req.user.id);
+        if (!result) {
+            throw new AppError('Usuario no encontrado', 404);
+        }
+
+        res.json(result);
+    };
+
+    /**
+     * Desconecta una plataforma
+     */
+    disconnectPlatform = async (req: AuthRequest, res: Response): Promise<void> => {
+        const { provider } = req.body as { provider: Platform };
+
+        if (!req.user) {
+            throw new AppError('No autorizado', 401);
+        }
+
+        await this.authService.disconnectPlatform(req.user.id, provider);
+        res.json({ success: true, message: `${provider} desconectado` });
+    };
+
+    /**
+     * Autentica con TikTok (basado en username)
+     */
+    tiktokAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+        const { username } = req.body as { username: string };
+
+        if (!req.user) {
+            throw new AppError('No autorizado', 401);
+        }
+
+        const result = await this.authService.handleTikTokAuth(username, req.user.id);
+        res.json(result);
+    };
 }
-
-const OAUTH_SERVICES: Record<string, OAuthService> = {
-    twitch: TwitchService as OAuthService,
-    youtube: YouTubeService as OAuthService,
-    kick: KickService as OAuthService
-};
-
-// Generic OAuth handler factory
-const createOAuthHandler = (serviceName: string) => async (req: AuthRequest, res: Response): Promise<void> => {
-    const { code, code_verifier } = req.body as { code: string, code_verifier?: string };
-
-    try {
-        const service = OAUTH_SERVICES[serviceName];
-        const { profile, tokens } = await service.getProfileAndTokens(code, code_verifier);
-        const result = await AuthService.handlePlatformAuth(profile, tokens, req.user?.id);
-        ResponseHandler.success(res, result);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Error en autenticación';
-        ResponseHandler.badRequest(res, message);
-    }
-};
-
-export const twitchAuth = createOAuthHandler('twitch');
-export const youtubeAuth = createOAuthHandler('youtube');
-export const kickAuth = createOAuthHandler('kick');
-
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
-    if (!req.user) {
-        throw new AppError('No autorizado', 401);
-    }
-
-    const result = await AuthService.getUserProfile(req.user.id);
-    if (!result) {
-        throw new AppError('Usuario no encontrado', 404);
-    }
-
-    ResponseHandler.success(res, result);
-};
-
-export const disconnectPlatform = (chatManager: ChatManager) => async (req: AuthRequest, res: Response): Promise<void> => {
-    const { provider } = req.body as { provider: string };
-    if (!req.user) {
-        ResponseHandler.unauthorized(res);
-        return;
-    }
-
-    try {
-        await AuthService.disconnectPlatform(req.user.id, provider, chatManager);
-        ResponseHandler.success(res, { success: true, message: `${provider} desconectado` });
-    } catch (error: unknown) {
-        ResponseHandler.error(res, 'Error al desconectar plataforma', 500, error);
-    }
-};
-
-export const tiktokAuth = (chatManager: ChatManager) => async (req: AuthRequest, res: Response): Promise<void> => {
-    const { username } = req.body as { username: string };
-    if (!req.user) {
-        ResponseHandler.unauthorized(res);
-        return;
-    }
-
-    try {
-        const cleanUsername = username.replace(/^@+/, '');
-        const profile: PlatformProfile = {
-            provider: 'tiktok',
-            providerId: `tiktok_${cleanUsername}`,
-            username: cleanUsername,
-            displayName: cleanUsername,
-            avatarUrl: ''
-        };
-
-        const result = await AuthService.handlePlatformAuth(profile, { accessToken: '', expiresIn: 0 }, req.user.id);
-        void chatManager.connectProvider(req.user.id, 'tiktok');
-        ResponseHandler.success(res, result);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Error en TikTok auth';
-        ResponseHandler.badRequest(res, message);
-    }
-};

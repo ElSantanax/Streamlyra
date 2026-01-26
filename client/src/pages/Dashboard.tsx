@@ -56,6 +56,12 @@ const Dashboard = () => {
         kick: { connected: false }
     });
 
+    const connectionsRef = useRef(userConnections);
+
+    useEffect(() => {
+        connectionsRef.current = userConnections;
+    }, [userConnections]);
+
     useEffect(() => {
         // Obtenemos el usuario guardado para identificarnos
         const userStr = localStorage.getItem('user');
@@ -82,8 +88,18 @@ const Dashboard = () => {
         }
 
         function onChatMessage(msg: ChatMessageProps & { id?: string }) {
+            // Ignorar mensajes de plataformas desconectadas
+            if (msg.platform && !connectionsRef.current[msg.platform]?.connected) {
+                return;
+            }
+
             console.log('📬 Mensaje recibido:', msg);
             setMessages(prev => {
+                // Evitar duplicados si el mensaje tiene ID
+                if (msg.id && prev.some(m => m.id === msg.id)) {
+                    return prev;
+                }
+
                 // Limitamos el historial en pantalla a 100 mensajes para rendimiento
                 if (prev.length > 100) {
                     return [...prev.slice(1), msg];
@@ -93,6 +109,11 @@ const Dashboard = () => {
         }
 
         function onViewersUpdate(data: ViewersUpdate) {
+            // Ignorar actualizaciones de plataformas desconectadas
+            if (!connectionsRef.current[data.platform]?.connected) {
+                return;
+            }
+
             setUserConnections(prev => ({
                 ...prev,
                 [data.platform]: {
@@ -114,7 +135,9 @@ const Dashboard = () => {
                 [data.platform]: {
                     ...prev[data.platform],
                     status: data.status,
-                    statusMessage: data.message
+                    statusMessage: data.message,
+                    // Si se desconectó desde el servidor (error o lo que sea), asegurar que connected se actualice
+                    connected: data.status === 'connected' ? true : (data.status === 'error' ? false : prev[data.platform]?.connected)
                 }
             }));
         }
@@ -192,7 +215,7 @@ const Dashboard = () => {
                 // Actualizar estado local inmediatamente
                 setUserConnections(prev => ({
                     ...prev,
-                    [provider]: { connected: false }
+                    [provider]: { connected: false, viewers: 0 }
                 }));
             }
         } catch (error) {

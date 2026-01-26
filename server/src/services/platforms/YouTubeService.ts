@@ -1,61 +1,115 @@
 import axios from 'axios';
-import { PlatformProfile, AuthTokens } from '../AuthService';
-import { YouTubeTokenResponse, YouTubeChannelResponse } from '../../types/youtube.types';
+import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
+import { YouTubeChannelResponse } from '../../types/youtube.types';
 import { config } from '../../config';
-import { OAuthUtils, OAuthExchangeOptions } from '../../utils/oauth.utils';
+import { OAuthExchangeOptions } from '../../utils/oauth.utils';
+import { logger } from '../../utils/logger';
 
-export class YouTubeService {
-    private static get oauthOptions(): OAuthExchangeOptions {
-        return {
-            baseUrl: 'https://oauth2.googleapis.com/token',
-            clientId: config.youtube.clientId!,
-            clientSecret: config.youtube.clientSecret!,
-            redirectUri: config.youtube.redirectUri!
+interface YouTubeChannel {
+    id: string;
+    snippet: {
+        title: string;
+        thumbnails?: {
+            default?: {
+                url: string;
+            };
         };
-    }
+    };
+}
 
-    static async getProfileAndTokens(code: string) {
-        const { access_token, refresh_token, expires_in } = await OAuthUtils.exchangeCode<YouTubeTokenResponse>(
-            code,
-            this.oauthOptions
-        );
+/**
+ * Servicio de YouTube
+ * Responsabilidad: Autenticación OAuth específica de YouTube
+ * 
+ * Hereda métodos genéricos de BasePlatformService:
+ * - getProfileAndTokens(code, codeVerifier)
+ * - refreshAccessToken(refreshToken)
+ * 
+ * Implementa métodos específicos de YouTube:
+ * - fetchUserProfile(accessToken)
+ * - normalizePlatformProfile(channel)
+ * 
+ * NOTA: YouTube tiene estructura diferente:
+ * - Retorna array de canales (items)
+ * - Requiere validación de que items no esté vacío
+ * - Genera providerUsername a partir del título
+ */
+import { Platform } from '../../constants/platforms';
 
-        const userResponse = await axios.get<YouTubeChannelResponse>('https://www.googleapis.com/youtube/v3/channels', {
-            params: { part: 'snippet', mine: true },
-            headers: { Authorization: `Bearer ${access_token}` }
-        });
+export class YouTubeService extends BasePlatformService {
+    protected readonly platformName: Platform = 'youtube';
 
-        const items = userResponse.data.items;
-        if (!items || items.length === 0) {
-            throw new Error('No se encontró canal de YouTube asociado.');
+    protected readonly oauthOptions: OAuthExchangeOptions = {
+        baseUrl: 'https://oauth2.googleapis.com/token',
+        clientId: config.youtube.clientId!,
+        clientSecret: config.youtube.clientSecret!,
+        redirectUri: config.youtube.redirectUri!
+    };
+
+    /**
+     * Obtiene perfil del usuario desde la API de YouTube
+     * 
+     * Endpoint: GET https://www.googleapis.com/youtube/v3/channels
+     * Parámetros: part=snippet, mine=true
+     * Retorna: Array de canales (items)
+     * 
+     * IMPORTANTE: YouTube requiere validación de que items no esté vacío
+     */
+    protected async fetchUserProfile(accessToken: string): Promise<YouTubeChannel> {
+        try {
+            logger.debug({ platform: this.platformName }, 'Fetching YouTube user profile');
+            
+            const userResponse = await axios.get<YouTubeChannelResponse>(
+                'https://www.googleapis.com/youtube/v3/channels',
+                {
+                    params: { part: 'snippet', mine: true },
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                }
+            );
+
+            const items = userResponse.data.items;
+
+            if (!items || items.length === 0) {
+                logger.error({ platform: this.platformName }, 'No YouTube channel found');
+                throw new Error('No se encontró canal de YouTube asociado.');
+            }
+
+            logger.debug({ platform: this.platformName, channelId: items[0].id }, 'YouTube profile fetched successfully');
+            return items[0];
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const axiosError = error && typeof error === 'object' && 'response' in error 
+                ? error as { response?: { status?: number; data?: unknown } }
+                : undefined;
+
+            logger.error({ 
+                platform: this.platformName, 
+                error: errorMessage,
+                status: axiosError?.response?.status,
+                data: axiosError?.response?.data 
+            }, 'Error fetching YouTube profile');
+            throw error;
         }
-
-        const channel = items[0];
-
-        return {
-            profile: {
-                provider: 'youtube',
-                providerId: channel.id,
-                username: channel.snippet.title.replace(/\s+/g, '').toLowerCase().substring(0, 15),
-                displayName: channel.snippet.title,
-                avatarUrl: channel.snippet.thumbnails?.default?.url || ''
-            } as PlatformProfile,
-            tokens: {
-                accessToken: access_token,
-                refreshToken: refresh_token,
-                expiresIn: expires_in
-            } as AuthTokens
-        };
     }
 
-    static async refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
-        const { access_token, refresh_token: new_refresh_token, expires_in } =
-            await OAuthUtils.refreshTokens<YouTubeTokenResponse>(refreshToken, this.oauthOptions);
-
+    /**
+     * Normaliza perfil de YouTube al formato común
+     * 
+     * NOTA: YouTube no proporciona username, se genera a partir del título
+     * - Elimina espacios
+     * - Convierte a minúsculas
+     * - Limita a 15 caracteres
+     */
+    protected normalizePlatformProfile(channel: YouTubeChannel): PlatformProfile {
         return {
-            accessToken: access_token,
-            refreshToken: new_refresh_token || refreshToken,
-            expiresIn: expires_in
+            provider: 'youtube',
+            providerId: channel.id,
+            providerUsername: channel.snippet.title
+                .replace(/\s+/g, '')
+                .toLowerCase()
+                .substring(0, 15),
+            displayName: channel.snippet.title,
+            avatarUrl: channel.snippet.thumbnails?.default?.url || ''
         };
     }
 }

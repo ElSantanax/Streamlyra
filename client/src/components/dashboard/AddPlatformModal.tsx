@@ -134,8 +134,11 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                         alert('Falta VITE_YOUTUBE_CLIENT_ID en .env');
                                         return;
                                     }
+
                                     const scope = 'https://www.googleapis.com/auth/youtube.readonly email profile';
-                                    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=youtube`;
+                                    // Agregar timestamp para forzar nueva autorización y evitar caché
+                                    const state = `youtube_${Date.now()}`;
+                                    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=false&state=${state}`;
                                 }
 
                                 if (key === 'kick') {

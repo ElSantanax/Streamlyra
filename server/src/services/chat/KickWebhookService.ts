@@ -1,8 +1,6 @@
 import * as crypto from 'crypto';
 import axios from 'axios';
-import { Server } from 'socket.io';
-import { Connection } from '../../models/Connection.model';
-import { KickApiResponse, KickChatMessagePayload } from '../../types/kick.types';
+import { KickApiResponse } from '../../types/kick.types';
 
 export class KickWebhookService {
     private static publicKey: string | null = null;
@@ -34,70 +32,32 @@ export class KickWebhookService {
         rawBody: string
     ): Promise<boolean> {
         const key = await this.getPublicKey();
-        if (!key) return false;
-        if (!messageId || !timestamp || !rawBody) return false;
+        if (!key) {
+            console.error('[KickWebhook] No public key available');
+            return false;
+        }
+        if (!messageId || !timestamp || !rawBody) {
+            console.error('[KickWebhook] Missing signature components');
+            return false;
+        }
 
         try {
-            // Docs oficiales:
-            // signature_payload := "{Kick-Event-Message-Id}.{Kick-Event-Message-Timestamp}.{rawBody}"
+            // Docs oficiales: signature_payload := "{messageID}.{timestamp}.{body}"
             const signaturePayload = `${messageId}.${timestamp}.${rawBody}`;
+            console.log('[KickWebhook] Verificando firma con payload:', signaturePayload.substring(0, 50) + '...');
 
             const verifier = crypto.createVerify('RSA-SHA256');
             verifier.update(signaturePayload);
             verifier.end();
 
-            return verifier.verify(
-                {
-                    key: key,
-                    padding: crypto.constants.RSA_PKCS1_PADDING
-                },
-                Buffer.from(signature, 'base64')
-            );
+            const isValid = verifier.verify(key, Buffer.from(signature, 'base64'));
+            console.log('[KickWebhook] Firma válida:', isValid);
+            return isValid;
         } catch (error) {
             console.error('[KickWebhook] Error verificando firma:', error);
             return false;
         }
     }
 
-    // Procesar el evento de chat
-    static async handleChatEvent(payload: KickChatMessagePayload, io: Server) {
-        const { broadcaster, sender, content, message_id, created_at } = payload;
-        const msgId = message_id || payload.id;
 
-        const chatMessage = {
-            id: msgId,
-            platform: 'kick',
-            user: sender.username,
-            message: content,
-            time: new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            color: sender.identity?.username_color || '#53FC18',
-            isMod: sender.identity?.badges?.some((b) => b.type === 'moderator'),
-            isSub: sender.identity?.badges?.some((b) => b.type === 'subscriber'),
-            isVIP: false,
-            isOwner: broadcaster.user_id === sender.user_id
-        };
-
-        // Kick envía el broadcaster.user_id (ID de Kick), pero nuestro socket usa userId (UUID app).
-        // Mapeamos broadcasterKickId -> Connection.userId.
-        try {
-            const broadcasterKickId = broadcaster?.user_id;
-            if (!broadcasterKickId) {
-                console.warn('[KickWebhook] Payload sin broadcaster.user_id');
-                return;
-            }
-
-            const connection = await Connection.findOne({
-                where: { provider: 'kick', providerId: broadcasterKickId.toString() }
-            });
-
-            if (!connection) {
-                console.warn(`[KickWebhook] No hay Connection para broadcasterKickId=${broadcasterKickId}`);
-                return;
-            }
-
-            io.to(connection.userId).emit('chat_message', chatMessage);
-        } catch (error) {
-            console.error('[KickWebhook] Error emitiendo al socket:', error);
-        }
-    }
 }
