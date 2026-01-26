@@ -1,12 +1,14 @@
 /**
  * Procesador de Webhooks de Kick
- * Responsabilidad: Procesar eventos de webhook de Kick
+ * Responsabilidad: Procesar eventos de webhook de Kick con validación de estado
  */
 
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
+import { KickWebhook } from '../../../models/KickWebhook.model';
 import { KickChatMessagePayload } from '../../../types/kick.types';
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 
 export class KickWebhookProcessor {
@@ -41,8 +43,43 @@ export class KickWebhookProcessor {
                 return;
             }
 
+            // VALIDACIÓN: Verificar si el webhook está activo en nuestra DB
+            const webhook = await KickWebhook.findOne({
+                where: {
+                    broadcasterId: broadcasterKickId.toString(),
+                    isActive: true
+                }
+            });
+
+            if (!webhook) {
+                logger.warn(
+                    { 
+                        broadcasterKickId, 
+                        userId: connection.userId 
+                    }, 
+                    'Webhook inactivo, ignorando evento de Kick'
+                );
+                return;
+            }
+
+            // VALIDACIÓN: Verificar si el usuario tiene sockets conectados
+            const userSockets = await this.io.in(connection.userId).fetchSockets();
+            if (userSockets.length === 0) {
+                logger.warn(
+                    { 
+                        broadcasterKickId, 
+                        userId: connection.userId 
+                    }, 
+                    'Usuario sin sockets activos, ignorando evento de Kick'
+                );
+                return;
+            }
+
+            // Actualizar timestamp del último evento
+            void webhook.update({ lastEventAt: new Date() });
+
             logger.info({ userId: connection.userId }, 'Emitting Kick chat message to user');
-            this.io.to(connection.userId).emit('chat_message', chatMessage);
+            SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
         } catch (error) {
             logger.error({ err: error }, 'Error processing Kick webhook event');
         }

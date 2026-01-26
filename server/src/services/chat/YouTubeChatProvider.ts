@@ -66,114 +66,113 @@ export class YouTubeChatProvider implements ChatProvider {
 
         this.connectingUsers.add(userId);
 
-        const startConnection = async () => {
-            try {
-                const connection = await Connection.findOne({
+        try {
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'youtube' }
+            });
+
+            if (!connection) {
+                this.connectingUsers.delete(userId);
+                return;
+            }
+
+            await this.disconnect(userId);
+
+            // Inicializar contadores para tracking de discovery
+            // Esto permite detener el discovery después de cierto tiempo/intentos
+            // para evitar desperdicio de cuotas si el usuario no está en vivo
+            this.discoveryStartTime.set(userId, Date.now());
+            this.discoveryAttempts.set(userId, 0);
+
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting');
+
+            const tryConnect = async () => {
+                // Verificar límites de discovery antes de cada intento
+                // Si se exceden los límites, se detiene automáticamente
+                if (!this.shouldContinueDiscovery(userId, io)) {
+                    return;
+                }
+
+                logger.debug({ userId }, 'YouTube discovery attempt...');
+                const stillExists = await Connection.findOne({
                     where: { userId: String(userId), provider: 'youtube' }
                 });
+                if (!stillExists) {
+                    this.stopDiscovery(userId);
+                    return;
+                }
 
-                if (!connection) return;
+                const accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
+                if (!accessToken) {
+                    return;
+                }
 
-                await this.disconnect(userId);
+                // Incrementar contador de intentos para tracking
+                const attempts = (this.discoveryAttempts.get(userId) || 0) + 1;
+                this.discoveryAttempts.set(userId, attempts);
 
-                // Inicializar contadores para tracking de discovery
-                // Esto permite detener el discovery después de cierto tiempo/intentos
-                // para evitar desperdicio de cuotas si el usuario no está en vivo
-                this.discoveryStartTime.set(userId, Date.now());
-                this.discoveryAttempts.set(userId, 0);
+                const broadcast = await this.broadcastDiscovery.findLiveBroadcast(accessToken);
+                if (!broadcast) {
+                    throw new Error('No broadcast found');
+                }
 
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting');
+                const liveChatId = broadcast.snippet?.liveChatId;
+                const broadcastId = broadcast.id;
 
-                const tryConnect = async () => {
-                    // Verificar límites de discovery antes de cada intento
-                    // Si se exceden los límites, se detiene automáticamente
-                    if (!this.shouldContinueDiscovery(userId, io)) {
-                        return;
+                if (liveChatId) {
+                    logger.info({ liveChatId, userId, attempts }, 'YouTube live detected');
+
+                    // Detener discovery inmediatamente cuando se encuentra stream
+                    // Esto ahorra cuotas ya que no se necesita seguir buscando
+                    this.stopDiscovery(userId);
+
+                    SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+
+                    // Iniciar polling de chat y viewers solo cuando hay stream activo
+                    this.chatPoller.startPolling(userId, liveChatId, accessToken, io);
+                    if (broadcastId) {
+                        this.viewerPoller.startPolling(userId, broadcastId, accessToken, io);
                     }
+                }
+            };
 
-                    logger.debug({ userId }, 'YouTube discovery attempt...');
-                    const stillExists = await Connection.findOne({
-                        where: { userId: String(userId), provider: 'youtube' }
-                    });
-                    if (!stillExists) {
+            // Configurar el polling para reintentos usando configuración centralizada
+            const cleanup = retryWithInterval(tryConnect, {
+                intervalMs: YouTubePollingConfig.DISCOVERY_POLLING_INTERVAL,
+                onError: (err) => {
+                    // Detectar error de cuota agotada y notificar al usuario
+                    if (err instanceof Error && err.message === 'YOUTUBE_QUOTA_EXCEEDED') {
+                        logger.warn(
+                            { userId },
+                            '⚠️  YouTube quota exceeded - Stopping discovery and notifying user'
+                        );
                         this.stopDiscovery(userId);
-                        return;
+                        SocketEventEmitter.emitConnectionStatus(
+                            io,
+                            userId,
+                            'youtube',
+                            'error',
+                            '⚠️ Cuota de YouTube agotada. Por favor, espera hasta mañana para que se renueve la cuota diaria.'
+                        );
+                    } else {
+                        logger.debug({ userId, err }, 'YouTube discovery retry failed');
                     }
+                }
+            });
 
-                    const accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
-                    if (!accessToken) {
-                        return;
-                    }
+            this.discoveryCleanup.set(userId, cleanup);
 
-                    // Incrementar contador de intentos para tracking
-                    const attempts = (this.discoveryAttempts.get(userId) || 0) + 1;
-                    this.discoveryAttempts.set(userId, attempts);
+            // Ejecutar inmediatamente el primer intento
+            await tryConnect().catch((err) => {
+                logger.debug({ userId, err }, 'Initial YouTube connection attempt failed - continuing in background');
+            });
 
-                    const broadcast = await this.broadcastDiscovery.findLiveBroadcast(accessToken);
-                    if (!broadcast) {
-                        throw new Error('No broadcast found');
-                    }
-
-                    const liveChatId = broadcast.snippet?.liveChatId;
-                    const broadcastId = broadcast.id;
-
-                    if (liveChatId) {
-                        logger.info({ liveChatId, userId, attempts }, 'YouTube live detected');
-
-                        // Detener discovery inmediatamente cuando se encuentra stream
-                        // Esto ahorra cuotas ya que no se necesita seguir buscando
-                        this.stopDiscovery(userId);
-
-                        SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
-
-                        // Iniciar polling de chat y viewers solo cuando hay stream activo
-                        this.chatPoller.startPolling(userId, liveChatId, accessToken, io);
-                        if (broadcastId) {
-                            this.viewerPoller.startPolling(userId, broadcastId, accessToken, io);
-                        }
-                    }
-                };
-
-                // Configurar el polling para reintentos usando configuración centralizada
-                const cleanup = retryWithInterval(tryConnect, {
-                    intervalMs: YouTubePollingConfig.DISCOVERY_POLLING_INTERVAL,
-                    onError: (err) => {
-                        // Detectar error de cuota agotada y notificar al usuario
-                        if (err instanceof Error && err.message === 'YOUTUBE_QUOTA_EXCEEDED') {
-                            logger.warn(
-                                { userId },
-                                '⚠️  YouTube quota exceeded - Stopping discovery and notifying user'
-                            );
-                            this.stopDiscovery(userId);
-                            SocketEventEmitter.emitConnectionStatus(
-                                io,
-                                userId,
-                                'youtube',
-                                'error',
-                                '⚠️ Cuota de YouTube agotada. Por favor, espera hasta mañana para que se renueve la cuota diaria.'
-                            );
-                        } else {
-                            logger.debug({ userId, err }, 'YouTube discovery retry failed');
-                        }
-                    }
-                });
-
-                this.discoveryCleanup.set(userId, cleanup);
-
-                // Ejecutar inmediatamente el primer intento
-                await tryConnect().catch((err) => {
-                    logger.debug({ userId, err }, 'Initial YouTube connection attempt failed - continuing in background');
-                });
-
-            } catch (error) {
-                logger.error({ err: error, userId }, 'Error setting up YouTube connection');
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error de configuración');
-            } finally {
-                this.connectingUsers.delete(userId);
-            }
-        };
-
-        void startConnection();
+        } catch (error) {
+            logger.error({ err: error, userId }, 'Error setting up YouTube connection');
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error de configuración');
+        } finally {
+            this.connectingUsers.delete(userId);
+        }
     }
 
     /**

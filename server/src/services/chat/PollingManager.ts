@@ -4,11 +4,21 @@ export class PollingManager {
     start(id: string, task: () => Promise<void>, intervalMs: number = 60000) {
         this.stop(id);
 
+        // Wrap task to handle errors
+        const wrappedTask = async () => {
+            try {
+                await task();
+            } catch (error) {
+                // Log error but don't crash the polling
+                console.error(`[PollingManager] Error in polling task ${id}:`, error);
+            }
+        };
+
         // Execute immediately
-        void task();
+        void wrappedTask();
 
         const interval = setInterval(() => {
-            void task();
+            void wrappedTask();
         }, intervalMs);
 
         this.intervals.set(id, interval);

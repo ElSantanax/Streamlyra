@@ -7,6 +7,7 @@ import axios from 'axios';
 import { Server } from 'socket.io';
 import { YouTubeVideoResponse } from '../../../types/youtube.types';
 import { PollingManager } from '../PollingManager';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
@@ -24,10 +25,12 @@ export class YouTubeViewerPoller {
                 const video = response.data.items?.[0];
                 const viewerCount = video?.liveStreamingDetails?.concurrentViewers || '0';
 
-                io.to(userId).emit('viewers_update', {
-                    platform: 'youtube',
-                    count: parseInt(viewerCount)
-                });
+                SafeSocketEmitter.emitViewersUpdate(
+                    io,
+                    userId,
+                    'youtube',
+                    parseInt(viewerCount)
+                );
             } catch (error) {
                 logger.error({ err: error }, 'YouTube viewer polling error');
             }

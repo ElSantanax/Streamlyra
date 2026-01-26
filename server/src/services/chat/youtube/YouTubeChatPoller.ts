@@ -9,6 +9,7 @@ import { YouTubeChatMessage, YouTubeChatMessagesResponse } from '../../../types/
 import { MessageDeduplicator } from '../../../utils/messageDeduplicate';
 import { PollingManager } from '../PollingManager';
 import { YouTubeEventTransformer } from '../transformers/YouTubeEventTransformer';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
@@ -17,6 +18,9 @@ export class YouTubeChatPoller {
     private nextPageTokens: Map<string, string> = new Map();
     private deduplicators: Map<string, MessageDeduplicator> = new Map();
     private transformer: YouTubeEventTransformer;
+    // Almacenar referencias a timeouts activos para poder cancelarlos
+    // Esto previene memory leaks cuando un usuario se desconecta
+    private activeTimeouts: Map<string, Set<NodeJS.Timeout>> = new Map();
 
     constructor() {
         this.transformer = new YouTubeEventTransformer();
@@ -39,7 +43,7 @@ export class YouTubeChatPoller {
         if (messages.length <= 3) {
             messages.forEach(item => {
                 const normalizedMessage = this.transformer.transformMessage(item);
-                io.to(userId).emit('chat_message', normalizedMessage);
+                SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'youtube');
             });
             return;
         }
@@ -49,15 +53,28 @@ export class YouTubeChatPoller {
         const distributionWindow = intervalMs * 0.8;
         const delayBetweenMessages = distributionWindow / messages.length;
 
+        // Inicializar Set de timeouts para este usuario si no existe
+        if (!this.activeTimeouts.has(userId)) {
+            this.activeTimeouts.set(userId, new Set());
+        }
+        const userTimeouts = this.activeTimeouts.get(userId)!;
+
         messages.forEach((item, index) => {
-            setTimeout(() => {
+            // Guardar referencia al timeout para poder cancelarlo después
+            const timeoutId = setTimeout(() => {
                 const normalizedMessage = this.transformer.transformMessage(item);
-                io.to(userId).emit('chat_message', normalizedMessage);
+                SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'youtube');
+                
+                // Remover timeout completado del Set
+                userTimeouts.delete(timeoutId);
             }, delayBetweenMessages * index);
+            
+            // Agregar timeout al Set de timeouts activos
+            userTimeouts.add(timeoutId);
         });
 
         logger.debug(
-            { userId, messageCount: messages.length, delayBetweenMessages },
+            { userId, messageCount: messages.length, delayBetweenMessages, activeTimeouts: userTimeouts.size },
             'Distributing YouTube messages gradually'
         );
     }
@@ -105,5 +122,19 @@ export class YouTubeChatPoller {
         this.polling.stop(userId);
         this.deduplicators.delete(userId);
         this.nextPageTokens.delete(userId);
+        
+        // Cancelar todos los timeouts activos para este usuario
+        // Esto previene memory leaks y emisiones a usuarios desconectados
+        const userTimeouts = this.activeTimeouts.get(userId);
+        if (userTimeouts && userTimeouts.size > 0) {
+            logger.debug(
+                { userId, cancelledTimeouts: userTimeouts.size },
+                'Cancelling active timeouts for disconnected user'
+            );
+            
+            userTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            userTimeouts.clear();
+            this.activeTimeouts.delete(userId);
+        }
     }
 }

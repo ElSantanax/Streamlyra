@@ -1,24 +1,9 @@
-import { type ReactNode } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
 import Spinner from '../common/Spinner';
-
-// --- Local Components (KISS: Co-located for internal use) ---
-
-interface SidebarSectionProps {
-    title: string;
-    children: ReactNode;
-    className?: string;
-}
-
-const SidebarSection = ({ title, children, className = "" }: SidebarSectionProps) => (
-    <div className={`flex flex-col gap-3 ${className}`}>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">{title}</h3>
-        {children}
-    </div>
-);
+import { formatViewers } from '../../lib/formatters';
 
 interface ConnectionItemProps {
     platformKey: PlatformKey;
@@ -96,21 +81,6 @@ const ConnectionItem = ({
     );
 };
 
-interface StatCardProps {
-    label: string;
-    value: string;
-    valueColor?: string;
-    className?: string;
-}
-
-const StatCard = ({ label, value, valueColor = "text-white", className = "" }: StatCardProps) => (
-    <div className={`p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 ${className}`}>
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</span>
-        <span className={`text-base font-black ${valueColor}`}>{value}</span>
-    </div>
-);
-
-// --- Main Sidebar Component ---
 interface SidebarProps {
     onMobileClose?: () => void;
     onAddPlatform?: () => void;
@@ -125,18 +95,11 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: SidebarProps) => {
-
-    // Calcular espectadores totales
     const totalViewers = Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0);
-
-    const formatNumber = (num: number) => {
-        if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
-        return num.toString();
-    };
 
     return (
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
-            {/* Mobile Header for Sidebar */}
+            {/* Mobile Header */}
             <div className="flex items-center justify-between lg:hidden mb-2">
                 <span className="text-xs font-bold uppercase tracking-widest text-primary">Menú de Control</span>
                 <button
@@ -147,7 +110,9 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                 </button>
             </div>
 
-            <SidebarSection title="Conexiones">
+            {/* Conexiones */}
+            <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Conexiones</h3>
                 {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error').length > 0 ? (
                     Object.entries(connections)
                         .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error')
@@ -165,7 +130,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                                     key={key}
                                     platformKey={key as PlatformKey}
                                     status={status}
-                                    viewers={data.viewers !== undefined ? formatNumber(data.viewers) : undefined}
+                                    viewers={data.viewers !== undefined ? formatViewers(data.viewers) : undefined}
                                     statusMessage={data.statusMessage}
                                     onDisconnect={() => onDisconnect(key as PlatformKey)}
                                 />
@@ -186,23 +151,32 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                     </div>
                     <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Agregar plataforma</span>
                 </button>
-            </SidebarSection>
+            </div>
 
-
-            <SidebarSection title="Analíticas en Vivo">
+            {/* Analíticas */}
+            <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Analíticas en Vivo</h3>
                 <div className="grid grid-cols-1 gap-3">
-                    <StatCard label="Espectadores Totales" value={formatNumber(totalViewers)} />
-                    <StatCard label="Tiempo al Aire" value="00h 00m 00s" />
+                    <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Espectadores Totales</span>
+                        <span className="text-base font-black text-white">{formatViewers(totalViewers)}</span>
+                    </div>
+                    <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tiempo al Aire</span>
+                        <span className="text-base font-black text-white">00h 00m 00s</span>
+                    </div>
                 </div>
-            </SidebarSection>
+            </div>
 
-            <SidebarSection title="Acciones Rápidas" className="mt-auto">
+            {/* Acciones Rápidas */}
+            <div className="flex flex-col gap-3 mt-auto">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Acciones Rápidas</h3>
                 <div className="flex flex-col gap-2">
                     <button className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer">
                         <MdDeleteSweep size={20} /> Limpiar Chat
                     </button>
                 </div>
-            </SidebarSection>
+            </div>
         </aside>
     );
 };

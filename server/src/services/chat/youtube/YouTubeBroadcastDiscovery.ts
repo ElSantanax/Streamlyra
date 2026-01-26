@@ -3,7 +3,7 @@
  * Responsabilidad: Encontrar broadcast en vivo del usuario
  */
 
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtube.types';
 import { logger } from '../../../utils/logger';
 

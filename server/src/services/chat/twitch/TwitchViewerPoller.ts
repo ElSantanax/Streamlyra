@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { TwitchStreamResponse } from '../../../types/twitch.types';
 import { PollingManager } from '../PollingManager';
 import { config } from '../../../config';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 
 export class TwitchViewerPoller {
@@ -25,10 +26,12 @@ export class TwitchViewerPoller {
                 });
 
                 const stream = response.data.data[0];
-                io.to(userId).emit('viewers_update', {
-                    platform: 'twitch',
-                    count: stream ? stream.viewer_count : 0
-                });
+                SafeSocketEmitter.emitViewersUpdate(
+                    io,
+                    userId,
+                    'twitch',
+                    stream ? stream.viewer_count : 0
+                );
 
             } catch (error) {
                 logger.error({ err: error }, 'Twitch viewer polling error');

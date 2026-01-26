@@ -3,7 +3,9 @@ import { MdClose } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import PlatformButton from '../connection/PlatformButton';
 import PlatformInput from '../connection/PlatformInput';
-import { generatePKCE } from '../../utils/pkce';
+import { initiateOAuth } from '../../utils/oauth';
+import { authService } from '../../api/services';
+import { cleanUsername } from '../../lib/validators';
 
 interface AddPlatformModalProps {
     isOpen: boolean;
@@ -14,16 +16,17 @@ interface AddPlatformModalProps {
         status?: 'connecting' | 'connected' | 'error';
         statusMessage?: string;
     }>;
+    onConnectionSuccess?: () => void;
 }
 
 const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     isOpen,
     onClose,
-    connections = {}
+    connections = {},
+    onConnectionSuccess
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const [tiktokUsername, setTiktokUsername] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isTiktokConnected = connections.tiktok?.connected ?? false;
     const tiktokStatus = connections.tiktok?.status;
@@ -51,36 +54,17 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     };
 
     const handleTiktokConnect = async () => {
-        if (!tiktokUsername || isSubmitting) return;
+        if (!tiktokUsername) return;
 
-        setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            const cleanUsername = tiktokUsername.replace(/^@+/, '');
-            const response = await fetch('/api/auth/tiktok', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ username: cleanUsername })
-            });
-
-            if (response.ok) {
-                // No recargamos, dejamos que el Dashboard actualice vía socket/fetch
-                // Pero cerramos el modal para que el usuario vea el Sidebar actualizándose
-                setTimeout(() => {
-                    onClose();
-                }, 500);
-            } else {
-                const data = await response.json() as { error?: string };
-                alert(data.error || 'Error al conectar TikTok');
-            }
+            const cleaned = cleanUsername(tiktokUsername);
+            await authService.connectTikTok(cleaned);
+            onConnectionSuccess?.();
+            setTimeout(() => onClose(), 500);
         } catch (error) {
+            const message = error instanceof Error ? error.message : 'Error al conectar TikTok';
             console.error('Error connecting tiktok:', error);
-            alert('Error de red al conectar TikTok');
-        } finally {
-            setIsSubmitting(false);
+            alert(message);
         }
     };
 
@@ -113,54 +97,6 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                             const isConnected = !!conn?.connected;
                             const status = conn?.status;
 
-                            const handleConnect = () => {
-                                if (isConnected) return;
-
-                                const redirectUri = `${window.location.origin}/auth/callback`;
-
-                                if (key === 'twitch') {
-                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
-                                    if (!clientId) {
-                                        alert('Falta VITE_TWITCH_CLIENT_ID en .env');
-                                        return;
-                                    }
-                                    const scope = 'chat:read chat:edit user:read:email';
-                                    window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
-                                }
-
-                                if (key === 'youtube') {
-                                    const clientId = import.meta.env.VITE_YOUTUBE_CLIENT_ID as string;
-                                    if (!clientId) {
-                                        alert('Falta VITE_YOUTUBE_CLIENT_ID en .env');
-                                        return;
-                                    }
-
-                                    const scope = 'https://www.googleapis.com/auth/youtube.readonly email profile';
-                                    // Agregar timestamp para forzar nueva autorización y evitar caché
-                                    const state = `youtube_${Date.now()}`;
-                                    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=false&state=${state}`;
-                                }
-
-                                if (key === 'kick') {
-                                    const clientId = import.meta.env.VITE_KICK_CLIENT_ID as string;
-                                    if (!clientId) {
-                                        alert('Falta VITE_KICK_CLIENT_ID en .env');
-                                        return;
-                                    }
-
-                                    // Generar PKCE para Kick (Requerido para OAuth 2.1)
-                                    generatePKCE().then(({ verifier, challenge }) => {
-                                        localStorage.setItem('kick_verifier', verifier);
-
-                                        const state = 'kick';
-                                        const scope = 'user:read channel:read chat:write events:subscribe';
-                                        const authUrl = `https://id.kick.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
-
-                                        window.location.href = authUrl;
-                                    });
-                                }
-                            };
-
                             let label = isConnected ? `${platform.name} Conectado` : `Conectar ${platform.name}`;
                             if (status === 'connecting') label = `Conectando ${platform.name}...`;
                             if (status === 'error') label = `Error en ${platform.name}`;
@@ -172,7 +108,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                                     subtext={isConnected ? "Cuenta vinculada exitosamente" : `Vincula tu cuenta de ${platform.name}`}
                                     Icon={platform.Icon}
                                     iconColor={platform.brandColor}
-                                    onClick={handleConnect}
+                                    onClick={() => !isConnected && initiateOAuth(key as 'twitch' | 'youtube' | 'kick')}
                                     isConnected={isConnected || status === 'connecting'}
                                     className="bg-surface-dark hover:bg-surface-dark/80"
                                 />

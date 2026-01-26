@@ -38,7 +38,7 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsMenuOpen(false);
-                setShowLanguages(false); // Reset language toggle on close
+                setShowLanguages(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -158,7 +158,7 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
                                                 key={lang.code}
                                                 onClick={() => {
                                                     setCurrentLanguage(lang.code);
-                                                    setIsMenuOpen(false); // Optional: close menu on selection
+                                                    setIsMenuOpen(false);
                                                 }}
                                                 className="w-full pl-12 pr-4 py-2 flex items-center justify-between text-sm hover:bg-white/5 cursor-pointer group"
                                             >

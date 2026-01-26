@@ -1,0 +1,24 @@
+import { afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+
+// Cleanup after each test
+afterEach(() => {
+  cleanup();
+});
+
+// Mock socket.io-client
+vi.mock('socket.io-client', () => {
+  const mockSocket = {
+    connected: false,
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+  
+  return {
+    io: vi.fn(() => mockSocket),
+  };
+});

@@ -32,53 +32,55 @@ export class TwitchChatProvider implements ChatProvider {
             return;
         }
 
+        // Si ya está conectado, no reconectar
+        if (this.activeClients.has(userId)) {
+            logger.debug({ userId }, 'User already has an active Twitch client');
+            return;
+        }
+
         this.connectingUsers.add(userId);
 
-        const startConnection = async () => {
-            try {
-                if (this.activeClients.has(userId)) {
-                    logger.debug({ userId }, 'User already has an active Twitch client, disconnecting first');
-                    await this.disconnect(userId);
-                }
+        try {
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting');
+            logger.info({ userId }, 'Connecting to Twitch chat');
 
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting');
-                logger.info({ userId }, 'Connecting to Twitch chat');
+            const client = await this.connectionManager.connect(userId);
+            this.activeClients.set(userId, client);
 
-                const client = await this.connectionManager.connect(userId);
-                this.activeClients.set(userId, client);
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
 
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+            this.eventListener.setupListeners(userId, client, io);
 
-                this.eventListener.setupListeners(userId, client, io);
+            // Get username for polling
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'twitch' }
+            });
 
-                // Get username for polling
-                const connection = await Connection.findOne({
-                    where: { userId: String(userId), provider: 'twitch' }
-                });
-
-                if (connection?.providerUsername) {
-                    const validToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
-                    const accessToken = validToken || connection.accessToken;
-                    this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
-                }
-
-            } catch (error) {
-                logger.error({ err: error, userId }, 'Error connecting to Twitch');
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'error');
-            } finally {
-                this.connectingUsers.delete(userId);
+            if (connection?.providerUsername) {
+                const validToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
+                const accessToken = validToken || connection.accessToken;
+                this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
             }
-        };
 
-        void startConnection();
+        } catch (error) {
+            logger.error({ err: error, userId }, 'Error connecting to Twitch');
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'error');
+            this.activeClients.delete(userId);
+        } finally {
+            this.connectingUsers.delete(userId);
+        }
     }
 
     async disconnect(userId: string): Promise<void> {
         const client = this.activeClients.get(userId);
         if (client) {
+            // Remover listeners antes de desconectar para prevenir memory leaks
+            this.eventListener.removeListeners(userId, client);
+            
             await this.connectionManager.disconnect(client);
             this.activeClients.delete(userId);
         }
         this.viewerPoller.stopPolling(userId);
+        this.connectingUsers.delete(userId);
     }
 }

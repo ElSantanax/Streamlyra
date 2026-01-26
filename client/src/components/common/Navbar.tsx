@@ -2,36 +2,27 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaGlobe, FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
-import Overlay from './Overlay';
 
 const Navbar = () => {
     const { pathname } = useLocation();
-    const [prevPathname, setPrevPathname] = useState(pathname);
     const isAuthPage = pathname === '/register' || pathname === '/connect' || pathname === '/login';
     const [lang, setLang] = useState<'es' | 'en'>('es');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const isAuthenticated = !!localStorage.getItem('token');
 
-    // Close menu when navigating (Adjusting state during render)
-    if (pathname !== prevPathname) {
-        setPrevPathname(pathname);
-        if (isMenuOpen) setIsMenuOpen(false);
-    }
-
+    // Close menu on resize to desktop and prevent scroll when open
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth >= 768 && isMenuOpen) setIsMenuOpen(false);
+            if (window.innerWidth >= 768) setIsMenuOpen(false);
         };
+        
+        document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [isMenuOpen]);
-
-    // Prevent scroll when menu is open
-    useEffect(() => {
-        if (isMenuOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
+        
+        return () => {
+            window.removeEventListener('resize', handleResize);
             document.body.style.overflow = 'unset';
-        }
+        };
     }, [isMenuOpen]);
 
     const navLinks = (
@@ -39,8 +30,6 @@ const Navbar = () => {
             <a href="#" className="text-slate-600 dark:text-white/80 hover:text-primary text-sm font-medium transition-colors">Comunidad</a>
         </>
     );
-
-    const [isAuthenticated] = useState(() => !!localStorage.getItem('token'));
 
     const actionButton = isAuthPage ? (
         <Link to="/" className="w-full md:w-auto">
@@ -95,12 +84,13 @@ const Navbar = () => {
                 </div>
             </header>
 
-            <Overlay
-                isVisible={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                className="md:hidden"
-                zIndex={40}
-            />
+            {/* Overlay */}
+            {isMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 md:hidden z-40"
+                    onClick={() => setIsMenuOpen(false)}
+                />
+            )}
 
             {/* Mobile Menu Drawer */}
             <div

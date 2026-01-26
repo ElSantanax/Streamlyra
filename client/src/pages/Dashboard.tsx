@@ -1,227 +1,47 @@
-import { useState, lazy, Suspense, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+/**
+ * Dashboard Page - Orquestador principal
+ * Solo coordina hooks y componentes, sin lógica de negocio
+ */
+
+import { useState, lazy, Suspense } from 'react';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
-import Overlay from '../components/common/Overlay';
-import { socket } from '../services/socket';
-import type { ChatMessageProps } from '../components/dashboard/ChatMessage';
+import { useAuth, useConnections, useChatMessages, useSocket } from '../hooks';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
 const ChatMessage = lazy(() => import('../components/dashboard/ChatMessage'));
 const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
-
 const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
 
-interface User {
-    id: string;
-    username: string;
-    displayName: string;
-    avatar: string;
-}
-
-interface ConnectionInfo {
-    connected: boolean;
-    username?: string;
-}
-
-interface MeResponse {
-    user: User;
-    connections: Record<string, ConnectionInfo>;
-}
-
 const Dashboard = () => {
-    const navigate = useNavigate();
+    const { user, requireAuth } = useAuth();
+    const { connections, updateConnection, disconnectPlatform, refetch } = useConnections();
+    const { messages, addMessage, messagesEndRef } = useChatMessages();
+    
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
-    const [isConnected, setIsConnected] = useState(socket.connected);
-    const [messages, setMessages] = useState<(ChatMessageProps & { id?: string })[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll al fondo cuando llegan mensajes nuevos
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages]);
-
-    interface ViewersUpdate {
-        platform: string;
-        count: number;
-    }
-
-    const [userConnections, setUserConnections] = useState<Record<string, { connected: boolean; username?: string; viewers?: number; status?: 'connecting' | 'connected' | 'error'; statusMessage?: string }>>({
-        twitch: { connected: false },
-        youtube: { connected: false },
-        tiktok: { connected: false },
-        kick: { connected: false }
+    // Socket connection con callbacks
+    const { isConnected } = useSocket({
+        userId: user?.id,
+        onChatMessage: addMessage,
+        onViewersUpdate: (data) => {
+            updateConnection(data.platform, { viewers: data.count });
+        },
+        onConnectionStatus: (data) => {
+            updateConnection(data.platform, {
+                status: data.status,
+                statusMessage: data.message,
+                connected: data.status === 'connected',
+            });
+        },
+        connections,
     });
 
-    const connectionsRef = useRef(userConnections);
-
-    useEffect(() => {
-        connectionsRef.current = userConnections;
-    }, [userConnections]);
-
-    useEffect(() => {
-        // Obtenemos el usuario guardado para identificarnos
-        const userStr = localStorage.getItem('user');
-        const user = userStr ? (JSON.parse(userStr) as User) : null;
-
-        if (!user) {
-            navigate('/login');
-            return;
-        }
-
-        // Conectar al socket al montar el dashboard
-        if (!socket.connected) {
-            socket.connect();
-        }
-
-        function onConnect() {
-            setIsConnected(true);
-            // Decirle al backend quiénes somos
-            if (user) socket.emit('identify', user.id);
-        }
-
-        function onDisconnect() {
-            setIsConnected(false);
-        }
-
-        function onChatMessage(msg: ChatMessageProps & { id?: string }) {
-            // Ignorar mensajes de plataformas desconectadas
-            if (msg.platform && !connectionsRef.current[msg.platform]?.connected) {
-                return;
-            }
-
-            console.log('📬 Mensaje recibido:', msg);
-            setMessages(prev => {
-                // Evitar duplicados si el mensaje tiene ID
-                if (msg.id && prev.some(m => m.id === msg.id)) {
-                    return prev;
-                }
-
-                // Limitamos el historial en pantalla a 100 mensajes para rendimiento
-                if (prev.length > 100) {
-                    return [...prev.slice(1), msg];
-                }
-                return [...prev, msg];
-            });
-        }
-
-        function onViewersUpdate(data: ViewersUpdate) {
-            // Ignorar actualizaciones de plataformas desconectadas
-            if (!connectionsRef.current[data.platform]?.connected) {
-                return;
-            }
-
-            setUserConnections(prev => ({
-                ...prev,
-                [data.platform]: {
-                    ...prev[data.platform],
-                    viewers: data.count
-                }
-            }));
-        }
-
-        interface ConnectionStatusUpdate {
-            platform: string;
-            status: 'connecting' | 'connected' | 'error';
-            message?: string;
-        }
-
-        function onConnectionStatus(data: ConnectionStatusUpdate) {
-            setUserConnections(prev => ({
-                ...prev,
-                [data.platform]: {
-                    ...prev[data.platform],
-                    status: data.status,
-                    statusMessage: data.message,
-                    // Si se desconectó desde el servidor (error o lo que sea), asegurar que connected se actualice
-                    connected: data.status === 'connected' ? true : (data.status === 'error' ? false : prev[data.platform]?.connected)
-                }
-            }));
-        }
-
-        // Listeners
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-        socket.on('chat_message', onChatMessage);
-        socket.on('viewers_update', onViewersUpdate);
-        socket.on('connection_status', onConnectionStatus);
-
-        // Si ya estaba conectado de antes
-        if (socket.connected) {
-            onConnect();
-        }
-
-        return () => {
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-            socket.off('chat_message', onChatMessage);
-            socket.off('viewers_update', onViewersUpdate);
-            socket.off('connection_status', onConnectionStatus);
-            // No desconectamos al desmontar para navegación fluida
-        };
-    }, [navigate]);
-
-    // Cargar perfil y conexiones
-    useEffect(() => {
-        const fetchUserData = async () => {
-            const userStr = localStorage.getItem('user');
-            const user = userStr ? (JSON.parse(userStr) as User) : null;
-            if (!user) return;
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (response.ok) {
-                    const data = (await response.json()) as MeResponse;
-                    setUserConnections(data.connections);
-                } else if (response.status === 401 || response.status === 404) {
-                    // Si el token es inválido o el usuario no existe en DB, fuera
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    navigate('/login');
-                }
-            } catch (error) {
-                console.error('Error fetching connections:', error);
-            }
-        };
-
-        fetchUserData();
-    }, [isAddPlatformOpen, navigate]); // Re-fetch al cerrar/abrir modal por si hubo cambios
-
-    const handleDisconnect = async (provider: string) => {
-        const userStr = localStorage.getItem('user');
-        const user = userStr ? (JSON.parse(userStr) as User) : null;
-        if (!user) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/auth/platform', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ provider })
-            });
-
-            if (response.ok) {
-                // Actualizar estado local inmediatamente
-                setUserConnections(prev => ({
-                    ...prev,
-                    [provider]: { connected: false, viewers: 0 }
-                }));
-            }
-        } catch (error) {
-            console.error('Error disconnecting platform:', error);
-        }
-    };
+    // Proteger ruta
+    if (!requireAuth()) {
+        return null;
+    }
 
     return (
         <div className="page-base h-screen overflow-hidden">
@@ -232,17 +52,19 @@ const Dashboard = () => {
             />
 
             <div className="flex flex-1 overflow-hidden relative">
-                {/* Backdrops centralizados con Overlay */}
-                <Overlay
-                    isVisible={isAddPlatformOpen}
-                    onClose={() => setIsAddPlatformOpen(false)}
-                    className="lg:hidden"
-                />
-                <Overlay
-                    isVisible={isSidebarOpen}
-                    onClose={() => setIsSidebarOpen(false)}
-                    className="lg:hidden"
-                />
+                {/* Overlays */}
+                {isAddPlatformOpen && (
+                    <div
+                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
+                        onClick={() => setIsAddPlatformOpen(false)}
+                    />
+                )}
+                {isSidebarOpen && (
+                    <div
+                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
 
                 <Suspense fallback={
                     <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto">
@@ -262,16 +84,15 @@ const Dashboard = () => {
                             onMobileClose={() => setIsSidebarOpen(false)}
                             onAddPlatform={() => {
                                 setIsAddPlatformOpen(true);
-                                setIsSidebarOpen(false); // Close sidebar on mobile after clicking
+                                setIsSidebarOpen(false);
                             }}
-                            connections={userConnections}
-                            onDisconnect={handleDisconnect}
+                            connections={connections}
+                            onDisconnect={disconnectPlatform}
                         />
                     </div>
                 </Suspense>
 
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
-
                     {/* Messages Area */}
                     <div className="flex-1 min-h-0 overflow-y-auto p-4 md:px-2 md:py-2 custom-scrollbar">
                         <div className="flex flex-col gap-2 min-h-full">
@@ -317,7 +138,8 @@ const Dashboard = () => {
                     <AddPlatformModal
                         isOpen={isAddPlatformOpen}
                         onClose={() => setIsAddPlatformOpen(false)}
-                        connections={userConnections}
+                        connections={connections}
+                        onConnectionSuccess={refetch}
                     />
                 </Suspense>
             )}

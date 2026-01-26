@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
 import { YouTubeChannelResponse } from '../../types/youtube.types';
 import { config } from '../../config';

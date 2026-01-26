@@ -15,6 +15,14 @@ const PlatformConnection = () => {
         }
     }, [navigate]);
 
+    const handleTwitchLogin = () => {
+        const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
+        const redirectUri = window.location.origin + '/auth/callback';
+        const scope = encodeURIComponent('user:read:email chat:read chat:edit');
+        const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
+        window.location.href = authUrl;
+    };
+
     return (
         <div className="page-base antialiased selection:bg-primary selection:text-white overflow-x-hidden">
             <Navbar />
@@ -50,13 +58,7 @@ const PlatformConnection = () => {
                                 label="Iniciar Sesión con Twitch"
                                 Icon={FaTwitch}
                                 iconColor="#9146FF"
-                                onClick={() => {
-                                    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
-                                    const redirectUri = window.location.origin + '/auth/callback';
-                                    const scope = encodeURIComponent('user:read:email chat:read chat:edit');
-                                    const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
-                                    window.location.href = authUrl;
-                                }}
+                                onClick={handleTwitchLogin}
                                 className="w-full transition-colors duration-300"
                                 centered={true}
                             />

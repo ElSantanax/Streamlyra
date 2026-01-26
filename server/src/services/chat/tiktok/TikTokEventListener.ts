@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import { WebcastPushConnection } from 'tiktok-live-connector';
 import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
 import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent } from '../../../types/tiktok.types';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 
 export class TikTokEventListener {
     constructor(private transformer: TikTokEventTransformer) { }
@@ -14,13 +15,13 @@ export class TikTokEventListener {
     setupListeners(userId: string, connection: WebcastPushConnection, io: Server): void {
         connection.on('chat', (data: TikTokChatEvent) => {
             const normalizedMessage = this.transformer.transformChatMessage(data);
-            io.to(userId).emit('chat_message', normalizedMessage);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
         connection.on('gift', (data: TikTokGiftEvent) => {
             if (!data.repeatEnd) return;
             const normalizedMessage = this.transformer.transformGift(data);
-            io.to(userId).emit('chat_message', normalizedMessage);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
         connection.on('like', (_data: TikTokLikeEvent) => {
@@ -29,14 +30,11 @@ export class TikTokEventListener {
 
         connection.on('follow', (data: TikTokFollowEvent) => {
             const normalizedMessage = this.transformer.transformFollow(data);
-            io.to(userId).emit('chat_message', normalizedMessage);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
         connection.on('roomUser', (info: { viewerCount: number }) => {
-            io.to(userId).emit('viewers_update', {
-                platform: 'tiktok',
-                count: info.viewerCount
-            });
+            SafeSocketEmitter.emitViewersUpdate(io, userId, 'tiktok', info.viewerCount);
         });
     }
 }

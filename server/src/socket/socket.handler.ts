@@ -45,8 +45,9 @@ export const setupSocketHandlers = (io: Server, chatManager: ChatManager) => {
          * Evento: disconnect
          * Propósito: Limpiar recursos cuando el cliente se desconecta
          */
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             logger.info({ socketId: socket.id }, 'Cliente desconectado de Socket.io');
+            await connectionManager.handleDisconnect(socket.id);
         });
 
         /**

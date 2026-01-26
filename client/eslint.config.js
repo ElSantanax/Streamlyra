@@ -5,7 +5,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  // Solo ignora dist y config files
+  { ignores: ['dist', 'vitest.config.ts'] },
+  
+  // Configuración base para todo el código
   {
     extends: [
       js.configs.recommended,
@@ -35,4 +38,21 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-member-access': 'warn',
     },
   },
+  
+  // Configuración específica para archivos de test
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    rules: {
+      // Relajar reglas que dificultan escribir tests claros
+      '@typescript-eslint/no-explicit-any': 'off', // Útil para mocks
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
+      
+      // Mantener estas para calidad del código
+      '@typescript-eslint/no-unused-vars': 'error',
+      'no-console': 'off', // Útil para debugging en tests
+    },
+  }
 )

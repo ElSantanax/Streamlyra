@@ -10,6 +10,7 @@ import { TwitchChatProvider } from './chat/TwitchChatProvider';
 import { YouTubeChatProvider } from './chat/YouTubeChatProvider';
 import { KickChatProvider } from './chat/KickChatProvider';
 import { TikTokChatProvider } from './chat/TikTokChatProvider';
+import { SafeSocketEmitter } from '../utils/SafeSocketEmitter';
 import { withErrorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 
@@ -42,17 +43,34 @@ export class ChatManager {
                     this.connectProvider(userId, conn.provider as Platform)
                 );
 
-                // Tambien conectar TikTok si se desea por defecto o dejarlo manual... 
-                // TikTok no usa Connection DB model igual que los otros (usa username), asi que quizas se deba mantener manual 
-                // o manejar diferente. Por ahora enfoquémonos en los que usan Connection (Twitch, YT, Kick).
-                // Si TikTok requiere conectar siempre al inicio, agregalo. Pero parece que TikTok tmb debería ser explicito.
-                // Asumamos que TikTok se conecta explicitamente.
-
                 await Promise.allSettled(promises);
 
                 logger.info({ userId, count: connections.length }, 'Active chat providers processed');
             },
             { userId, action: 'connectUser' },
+            { rethrow: false }
+        );
+    }
+
+    /**
+     * Desconecta todas las plataformas del usuario
+     */
+    async disconnectUser(userId: string): Promise<void> {
+        await withErrorHandling(
+            async () => {
+                logger.info({ userId }, 'Disconnecting all chat providers');
+
+                // Desconectar todas las plataformas
+                const platforms: Platform[] = ['twitch', 'youtube', 'kick', 'tiktok'];
+                const promises = platforms.map(platform =>
+                    this.disconnectProvider(userId, platform)
+                );
+
+                await Promise.allSettled(promises);
+
+                logger.info({ userId }, 'All chat providers disconnected');
+            },
+            { userId, action: 'disconnectUser' },
             { rethrow: false }
         );
     }
@@ -99,7 +117,7 @@ export class ChatManager {
                 logger.info({ platform, userId }, 'Disconnecting chat provider');
 
                 // Notificar al cliente que se desconectó (UI update)
-                this.io.to(userId).emit('viewers_update', { platform, count: 0 });
+                SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0);
 
                 switch (platform) {
                     case 'twitch':

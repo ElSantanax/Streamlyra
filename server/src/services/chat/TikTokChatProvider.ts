@@ -11,13 +11,14 @@ import { TikTokEventListener } from './tiktok/TikTokEventListener';
 import { TikTokEventTransformer } from './transformers/TikTokEventTransformer';
 import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
 import { Connection } from '../../models/Connection.model';
-import { retryWithInterval } from '../../utils/retryWithInterval';
+import { retryWithExponentialBackoff } from '../../utils/retryWithExponentialBackoff';
 import { logger } from '../../utils/logger';
 
 export class TikTokChatProvider implements ChatProvider {
     private connectingUsers: Set<string> = new Set();
     private activeConnections: Map<string, WebcastPushConnection> = new Map();
     private retryCleanup: Map<string, () => void> = new Map();
+    private shouldReconnect: Map<string, boolean> = new Map();
     private transformer: TikTokEventTransformer;
     private connectionManager: TikTokConnectionManager;
     private eventListener: TikTokEventListener;
@@ -48,19 +49,30 @@ export class TikTokChatProvider implements ChatProvider {
 
             const tiktokUsername = connection.providerUsername.replace(/^@+/, '');
 
+            // Marcar que este usuario debe reconectar automáticamente
+            this.shouldReconnect.set(userId, true);
+
             this.retryCleanup.get(userId)?.();
 
             if (this.activeConnections.has(userId)) {
-                // If active, we should allow reconnection?
-                // But disconnect() is async.
                 await this.disconnect(userId);
             }
 
             const startConnection = async () => {
                 try {
-                    const stillExists = await Connection.findOne({ where: { userId: String(userId), provider: 'tiktok' } });
+                    // Verificar si todavía debe reconectar
+                    if (!this.shouldReconnect.get(userId)) {
+                        logger.debug({ userId }, 'Reconnection disabled for user, stopping');
+                        this.retryCleanup.get(userId)?.();
+                        return;
+                    }
+
+                    const stillExists = await Connection.findOne({
+                        where: { userId: String(userId), provider: 'tiktok' }
+                    });
                     if (!stillExists) {
                         this.retryCleanup.get(userId)?.();
+                        this.shouldReconnect.delete(userId);
                         return;
                     }
 
@@ -92,18 +104,40 @@ export class TikTokChatProvider implements ChatProvider {
 
                         SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'error', errorInfo.userMessage);
 
-                        // Solo reintentar si el error es recuperable
-                        if (!errorInfo.isPermanent) {
-                            const cleanup = retryWithInterval(startConnection, {
-                                intervalMs: 60000,
-                                onError: () => {
-                                    logger.debug({ username: tiktokUsername }, 'Retrying TikTok connection...');
+                        // Solo reintentar si el error es recuperable y debe reconectar
+                        if (!errorInfo.isPermanent && this.shouldReconnect.get(userId)) {
+                            const cleanup = retryWithExponentialBackoff(startConnection, {
+                                initialIntervalMs: 60000,      // Empezar con 1 minuto
+                                multiplier: 2,                  // Duplicar cada vez
+                                maxIntervalMs: 1800000,         // Máximo 30 minutos
+                                onError: (err, attempt, nextRetryMs) => {
+                                    logger.debug(
+                                        {
+                                            username: tiktokUsername,
+                                            attempt,
+                                            nextRetryMs,
+                                            nextRetryMinutes: Math.round(nextRetryMs / 60000)
+                                        },
+                                        'TikTok connection failed, retrying with exponential backoff'
+                                    );
+                                },
+                                onRetry: (attempt, delayMs) => {
+                                    logger.debug(
+                                        {
+                                            username: tiktokUsername,
+                                            attempt,
+                                            delayMs,
+                                            delayMinutes: Math.round(delayMs / 60000)
+                                        },
+                                        'Retrying TikTok connection...'
+                                    );
                                 }
                             });
                             this.retryCleanup.set(userId, cleanup);
                         } else {
                             // Error permanente - no tiene sentido reintentar
                             this.connectingUsers.delete(userId);
+                            this.shouldReconnect.delete(userId);
                         }
                     }
                 } finally {
@@ -194,10 +228,26 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     private setupDisconnectionHandler(userId: string, connection: WebcastPushConnection, io: Server): void {
-        connection.on('disconnected', () => {
+        connection.on('disconnected', async () => {
             logger.info({ userId }, 'TikTok disconnected');
             this.activeConnections.delete(userId);
-            void this.connect(userId, io);
+
+            // Solo reconectar si está habilitado y la conexión todavía existe en BD
+            if (this.shouldReconnect.get(userId)) {
+                const stillExists = await Connection.findOne({
+                    where: { userId: String(userId), provider: 'tiktok' }
+                });
+
+                if (stillExists) {
+                    logger.debug({ userId }, 'TikTok disconnected, attempting reconnection');
+                    void this.connect(userId, io);
+                } else {
+                    logger.debug({ userId }, 'TikTok connection removed from DB, not reconnecting');
+                    this.shouldReconnect.delete(userId);
+                }
+            } else {
+                logger.debug({ userId }, 'TikTok reconnection disabled, not reconnecting');
+            }
         });
 
         connection.on('error', (err: Error) => {
@@ -207,6 +257,9 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
+        // Deshabilitar reconexión automática
+        this.shouldReconnect.delete(userId);
+
         const cleanup = this.retryCleanup.get(userId);
         if (cleanup) {
             cleanup();
@@ -216,8 +269,11 @@ export class TikTokChatProvider implements ChatProvider {
         const connection = this.activeConnections.get(userId);
         if (connection) {
             connection.removeAllListeners('disconnected'); // Evitar reconexión automática
+            connection.removeAllListeners('error');
             await this.connectionManager.disconnect(connection);
             this.activeConnections.delete(userId);
         }
+
+        this.connectingUsers.delete(userId);
     }
 }

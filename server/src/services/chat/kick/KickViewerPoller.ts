@@ -3,10 +3,10 @@
  * Responsabilidad: Hacer polling de espectadores en vivo
  */
 
-import axios, { AxiosError } from 'axios';
 import { Server } from 'socket.io';
-import { KickApiResponse, KickChannel } from '../../../types/kick.types';
 import { PollingManager } from '../PollingManager';
+import { KickService } from '../../platforms/KickService';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 
 export class KickViewerPoller {
@@ -15,24 +15,18 @@ export class KickViewerPoller {
     startPolling(userId: string, accessToken: string, io: Server): void {
         this.polling.start(userId, async () => {
             try {
-                const response = await axios.get<KickApiResponse<KickChannel[]>>('https://api.kick.com/public/v1/channels', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` },
-                    timeout: 5000
-                });
+                // Usar KickService.getChannelByToken() que incluye los headers correctos
+                const channels = await KickService.getChannelByToken(accessToken);
 
-                if (response.data.data && response.data.data.length > 0) {
-                    const streamData = response.data.data[0].stream;
+                if (channels && channels.length > 0) {
+                    const streamData = channels[0].stream;
                     const viewerCount = streamData?.viewer_count || 0;
-                    io.to(userId).emit('viewers_update', {
-                        platform: 'kick',
-                        count: viewerCount
-                    });
+                    SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount);
                 }
             } catch (error) {
-                const axiosErr = error as AxiosError;
-                logger.error({ status: axiosErr.response?.status, message: axiosErr.message }, 'Kick viewer polling error');
+                logger.error({ err: error, userId }, 'Kick viewer polling error');
             }
-        }, 5000);
+        }, 30000); // Poll every 30 seconds
     }
 
     stopPolling(userId: string): void {

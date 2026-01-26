@@ -1,8 +1,12 @@
 import { io } from 'socket.io-client';
 
-// Conectamos directamente al backend (puerto 4000)
-// autoConnect: false para tener control de cuándo nos conectamos (ej: después de login)
-export const socket = io('http://localhost:4000', {
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string | undefined) || 'http://localhost:4000';
+
+export const socket = io(SOCKET_URL, {
     autoConnect: false,
-    transports: ['websocket'] // Forzamos websocket para mejor rendimiento
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: Infinity
 });
