@@ -11,6 +11,7 @@ import { AuthTokens, PlatformProfile } from '../types/index';
 import { Platform } from '../constants/platforms';
 import { AppError } from '../utils/AppError';
 import { withErrorHandling } from '../utils/errorHandling';
+import { logger } from '../utils/logger';
 
 export class AuthService {
     private userService: UserService;
@@ -202,8 +203,14 @@ export class AuthService {
     }
 
     async disconnectPlatform(userId: string, provider: Platform) {
-        await this.connectionService.removeConnection(userId, provider);
+        logger.info({ userId, provider }, 'AuthService: Starting platform disconnection');
+        
+        const deletedCount = await this.connectionService.removeConnection(userId, provider);
+        logger.info({ userId, provider, deletedCount }, 'AuthService: Connection removed from database');
+        
         await this.chatManager.disconnectProvider(userId, provider);
+        logger.info({ userId, provider }, 'AuthService: Chat provider disconnected');
+        
         return true;
     }
 }

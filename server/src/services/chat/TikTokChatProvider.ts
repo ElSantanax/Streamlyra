@@ -95,6 +95,15 @@ export class TikTokChatProvider implements ChatProvider {
 
                         const errorInfo = this.categorizeError(error, tiktokUsername);
 
+                        // Log del error completo para debugging
+                        logger.debug({
+                            username: tiktokUsername,
+                            userId,
+                            errorType: errorInfo.type,
+                            isPermanent: errorInfo.isPermanent,
+                            errorMessage: String(error)
+                        }, 'TikTok connection error details');
+
                         // Log según severidad del error
                         if (errorInfo.isPermanent) {
                             logger.warn({ username: tiktokUsername, userId, errorType: errorInfo.type }, errorInfo.logMessage);
@@ -106,6 +115,7 @@ export class TikTokChatProvider implements ChatProvider {
 
                         // Solo reintentar si el error es recuperable y debe reconectar
                         if (!errorInfo.isPermanent && this.shouldReconnect.get(userId)) {
+                            logger.debug({ userId, username: tiktokUsername }, 'Starting retry with exponential backoff');
                             const cleanup = retryWithExponentialBackoff(startConnection, {
                                 initialIntervalMs: 60000,      // Empezar con 1 minuto
                                 multiplier: 2,                  // Duplicar cada vez
@@ -257,23 +267,42 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
-        // Deshabilitar reconexión automática
-        this.shouldReconnect.delete(userId);
+        logger.info({ userId }, 'TikTokChatProvider: Starting disconnect');
 
-        const cleanup = this.retryCleanup.get(userId);
-        if (cleanup) {
-            cleanup();
-            this.retryCleanup.delete(userId);
-        }
-
+        // IMPORTANTE: Remover listeners PRIMERO para evitar que el evento 'disconnected'
+        // se dispare después de que eliminemos shouldReconnect
         const connection = this.activeConnections.get(userId);
         if (connection) {
+            logger.debug({ userId }, 'TikTokChatProvider: Removing event listeners');
             connection.removeAllListeners('disconnected'); // Evitar reconexión automática
             connection.removeAllListeners('error');
+        } else {
+            logger.debug({ userId }, 'TikTokChatProvider: No active connection found');
+        }
+
+        // Ahora es seguro deshabilitar reconexión automática
+        logger.debug({ userId }, 'TikTokChatProvider: Disabling auto-reconnect');
+        this.shouldReconnect.delete(userId);
+
+        // Cancelar cualquier reintento pendiente
+        const cleanup = this.retryCleanup.get(userId);
+        if (cleanup) {
+            logger.debug({ userId }, 'TikTokChatProvider: Canceling retry cleanup');
+            cleanup();
+            this.retryCleanup.delete(userId);
+        } else {
+            logger.debug({ userId }, 'TikTokChatProvider: No retry cleanup found to cancel');
+        }
+
+        // Finalmente desconectar y limpiar
+        if (connection) {
+            logger.debug({ userId }, 'TikTokChatProvider: Disconnecting WebSocket');
             await this.connectionManager.disconnect(connection);
             this.activeConnections.delete(userId);
         }
 
         this.connectingUsers.delete(userId);
+
+        logger.info({ userId }, 'TikTokChatProvider: Disconnect completed');
     }
 }

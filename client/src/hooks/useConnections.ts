@@ -62,7 +62,12 @@ export const useConnections = (shouldFetch = true) => {
   const disconnectPlatform = useCallback(async (platform: PlatformKey) => {
     try {
       await authService.disconnectPlatform(platform);
-      updateConnection(platform, { connected: false, viewers: 0 });
+      updateConnection(platform, {
+        connected: false,
+        viewers: 0,
+        status: undefined,
+        statusMessage: undefined
+      });
     } catch (err) {
       console.error('Error disconnecting platform:', err);
       throw err;

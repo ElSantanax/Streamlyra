@@ -69,11 +69,16 @@ export class AuthController {
     disconnectPlatform = async (req: AuthRequest, res: Response): Promise<void> => {
         const { provider } = req.body as { provider: Platform };
 
+        console.log('🔴 Controller: disconnectPlatform called', { userId: req.user?.id, provider });
+
         if (!req.user) {
             throw new AppError('No autorizado', 401);
         }
 
+        console.log('🔴 Controller: Calling authService.disconnectPlatform');
         await this.authService.disconnectPlatform(req.user.id, provider);
+        console.log('🔴 Controller: authService.disconnectPlatform completed');
+        
         res.json({ success: true, message: `${provider} desconectado` });
     };
 

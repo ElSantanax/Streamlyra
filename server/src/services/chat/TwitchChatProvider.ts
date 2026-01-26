@@ -72,15 +72,26 @@ export class TwitchChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
+        logger.info({ userId }, 'TwitchChatProvider: Starting disconnect');
+        
         const client = this.activeClients.get(userId);
         if (client) {
+            logger.debug({ userId }, 'TwitchChatProvider: Removing event listeners');
             // Remover listeners antes de desconectar para prevenir memory leaks
             this.eventListener.removeListeners(userId, client);
             
+            logger.debug({ userId }, 'TwitchChatProvider: Disconnecting client');
             await this.connectionManager.disconnect(client);
             this.activeClients.delete(userId);
+        } else {
+            logger.debug({ userId }, 'TwitchChatProvider: No active client found');
         }
+        
+        logger.debug({ userId }, 'TwitchChatProvider: Stopping viewer polling');
         this.viewerPoller.stopPolling(userId);
+        
         this.connectingUsers.delete(userId);
+        
+        logger.info({ userId }, 'TwitchChatProvider: Disconnect completed');
     }
 }

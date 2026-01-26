@@ -88,7 +88,10 @@ export class KickChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
+        logger.info({ userId }, 'KickChatProvider: Starting disconnect');
+        
         this.viewerPoller.stopPolling(userId);
+        logger.debug({ userId }, 'KickChatProvider: Viewer polling stopped');
         
         // Obtener el broadcasterId del usuario para desactivar el webhook
         try {
@@ -97,11 +100,16 @@ export class KickChatProvider implements ChatProvider {
             });
 
             if (connection?.providerId) {
+                logger.debug({ userId, broadcasterId: connection.providerId }, 'KickChatProvider: Deactivating webhook');
                 await this.webhookManager.deactivateWebhook(connection.providerId);
+            } else {
+                logger.debug({ userId }, 'KickChatProvider: No connection found, skipping webhook deactivation');
             }
         } catch (error) {
             logger.error({ err: error, userId }, 'Error desactivando webhook de Kick');
         }
+        
+        logger.info({ userId }, 'KickChatProvider: Disconnect completed');
         
         // NOTA: Kick no proporciona API para desregistrar webhooks
         // Los webhooks quedan registrados en Kick hasta que expiren

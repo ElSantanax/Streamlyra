@@ -114,25 +114,31 @@ export class ChatManager {
     async disconnectProvider(userId: string, platform: Platform): Promise<void> {
         await withErrorHandling(
             async () => {
-                logger.info({ platform, userId }, 'Disconnecting chat provider');
+                logger.info({ platform, userId }, 'ChatManager: Disconnecting chat provider');
 
                 // Notificar al cliente que se desconectó (UI update)
                 SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0);
 
                 switch (platform) {
                     case 'twitch':
+                        logger.debug({ userId, platform }, 'ChatManager: Calling twitch disconnect');
                         await this.twitchProvider.disconnect(userId);
                         break;
                     case 'youtube':
+                        logger.debug({ userId, platform }, 'ChatManager: Calling youtube disconnect');
                         await this.youtubeProvider.disconnect(userId);
                         break;
                     case 'kick':
+                        logger.debug({ userId, platform }, 'ChatManager: Calling kick disconnect');
                         await this.kickProvider.disconnect(userId);
                         break;
                     case 'tiktok':
+                        logger.debug({ userId, platform }, 'ChatManager: Calling tiktok disconnect');
                         await this.tiktokProvider.disconnect(userId);
                         break;
                 }
+
+                logger.info({ platform, userId }, 'ChatManager: Chat provider disconnected successfully');
 
                 logger.info({ platform, userId }, 'Chat provider disconnected');
             },
