@@ -39,7 +39,7 @@ const AuthCallback = () => {
             // Verificar state para saber provider, fallback a twitch si no hay state (retrocompatibilidad)
             const state = searchParams.get('state') || 'twitch';
             let endpoint = '/api/auth/twitch';
-            
+
             // Detectar plataforma del state (puede incluir timestamp: youtube_123456)
             if (state.startsWith('youtube')) endpoint = '/api/auth/youtube';
             else if (state.startsWith('kick')) endpoint = '/api/auth/kick';
@@ -87,8 +87,24 @@ const AuthCallback = () => {
                     navigate('/dashboard');
 
                 } catch (err: unknown) {
-                    console.error('Fallo al completar el login:', err);
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
+
+                    // Errores operacionales esperados (usar console.warn)
+                    const isOperationalError =
+                        errorMessage.includes('cuota') ||
+                        errorMessage.includes('quota') ||
+                        errorMessage.includes('Permisos insuficientes') ||
+                        errorMessage.includes('not encontrado') ||
+                        errorMessage.includes('no encontrado') ||
+                        errorMessage.includes('status code 400') ||
+                        errorMessage.includes('expirado');
+
+                    if (isOperationalError) {
+                        console.warn('⚠️ Error operacional en autenticación:', errorMessage);
+                    } else {
+                        // Errores técnicos inesperados (usar console.error)
+                        console.error('Fallo al completar el login:', err);
+                    }
 
                     // Si el error es que el usuario no existe, limpiamos todo y volvemos a login
                     if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {
@@ -119,9 +135,9 @@ const AuthCallback = () => {
     }, [searchParams, navigate]);
 
     const state = searchParams.get('state') || 'twitch';
-    const platformName = state.startsWith('youtube') ? 'YouTube' 
-        : state.startsWith('kick') ? 'Kick' 
-        : 'Twitch';
+    const platformName = state.startsWith('youtube') ? 'YouTube'
+        : state.startsWith('kick') ? 'Kick'
+            : 'Twitch';
 
     return (
         <div className="h-screen bg-background-dark flex flex-col items-center justify-center p-4">

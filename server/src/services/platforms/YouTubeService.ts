@@ -1,9 +1,10 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
 import { YouTubeChannelResponse } from '../../types/youtube.types';
 import { config } from '../../config';
 import { OAuthExchangeOptions } from '../../utils/oauth.utils';
 import { logger } from '../../utils/logger';
+import { AppError } from '../../utils/AppError';
 
 interface YouTubeChannel {
     id: string;
@@ -77,6 +78,26 @@ export class YouTubeService extends BasePlatformService {
             logger.debug({ platform: this.platformName, channelId: items[0].id }, 'YouTube profile fetched successfully');
             return items[0];
         } catch (error: unknown) {
+            // Detectar error de cuota agotada de YouTube
+            if (axios.isAxiosError(error) && error.response?.status === 403) {
+                const errorData = error.response.data as { error?: { message?: string; errors?: Array<{ reason?: string }> } };
+                const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
+                
+                if (isQuotaError) {
+                    logger.warn(
+                        { 
+                            platform: this.platformName,
+                            message: '⚠️  CUOTA DE YOUTUBE AGOTADA - El usuario debe esperar hasta que se renueve la cuota diaria'
+                        }, 
+                        '⚠️  YouTube API quota exceeded during authentication'
+                    );
+                    throw new AppError(
+                        '⚠️ La cuota de YouTube está temporalmente agotada. Por favor, intenta conectar tu cuenta más tarde (la cuota se renueva diariamente).',
+                        503
+                    );
+                }
+            }
+
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             const axiosError = error && typeof error === 'object' && 'response' in error 
                 ? error as { response?: { status?: number; data?: unknown } }

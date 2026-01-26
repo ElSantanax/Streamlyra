@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { YouTubeVideoResponse } from '../../../types/youtube.types';
 import { PollingManager } from '../PollingManager';
 import { logger } from '../../../utils/logger';
+import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
 export class YouTubeViewerPoller {
     private polling: PollingManager = new PollingManager();
@@ -30,7 +31,7 @@ export class YouTubeViewerPoller {
             } catch (error) {
                 logger.error({ err: error }, 'YouTube viewer polling error');
             }
-        });
+        }, YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
     }
 
     stopPolling(userId: string): void {

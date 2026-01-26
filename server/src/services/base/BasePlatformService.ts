@@ -75,6 +75,11 @@ export abstract class BasePlatformService {
         } catch (error: unknown) {
             logger.error({ err: error, platform: this.platformName }, 'Error getting profile and tokens');
 
+            // Si ya es un AppError (como el de cuota agotada), dejarlo pasar sin modificar
+            if (error instanceof AppError) {
+                throw error;
+            }
+
             // Mejorar mensajes de error de OAuth
             if (error && typeof error === 'object' && 'response' in error) {
                 const axiosError = error as { response?: { status?: number } };

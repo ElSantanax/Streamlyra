@@ -10,6 +10,7 @@ import { MessageDeduplicator } from '../../../utils/messageDeduplicate';
 import { PollingManager } from '../PollingManager';
 import { YouTubeEventTransformer } from '../transformers/YouTubeEventTransformer';
 import { logger } from '../../../utils/logger';
+import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
@@ -19,6 +20,46 @@ export class YouTubeChatPoller {
 
     constructor() {
         this.transformer = new YouTubeEventTransformer();
+    }
+
+    /**
+     * Distribuye mensajes gradualmente para evitar saturación
+     * En lugar de enviar todos los mensajes de golpe, los distribuye
+     * uniformemente durante el intervalo de polling
+     */
+    private distributeMessages(
+        messages: YouTubeChatMessage[],
+        userId: string,
+        io: Server,
+        intervalMs: number
+    ): void {
+        if (messages.length === 0) return;
+
+        // Si hay pocos mensajes (≤3), enviarlos inmediatamente
+        if (messages.length <= 3) {
+            messages.forEach(item => {
+                const normalizedMessage = this.transformer.transformMessage(item);
+                io.to(userId).emit('chat_message', normalizedMessage);
+            });
+            return;
+        }
+
+        // Si hay muchos mensajes, distribuirlos gradualmente
+        // Usar el 80% del intervalo para distribuir (dejar 20% de margen)
+        const distributionWindow = intervalMs * 0.8;
+        const delayBetweenMessages = distributionWindow / messages.length;
+
+        messages.forEach((item, index) => {
+            setTimeout(() => {
+                const normalizedMessage = this.transformer.transformMessage(item);
+                io.to(userId).emit('chat_message', normalizedMessage);
+            }, delayBetweenMessages * index);
+        });
+
+        logger.debug(
+            { userId, messageCount: messages.length, delayBetweenMessages },
+            'Distributing YouTube messages gradually'
+        );
     }
 
     async startPolling(userId: string, liveChatId: string, accessToken: string, io: Server): Promise<void> {
@@ -35,12 +76,14 @@ export class YouTubeChatPoller {
                 const { items, nextPageToken, pollingIntervalMillis } = response.data;
                 if (nextPageToken) this.nextPageTokens.set(userId, nextPageToken);
 
-                items?.forEach((item: YouTubeChatMessage) => {
-                    if (dedup.isDuplicate(item.id)) return;
+                // Filtrar mensajes duplicados
+                const newMessages = items?.filter((item: YouTubeChatMessage) => 
+                    !dedup.isDuplicate(item.id)
+                ) || [];
 
-                    const normalizedMessage = this.transformer.transformMessage(item);
-                    io.to(userId).emit('chat_message', normalizedMessage);
-                });
+                // Distribuir mensajes gradualmente en lugar de enviarlos todos de golpe
+                const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
+                this.distributeMessages(newMessages, userId, io, currentInterval);
 
                 // Update interval if provided by API
                 if (pollingIntervalMillis) {
@@ -53,7 +96,9 @@ export class YouTubeChatPoller {
             }
         };
 
-        this.polling.start(userId, pollTask, 5000);
+        // Usa configuración centralizada para cuotas de YouTube
+        // YouTube puede sugerir un intervalo diferente en pollingIntervalMillis
+        this.polling.start(userId, pollTask, YouTubePollingConfig.CHAT_POLLING_INTERVAL);
     }
 
     stopPolling(userId: string): void {
