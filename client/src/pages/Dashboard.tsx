@@ -3,7 +3,8 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 import { useAuth, useConnections, useChatMessages, useSocket } from '../hooks';
@@ -14,12 +15,20 @@ const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
 const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
 
 const Dashboard = () => {
-    const { user, requireAuth } = useAuth();
-    const { connections, updateConnection, disconnectPlatform, refetch } = useConnections();
+    const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
+    const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
     const { messages, addMessage, messagesEndRef } = useChatMessages();
     
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+
+    // Proteger ruta - usar useEffect para navegación
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login');
+        }
+    }, [isAuthenticated, navigate]);
 
     // Socket connection con callbacks
     const { isConnected } = useSocket({
@@ -38,8 +47,8 @@ const Dashboard = () => {
         connections,
     });
 
-    // Proteger ruta
-    if (!requireAuth()) {
+    // No renderizar hasta que se verifique autenticación
+    if (!isAuthenticated) {
         return null;
     }
 

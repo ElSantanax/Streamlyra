@@ -204,13 +204,13 @@ export class AuthService {
 
     async disconnectPlatform(userId: string, provider: Platform) {
         logger.info({ userId, provider }, 'AuthService: Starting platform disconnection');
-        
+
         const deletedCount = await this.connectionService.removeConnection(userId, provider);
         logger.info({ userId, provider, deletedCount }, 'AuthService: Connection removed from database');
-        
+
         await this.chatManager.disconnectProvider(userId, provider);
         logger.info({ userId, provider }, 'AuthService: Chat provider disconnected');
-        
+
         return true;
     }
 }

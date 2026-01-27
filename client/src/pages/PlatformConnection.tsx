@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import Navbar from '../components/common/Navbar';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
@@ -8,14 +9,27 @@ const BackgroundDecorations = lazy(() => import('../components/common/Background
 
 const PlatformConnection = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
 
+    // Prevenir acceso a páginas de auth cuando ya está autenticado
     useEffect(() => {
-        if (localStorage.getItem('token')) {
-            navigate('/dashboard');
+        // Solo redirigir si estamos en /login o /register (no en /connect)
+        const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+        
+        if (isAuthenticated && isAuthPage) {
+            navigate('/dashboard', { replace: true });
         }
-    }, [navigate]);
+    }, [isAuthenticated, location.pathname, navigate]);
 
     const handleTwitchLogin = () => {
+        // Preservar redirect parameter en localStorage antes de OAuth
+        const redirectParam = searchParams.get('redirect');
+        if (redirectParam) {
+            localStorage.setItem('auth_redirect', redirectParam);
+        }
+
         const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
         const redirectUri = window.location.origin + '/auth/callback';
         const scope = encodeURIComponent('user:read:email chat:read chat:edit');

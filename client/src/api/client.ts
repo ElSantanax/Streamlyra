@@ -28,7 +28,21 @@ class HttpClient {
   }
 
   private getAuthToken(): string | null {
-    return localStorage.getItem('token');
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      // Validar que el token no esté corrupto
+      // Si es un JSON string, parsearlo; si es un string simple, usarlo directamente
+      if (token.startsWith('"') && token.endsWith('"')) {
+        return JSON.parse(token);
+      }
+      return token;
+    } catch (error) {
+      console.error('Error reading token:', error);
+      localStorage.removeItem('token');
+      return null;
+    }
   }
 
   private async request<T>(

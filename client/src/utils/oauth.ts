@@ -3,6 +3,13 @@ import { generatePKCE } from './pkce';
 export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick') => {
     const redirectUri = `${window.location.origin}/auth/callback`;
     
+    // Preservar redirect parameter en localStorage antes de OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectParam = urlParams.get('redirect');
+    if (redirectParam) {
+        localStorage.setItem('auth_redirect', redirectParam);
+    }
+    
     const configs: Record<string, { clientId: string; authUrl: string; scope: string; state: string; extras?: string }> = {
         twitch: {
             clientId: import.meta.env.VITE_TWITCH_CLIENT_ID as string,

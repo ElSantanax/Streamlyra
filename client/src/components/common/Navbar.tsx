@@ -2,18 +2,20 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaGlobe, FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
+import { Button } from '../ui';
+import { useToggle } from '../../hooks';
 
 const Navbar = () => {
     const { pathname } = useLocation();
     const isAuthPage = pathname === '/register' || pathname === '/connect' || pathname === '/login';
     const [lang, setLang] = useState<'es' | 'en'>('es');
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isMenuOpen, toggleMenu, , closeMenu] = useToggle(false);
     const isAuthenticated = !!localStorage.getItem('token');
 
     // Close menu on resize to desktop and prevent scroll when open
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth >= 768) setIsMenuOpen(false);
+            if (window.innerWidth >= 768) closeMenu();
         };
         
         document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
@@ -23,7 +25,7 @@ const Navbar = () => {
             window.removeEventListener('resize', handleResize);
             document.body.style.overflow = 'unset';
         };
-    }, [isMenuOpen]);
+    }, [isMenuOpen, closeMenu]);
 
     const navLinks = (
         <>
@@ -33,15 +35,15 @@ const Navbar = () => {
 
     const actionButton = isAuthPage ? (
         <Link to="/" className="w-full md:w-auto">
-            <button className="flex w-full md:min-w-32 cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
-                <span>Volver al Inicio</span>
-            </button>
+            <Button variant="primary" fullWidth className="md:min-w-32">
+                Volver al Inicio
+            </Button>
         </Link>
     ) : (
         <Link to={isAuthenticated ? "/dashboard" : "/login"} className="w-full md:w-auto">
-            <button className="flex w-full md:min-w-32 cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
-                <span>{isAuthenticated ? 'Ir al Panel' : 'Iniciar Sesión'}</span>
-            </button>
+            <Button variant="primary" fullWidth className="md:min-w-32">
+                {isAuthenticated ? 'Ir al Panel' : 'Iniciar Sesión'}
+            </Button>
         </Link>
     );
 
@@ -55,7 +57,7 @@ const Navbar = () => {
 
                     <div className="flex items-center gap-4 md:hidden">
                         <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            onClick={toggleMenu}
                             className="p-2 text-slate-600 dark:text-white/80 hover:text-primary transition-colors relative z-50"
                             aria-label="Menu"
                         >
@@ -88,7 +90,7 @@ const Navbar = () => {
             {isMenuOpen && (
                 <div
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 md:hidden z-40"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={closeMenu}
                 />
             )}
 
@@ -105,7 +107,7 @@ const Navbar = () => {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Menú</span>
                         </div>
                         <button
-                            onClick={() => setIsMenuOpen(false)}
+                            onClick={closeMenu}
                             className="size-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer -mr-2"
                         >
                             <FaTimes size={18} />
@@ -116,7 +118,7 @@ const Navbar = () => {
                         <nav className="flex flex-col gap-1">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Explorar</span>
                             <div className="flex flex-col gap-1.5">
-                                <a href="#" onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Comunidad</a>
+                                <a href="#" onClick={closeMenu} className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Comunidad</a>
                             </div>
                         </nav>
 
@@ -142,7 +144,7 @@ const Navbar = () => {
                             </button>
                         </div>
 
-                        <div className="mt-auto pt-8" onClick={() => setIsMenuOpen(false)}>
+                        <div className="mt-auto pt-8" onClick={closeMenu}>
                             {actionButton}
                         </div>
                     </div>

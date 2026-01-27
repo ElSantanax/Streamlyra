@@ -83,8 +83,12 @@ const AuthCallback = () => {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
 
-                    // Éxito: Ir al dashboard
-                    navigate('/dashboard');
+                    // Leer URL de redirección preservada (si existe)
+                    const redirectUrl = localStorage.getItem('auth_redirect');
+                    localStorage.removeItem('auth_redirect'); // Limpiar después de leer
+
+                    // Redirigir a URL preservada o /dashboard por defecto
+                    navigate(redirectUrl || '/dashboard');
 
                 } catch (err: unknown) {
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';

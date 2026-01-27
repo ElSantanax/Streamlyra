@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Spinner from './components/common/Spinner';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const PlatformConnection = lazy(() => import('./pages/PlatformConnection'));
@@ -16,8 +17,25 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/login" element={<PlatformConnection />} />
           <Route path="/register" element={<PlatformConnection />} />
-          <Route path="/connect" element={<PlatformConnection />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Rutas protegidas */}
+          <Route 
+            path="/connect" 
+            element={
+              <ProtectedRoute>
+                <PlatformConnection />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

@@ -143,11 +143,11 @@ describe('useSocket', () => {
     });
 
     it('debe usar refs para callbacks actualizados sin re-registrar listeners', async () => {
-      let capturedCallback: Function | null = null;
+      let capturedCallback: ((...args: any[]) => void) | null = null;
 
       // Mock socket.on para capturar el callback
       const originalOn = socket.on;
-      (socket.on as any) = vi.fn((event: string, callback: Function) => {
+      (socket.on as any) = vi.fn((event: string, callback: (...args: any[]) => void) => {
         if (event === 'chat_message') {
           capturedCallback = callback;
         }
@@ -176,7 +176,7 @@ describe('useSocket', () => {
         expect(capturedCallback).not.toBeNull();
       });
 
-      const originalCallback = capturedCallback;
+      const originalCallback = capturedCallback as ((...args: any[]) => void) | null;
 
       // Simular mensaje
       if (originalCallback) {
@@ -273,14 +273,14 @@ describe('useSocket', () => {
           onChatMessage,
           connections: {
             twitch: { connected: true, status: 'connected' },
-            kick: { connected: false, status: 'disconnected' },
+            kick: { connected: false, status: 'error' },
           },
         })
       );
 
       // Mensaje de plataforma conectada - debe pasar
       if (capturedCallback) {
-        capturedCallback({
+        (capturedCallback as (...args: any[]) => void)({
           id: '1',
           username: 'test',
           message: 'hello',
@@ -292,7 +292,7 @@ describe('useSocket', () => {
 
       // Mensaje de plataforma desconectada - debe ser filtrado
       if (capturedCallback) {
-        capturedCallback({
+        (capturedCallback as (...args: any[]) => void)({
           id: '2',
           username: 'test',
           message: 'world',
@@ -344,6 +344,7 @@ describe('useSocket', () => {
           initialProps: {
             connections: {
               twitch: { connected: true, status: 'connected' as const },
+              kick: { connected: false, status: 'connected' as const },
             },
           },
         }
@@ -354,7 +355,7 @@ describe('useSocket', () => {
       // Cambiar connections
       rerender({
         connections: {
-          twitch: { connected: false, status: 'disconnected' as const },
+          twitch: { connected: false, status: 'connected' as const },
           kick: { connected: true, status: 'connected' as const },
         },
       });

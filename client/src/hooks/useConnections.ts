@@ -23,6 +23,13 @@ export const useConnections = (shouldFetch = true) => {
   const fetchConnections = useCallback(async () => {
     if (!shouldFetch) return;
 
+    // No intentar fetch si no hay token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setConnections(initialConnections);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
