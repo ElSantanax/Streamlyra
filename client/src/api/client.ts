@@ -27,7 +27,7 @@ class HttpClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const { headers = {}, ...fetchOptions } = options;
+    const { headers = {}, requiresAuth = false, ...fetchOptions } = options;
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -44,8 +44,12 @@ class HttpClient {
       });
 
       // Manejar sesión expirada (401)
-      if (response.status === 401) {
-        authService.handleSessionExpired();
+      if (response.status === 401 && requiresAuth) {
+        const path = window.location.pathname;
+        const isPublicAuthRoute = path === '/login' || path === '/register' || path === '/auth/callback';
+        if (!isPublicAuthRoute) {
+          authService.handleSessionExpired();
+        }
       }
 
       if (!response.ok) {

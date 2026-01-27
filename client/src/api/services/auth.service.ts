@@ -30,7 +30,9 @@ export const authService = {
    * Obtener información del usuario actual
    */
   async getMe(): Promise<MeResponse> {
-    return apiClient.get<MeResponse>(endpoints.auth.me, true);
+    // Importante: este endpoint se usa para bootstrap de sesión.
+    // Si el usuario no está autenticado, debe responder 401 sin forzar redirección global.
+    return apiClient.get<MeResponse>(endpoints.auth.me, false);
   },
 
   /**

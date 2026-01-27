@@ -7,6 +7,10 @@ class AuthService {
     handleSessionExpired() {
         if (this.isHandlingExpiry) return;
 
+        const path = window.location.pathname;
+        const isPublicAuthRoute = path === '/login' || path === '/register' || path === '/auth/callback';
+        if (isPublicAuthRoute) return;
+
         this.isHandlingExpiry = true;
         console.warn('Sesión expirada detectada. Limpiando datos locales...');
 
