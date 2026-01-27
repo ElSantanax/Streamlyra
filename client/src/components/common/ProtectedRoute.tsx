@@ -6,6 +6,7 @@
 
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import Spinner from './Spinner';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,8 +17,12 @@ export function ProtectedRoute({
   children, 
   redirectTo = '/login' 
 }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
+  const { status, isAuthenticated } = useAuth();
   const location = useLocation();
+
+  if (status === 'unknown') {
+    return <Spinner fullScreen text="Verificando sesión..." size="lg" />;
+  }
 
   if (!isAuthenticated) {
     // Preservar URL destino para redirección post-login

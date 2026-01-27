@@ -15,6 +15,16 @@ export const config = {
     nodeEnv: process.env.NODE_ENV || 'development',
     skipKickSignatureVerification: process.env.KICK_WEBHOOK_SKIP_SIGNATURE === 'true',
 
+    cookie: {
+        domain: process.env.COOKIE_DOMAIN,
+        secure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : (process.env.NODE_ENV === 'production'),
+        sameSite: ((): 'lax' | 'none' | 'strict' => {
+            const raw = (process.env.COOKIE_SAMESITE || '').toLowerCase();
+            if (raw === 'lax' || raw === 'none' || raw === 'strict') return raw;
+            return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+        })(),
+    },
+
     // OAuth configuration
     oauth: oauthConfig,
 

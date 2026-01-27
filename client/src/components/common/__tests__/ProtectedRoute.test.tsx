@@ -29,6 +29,7 @@ describe('ProtectedRoute', () => {
       fc.assert(
         fc.property(fc.boolean(), (isAuthenticated) => {
           mockUseAuth.mockReturnValue({
+            status: isAuthenticated ? 'authenticated' : 'unauthenticated',
             isAuthenticated,
             user: isAuthenticated ? { id: '1', username: 'test' } : null,
           });
@@ -74,6 +75,7 @@ describe('ProtectedRoute', () => {
       // Valida: Requisitos 1.2
       
       mockUseAuth.mockReturnValue({
+        status: 'unauthenticated',
         isAuthenticated: false,
         user: null,
       });

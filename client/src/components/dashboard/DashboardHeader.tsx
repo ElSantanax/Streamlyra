@@ -50,6 +50,7 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
                     trigger={
                         <button
                             onClick={openMenu}
+                            data-cy="user-menu-trigger"
                             className={`size-9 rounded-full border-2 transition-all overflow-hidden cursor-pointer hover:border-primary ${isMenuOpen ? 'border-primary ring-4 ring-primary/10' : 'border-surface-border'}`}
                         >
                             <img
@@ -148,6 +149,7 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
                         icon={<MdLogout size={18} />}
                         onClick={handleLogout}
                         variant="danger"
+                        data-cy="logout-button"
                     >
                         Cerrar Sesión
                     </DropdownItem>

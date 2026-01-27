@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fc from 'fast-check';
 import { renderHook } from '@testing-library/react';
-import { useAuth } from '../useAuth';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { AuthProvider } from '../../context/AuthProvider';
+import { useAuth } from '../useAuth';
 
 // Mock dependencies
-vi.mock('react-router-dom', () => ({
-    useNavigate: vi.fn(),
-}));
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: vi.fn(),
+    };
+});
 
 vi.mock('../../api/services/auth.service', () => ({
     authService: {
@@ -19,6 +26,7 @@ vi.mock('../../api/services/auth.service', () => ({
 vi.mock('../../services/AuthService', () => ({
     authService: {
         clearLocalSession: vi.fn(),
+        setSessionExpiredHandler: vi.fn(),
     },
 }));
 
@@ -28,6 +36,13 @@ describe('useAuth Property-based Tests', () => {
         localStorage.clear();
         (useNavigate as any).mockReturnValue(vi.fn());
     });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            MemoryRouter,
+            { initialEntries: ['/dashboard'] },
+            React.createElement(AuthProvider, null, children)
+        );
 
     /**
      * Feature: client-security-robustness
@@ -46,7 +61,7 @@ describe('useAuth Property-based Tests', () => {
 
         await fc.assert(
             fc.asyncProperty(userArb, async (userData) => {
-                const { result } = renderHook(() => useAuth());
+                const { result } = renderHook(() => useAuth(), { wrapper });
 
                 // Simular login con datos aleatorios
                 // Note: En el nuevo flujo, el token viene en la cookie, 
@@ -81,7 +96,7 @@ describe('useAuth Property-based Tests', () => {
                     localStorage.setItem('user', JSON.stringify(userValue));
                 }
 
-                const { result } = renderHook(() => useAuth());
+                const { result } = renderHook(() => useAuth(), { wrapper });
 
                 // LA PROPIEDAD: isAuthenticated debe coincidir con la lógica !!user
                 const expected = !!userValue;
@@ -97,7 +112,7 @@ describe('useAuth Property-based Tests', () => {
      * Asegura que a pesar de la refactorización, los métodos esperados existen y son funciones
      */
     it('Property 18: debe mantener la firma pública esperada para compatibilidad', () => {
-        const { result } = renderHook(() => useAuth());
+        const { result } = renderHook(() => useAuth(), { wrapper });
 
         const expectedMethods = ['login', 'logout', 'checkAuth', 'requireAuth'];
         const expectedStates = ['user', 'isAuthenticated', 'isChecking'];

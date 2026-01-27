@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService as apiAuthService } from '../api/services/auth.service';
 import Spinner from '../components/common/Spinner';
+import { useAuth } from '../hooks/useAuth';
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const calledRef = useRef(false);
+    const { login } = useAuth();
 
     useEffect(() => {
         const code = searchParams.get('code');
@@ -37,8 +39,7 @@ const AuthCallback = () => {
 
                     const data = await apiAuthService.exchangeCode(platform, code, codeVerifier);
 
-                    // Guardamos el usuario para UI inmediata
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                    login(data.user);
 
                     // Redirigir
                     const redirectUrl = localStorage.getItem('auth_redirect');

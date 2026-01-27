@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "e2e": "cypress run --config-file cypress.config.mjs",
+    "e2e:open": "cypress open --config-file cypress.config.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -33,6 +35,7 @@
     "@types/react-router": "^5.1.20",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "@vitest/ui": "^4.0.18",
+    "cypress": "^13.17.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

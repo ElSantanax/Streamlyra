@@ -32,6 +32,7 @@ import { logger } from './utils/logger';
 import { UserRepository } from './repositories/implementations/UserRepository';
 import { ConnectionRepository } from './repositories/implementations/ConnectionRepository';
 import { ConnectionService } from './services/connection/ConnectionService';
+import { setCsrfCookie, verifyCsrf } from './middleware/csrf.middleware';
 
 /**
  * Conecta a la base de datos
@@ -92,10 +93,13 @@ app.use(cors({
     origin: config.frontendUrl,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
 app.use(cookieParser());
+
+app.use(setCsrfCookie);
+app.use(verifyCsrf);
 
 app.use(pinoHttp({
     logger,

@@ -9,9 +9,17 @@ import { MemoryRouter } from 'react-router-dom';
 import * as fc from 'fast-check';
 import AuthCallback from '../AuthCallback';
 
+const mockLogin = vi.fn();
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    login: mockLogin,
+  }),
+}));
+
 // Mock de fetch global
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 // Mock de navigate
 const mockNavigate = vi.fn();

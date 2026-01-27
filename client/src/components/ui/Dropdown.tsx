@@ -3,7 +3,7 @@
  * Usado para: menús de usuario, opciones, selectores
  */
 
-import { useRef, useEffect, type ReactNode } from 'react';
+import { useRef, useEffect, type ReactNode, type ButtonHTMLAttributes } from 'react';
 
 interface DropdownProps {
   isOpen: boolean;
@@ -59,20 +59,17 @@ export const Dropdown = ({
   );
 };
 
-interface DropdownItemProps {
-  onClick?: () => void;
+interface DropdownItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
   children: ReactNode;
   variant?: 'default' | 'danger';
-  disabled?: boolean;
 }
 
 export const DropdownItem = ({
-  onClick,
   icon,
   children,
   variant = 'default',
-  disabled = false,
+  ...buttonProps
 }: DropdownItemProps) => {
   const variantStyles = {
     default: 'text-gray-400 hover:text-white hover:bg-white/5',
@@ -81,8 +78,7 @@ export const DropdownItem = ({
 
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
+      {...buttonProps}
       className={`
         w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-sm font-medium cursor-pointer
         disabled:opacity-50 disabled:cursor-not-allowed

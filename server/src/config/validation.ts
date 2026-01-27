@@ -25,4 +25,18 @@ export function validateConfig(): void {
             `Missing required environment variables:\n${missing.map(v => `  - ${v}`).join('\n')}`
         );
     }
+
+    const cookieSameSite = (process.env.COOKIE_SAMESITE || '').toLowerCase();
+    if (cookieSameSite && cookieSameSite !== 'lax' && cookieSameSite !== 'none' && cookieSameSite !== 'strict') {
+        throw new Error(
+            `Invalid COOKIE_SAMESITE value. Expected one of: lax, none, strict. Received: ${process.env.COOKIE_SAMESITE}`
+        );
+    }
+
+    const cookieSecure = (process.env.COOKIE_SECURE || '').toLowerCase();
+    if (cookieSecure && cookieSecure !== 'true' && cookieSecure !== 'false') {
+        throw new Error(
+            `Invalid COOKIE_SECURE value. Expected true or false. Received: ${process.env.COOKIE_SECURE}`
+        );
+    }
 }

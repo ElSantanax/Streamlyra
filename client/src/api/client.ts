@@ -34,6 +34,19 @@ class HttpClient {
       ...(headers as Record<string, string>),
     };
 
+    const method = (fetchOptions.method ?? 'GET').toString().toUpperCase();
+    const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+    if (isMutating) {
+      const csrfToken = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('csrf_token='))
+        ?.split('=')[1];
+
+      if (csrfToken) {
+        requestHeaders['X-CSRF-Token'] = decodeURIComponent(csrfToken);
+      }
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
 
     try {

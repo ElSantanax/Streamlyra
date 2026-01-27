@@ -54,11 +54,11 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
 
                     try {
                         if (method === 'GET') {
-                            await apiClient.get(endpoint);
+                            await apiClient.get(endpoint, true);
                         } else if (method === 'POST') {
-                            await apiClient.post(endpoint, body);
+                            await apiClient.post(endpoint, body, true);
                         } else if (method === 'DELETE') {
-                            await apiClient.delete(endpoint, body);
+                            await apiClient.delete(endpoint, body, true);
                         }
                     } catch {
                         // Esperamos que falle, lo importante es el efecto secundario
@@ -91,7 +91,7 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
 
                     // Disparar múltiples peticiones al mismo tiempo
                     const promises = Array.from({ length: numCalls }).map(() =>
-                        apiClient.get('/any-endpoint').catch(() => { })
+                        apiClient.get('/any-endpoint', true).catch(() => { })
                     );
 
                     await Promise.all(promises);

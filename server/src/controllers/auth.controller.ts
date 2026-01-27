@@ -1,8 +1,10 @@
+import crypto from 'crypto';
 import { Response } from 'express';
 import { AuthService } from '../services/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../utils/AppError';
 import { Platform } from '../constants/platforms';
+import { config } from '../config';
 
 /**
  * Controlador de autenticación
@@ -11,6 +13,17 @@ import { Platform } from '../constants/platforms';
  */
 export class AuthController {
     constructor(private authService: AuthService) { }
+
+    private setCsrfCookie(res: Response) {
+        res.cookie('csrf_token', crypto.randomBytes(32).toString('hex'), {
+            httpOnly: false,
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            domain: config.cookie.domain,
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+    }
 
     /**
      * Maneja autenticación OAuth genérica para cualquier plataforma
@@ -27,11 +40,14 @@ export class AuthController {
         // Set HttpOnly cookie
         res.cookie('auth_token', result.token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax', // Lax es más permisivo para redirecciones OAuth
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            domain: config.cookie.domain,
             path: '/',
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
+
+        this.setCsrfCookie(res);
 
         // Retornar solo datos del usuario y conexión, sin el token
         const { token: _token, ...responseData } = result;
@@ -109,11 +125,14 @@ export class AuthController {
         // TikTok auth also issues/refreshes token
         res.cookie('auth_token', result.token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            domain: config.cookie.domain,
             path: '/',
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
+
+        this.setCsrfCookie(res);
 
         const { token: _token, ...responseData } = result;
         res.json(responseData);
@@ -125,9 +144,18 @@ export class AuthController {
     logout = async (_req: AuthRequest, res: Response): Promise<void> => {
         res.clearCookie('auth_token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            domain: config.cookie.domain,
             path: '/'
+        });
+
+        res.clearCookie('csrf_token', {
+            httpOnly: false,
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            domain: config.cookie.domain,
+            path: '/',
         });
         res.json({ success: true, message: 'Sesión cerrada exitosamente' });
     };
