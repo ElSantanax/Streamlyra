@@ -65,7 +65,7 @@ const AuthCallback = () => {
         } else {
             navigate('/login');
         }
-    }, [searchParams, navigate]);
+    }, [searchParams, navigate, login]);
 
     const state = searchParams.get('state') || 'twitch';
     const platformName = state.startsWith('youtube') ? 'YouTube'

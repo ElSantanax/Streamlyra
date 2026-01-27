@@ -5,8 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  // Solo ignora dist y config files
-  { ignores: ['dist', 'vitest.config.ts'] },
+  // Ignorar archivos que no están en los tsconfig principales
+  { ignores: ['dist', 'vitest.config.ts', 'cypress.config.ts', 'cypress/**/*'] },
 
   // Configuración base para todo el código
   {
