@@ -1,8 +1,4 @@
-/**
- * Cliente HTTP base
- * Wrapper sobre fetch con manejo de errores y autenticación
- */
-
+import { authService } from '../services/AuthService';
 import { env } from '../config/env';
 
 export class ApiError extends Error {
@@ -27,41 +23,16 @@ class HttpClient {
     this.baseUrl = baseUrl;
   }
 
-  private getAuthToken(): string | null {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-      
-      // Validar que el token no esté corrupto
-      // Si es un JSON string, parsearlo; si es un string simple, usarlo directamente
-      if (token.startsWith('"') && token.endsWith('"')) {
-        return JSON.parse(token);
-      }
-      return token;
-    } catch (error) {
-      console.error('Error reading token:', error);
-      localStorage.removeItem('token');
-      return null;
-    }
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const { requiresAuth = false, headers = {}, ...fetchOptions } = options;
+    const { headers = {}, ...fetchOptions } = options;
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(headers as Record<string, string>),
     };
-
-    if (requiresAuth) {
-      const token = this.getAuthToken();
-      if (token) {
-        requestHeaders['Authorization'] = `Bearer ${token}`;
-      }
-    }
 
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -69,7 +40,13 @@ class HttpClient {
       const response = await fetch(url, {
         ...fetchOptions,
         headers: requestHeaders,
+        credentials: 'include', // Importante para HttpOnly cookies
       });
+
+      // Manejar sesión expirada (401)
+      if (response.status === 401) {
+        authService.handleSessionExpired();
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as { error?: string };

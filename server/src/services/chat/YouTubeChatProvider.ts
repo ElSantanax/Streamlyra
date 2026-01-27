@@ -64,6 +64,12 @@ export class YouTubeChatProvider implements ChatProvider {
             return;
         }
 
+        // Si ya hay una limpieza registrada, significa que estamos monitoreando
+        if (this.discoveryCleanup.has(userId)) {
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+            return;
+        }
+
         this.connectingUsers.add(userId);
 
         try {
@@ -76,6 +82,7 @@ export class YouTubeChatProvider implements ChatProvider {
                 return;
             }
 
+            // Solo desconectar si realmente vamos a iniciar uno nuevo
             await this.disconnect(userId);
 
             // Inicializar contadores para tracking de discovery

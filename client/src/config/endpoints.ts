@@ -11,8 +11,9 @@ export const endpoints = {
     kick: '/auth/kick',
     tiktok: '/auth/tiktok',
     platform: '/auth/platform',
+    logout: '/auth/logout',
   },
-  
+
   oauth: {
     twitch: 'https://id.twitch.tv/oauth2/authorize',
     youtube: 'https://accounts.google.com/o/oauth2/v2/auth',

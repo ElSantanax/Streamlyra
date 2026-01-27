@@ -18,7 +18,7 @@ export const authService = {
   ): Promise<AuthResponse> {
     const endpoint = endpoints.auth[platform];
     const body: Record<string, string> = { code };
-    
+
     if (codeVerifier) {
       body.code_verifier = codeVerifier;
     }
@@ -36,8 +36,8 @@ export const authService = {
   /**
    * Conectar TikTok por username
    */
-  async connectTikTok(username: string): Promise<void> {
-    return apiClient.post(endpoints.auth.tiktok, { username }, true);
+  async connectTikTok(username: string): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>(endpoints.auth.tiktok, { username }, true);
   },
 
   /**
@@ -45,5 +45,12 @@ export const authService = {
    */
   async disconnectPlatform(provider: string): Promise<void> {
     return apiClient.delete(endpoints.auth.platform, { provider }, true);
+  },
+
+  /**
+   * Cerrar sesión
+   */
+  async logout(): Promise<void> {
+    return apiClient.post(endpoints.auth.logout, {}, true);
   },
 };

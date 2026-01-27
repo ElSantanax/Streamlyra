@@ -10,7 +10,7 @@ import { Platform } from '../constants/platforms';
  * Lógica de negocio delegada a AuthService
  */
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(private authService: AuthService) { }
 
     /**
      * Maneja autenticación OAuth genérica para cualquier plataforma
@@ -23,7 +23,19 @@ export class AuthController {
     private async handleOAuthAuth(platform: Platform, req: AuthRequest, res: Response): Promise<void> {
         const { code, code_verifier } = req.body as { code: string; code_verifier?: string };
         const result = await this.authService.handleOAuthAuth(platform, code, code_verifier, req.user?.id);
-        res.json(result);
+
+        // Set HttpOnly cookie
+        res.cookie('auth_token', result.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax', // Lax es más permisivo para redirecciones OAuth
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Retornar solo datos del usuario y conexión, sin el token
+        const { token: _token, ...responseData } = result;
+        res.json(responseData);
     }
 
     /**
@@ -78,7 +90,7 @@ export class AuthController {
         console.log('🔴 Controller: Calling authService.disconnectPlatform');
         await this.authService.disconnectPlatform(req.user.id, provider);
         console.log('🔴 Controller: authService.disconnectPlatform completed');
-        
+
         res.json({ success: true, message: `${provider} desconectado` });
     };
 
@@ -93,6 +105,30 @@ export class AuthController {
         }
 
         const result = await this.authService.handleTikTokAuth(username, req.user.id);
-        res.json(result);
+
+        // TikTok auth also issues/refreshes token
+        res.cookie('auth_token', result.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        const { token: _token, ...responseData } = result;
+        res.json(responseData);
+    };
+
+    /**
+     * Cierra la sesión del usuario
+     */
+    logout = async (_req: AuthRequest, res: Response): Promise<void> => {
+        res.clearCookie('auth_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
+        res.json({ success: true, message: 'Sesión cerrada exitosamente' });
     };
 }

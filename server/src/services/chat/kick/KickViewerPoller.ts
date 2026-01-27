@@ -32,4 +32,8 @@ export class KickViewerPoller {
     stopPolling(userId: string): void {
         this.polling.stop(userId);
     }
+
+    isPolling(userId: string): boolean {
+        return this.polling.isRunning(userId);
+    }
 }

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { MdLink, MdHelpOutline, MdLogout, MdLanguage, MdCheck, MdKeyboardArrowDown, MdMenu } from 'react-icons/md';
 import Logo from '../common/Logo';
 import { Dropdown, DropdownItem, DropdownDivider, Badge } from '../ui';
-import { useToggle, useLocalStorage } from '../../hooks';
+import { useToggle, useLocalStorage, useAuth } from '../../hooks';
 import type { User } from '../../types';
 
 interface DashboardHeaderProps {
@@ -15,14 +15,12 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
     const [isMenuOpen, , openMenu, closeMenu] = useToggle(false);
     const [showLanguages, toggleLanguages] = useToggle(false);
-    const [currentLanguage, setCurrentLanguage] = useState('es');
     const [user] = useLocalStorage<User | null>('user', null);
-    const navigate = useNavigate();
+    const { logout } = useAuth();
+    const [currentLanguage, setCurrentLanguage] = useState('es');
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/');
+    const handleLogout = async () => {
+        await logout();
     };
 
     const languages = [

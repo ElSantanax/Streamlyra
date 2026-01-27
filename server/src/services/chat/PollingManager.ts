@@ -32,6 +32,10 @@ export class PollingManager {
         }
     }
 
+    isRunning(id: string): boolean {
+        return this.intervals.has(id);
+    }
+
     stopAll() {
         this.intervals.forEach((interval) => clearInterval(interval));
         this.intervals.clear();

@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   // Solo ignora dist y config files
   { ignores: ['dist', 'vitest.config.ts'] },
-  
+
   // Configuración base para todo el código
   {
     extends: [
@@ -34,24 +34,31 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
       '@typescript-eslint/no-unsafe-assignment': 'warn',
       '@typescript-eslint/no-unsafe-member-access': 'warn',
     },
   },
-  
+
   // Configuración específica para archivos de test
   {
     files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
     rules: {
       // Relajar reglas que dificultan escribir tests claros
       '@typescript-eslint/no-explicit-any': 'off', // Útil para mocks
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
-      
+
       // Mantener estas para calidad del código
-      '@typescript-eslint/no-unused-vars': 'error',
       'no-console': 'off', // Útil para debugging en tests
     },
   }

@@ -1,31 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { authService as apiAuthService } from '../api/services/auth.service';
 import Spinner from '../components/common/Spinner';
-
-interface AuthResponse {
-    token: string;
-    user: {
-        id: string;
-        username: string;
-        displayName: string;
-        avatar: string;
-    };
-}
-
-interface ErrorResponse {
-    error: string;
-}
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const calledRef = useRef(false); // Para evitar llamadas dobles en React.StrictMode
+    const calledRef = useRef(false);
 
     useEffect(() => {
         const code = searchParams.get('code');
         const error = searchParams.get('error');
+        const state = searchParams.get('state') || 'twitch';
 
-        // Evitar doble ejecución
         if (calledRef.current) return;
         calledRef.current = true;
 
@@ -36,92 +23,33 @@ const AuthCallback = () => {
         }
 
         if (code) {
-            // Verificar state para saber provider, fallback a twitch si no hay state (retrocompatibilidad)
-            const state = searchParams.get('state') || 'twitch';
-            let endpoint = '/api/auth/twitch';
-
-            // Detectar plataforma del state (puede incluir timestamp: youtube_123456)
-            if (state.startsWith('youtube')) endpoint = '/api/auth/youtube';
-            else if (state.startsWith('kick')) endpoint = '/api/auth/kick';
-            else if (state.startsWith('twitch')) endpoint = '/api/auth/twitch';
-
-            // Intercambiar código por token con NUESTRO backend
             const authenticate = async () => {
                 try {
-                    const token = localStorage.getItem('token');
-                    const headers: Record<string, string> = {
-                        'Content-Type': 'application/json',
-                    };
+                    let platform: 'twitch' | 'youtube' | 'kick' = 'twitch';
+                    if (state.startsWith('youtube')) platform = 'youtube';
+                    else if (state.startsWith('kick')) platform = 'kick';
 
-                    if (token) {
-                        headers['Authorization'] = `Bearer ${token}`;
+                    let codeVerifier: string | undefined;
+                    if (platform === 'kick') {
+                        codeVerifier = localStorage.getItem('kick_verifier') || undefined;
+                        localStorage.removeItem('kick_verifier');
                     }
 
-                    const body: Record<string, string> = { code };
-                    if (state === 'kick') {
-                        const verifier = localStorage.getItem('kick_verifier');
-                        if (verifier) {
-                            body.code_verifier = verifier;
-                            localStorage.removeItem('kick_verifier'); // Limpiar después de usar
-                        }
-                    }
+                    const data = await apiAuthService.exchangeCode(platform, code, codeVerifier);
 
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify(body),
-                    });
-
-                    if (!response.ok) {
-                        const errorData = (await response.json().catch(() => ({}))) as ErrorResponse;
-                        throw new Error(errorData.error || 'Error en la autenticación con el servidor');
-                    }
-
-                    const data = (await response.json()) as AuthResponse;
-
-                    // Guardar sesión (token y user) en localStorage
-                    localStorage.setItem('token', data.token);
+                    // Guardamos el usuario para UI inmediata
                     localStorage.setItem('user', JSON.stringify(data.user));
 
-                    // Leer URL de redirección preservada (si existe)
+                    // Redirigir
                     const redirectUrl = localStorage.getItem('auth_redirect');
-                    localStorage.removeItem('auth_redirect'); // Limpiar después de leer
-
-                    // Redirigir a URL preservada o /dashboard por defecto
+                    localStorage.removeItem('auth_redirect');
                     navigate(redirectUrl || '/dashboard');
 
                 } catch (err: unknown) {
+                    console.error('Fallo al completar el login:', err);
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
 
-                    // Errores operacionales esperados (usar console.warn)
-                    const isOperationalError =
-                        errorMessage.includes('cuota') ||
-                        errorMessage.includes('quota') ||
-                        errorMessage.includes('Permisos insuficientes') ||
-                        errorMessage.includes('not encontrado') ||
-                        errorMessage.includes('no encontrado') ||
-                        errorMessage.includes('status code 400') ||
-                        errorMessage.includes('expirado');
-
-                    if (isOperationalError) {
-                        console.warn('⚠️ Error operacional en autenticación:', errorMessage);
-                    } else {
-                        // Errores técnicos inesperados (usar console.error)
-                        console.error('Fallo al completar el login:', err);
-                    }
-
-                    // Si el error es que el usuario no existe, limpiamos todo y volvemos a login
                     if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        navigate('/login');
-                        return;
-                    }
-
-                    // Si Twitch nos da un 400 (ej: code ya usado)
-                    if (errorMessage.includes('status code 400')) {
-                        alert('El código de Twitch ha expirado o ya fue usado. Por favor, intenta conectar de nuevo.');
-                        localStorage.removeItem('token');
                         localStorage.removeItem('user');
                         navigate('/login');
                         return;

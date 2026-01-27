@@ -32,9 +32,19 @@ export class TwitchChatProvider implements ChatProvider {
             return;
         }
 
-        // Si ya está conectado, no reconectar
+        // Si ya está conectado, asegurar que el cliente reciba el estado actual
         if (this.activeClients.has(userId)) {
-            logger.debug({ userId }, 'User already has an active Twitch client');
+            logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
+            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+
+            // Provocar un poll inmediato para que el cliente reciba estadísticas rápido
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'twitch' }
+            });
+            if (connection?.providerUsername) {
+                const validToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
+                this.viewerPoller.startPolling(userId, connection.providerUsername, validToken || connection.accessToken, io);
+            }
             return;
         }
 
@@ -73,25 +83,25 @@ export class TwitchChatProvider implements ChatProvider {
 
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'TwitchChatProvider: Starting disconnect');
-        
+
         const client = this.activeClients.get(userId);
         if (client) {
             logger.debug({ userId }, 'TwitchChatProvider: Removing event listeners');
             // Remover listeners antes de desconectar para prevenir memory leaks
             this.eventListener.removeListeners(userId, client);
-            
+
             logger.debug({ userId }, 'TwitchChatProvider: Disconnecting client');
             await this.connectionManager.disconnect(client);
             this.activeClients.delete(userId);
         } else {
             logger.debug({ userId }, 'TwitchChatProvider: No active client found');
         }
-        
+
         logger.debug({ userId }, 'TwitchChatProvider: Stopping viewer polling');
         this.viewerPoller.stopPolling(userId);
-        
+
         this.connectingUsers.delete(userId);
-        
+
         logger.info({ userId }, 'TwitchChatProvider: Disconnect completed');
     }
 }

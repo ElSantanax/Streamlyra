@@ -117,65 +117,65 @@ La implementación sigue un orden que minimiza riesgos: primero Error Boundaries
   - Preguntar al usuario si hay dudas o ajustes necesarios
 
 - [ ] 7. Implementar migración a HttpOnly Cookies
-  - [ ] 7.1 Crear AuthService
+  - [x] 7.1 Crear AuthService
     - Implementar handleSessionExpired() con limpieza de localStorage
     - Añadir logging de eventos de sesión expirada
     - Implementar redirección a /login con preservación de URL
     - Añadir flag para prevenir múltiples limpiezas simultáneas
     - _Requisitos: 3.5, 3.6, 4.1, 4.2, 4.3, 4.5, 6.6_
-  - [ ] 7.2 Escribir tests unitarios para AuthService
+  - [x] 7.2 Escribir tests unitarios para AuthService
     - Verificar limpieza de localStorage
     - Verificar logging de eventos
     - Verificar redirección con URL preservada
     - _Requisitos: 4.2, 4.3, 6.6_
-  - [ ] 7.3 Actualizar HttpClient con credentials: 'include'
+  - [x] 7.3 Actualizar HttpClient con credentials: 'include'
     - Añadir credentials: 'include' en todas las peticiones fetch
     - Eliminar método getAuthToken() que lee de localStorage
     - Eliminar lógica de añadir Authorization header
     - _Requisitos: 3.2, 3.3_
-  - [ ] 7.4 Escribir test de propiedad para credentials
+  - [x] 7.4 Escribir test de propiedad para credentials
     - **Propiedad 12: Inclusión de credentials en peticiones HTTP**
     - **Valida: Requisitos 3.2**
-  - [ ] 7.5 Implementar interceptor 401 en HttpClient
+  - [x] 7.5 Implementar interceptor 401 en HttpClient
     - Detectar respuestas 401 en método request()
     - Llamar a authService.handleSessionExpired() cuando se detecta 401
     - Implementar flag isHandling401 para prevenir múltiples limpiezas
     - Lanzar ApiError después de manejar 401
     - _Requisitos: 3.5, 4.1, 4.5_
-  - [ ] 7.6 Escribir tests de propiedad para interceptor 401
+  - [x] 7.6 Escribir tests de propiedad para interceptor 401
     - **Propiedad 14: Limpieza de sesión en respuesta 401**
     - **Propiedad 15: Redirección a login tras 401**
     - **Propiedad 17: Idempotencia de limpieza de sesión**
     - **Propiedad 21: Logging de eventos 401**
     - **Valida: Requisitos 3.5, 3.6, 4.2, 4.3, 4.5, 6.6**
-  - [ ] 7.7 Actualizar useAuth hook
+  - [x] 7.7 Actualizar useAuth hook
     - Eliminar gestión de token (removeToken, setToken)
     - Eliminar variable token del estado
     - Actualizar isAuthenticated para basarse solo en user
     - Modificar login() para solo guardar userData (no token)
     - _Requisitos: 3.3, 3.4, 3.7_
-  - [ ] 7.8 Escribir tests de propiedad para useAuth actualizado
+  - [x] 7.8 Escribir tests de propiedad para useAuth actualizado
     - **Propiedad 13: Almacenamiento de perfil sin token**
     - **Propiedad 16: Validación de autenticación basada en estado de usuario**
     - **Propiedad 18: Preservación de API pública de useAuth**
     - **Valida: Requisitos 3.4, 3.7, 5.3**
-  - [ ] 7.9 Implementar checkAuth() en useAuth
+  - [x] 7.9 Implementar checkAuth() en useAuth
     - Añadir método checkAuth() que llama a /auth/me
     - Ejecutar checkAuth() en useEffect al montar
     - Añadir estado isChecking para mostrar loading
     - Manejar errores limpiando estado residual
     - _Requisitos: 3.8_
-  - [ ] 7.10 Escribir test unitario para checkAuth
+  - [x] 7.10 Escribir test unitario para checkAuth
     - Verificar que se llama a /auth/me al iniciar
     - Verificar que se actualiza user con respuesta exitosa
     - Verificar que se limpia user si falla
     - _Requisitos: 3.8_
-  - [ ] 7.11 Implementar endpoint de logout
+  - [x] 7.11 Implementar endpoint de logout
     - Añadir llamada a POST /auth/logout en método logout()
     - Manejar errores de logout gracefully
     - Limpiar localStorage después de llamada
     - _Requisitos: 5.1, 5.2_
-  - [ ] 7.12 Escribir tests de integración para flujo de logout
+  - [x] 7.12 Escribir tests de integración para flujo de logout
     - Verificar que se llama a /auth/logout
     - Verificar que se limpia localStorage
     - Verificar redirección a /

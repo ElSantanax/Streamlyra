@@ -78,6 +78,12 @@ export const createAuthRoutes = (authController: AuthController) => {
      */
     router.delete('/platform', authenticateToken, validateZodBody(disconnectPlatformSchema), authController.disconnectPlatform);
 
+    /**
+     * POST /api/auth/logout
+     * Cierra la sesión activa
+     */
+    router.post('/logout', authController.logout);
+
     return router;
 };
 

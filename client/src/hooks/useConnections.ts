@@ -9,10 +9,10 @@ import type { ConnectionInfo } from '../types';
 import type { PlatformKey } from '../constants/platforms';
 
 const initialConnections: Record<string, ConnectionInfo> = {
-  twitch: { connected: false },
-  youtube: { connected: false },
-  tiktok: { connected: false },
-  kick: { connected: false },
+  twitch: { connected: false, viewers: 0 },
+  youtube: { connected: false, viewers: 0 },
+  tiktok: { connected: false, viewers: 0 },
+  kick: { connected: false, viewers: 0 },
 };
 
 export const useConnections = (shouldFetch = true) => {
@@ -22,13 +22,6 @@ export const useConnections = (shouldFetch = true) => {
 
   const fetchConnections = useCallback(async () => {
     if (!shouldFetch) return;
-
-    // No intentar fetch si no hay token
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setConnections(initialConnections);
-      return;
-    }
 
     setIsLoading(true);
     setError(null);
@@ -41,8 +34,8 @@ export const useConnections = (shouldFetch = true) => {
         Object.keys(data.connections).forEach(platform => {
           updated[platform] = {
             ...data.connections[platform],
-            // Mantener viewers si ya existían
-            viewers: prev[platform]?.viewers ?? data.connections[platform].viewers
+            // Mantener viewers si ya existían, de lo contrario usar los del server o 0
+            viewers: prev[platform]?.viewers ?? data.connections[platform].viewers ?? 0
           };
         });
         return updated;

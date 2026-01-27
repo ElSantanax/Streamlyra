@@ -25,7 +25,10 @@ export default tseslint.config(
         },
         rules: {
             "@typescript-eslint/no-explicit-any": "error", // Prohibido usar any explícito
-            "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+            "@typescript-eslint/no-unused-vars": ["warn", {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_"
+            }],
             "@typescript-eslint/no-unsafe-assignment": "warn", // Evita asignar un any a algo tipado
             "@typescript-eslint/no-unsafe-member-access": "warn", // Evita entrar a propiedades de un any
             "no-console": "off",

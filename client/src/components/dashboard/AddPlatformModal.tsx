@@ -38,7 +38,6 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
         try {
             const cleaned = cleanUsername(tiktokUsername);
             await authService.connectTikTok(cleaned);
-            toast.success('TikTok conectado exitosamente');
             onConnectionSuccess?.();
             setTimeout(() => onClose(), 500);
         } catch (error) {

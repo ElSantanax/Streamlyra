@@ -48,9 +48,19 @@ export class KickChatProvider implements ChatProvider {
             }
 
             const accessToken = await this.connectionService.getValidAccessToken(userId, 'kick');
+
             if (!accessToken) {
                 logger.error({ userId }, 'No Kick access token');
                 SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Token inválido');
+                this.connectingUsers.delete(userId);
+                return;
+            }
+
+            if (this.viewerPoller.isPolling(userId)) {
+                logger.debug({ userId }, 'Kick already connected and polling');
+                SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
+                // Refresh viewers immediately
+                this.viewerPoller.startPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;
             }
@@ -89,10 +99,10 @@ export class KickChatProvider implements ChatProvider {
 
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'KickChatProvider: Starting disconnect');
-        
+
         this.viewerPoller.stopPolling(userId);
         logger.debug({ userId }, 'KickChatProvider: Viewer polling stopped');
-        
+
         // Obtener el broadcasterId del usuario para desactivar el webhook
         try {
             const connection = await Connection.findOne({
@@ -108,9 +118,9 @@ export class KickChatProvider implements ChatProvider {
         } catch (error) {
             logger.error({ err: error, userId }, 'Error desactivando webhook de Kick');
         }
-        
+
         logger.info({ userId }, 'KickChatProvider: Disconnect completed');
-        
+
         // NOTA: Kick no proporciona API para desregistrar webhooks
         // Los webhooks quedan registrados en Kick hasta que expiren
         // Sin embargo, ahora los trackeamos en DB y los marcamos como inactivos

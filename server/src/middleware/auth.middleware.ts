@@ -25,10 +25,14 @@ export interface AuthRequest extends Request {
 }
 
 /**
- * Extrae el token JWT del header Authorization
- * Formato esperado: "Bearer <token>"
+ * Extrae el token JWT de las cookies o del header Authorization
  */
 const extractToken = (req: AuthRequest): string | null => {
+    // 1. Intentar desde cookies (preferido para HttpOnly)
+    const tokenFromCookie = (req.cookies as Record<string, string> | undefined)?.auth_token;
+    if (tokenFromCookie) return tokenFromCookie;
+
+    // 2. Intentar desde header (fallback para compatibilidad)
     const authHeader = req.headers['authorization'];
     return authHeader?.split(' ')[1] || null;
 };

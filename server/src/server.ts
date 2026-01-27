@@ -26,6 +26,8 @@ import { WebhookProcessor } from './services/webhook/WebhookProcessor';
 import { config } from './config';
 import { errorHandler } from './middleware/error.middleware';
 import pinoHttp from 'pino-http';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { logger } from './utils/logger';
 import { UserRepository } from './repositories/implementations/UserRepository';
 import { ConnectionRepository } from './repositories/implementations/ConnectionRepository';
@@ -68,7 +70,8 @@ interface RequestWithRawBody extends Request {
 const io = new Server(server, {
     cors: {
         origin: config.frontendUrl,
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -84,6 +87,15 @@ const webhookController = new WebhookController(webhookProcessor);
 // ============================================================================
 // CONFIGURACIÓN DE MIDDLEWARES
 // ============================================================================
+
+app.use(cors({
+    origin: config.frontendUrl,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(cookieParser());
 
 app.use(pinoHttp({
     logger,

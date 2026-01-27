@@ -49,14 +49,17 @@ export class TikTokChatProvider implements ChatProvider {
 
             const tiktokUsername = connection.providerUsername.replace(/^@+/, '');
 
+            if (this.activeConnections.has(userId)) {
+                logger.debug({ userId }, 'TikTok already active, refreshing state');
+                SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                this.connectingUsers.delete(userId);
+                return;
+            }
+
             // Marcar que este usuario debe reconectar automáticamente
             this.shouldReconnect.set(userId, true);
 
             this.retryCleanup.get(userId)?.();
-
-            if (this.activeConnections.has(userId)) {
-                await this.disconnect(userId);
-            }
 
             const startConnection = async () => {
                 try {

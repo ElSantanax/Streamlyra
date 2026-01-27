@@ -4,23 +4,24 @@ import { FaGlobe, FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
 import { Button } from '../ui';
 import { useToggle } from '../../hooks';
+import { useAuth } from '../../hooks/useAuth';
 
 const Navbar = () => {
     const { pathname } = useLocation();
+    const { isAuthenticated } = useAuth();
     const isAuthPage = pathname === '/register' || pathname === '/connect' || pathname === '/login';
     const [lang, setLang] = useState<'es' | 'en'>('es');
     const [isMenuOpen, toggleMenu, , closeMenu] = useToggle(false);
-    const isAuthenticated = !!localStorage.getItem('token');
 
     // Close menu on resize to desktop and prevent scroll when open
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 768) closeMenu();
         };
-        
+
         document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
         window.addEventListener('resize', handleResize);
-        
+
         return () => {
             window.removeEventListener('resize', handleResize);
             document.body.style.overflow = 'unset';
