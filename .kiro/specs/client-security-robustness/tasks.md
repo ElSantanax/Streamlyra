@@ -98,19 +98,19 @@ La implementación sigue un orden que minimiza riesgos: primero Error Boundaries
     - **Valida: Requisitos 1.7**
 
 - [ ] 5. Integrar LocalErrorBoundary en componentes críticos
-  - [ ] 5.1 Añadir LocalErrorBoundary en Dashboard
+  - [x] 5.1 Añadir LocalErrorBoundary en Dashboard
     - Envolver secciones críticas (ChatFeed, ConnectionsPanel)
     - Verificar que errores se aíslan correctamente
     - _Requisitos: 2.6, 2.7_
-  - [ ] 5.2 Añadir LocalErrorBoundary en PlatformConnection (cuando se usa en /connect)
+  - [x] 5.2 Añadir LocalErrorBoundary en PlatformConnection (cuando se usa en /connect)
     - Envolver formularios y componentes de conexión
     - _Requisitos: 2.6, 2.7_
-  - [ ] 5.3 Escribir tests de integración para aislamiento
+  - [x] 5.3 Escribir tests de integración para aislamiento
     - Verificar que error en una sección no afecta otras
     - Verificar que estado global se preserva
     - _Requisitos: 2.7, 2.8_
 
-- [ ] 6. Checkpoint - Verificar rutas protegidas
+- [x] 6. Checkpoint - Verificar rutas protegidas
   - Asegurar que todos los tests de ProtectedRoute pasan
   - Verificar manualmente flujo de redirección
   - Confirmar que rutas públicas siguen accesibles
