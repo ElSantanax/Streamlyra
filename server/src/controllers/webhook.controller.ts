@@ -42,21 +42,11 @@ export class WebhookController {
             throw new AppError('Webhook data not found', 400);
         }
 
-        // Procesar según plataforma
-        switch (platform) {
-            case 'kick':
-                await this.webhookProcessor.processKickEvent(webhookData.body as unknown as KickChatMessagePayload);
-                break;
-            case 'youtube':
-                await this.webhookProcessor.processYouTubeEvent(webhookData.body);
-                break;
-            case 'twitch':
-                await this.webhookProcessor.processTwitchEvent(webhookData.body);
-                break;
-            default:
-                throw new AppError(`Unknown platform: ${platform}`, 400);
+        if (platform !== 'kick') {
+            throw new AppError(`Platform ${platform} is not supported for webhooks`, 400);
         }
 
+        await this.webhookProcessor.processKickEvent(webhookData.body as unknown as KickChatMessagePayload);
         res.status(200).send('OK');
     }
 
@@ -65,19 +55,5 @@ export class WebhookController {
      */
     handleKickWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
         await this.handleWebhook('kick', req, res);
-    };
-
-    /**
-     * Maneja webhook de YouTube
-     */
-    handleYouTubeWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
-        await this.handleWebhook('youtube', req, res);
-    };
-
-    /**
-     * Maneja webhook de Twitch
-     */
-    handleTwitchWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
-        await this.handleWebhook('twitch', req, res);
     };
 }

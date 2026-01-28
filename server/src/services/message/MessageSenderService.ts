@@ -25,7 +25,7 @@ export class MessageSenderService {
         private twitchService: TwitchService,
         private youtubeService: YouTubeService,
         private kickService: KickService
-    ) {}
+    ) { }
 
     /**
      * Envía un mensaje a múltiples plataformas simultáneamente
@@ -129,12 +129,12 @@ export class MessageSenderService {
         // This catches patterns like "Invalid token: <token>", "token: <token>", etc.
         const tokenPhrasePattern = /(token|key|secret|credential|authorization|bearer)[\s:]+([^\s]{10,}|.{20,})/gi;
         let sanitized = errorMessage.replace(tokenPhrasePattern, '$1: [REDACTED]');
-        
+
         // Pattern 2: Match standalone long alphanumeric strings that look like tokens
         // Must contain at least some alphanumeric characters (not just spaces/special chars)
         const standaloneTokenPattern = /\b[A-Za-z0-9_\-.]{20,}\b/g;
         sanitized = sanitized.replace(standaloneTokenPattern, '[REDACTED]');
-        
+
         return sanitized;
     }
 
@@ -166,7 +166,7 @@ export class MessageSenderService {
             }
 
             // Obtener token válido usando ConnectionService (Requirement 5.3)
-            let accessToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
+            const accessToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
             if (!accessToken) {
                 logger.warn({ userId, platform: 'twitch' }, 'Failed to get valid access token');
                 return {
@@ -204,7 +204,7 @@ export class MessageSenderService {
 
                     // Intentar renovar el token forzadamente
                     const newAccessToken = await this.connectionService.forceTokenRefresh(userId, 'twitch');
-                    
+
                     if (!newAccessToken) {
                         logger.error(
                             { userId, platform: 'twitch' },
@@ -241,7 +241,7 @@ export class MessageSenderService {
                         // El reintento también falló
                         const retryErrorMessage = retryError instanceof Error ? retryError.message : 'Error al enviar';
                         const retryErrorCode = (retryError as { code?: string }).code || 'TWITCH_RETRY_ERROR';
-                        
+
                         logger.error(
                             { err: retryError, userId, platform: 'twitch' },
                             'Retry failed after token refresh'
@@ -264,10 +264,10 @@ export class MessageSenderService {
             // Retornar PlatformResult con error (Requirement 5.4)
             const rawErrorMessage = error instanceof Error ? error.message : 'Error al enviar';
             const errorCode = (error as { code?: string }).code || 'TWITCH_ERROR';
-            
+
             // Sanitize error message to prevent credential leakage
             const errorMessage = this.sanitizeErrorMessage(rawErrorMessage);
-            
+
             logger.error({ err: error, userId, platform: 'twitch' }, 'Failed to send to Twitch');
             return {
                 platform: 'twitch',
@@ -306,7 +306,7 @@ export class MessageSenderService {
             }
 
             // Obtener token válido usando ConnectionService (Requirement 6.1)
-            let accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
+            const accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
             if (!accessToken) {
                 logger.warn({ userId, platform: 'youtube' }, 'Failed to get valid access token');
                 return {
@@ -320,7 +320,7 @@ export class MessageSenderService {
             try {
                 // Obtener liveChatId activo (Requirement 6.1)
                 const liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken);
-                
+
                 // Validar que existe un broadcast en vivo (Requirement 6.5)
                 if (!liveChatId) {
                     logger.debug({ userId, platform: 'youtube' }, 'No active live broadcast found');
@@ -353,7 +353,7 @@ export class MessageSenderService {
 
                     // Intentar renovar el token forzadamente
                     const newAccessToken = await this.connectionService.forceTokenRefresh(userId, 'youtube');
-                    
+
                     if (!newAccessToken) {
                         logger.error(
                             { userId, platform: 'youtube' },
@@ -370,7 +370,7 @@ export class MessageSenderService {
                     // Segundo intento: Obtener liveChatId y reintentar con el nuevo token
                     try {
                         const liveChatId = await this.youtubeService.getActiveLiveChatId(newAccessToken);
-                        
+
                         if (!liveChatId) {
                             return {
                                 platform: 'youtube',
@@ -396,7 +396,7 @@ export class MessageSenderService {
                         // El reintento también falló
                         const retryErrorMessage = retryError instanceof Error ? retryError.message : 'Error al enviar';
                         const retryErrorCode = (retryError as { code?: string }).code || 'YOUTUBE_RETRY_ERROR';
-                        
+
                         logger.error(
                             { err: retryError, userId, platform: 'youtube' },
                             'Retry failed after token refresh'
@@ -419,10 +419,10 @@ export class MessageSenderService {
             // Retornar PlatformResult con error (Requirement 6.4)
             const rawErrorMessage = error instanceof Error ? error.message : 'Error al enviar';
             const errorCode = (error as { code?: string }).code || 'YOUTUBE_ERROR';
-            
+
             // Sanitize error message to prevent credential leakage
             const errorMessage = this.sanitizeErrorMessage(rawErrorMessage);
-            
+
             logger.error({ err: error, userId, platform: 'youtube' }, 'Failed to send to YouTube');
             return {
                 platform: 'youtube',
@@ -461,7 +461,7 @@ export class MessageSenderService {
             }
 
             // Obtener token válido usando ConnectionService (Requirement 7.3)
-            let accessToken = await this.connectionService.getValidAccessToken(userId, 'kick');
+            const accessToken = await this.connectionService.getValidAccessToken(userId, 'kick');
             if (!accessToken) {
                 logger.warn({ userId, platform: 'kick' }, 'Failed to get valid access token');
                 return {
@@ -497,7 +497,7 @@ export class MessageSenderService {
 
                     // Intentar renovar el token forzadamente
                     const newAccessToken = await this.connectionService.forceTokenRefresh(userId, 'kick');
-                    
+
                     if (!newAccessToken) {
                         logger.error(
                             { userId, platform: 'kick' },
@@ -529,7 +529,7 @@ export class MessageSenderService {
                         // El reintento también falló
                         const retryErrorMessage = retryError instanceof Error ? retryError.message : 'Error al enviar';
                         const retryErrorCode = (retryError as { code?: string }).code || 'KICK_RETRY_ERROR';
-                        
+
                         logger.error(
                             { err: retryError, userId, platform: 'kick' },
                             'Retry failed after token refresh'
@@ -552,10 +552,10 @@ export class MessageSenderService {
             // Retornar PlatformResult con error (Requirement 7.4)
             const rawErrorMessage = error instanceof Error ? error.message : 'Error al enviar';
             const errorCode = (error as { code?: string }).code || 'KICK_ERROR';
-            
+
             // Sanitize error message to prevent credential leakage
             const errorMessage = this.sanitizeErrorMessage(rawErrorMessage);
-            
+
             logger.error({ err: error, userId, platform: 'kick' }, 'Failed to send to Kick');
             return {
                 platform: 'kick',

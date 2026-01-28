@@ -238,7 +238,13 @@ export class YouTubeService extends BasePlatformService {
                     error.message = 'Token de acceso inválido o expirado';
                     throw error;
                 } else if (status === 403) {
-                    const isQuotaError = (errorData?.error as any)?.errors?.some((e: any) => e.reason === 'quotaExceeded');
+                    interface YouTubeErrorResponse {
+                        error?: {
+                            errors?: Array<{ reason?: string }>;
+                        };
+                    }
+                    const typedError = errorData as unknown as YouTubeErrorResponse;
+                    const isQuotaError = typedError?.error?.errors?.some(e => e.reason === 'quotaExceeded');
                     if (isQuotaError) {
                         throw new Error('Cuota de YouTube agotada. Intenta más tarde');
                     }

@@ -12,16 +12,8 @@ export { retryWithExponentialBackoff, calculateBackoffDelay } from './retryWithE
 export type { ExponentialBackoffOptions } from './retryWithExponentialBackoff';
 export * from './oauth.utils';
 export { calculateTokenExpiry } from './tokenUtils';
-export { SocketEventEmitter } from './SocketEventEmitter';
 export { SafeSocketEmitter } from './SafeSocketEmitter';
 export {
-    withErrorHandling,
-    withErrorHandlingSync,
-    toAppError,
-    getErrorMessage,
-    validateRequired,
-    validateNotEmpty,
-    executeWithErrorCollection,
-    retryWithBackoff
+    withErrorHandling
 } from './errorHandling';
 export type { ErrorContext } from './errorHandling';

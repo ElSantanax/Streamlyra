@@ -29,7 +29,7 @@ import { ChatProvider } from './ChatProvider';
 import { YouTubeBroadcastDiscovery } from './youtube/YouTubeBroadcastDiscovery';
 import { YouTubeChatPoller } from './youtube/YouTubeChatPoller';
 import { YouTubeViewerPoller } from './youtube/YouTubeViewerPoller';
-import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { Connection } from '../../models/Connection.model';
 import { ConnectionService } from '../connection/ConnectionService';
 import { retryWithInterval } from '../../utils/retryWithInterval';
@@ -66,7 +66,7 @@ export class YouTubeChatProvider implements ChatProvider {
 
         // Si ya hay una limpieza registrada, significa que estamos monitoreando
         if (this.discoveryCleanup.has(userId)) {
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
             return;
         }
 
@@ -91,7 +91,7 @@ export class YouTubeChatProvider implements ChatProvider {
             this.discoveryStartTime.set(userId, Date.now());
             this.discoveryAttempts.set(userId, 0);
 
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting');
 
             const tryConnect = async () => {
                 // Verificar límites de discovery antes de cada intento
@@ -133,7 +133,7 @@ export class YouTubeChatProvider implements ChatProvider {
                     // Esto ahorra cuotas ya que no se necesita seguir buscando
                     this.stopDiscovery(userId);
 
-                    SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
 
                     // Iniciar polling de chat y viewers solo cuando hay stream activo
                     this.chatPoller.startPolling(userId, liveChatId, accessToken, io);
@@ -154,7 +154,7 @@ export class YouTubeChatProvider implements ChatProvider {
                             '⚠️  YouTube quota exceeded - Stopping discovery and notifying user'
                         );
                         this.stopDiscovery(userId);
-                        SocketEventEmitter.emitConnectionStatus(
+                        SafeSocketEmitter.emitConnectionStatus(
                             io,
                             userId,
                             'youtube',
@@ -176,7 +176,7 @@ export class YouTubeChatProvider implements ChatProvider {
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error setting up YouTube connection');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error de configuración');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error de configuración');
         } finally {
             this.connectingUsers.delete(userId);
         }
@@ -216,7 +216,7 @@ export class YouTubeChatProvider implements ChatProvider {
                 'YouTube discovery timeout - stopping to save quota'
             );
             this.stopDiscovery(userId);
-            SocketEventEmitter.emitConnectionStatus(
+            SafeSocketEmitter.emitConnectionStatus(
                 io,
                 userId,
                 'youtube',
@@ -233,7 +233,7 @@ export class YouTubeChatProvider implements ChatProvider {
                 'YouTube discovery max attempts reached - stopping to save quota'
             );
             this.stopDiscovery(userId);
-            SocketEventEmitter.emitConnectionStatus(
+            SafeSocketEmitter.emitConnectionStatus(
                 io,
                 userId,
                 'youtube',

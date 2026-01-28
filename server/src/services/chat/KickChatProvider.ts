@@ -1,30 +1,18 @@
-/**
- * Proveedor de Chat de Kick
- * Responsabilidad: Orquestar conexión a chat de Kick
- */
-
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
-import { KickChannelManager } from './kick/KickChannelManager';
-import { KickViewerPoller } from './kick/KickViewerPoller';
-import { KickWebhookManager } from './kick/KickWebhookManager';
-import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
+import { KickManager } from './kick/KickManager';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { Connection } from '../../models/Connection.model';
 import { User } from '../../models/User.model';
 import { ConnectionService } from '../connection/ConnectionService';
 import { logger } from '../../utils/logger';
 
 export class KickChatProvider implements ChatProvider {
-    private channelManager: KickChannelManager;
-    private viewerPoller: KickViewerPoller;
-    private webhookManager: KickWebhookManager;
-
+    private manager: KickManager;
     private connectingUsers: Set<string> = new Set();
 
     constructor(private connectionService: ConnectionService) {
-        this.channelManager = new KickChannelManager();
-        this.viewerPoller = new KickViewerPoller();
-        this.webhookManager = new KickWebhookManager();
+        this.manager = new KickManager();
     }
 
     async connect(userId: string, io: Server): Promise<void> {
@@ -51,26 +39,26 @@ export class KickChatProvider implements ChatProvider {
 
             if (!accessToken) {
                 logger.error({ userId }, 'No Kick access token');
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Token inválido');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Token inválido');
                 this.connectingUsers.delete(userId);
                 return;
             }
 
-            if (this.viewerPoller.isPolling(userId)) {
+            if (this.manager.isPolling(userId)) {
                 logger.debug({ userId }, 'Kick already connected and polling');
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
-                // Refresh viewers immediately
-                this.viewerPoller.startPolling(userId, accessToken, io);
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
+                // Al usar el manager unificado, startViewerPolling ya hace la primera llamada
+                this.manager.startViewerPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;
             }
 
             logger.info({ userId }, 'Connecting to Kick');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connecting');
 
-            const channelInfo = await this.channelManager.getChannelInfo(accessToken);
+            const channelInfo = await this.manager.getChannelInfo(accessToken, userId, io);
             if (!channelInfo) {
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Canal no encontrado');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Canal no encontrado');
                 this.connectingUsers.delete(userId);
                 return;
             }
@@ -81,17 +69,17 @@ export class KickChatProvider implements ChatProvider {
             await this.disconnect(userId);
 
             // Iniciar polling de espectadores
-            this.viewerPoller.startPolling(userId, accessToken, io);
+            this.manager.startViewerPolling(userId, accessToken, io);
 
             logger.info({ slug, userId }, 'Connected to Kick chat');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
 
             // Registrar webhook (ahora con tracking en DB)
-            void this.webhookManager.registerWebhook(userId, accessToken, broadcasterId);
+            void this.manager.registerWebhook(userId, accessToken, broadcasterId);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error connecting to Kick');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error de conexión');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error de conexión');
         } finally {
             this.connectingUsers.delete(userId);
         }
@@ -100,7 +88,7 @@ export class KickChatProvider implements ChatProvider {
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'KickChatProvider: Starting disconnect');
 
-        this.viewerPoller.stopPolling(userId);
+        this.manager.stopViewerPolling(userId);
         logger.debug({ userId }, 'KickChatProvider: Viewer polling stopped');
 
         // Obtener el broadcasterId del usuario para desactivar el webhook
@@ -111,7 +99,7 @@ export class KickChatProvider implements ChatProvider {
 
             if (connection?.providerId) {
                 logger.debug({ userId, broadcasterId: connection.providerId }, 'KickChatProvider: Deactivating webhook');
-                await this.webhookManager.deactivateWebhook(connection.providerId);
+                await this.manager.deactivateWebhook(connection.providerId);
             } else {
                 logger.debug({ userId }, 'KickChatProvider: No connection found, skipping webhook deactivation');
             }

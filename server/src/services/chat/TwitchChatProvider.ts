@@ -5,7 +5,7 @@ import { TwitchConnectionManager } from './twitch/TwitchConnectionManager';
 import { TwitchEventListener } from './twitch/TwitchEventListener';
 import { TwitchViewerPoller } from './twitch/TwitchViewerPoller';
 import { TwitchEventTransformer } from './transformers/TwitchEventTransformer';
-import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { Connection } from '../../models/Connection.model';
 import { ConnectionService } from '../connection/ConnectionService';
 import { logger } from '../../utils/logger';
@@ -35,7 +35,7 @@ export class TwitchChatProvider implements ChatProvider {
         // Si ya está conectado, asegurar que el cliente reciba el estado actual
         if (this.activeClients.has(userId)) {
             logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
 
             // Provocar un poll inmediato para que el cliente reciba estadísticas rápido
             const connection = await Connection.findOne({
@@ -51,13 +51,13 @@ export class TwitchChatProvider implements ChatProvider {
         this.connectingUsers.add(userId);
 
         try {
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting');
             logger.info({ userId }, 'Connecting to Twitch chat');
 
             const client = await this.connectionManager.connect(userId);
             this.activeClients.set(userId, client);
 
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
 
             this.eventListener.setupListeners(userId, client, io);
 
@@ -74,7 +74,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error connecting to Twitch');
-            SocketEventEmitter.emitConnectionStatus(io, userId, 'twitch', 'error');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'error');
             this.activeClients.delete(userId);
         } finally {
             this.connectingUsers.delete(userId);

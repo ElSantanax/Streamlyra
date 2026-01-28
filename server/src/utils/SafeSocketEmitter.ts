@@ -112,18 +112,25 @@ export class SafeSocketEmitter {
     /**
      * Emite un mensaje de chat de forma segura con deduplicación para el streamer
      */
-    static emitChatMessage(io: Server, userId: string, message: any, platform?: string): boolean {
+    static emitChatMessage(io: Server, userId: string, message: unknown, platform?: string): boolean {
         // Lógica de deduplicación para el dueño (streamer)
         // Previene ver el mismo mensaje múltiples veces cuando se envía a varias plataformas
-        if (message && typeof message === 'object' && message.isOwner && typeof message.message === 'string') {
-            const cacheKey = `${userId}:${message.message}`;
+        interface ChatMessage {
+            isOwner?: boolean;
+            message?: string;
+        }
+
+        const msg = message as ChatMessage;
+
+        if (msg && typeof msg === 'object' && msg.isOwner && typeof msg.message === 'string') {
+            const cacheKey = `${userId}:${msg.message}`;
             const now = Date.now();
             const lastTime = this.ownerMessageCache.get(cacheKey);
 
             // Si el mismo mensaje fue emitido recientemente (ventana de 5 segundos), lo omitimos
             if (lastTime && (now - lastTime) < 5000) {
                 logger.debug(
-                    { userId, platform, message: message.message },
+                    { userId, platform, message: msg.message },
                     'SafeSocketEmitter: Omitiendo eco de mensaje del streamer (deduplicación)'
                 );
                 return false;

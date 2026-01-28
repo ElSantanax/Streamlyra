@@ -9,7 +9,7 @@ import { ChatProvider } from './ChatProvider';
 import { TikTokConnectionManager } from './tiktok/TikTokConnectionManager';
 import { TikTokEventListener } from './tiktok/TikTokEventListener';
 import { TikTokEventTransformer } from './transformers/TikTokEventTransformer';
-import { SocketEventEmitter } from '../../utils/SocketEventEmitter';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { Connection } from '../../models/Connection.model';
 import { retryWithExponentialBackoff } from '../../utils/retryWithExponentialBackoff';
 import { logger } from '../../utils/logger';
@@ -51,7 +51,7 @@ export class TikTokChatProvider implements ChatProvider {
 
             if (this.activeConnections.has(userId)) {
                 logger.debug({ userId }, 'TikTok already active, refreshing state');
-                SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
                 this.connectingUsers.delete(userId);
                 return;
             }
@@ -79,7 +79,7 @@ export class TikTokChatProvider implements ChatProvider {
                         return;
                     }
 
-                    SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting');
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting');
                     logger.info({ username: tiktokUsername, userId }, 'Attempting TikTok connection');
 
                     try {
@@ -87,7 +87,7 @@ export class TikTokChatProvider implements ChatProvider {
                         logger.info({ username: tiktokUsername, userId }, 'Connected to TikTok');
                         this.retryCleanup.get(userId)?.();
 
-                        SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                        SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
 
                         this.eventListener.setupListeners(userId, tiktokConnection, io);
                         this.setupDisconnectionHandler(userId, tiktokConnection, io);
@@ -114,7 +114,7 @@ export class TikTokChatProvider implements ChatProvider {
                             logger.debug({ username: tiktokUsername, userId, errorType: errorInfo.type }, errorInfo.logMessage);
                         }
 
-                        SocketEventEmitter.emitConnectionStatus(io, userId, 'tiktok', 'error', errorInfo.userMessage);
+                        SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'error', errorInfo.userMessage);
 
                         // Solo reintentar si el error es recuperable y debe reconectar
                         if (!errorInfo.isPermanent && this.shouldReconnect.get(userId)) {

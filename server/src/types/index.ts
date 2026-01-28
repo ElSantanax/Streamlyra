@@ -21,19 +21,6 @@ export interface PlatformProfile {
     email?: string;
 }
 
-export interface UserDTO {
-    id: string;
-    username: string;
-    displayName: string;
-    email: string;
-    avatarUrl?: string;
-}
-
-export interface AuthResponse {
-    user: UserDTO;
-    token: string;
-}
-
 export interface ConnectionDTO {
     id: string;
     userId: string;
