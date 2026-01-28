@@ -20,6 +20,12 @@ jest.mock('../../../utils/logger', () => ({
     }
 }));
 jest.mock('tiktok-live-connector');
+jest.mock('../tiktok/TikTokConnectionManager', () => ({
+    TikTokConnectionManager: jest.fn().mockImplementation(() => ({
+        connect: jest.fn(),
+        disconnect: jest.fn()
+    }))
+}));
 
 describe('TikTokChatProvider.disconnect()', () => {
     let provider: TikTokChatProvider;
@@ -41,10 +47,11 @@ describe('TikTokChatProvider.disconnect()', () => {
             disconnect: jest.fn()
         };
 
+        // Acceder al stateManager a través de la propiedad privada
         // @ts-expect-error - Accediendo a propiedad privada para testing
-        provider.activeConnections.set(userId, mockConnection);
+        provider.stateManager.setActiveConnection(userId, mockConnection);
         // @ts-expect-error - Accediendo a propiedad privada para testing
-        provider.shouldReconnect.set(userId, true);
+        provider.stateManager.enableAutoReconnect(userId);
 
         await provider.disconnect(userId);
 
@@ -54,10 +61,12 @@ describe('TikTokChatProvider.disconnect()', () => {
 
         // Verificar que shouldReconnect fue eliminado
         // @ts-expect-error - Accediendo a propiedad privada para testing
-        expect(provider.shouldReconnect.has(userId)).toBe(false);
+        expect(provider.stateManager.shouldAutoReconnect(userId)).toBe(false);
 
         // Verificar que la conexión fue desconectada
-        expect(mockConnection.disconnect).toHaveBeenCalled();
+        // @ts-expect-error - Accediendo a propiedad privada para testing
+        const mockDisconnect = provider.lifecycle.connectionManager.disconnect;
+        expect(mockDisconnect).toHaveBeenCalledWith(mockConnection);
     });
 
     it('should handle disconnect when no active connection exists', async () => {
@@ -72,7 +81,7 @@ describe('TikTokChatProvider.disconnect()', () => {
         const mockCleanup = jest.fn();
 
         // @ts-expect-error - Accediendo a propiedad privada para testing
-        provider.retryCleanup.set(userId, mockCleanup);
+        provider.stateManager.setRetryCleanup(userId, mockCleanup);
 
         await provider.disconnect(userId);
 
@@ -81,6 +90,6 @@ describe('TikTokChatProvider.disconnect()', () => {
 
         // Verificar que fue removido del map
         // @ts-expect-error - Accediendo a propiedad privada para testing
-        expect(provider.retryCleanup.has(userId)).toBe(false);
+        expect(provider.stateManager.hasRetryCleanup(userId)).toBe(false);
     });
 });
