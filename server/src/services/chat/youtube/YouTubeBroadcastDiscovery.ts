@@ -30,9 +30,9 @@ export class YouTubeBroadcastDiscovery {
                 logger.warn(
                     { 
                         err: error,
-                        message: '⚠️  CUOTA DE YOUTUBE AGOTADA - El usuario debe esperar hasta que se renueve la cuota diaria'
+                        message: 'CUOTA DE YOUTUBE AGOTADA - El usuario debe esperar hasta que se renueve la cuota diaria'
                     }, 
-                    '⚠️  YouTube API quota exceeded - Daily quota exhausted'
+                    'YouTube API quota exceeded - Daily quota exhausted'
                 );
                 // Lanzar error específico para que el provider pueda manejarlo
                 throw new Error('YOUTUBE_QUOTA_EXCEEDED');
