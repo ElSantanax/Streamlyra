@@ -47,7 +47,6 @@ export const useSocket = ({
   // Efecto separado para manejar la conexión inicial
   useEffect(() => {
     if (!socket.connected) {
-      console.log('🔌 Conectando Socket.IO...');
       socket.connect();
     }
 
@@ -71,35 +70,30 @@ export const useSocket = ({
     }
 
     const handleConnect = () => {
-      console.log('✅ Socket.IO conectado');
       setIsConnected(true);
-      
+
       // Solo identificar una vez por userId
       if (userId && !hasIdentifiedRef.current) {
-        console.log('🔑 Identificando usuario:', userId);
         socket.emit('identify', userId);
         hasIdentifiedRef.current = true;
       }
     };
 
     const handleDisconnect = () => {
-      console.log('❌ Socket.IO desconectado');
       setIsConnected(false);
       hasIdentifiedRef.current = false;
     };
 
     const handleReconnect = () => {
-      console.log('🔄 Socket.IO reconectado, re-identificando...');
       setIsConnected(true);
       if (userId && !hasIdentifiedRef.current) {
-        console.log('🔑 Re-identificando usuario:', userId);
         socket.emit('identify', userId);
         hasIdentifiedRef.current = true;
       }
     };
 
     const handleConnectError = (error: Error) => {
-      console.error('❌ Error de conexión Socket.IO:', error);
+      console.error('Error de conexión Socket.IO:', error);
       setIsConnected(false);
     };
 

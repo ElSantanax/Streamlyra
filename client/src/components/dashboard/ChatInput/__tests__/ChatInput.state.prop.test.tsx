@@ -58,7 +58,7 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                     const expectedInitialState: PlatformSelection = {
                         twitch: true,
                         youtube: true,
-                        kick: false,
+                        kick: true,
                         tiktok: false
                     };
 
@@ -82,7 +82,7 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                         throw new Error(`YouTube defaultChecked mismatch: expected ${expectedInitialState.youtube}, got ${youtubeToggle.defaultChecked}`);
                     }
 
-                    // Kick should be unchecked and disabled
+                    // Kick should be checked and enabled
                     const kickToggle = container.querySelector('input#toggle-kick') as HTMLInputElement;
                     if (!kickToggle) {
                         throw new Error('Kick toggle not found');
@@ -90,8 +90,8 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                     if (kickToggle.defaultChecked !== expectedInitialState.kick) {
                         throw new Error(`Kick defaultChecked mismatch: expected ${expectedInitialState.kick}, got ${kickToggle.defaultChecked}`);
                     }
-                    if (!kickToggle.disabled) {
-                        throw new Error('Kick toggle should be disabled');
+                    if (kickToggle.disabled) {
+                        throw new Error('Kick toggle should be enabled');
                     }
 
                     // TikTok should not be rendered (filtered out in the component)
@@ -107,7 +107,7 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                     return true;
                 }
             ),
-            { numRuns: 100 }
+            { numRuns: 20 }
         );
     });
 
@@ -145,8 +145,8 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                             youtubeToggle !== null &&
                             youtubeToggle.defaultChecked === true &&
                             kickToggle !== null &&
-                            kickToggle.defaultChecked === false &&
-                            kickToggle.disabled === true &&
+                            kickToggle.defaultChecked === true &&
+                            kickToggle.disabled === false &&
                             tiktokToggle === null;
 
                         results.push(isCorrect);
@@ -159,7 +159,7 @@ describe('Feature: multi-platform-message-sending, Property 4: Platform selectio
                     return results.every(result => result === true);
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     });
 });

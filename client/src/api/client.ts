@@ -1,4 +1,4 @@
-import { authService } from '../services/AuthService';
+import { sessionManager } from '../services/SessionManager';
 import { env } from '../config/env';
 
 export class ApiError extends Error {
@@ -61,7 +61,7 @@ class HttpClient {
         const path = window.location.pathname;
         const isPublicAuthRoute = path === '/login' || path === '/register' || path === '/auth/callback';
         if (!isPublicAuthRoute) {
-          authService.handleSessionExpired();
+          sessionManager.handleSessionExpired();
         }
       }
 

@@ -1,4 +1,10 @@
-class AuthService {
+/**
+ * Session Manager
+ * Responsabilidad: Gestionar el estado de la sesión local (localStorage) 
+ * y manejar eventos de expiración.
+ */
+
+class SessionManager {
     private isHandlingExpiry = false;
     private onSessionExpired: ((currentPath: string) => void) | null = null;
 
@@ -20,8 +26,7 @@ class AuthService {
         console.warn('Sesión expirada detectada. Limpiando datos locales...');
 
         // Limpiar localStorage (datos residuales del usuario)
-        localStorage.removeItem('user');
-        localStorage.removeItem('token'); // Por si acaso queda algo
+        this.clearLocalSession();
 
         const currentPath = window.location.pathname;
         if (this.onSessionExpired) {
@@ -41,8 +46,8 @@ class AuthService {
      */
     clearLocalSession() {
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem('token'); // Por compatibilidad si se usó anteriormente
     }
 }
 
-export const authService = new AuthService();
+export const sessionManager = new SessionManager();

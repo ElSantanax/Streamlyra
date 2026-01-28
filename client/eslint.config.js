@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   // Ignorar archivos que no están en los tsconfig principales
-  { ignores: ['dist', 'vitest.config.ts', 'cypress.config.ts', 'cypress/**/*'] },
+  { ignores: ['dist', 'coverage', 'vitest.config.ts', 'cypress.config.ts', 'cypress/**/*'] },
 
   // Configuración base para todo el código
   {

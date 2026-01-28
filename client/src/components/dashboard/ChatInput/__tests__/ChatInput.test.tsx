@@ -14,31 +14,31 @@ import type { MessageSentResult } from '../../../../types/message.types';
 
 // Mock dependencies
 vi.mock('../../../../lib/notifications/toast', () => ({
-    toast: {
-        error: vi.fn(),
-        warning: vi.fn(),
-        success: vi.fn(),
-    }
+  toast: {
+    error: vi.fn(),
+    warning: vi.fn(),
+    success: vi.fn(),
+  }
 }));
 
 vi.mock('../../../../services/socket', () => ({
-    socket: {
-        connected: true,
-        emit: vi.fn(),
-        on: vi.fn((event: string, handler: Function) => {
-            // Store handlers for manual triggering in tests
-            (socket as any)._handlers = (socket as any)._handlers || {};
-            (socket as any)._handlers[event] = handler;
-        }),
-        off: vi.fn(),
-    }
+  socket: {
+    connected: true,
+    emit: vi.fn(),
+    on: vi.fn((event: string, handler: Function) => {
+      // Store handlers for manual triggering in tests
+      (socket as any)._handlers = (socket as any)._handlers || {};
+      (socket as any)._handlers[event] = handler;
+    }),
+    off: vi.fn(),
+  }
 }));
 
 vi.mock('../../../../hooks/useAuth', () => ({
-    useAuth: () => ({
-        user: { id: 'test-user-id', username: 'testuser' },
-        isAuthenticated: true,
-    })
+  useAuth: () => ({
+    user: { id: 'test-user-id', username: 'testuser' },
+    isAuthenticated: true,
+  })
 }));
 
 describe('ChatInput', () => {
@@ -79,11 +79,11 @@ describe('ChatInput', () => {
       expect(youtubeToggle.defaultChecked).toBe(true);
       expect(youtubeToggle.disabled).toBe(false);
 
-      // Verify Kick toggle is unchecked and disabled by default
+      // Verify Kick toggle is unchecked but ENABLED by default (now supported)
       const kickToggle = container.querySelector('input#toggle-kick') as HTMLInputElement;
       expect(kickToggle).toBeInTheDocument();
-      expect(kickToggle.defaultChecked).toBe(false);
-      expect(kickToggle.disabled).toBe(true);
+      expect(kickToggle.defaultChecked).toBe(true); // Se inicia en true si está en PLATFORMS habilitado
+      expect(kickToggle.disabled).toBe(false);
 
       // Verify TikTok toggle is not rendered (filtered out)
       const tiktokToggle = container.querySelector('input#toggle-tiktok');
@@ -162,7 +162,7 @@ describe('ChatInput', () => {
      */
     it('should display success toast and clear input when all platforms succeed', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <MemoryRouter>
           <ChatInput />
@@ -170,7 +170,7 @@ describe('ChatInput', () => {
       );
 
       const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
-      
+
       // Type a message
       await user.type(messageInput, 'Test message for all platforms');
       expect(messageInput.value).toBe('Test message for all platforms');
@@ -198,14 +198,8 @@ describe('ChatInput', () => {
 
       // Wait for state updates
       await waitFor(() => {
-        // Verify success toast was called
-        expect(toast.success).toHaveBeenCalledTimes(1);
-        expect(toast.success).toHaveBeenCalledWith(
-          expect.stringContaining('twitch')
-        );
-        expect(toast.success).toHaveBeenCalledWith(
-          expect.stringContaining('youtube')
-        );
+        // En la UI optimista actual no se muestra toast de éxito para no saturar
+        expect(toast.success).not.toHaveBeenCalled();
       });
 
       // Verify input was cleared
@@ -222,7 +216,7 @@ describe('ChatInput', () => {
      */
     it('should display warning toast with details when some platforms fail', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <MemoryRouter>
           <ChatInput />
@@ -230,7 +224,7 @@ describe('ChatInput', () => {
       );
 
       const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
-      
+
       // Type a message
       await user.type(messageInput, 'Test partial success');
       expect(messageInput.value).toBe('Test partial success');
@@ -287,7 +281,7 @@ describe('ChatInput', () => {
      */
     it('should display error toast when all platforms fail', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <MemoryRouter>
           <ChatInput />
@@ -295,7 +289,7 @@ describe('ChatInput', () => {
       );
 
       const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
-      
+
       // Type a message
       await user.type(messageInput, 'Test complete failure');
       expect(messageInput.value).toBe('Test complete failure');
@@ -334,8 +328,8 @@ describe('ChatInput', () => {
       expect(errorCall).toContain('youtube');
       expect(errorCall).toContain('API error');
 
-      // Verify input was NOT cleared (complete failure preserves input for retry)
-      expect(messageInput.value).toBe('Test complete failure');
+      // Verify input WAS cleared (optimistic UI clears immediately)
+      expect(messageInput.value).toBe('');
 
       // Verify success and warning toasts were NOT called
       expect(toast.success).not.toHaveBeenCalled();
@@ -348,7 +342,7 @@ describe('ChatInput', () => {
      */
     it('should display error toast with server error message', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <MemoryRouter>
           <ChatInput />
@@ -356,7 +350,7 @@ describe('ChatInput', () => {
       );
 
       const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
-      
+
       // Type a message
       await user.type(messageInput, 'Test server error');
       expect(messageInput.value).toBe('Test server error');
@@ -385,8 +379,8 @@ describe('ChatInput', () => {
         expect(toast.error).toHaveBeenCalledWith(serverError.message);
       });
 
-      // Verify input was NOT cleared (error preserves input)
-      expect(messageInput.value).toBe('Test server error');
+      // Verify input WAS cleared (optimistic UI clears immediately)
+      expect(messageInput.value).toBe('');
 
       // Verify success and warning toasts were NOT called
       expect(toast.success).not.toHaveBeenCalled();

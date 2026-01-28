@@ -80,14 +80,14 @@ describe('ChatInput Integration Tests', () => {
 
         const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
         const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
-        
+
         expect(twitchToggle.checked).toBe(true);
         expect(youtubeToggle.checked).toBe(true);
 
         // Step 2: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'Hello everyone! Thanks for watching my stream!';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -100,7 +100,7 @@ describe('ChatInput Integration Tests', () => {
         expect(socket.emit).toHaveBeenCalledWith('send_message', {
             userId: 'test-user-123',
             message: testMessage,
-            platforms: ['twitch', 'youtube']
+            platforms: ['twitch', 'youtube', 'kick']
         });
 
         // Step 5: Verify send button is disabled during operation
@@ -119,15 +119,9 @@ describe('ChatInput Integration Tests', () => {
         expect(handler).toBeDefined();
         handler(successResult);
 
-        // Step 7: Verify success notification is displayed
+        // Step 7: Verify success notification is NOT displayed (optimistic UI avoids clutter)
         await waitFor(() => {
-            expect(toast.success).toHaveBeenCalledTimes(1);
-            expect(toast.success).toHaveBeenCalledWith(
-                expect.stringContaining('twitch')
-            );
-            expect(toast.success).toHaveBeenCalledWith(
-                expect.stringContaining('youtube')
-            );
+            expect(toast.success).not.toHaveBeenCalled();
         });
 
         // Step 8: Verify input is cleared after successful send
@@ -161,21 +155,23 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: Uncheck all platforms using "Todos" toggle
         const todosToggle = container.querySelector('input#toggle-all') as HTMLInputElement;
         expect(todosToggle.checked).toBe(true);
-        
+
         await user.click(todosToggle);
         expect(todosToggle.checked).toBe(false);
 
         // Verify all platforms are unchecked
         const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
         const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
-        
+        const kickToggle = container.querySelector('input#toggle-kick') as HTMLInputElement;
+
         expect(twitchToggle.checked).toBe(false);
         expect(youtubeToggle.checked).toBe(false);
+        expect(kickToggle.checked).toBe(false);
 
         // Step 2: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'This message should not be sent';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -253,7 +249,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: User types only whitespace
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const whitespaceMessage = '     ';
-        
+
         await user.type(messageInput, whitespaceMessage);
         expect(messageInput.value).toBe(whitespaceMessage);
 
@@ -295,7 +291,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'Testing partial failure scenario';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -308,7 +304,7 @@ describe('ChatInput Integration Tests', () => {
         expect(socket.emit).toHaveBeenCalledWith('send_message', {
             userId: 'test-user-123',
             message: testMessage,
-            platforms: ['twitch', 'youtube']
+            platforms: ['twitch', 'youtube', 'kick']
         });
 
         // Step 4: Simulate server response with partial success
@@ -317,9 +313,9 @@ describe('ChatInput Integration Tests', () => {
             success: true, // At least one succeeded
             results: [
                 { platform: 'twitch', success: true },
-                { 
-                    platform: 'youtube', 
-                    success: false, 
+                {
+                    platform: 'youtube',
+                    success: false,
                     error: 'No hay stream en vivo',
                     errorCode: 'NO_LIVE_BROADCAST'
                 }
@@ -373,7 +369,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'Testing complete failure scenario';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -385,15 +381,15 @@ describe('ChatInput Integration Tests', () => {
         const completeFailure: MessageSentResult = {
             success: false, // All failed
             results: [
-                { 
-                    platform: 'twitch', 
-                    success: false, 
+                {
+                    platform: 'twitch',
+                    success: false,
                     error: 'No conectado',
                     errorCode: 'NOT_CONNECTED'
                 },
-                { 
-                    platform: 'youtube', 
-                    success: false, 
+                {
+                    platform: 'youtube',
+                    success: false,
                     error: 'Token inválido',
                     errorCode: 'INVALID_TOKEN'
                 }
@@ -416,8 +412,8 @@ describe('ChatInput Integration Tests', () => {
         expect(errorMessage).toContain('youtube');
         expect(errorMessage).toContain('Token inválido');
 
-        // Step 6: Verify input is NOT cleared (allows retry)
-        expect(messageInput.value).toBe(testMessage);
+        // Step 6: Verify input IS cleared (optimistic UI clears immediately even if it fails later)
+        expect(messageInput.value).toBe('');
 
         // Step 7: Verify only error was called, not success or warning
         expect(toast.success).not.toHaveBeenCalled();
@@ -450,7 +446,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'This should not be sent';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -493,7 +489,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'Sending with Enter key';
-        
+
         await user.type(messageInput, testMessage);
         expect(messageInput.value).toBe(testMessage);
 
@@ -505,7 +501,7 @@ describe('ChatInput Integration Tests', () => {
         expect(socket.emit).toHaveBeenCalledWith('send_message', {
             userId: 'test-user-123',
             message: testMessage,
-            platforms: ['twitch', 'youtube']
+            platforms: ['twitch', 'youtube', 'kick']
         });
     });
 
@@ -531,7 +527,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 1: Uncheck YouTube, keep Twitch
         const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
         expect(youtubeToggle.checked).toBe(true);
-        
+
         await user.click(youtubeToggle);
         expect(youtubeToggle.checked).toBe(false);
 
@@ -542,19 +538,19 @@ describe('ChatInput Integration Tests', () => {
         // Step 2: User types a message
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const testMessage = 'Only to Twitch';
-        
+
         await user.type(messageInput, testMessage);
 
         // Step 3: User sends message
         const sendButton = screen.getByRole('button', { name: /enviar/i });
         await user.click(sendButton);
 
-        // Step 4: Verify socket event includes only Twitch
+        // Step 4: Verify socket event includes only Twitch and Kick (since we only unchecked YouTube)
         expect(socket.emit).toHaveBeenCalledTimes(1);
         expect(socket.emit).toHaveBeenCalledWith('send_message', {
             userId: 'test-user-123',
             message: testMessage,
-            platforms: ['twitch'] // Only Twitch
+            platforms: ['twitch', 'kick'] // Kick remains enabled by default
         });
     });
 
@@ -580,7 +576,7 @@ describe('ChatInput Integration Tests', () => {
         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
         const messageWithSpaces = '   Hello with spaces   ';
         const expectedTrimmed = 'Hello with spaces';
-        
+
         await user.type(messageInput, messageWithSpaces);
         expect(messageInput.value).toBe(messageWithSpaces);
 
@@ -590,10 +586,10 @@ describe('ChatInput Integration Tests', () => {
 
         // Step 3: Verify socket event contains trimmed message
         expect(socket.emit).toHaveBeenCalledTimes(1);
-        
+
         const emitCall = (socket.emit as any).mock.calls[0];
         const payload = emitCall[1] as SendMessagePayload;
-        
+
         expect(payload.message).toBe(expectedTrimmed);
         expect(payload.message).not.toBe(messageWithSpaces);
     });

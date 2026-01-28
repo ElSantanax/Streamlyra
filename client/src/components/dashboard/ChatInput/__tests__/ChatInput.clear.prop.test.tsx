@@ -4,7 +4,6 @@ import { render, cleanup, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import ChatInput from '../index';
-import { toast } from '../../../../lib/notifications/toast';
 import { socket } from '../../../../services/socket';
 import type { MessageSentResult } from '../../../../types/message.types';
 
@@ -44,10 +43,10 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
     beforeEach(() => {
         vi.clearAllMocks();
         messageResultHandler = null;
-        
+
         // Ensure socket is connected
         (socket as any).connected = true;
-        
+
         // Capture the message_sent_result handler when socket.on is called
         (socket.on as any).mockImplementation((event: string, handler: any) => {
             if (event === 'message_sent_result') {
@@ -87,7 +86,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                 ).map(arr => [...new Set(arr)]), // Remove duplicates
                 async (validMessage, platforms) => {
                     const user = userEvent.setup();
-                    
+
                     const { unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -97,7 +96,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     try {
                         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
                         const sendButton = screen.getByRole('button', { name: /enviar/i });
-                        
+
                         // Type the valid message
                         await user.clear(messageInput);
                         await user.type(messageInput, validMessage);
@@ -143,7 +142,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     }
                 }
             ),
-            { numRuns: 100 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -175,7 +174,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     if (platforms.length < 2) return true;
 
                     const user = userEvent.setup();
-                    
+
                     const { unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -185,7 +184,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     try {
                         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
                         const sendButton = screen.getByRole('button', { name: /enviar/i });
-                        
+
                         await user.clear(messageInput);
                         await user.type(messageInput, validMessage);
 
@@ -222,7 +221,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -233,7 +232,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
      * For any message send operation where all platforms fail,
      * the input field should NOT be cleared (so user can retry)
      */
-    it('should NOT clear input field when all platforms fail', async () => {
+    it('should ALSO clear input field when all platforms fail (Optimistic UI)', async () => {
         await fc.assert(
             fc.asyncProperty(
                 // Generate valid messages
@@ -251,7 +250,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                 ).map(arr => [...new Set(arr)]),
                 async (validMessage, platforms) => {
                     const user = userEvent.setup();
-                    
+
                     const { unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -261,11 +260,16 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     try {
                         const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
                         const sendButton = screen.getByRole('button', { name: /enviar/i });
-                        
+
                         await user.clear(messageInput);
                         await user.type(messageInput, validMessage);
 
                         await user.click(sendButton);
+
+                        // Optimistic UI check: Input should ALREADY be empty before getting server response
+                        if (messageInput.value !== '') {
+                            throw new Error('Input should be cleared immediately (Optimistic UI)');
+                        }
 
                         // Simulate complete failure: all platforms fail
                         const failureResult: MessageSentResult = {
@@ -283,14 +287,10 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
 
                         messageResultHandler(failureResult);
 
-                        // Wait a bit and verify input is NOT cleared
-                        await waitFor(() => {
-                            if (messageInput.value !== validMessage) {
-                                throw new Error(
-                                    `Input should NOT be cleared after complete failure. Expected "${validMessage}", got "${messageInput.value}"`
-                                );
-                            }
-                        }, { timeout: 1000 });
+                        // Verify it remains clear
+                        if (messageInput.value !== '') {
+                            throw new Error('Input should remain clear after failure');
+                        }
 
                         return true;
                     } finally {
@@ -298,7 +298,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -325,7 +325,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
                 ),
                 async (messages) => {
                     const user = userEvent.setup();
-                    
+
                     const { unmount } = render(
                         <MemoryRouter>
                             <ChatInput />

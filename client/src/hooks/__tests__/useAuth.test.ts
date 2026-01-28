@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { authService as apiAuthService } from '../../api/services/auth.service';
-import { authService } from '../../services/AuthService';
+import { authService } from '../../api/services/auth.service';
+import { sessionManager } from '../../services/SessionManager';
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthProvider';
 import { useAuth } from '../useAuth';
@@ -16,8 +16,8 @@ vi.mock('../../api/services/auth.service', () => ({
     },
 }));
 
-vi.mock('../../services/AuthService', () => ({
-    authService: {
+vi.mock('../../services/SessionManager', () => ({
+    sessionManager: {
         clearLocalSession: vi.fn(),
         setSessionExpiredHandler: vi.fn(),
     },
@@ -61,18 +61,18 @@ describe('useAuth', () => {
 
     describe('checkAuth', () => {
         it('debe llamar a /auth/me automáticamente al montar', async () => {
-            (apiAuthService.getMe as any).mockResolvedValue({ user: { id: '1' } });
+            (authService.getMe as any).mockResolvedValue({ user: { id: '1' } });
 
             renderHook(() => useAuth(), { wrapper });
 
             await waitFor(() => {
-                expect(apiAuthService.getMe).toHaveBeenCalled();
+                expect(authService.getMe).toHaveBeenCalled();
             });
         });
 
         it('debe actualizar el usuario tras una respuesta exitosa de /auth/me', async () => {
             const mockUser = { id: '1', username: 'testuser' };
-            (apiAuthService.getMe as any).mockResolvedValue({ user: mockUser });
+            (authService.getMe as any).mockResolvedValue({ user: mockUser });
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -81,20 +81,20 @@ describe('useAuth', () => {
                 authResult = await result.current.checkAuth();
             });
 
-            expect(apiAuthService.getMe).toHaveBeenCalled();
+            expect(authService.getMe).toHaveBeenCalled();
             expect(result.current.user).toEqual(mockUser);
             expect(authResult).toEqual(mockUser);
             expect(result.current.isAuthenticated).toBe(true);
         });
 
         it('debe limpiar la sesión si /auth/me falla', async () => {
-            (apiAuthService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
+            (authService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
             await waitFor(() => {
-                expect(apiAuthService.getMe).toHaveBeenCalled();
-                expect(authService.clearLocalSession).toHaveBeenCalled();
+                expect(authService.getMe).toHaveBeenCalled();
+                expect(sessionManager.clearLocalSession).toHaveBeenCalled();
                 expect(result.current.user).toBeNull();
                 expect(result.current.isAuthenticated).toBe(false);
             });
@@ -105,7 +105,7 @@ describe('useAuth', () => {
             const promise = new Promise((resolve) => {
                 resolveGetMe = resolve;
             });
-            (apiAuthService.getMe as any).mockReturnValue(promise);
+            (authService.getMe as any).mockReturnValue(promise);
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -132,8 +132,8 @@ describe('useAuth', () => {
 
     describe('logout', () => {
         it('debe limpiar todo al cerrar sesión', async () => {
-            (apiAuthService.logout as any).mockResolvedValue({ success: true });
-            (apiAuthService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
+            (authService.logout as any).mockResolvedValue({ success: true });
+            (authService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
             localStorage.setItem('user', JSON.stringify({ id: '1' }));
 
             const { result } = renderHook(() => useAuth(), { wrapper });
@@ -145,8 +145,8 @@ describe('useAuth', () => {
                 await result.current.logout();
             });
 
-            expect(apiAuthService.logout).toHaveBeenCalled();
-            expect(authService.clearLocalSession).toHaveBeenCalled();
+            expect(authService.logout).toHaveBeenCalled();
+            expect(sessionManager.clearLocalSession).toHaveBeenCalled();
 
             await waitFor(() => {
                 expect(localStorage.getItem('user')).toBeNull();

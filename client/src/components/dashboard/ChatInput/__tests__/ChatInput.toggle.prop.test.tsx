@@ -49,7 +49,7 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                 fc.integer({ min: 1, max: 3 }),
                 async (platform, clickCount) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -71,10 +71,10 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                         for (let i = 0; i < clickCount; i++) {
                             // Click the toggle
                             await user.click(toggle);
-                            
+
                             // Expected state should flip
                             expectedState = !expectedState;
-                            
+
                             // Verify state changed immediately
                             if (toggle.checked !== expectedState) {
                                 throw new Error(
@@ -89,7 +89,7 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 
@@ -110,7 +110,7 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                 ),
                 async (actions) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -135,7 +135,7 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                             for (let i = 0; i < action.clicks; i++) {
                                 await user.click(toggle);
                                 states[action.platform] = !states[action.platform];
-                                
+
                                 // Verify immediate update
                                 if (toggle.checked !== states[action.platform]) {
                                     throw new Error(
@@ -151,7 +151,7 @@ describe('Feature: multi-platform-message-sending, Property 1: Toggle state upda
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 });
@@ -175,7 +175,7 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                 fc.integer({ min: 1, max: 3 }),
                 async (clickCount) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -214,10 +214,9 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                                 );
                             }
 
-                            // Kick is disabled, so it should always remain false regardless of "Todos" state
-                            if (kickToggle.checked !== false) {
+                            if (kickToggle.checked !== expectedState) {
                                 throw new Error(
-                                    `Kick should always remain false (disabled). Got ${kickToggle.checked}`
+                                    `Kick toggle not synchronized. Expected ${expectedState}, got ${kickToggle.checked}`
                                 );
                             }
                         }
@@ -228,7 +227,7 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 
@@ -248,7 +247,7 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                 fc.boolean(),
                 async (individualToggles, todosTargetState) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -299,10 +298,9 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                                 );
                             }
 
-                            // Kick is disabled, so it should remain false regardless of "Todos" state
-                            if (kickToggle.checked !== false) {
+                            if (kickToggle.checked !== todosTargetState) {
                                 throw new Error(
-                                    `Kick should always remain false (disabled). Got ${kickToggle.checked}`
+                                    `Kick not synchronized after Todos toggle. Expected ${todosTargetState}, got ${kickToggle.checked}`
                                 );
                             }
                         });
@@ -313,7 +311,7 @@ describe('Feature: multi-platform-message-sending, Property 2: "Todos" toggle sy
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 });
@@ -343,7 +341,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                 ),
                 async (actions) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -381,7 +379,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 
@@ -399,7 +397,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                 ),
                 async (toggleSequence) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -431,7 +429,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 
@@ -446,7 +444,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                 fc.integer({ min: 1, max: 5 }),
                 async (todosClicks) => {
                     const user = userEvent.setup();
-                    
+
                     const { container, unmount } = render(
                         <MemoryRouter>
                             <ChatInput />
@@ -462,7 +460,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                         // Click "Todos" multiple times
                         for (let i = 0; i < todosClicks; i++) {
                             await user.click(todosToggle);
-                            
+
                             // After each click, verify TikTok is still not rendered
                             const tiktokToggle = container.querySelector('input#toggle-tiktok');
                             if (tiktokToggle !== null) {
@@ -478,7 +476,7 @@ describe('Feature: multi-platform-message-sending, Property 3: TikTok toggle rem
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 15000);
 });

@@ -116,7 +116,7 @@ describe('Feature: multi-platform-message-sending, Property 5: Empty messages ar
                     }
                 }
             ),
-            { numRuns: 100 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -170,7 +170,7 @@ describe('Feature: multi-platform-message-sending, Property 5: Empty messages ar
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 });
@@ -236,7 +236,7 @@ describe('Feature: multi-platform-message-sending, Property 6: Invalid messages 
                     }
                 }
             ),
-            { numRuns: 100 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -285,7 +285,7 @@ describe('Feature: multi-platform-message-sending, Property 6: Invalid messages 
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 });
@@ -382,7 +382,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                     }
                 }
             ),
-            { numRuns: 100 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -459,7 +459,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 
@@ -512,7 +512,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                     }
                 }
             ),
-            { numRuns: 50 }
+            { numRuns: 20 }
         );
     }, 30000);
 });

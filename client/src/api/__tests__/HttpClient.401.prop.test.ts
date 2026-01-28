@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { apiClient } from '../client';
-import { authService } from '../../services/AuthService';
+import { sessionManager } from '../../services/SessionManager';
 
 // Mock dependencies
-vi.mock('../../services/AuthService', () => ({
-    authService: {
+vi.mock('../../services/SessionManager', () => ({
+    sessionManager: {
         handleSessionExpired: vi.fn(),
     },
 }));
@@ -65,7 +65,7 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
                     }
 
                     // LA PROPIEDAD: Siempre debe intentar limpiar la sesión
-                    expect(authService.handleSessionExpired).toHaveBeenCalled();
+                    expect(sessionManager.handleSessionExpired).toHaveBeenCalled();
                     return true;
                 }
             ),
@@ -97,7 +97,7 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
                     await Promise.all(promises);
 
                     // Debería haberse llamado tantas veces como peticiones (el control de idempotencia real está dentro del servicio)
-                    expect(authService.handleSessionExpired).toHaveBeenCalledTimes(numCalls);
+                    expect(sessionManager.handleSessionExpired).toHaveBeenCalledTimes(numCalls);
                     return true;
                 }
             )

@@ -94,9 +94,9 @@ describe('Public Endpoints Regression Tests', () => {
         });
 
         it('NO debe activar handleSessionExpired cuando recibe 401 (requiresAuth=false)', async () => {
-            // Mock de authService.handleSessionExpired para verificar que NO se llama
-            const authServiceModule = await import('../../services/AuthService');
-            const handleSessionExpiredSpy = vi.spyOn(authServiceModule.authService, 'handleSessionExpired');
+            // Mock de sessionManager.handleSessionExpired para verificar que NO se llama
+            const sessionManagerModule = await import('../../services/SessionManager');
+            const handleSessionExpiredSpy = vi.spyOn(sessionManagerModule.sessionManager, 'handleSessionExpired');
 
             (fetch as any).mockResolvedValueOnce({
                 ok: false,

@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { authService as apiAuthService } from '../api/services/auth.service';
-import { authService } from '../services/AuthService';
+import { authService } from '../api/services/auth.service';
+import { sessionManager } from '../services/SessionManager';
 import type { User } from '../types';
 
 export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated';
@@ -61,12 +61,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     inFlightAuthCheck.current = (async () => {
       try {
-        const response = await apiAuthService.getMe();
+        const response = await authService.getMe();
         setUser(response.user);
         setStatus('authenticated');
         return response.user;
       } catch {
-        authService.clearLocalSession();
+        sessionManager.clearLocalSession();
         removeUser();
         setStatus('unauthenticated');
         return null;
@@ -81,11 +81,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await apiAuthService.logout();
+      await authService.logout();
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
-      authService.clearLocalSession();
+      sessionManager.clearLocalSession();
       removeUser();
       setStatus('unauthenticated');
       navigate('/');
@@ -101,14 +101,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    authService.setSessionExpiredHandler((currentPath) => {
+    sessionManager.setSessionExpiredHandler((currentPath: string) => {
       removeUser();
       setStatus('unauthenticated');
       navigate(`/login?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
     });
 
     return () => {
-      authService.setSessionExpiredHandler(null);
+      sessionManager.setSessionExpiredHandler(null);
     };
   }, [navigate, removeUser]);
 

@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import Navbar from '../components/common/Navbar';
+import { initiateOAuth } from '../utils/oauth';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 
@@ -10,7 +11,6 @@ const BackgroundDecorations = lazy(() => import('../components/common/Background
 
 const PlatformConnection = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
 
@@ -25,17 +25,9 @@ const PlatformConnection = () => {
     }, [isAuthenticated, location.pathname, navigate]);
 
     const handleTwitchLogin = () => {
-        // Preservar redirect parameter en localStorage antes de OAuth
-        const redirectParam = searchParams.get('redirect');
-        if (redirectParam) {
-            localStorage.setItem('auth_redirect', redirectParam);
-        }
-
-        const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
-        const redirectUri = window.location.origin + '/auth/callback';
-        const scope = encodeURIComponent('user:read:email chat:read user:write:chat');
-        const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
-        window.location.href = authUrl;
+        const urlParams = new URLSearchParams(location.search);
+        const redirect = urlParams.get('redirect');
+        void initiateOAuth('twitch', redirect);
     };
 
     return (

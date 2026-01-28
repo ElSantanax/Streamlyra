@@ -25,8 +25,8 @@ vi.mock('../../api/services/auth.service', () => ({
   },
 }));
 
-vi.mock('../../services/AuthService', () => ({
-  authService: {
+vi.mock('../../services/SessionManager', () => ({
+  sessionManager: {
     clearLocalSession: vi.fn(),
     setSessionExpiredHandler: vi.fn(),
   },

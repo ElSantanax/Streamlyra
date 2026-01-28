@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PlatformToggle from './PlatformToggle';
 import { PLATFORMS } from '../../../constants/platforms';
-import type { PlatformSelection, SendMessagePayload, MessageSentResult } from '../../../types/message.types';
+import type { PlatformSelection, SendMessagePayload, MessageSentResult } from '../../../types';
 import { useAuth } from '../../../hooks/useAuth';
 import { socket } from '../../../services/socket';
 import { toast } from '../../../lib/notifications/toast';

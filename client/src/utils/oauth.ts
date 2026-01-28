@@ -1,13 +1,13 @@
 import { generatePKCE } from './pkce';
 
-export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick') => {
+export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', redirectParam?: string | null) => {
     const redirectUri = `${window.location.origin}/auth/callback`;
 
     // Preservar redirect parameter en localStorage antes de OAuth
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectParam = urlParams.get('redirect');
-    if (redirectParam) {
-        localStorage.setItem('auth_redirect', redirectParam);
+    const finalRedirect = redirectParam || new URLSearchParams(window.location.search).get('redirect');
+
+    if (finalRedirect) {
+        localStorage.setItem('auth_redirect', finalRedirect);
     }
 
     const configs: Record<string, { clientId: string; authUrl: string; scope: string; state: string; extras?: string }> = {
