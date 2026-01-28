@@ -8,9 +8,9 @@
  * 4. No hay memory leaks
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+ 
+ 
 
 import { TwitchEventListener } from '../TwitchEventListener';
 import { TwitchEventTransformer } from '../../transformers/TwitchEventTransformer';

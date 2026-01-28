@@ -2,6 +2,14 @@ import { TokenService } from './auth/TokenService';
 import { PlatformServiceFactory } from './platforms/PlatformServiceFactory';
 import { ProfileSyncService } from './auth/ProfileSyncService';
 import { ConnectionCreationService } from './auth/ConnectionCreationService';
+import { AuthInputValidator } from './auth/AuthInputValidator';
+import { ConnectionActivationDecider, ConnectionActivationContext } from './auth/ConnectionActivationDecider';
+import { AuthChatOrchestrator } from './auth/AuthChatOrchestrator';
+import { AuthResponseBuilder } from './auth/AuthResponseBuilder';
+import { TikTokProfileFactory } from './auth/TikTokProfileFactory';
+import { TikTokTokenGenerator } from './auth/TikTokTokenGenerator';
+import { UserProfileBuilder } from './auth/UserProfileBuilder';
+import { ProfileSyncDecider, ProfileSyncContext } from './auth/ProfileSyncDecider';
 import { UserService } from './user/UserService';
 import { ConnectionService } from './connection/ConnectionService';
 import { ChatManager } from './ChatManager';
@@ -18,16 +26,32 @@ export class AuthService {
     private connectionService: ConnectionService;
     private profileSyncService: ProfileSyncService;
     private connectionCreationService: ConnectionCreationService;
+    private inputValidator: AuthInputValidator;
+    private activationDecider: ConnectionActivationDecider;
+    private chatOrchestrator: AuthChatOrchestrator;
+    private responseBuilder: AuthResponseBuilder;
+    private tiktokProfileFactory: TikTokProfileFactory;
+    private tiktokTokenGenerator: TikTokTokenGenerator;
+    private userProfileBuilder: UserProfileBuilder;
+    private profileSyncDecider: ProfileSyncDecider;
 
     constructor(
         userRepository: IUserRepository,
         connectionRepository: IConnectionRepository,
-        private chatManager: ChatManager
+        chatManager: ChatManager
     ) {
         this.userService = new UserService(userRepository, connectionRepository);
         this.connectionService = new ConnectionService(connectionRepository);
         this.profileSyncService = new ProfileSyncService();
         this.connectionCreationService = new ConnectionCreationService();
+        this.inputValidator = new AuthInputValidator();
+        this.activationDecider = new ConnectionActivationDecider();
+        this.chatOrchestrator = new AuthChatOrchestrator(chatManager);
+        this.responseBuilder = new AuthResponseBuilder();
+        this.tiktokProfileFactory = new TikTokProfileFactory();
+        this.tiktokTokenGenerator = new TikTokTokenGenerator();
+        this.userProfileBuilder = new UserProfileBuilder();
+        this.profileSyncDecider = new ProfileSyncDecider();
     }
 
     /**
@@ -46,17 +70,26 @@ export class AuthService {
     ) {
         const result = await withErrorHandling(
             async () => {
-                // Orquestar autenticación OAuth
+                // 1. Validar entrada
+                this.inputValidator.validateAuthorizationCode(code, platform);
+
+                // 2. Obtener perfil y tokens de la plataforma
                 const oauthService = PlatformServiceFactory.getService(platform);
                 const { profile, tokens } = await oauthService.getProfileAndTokens(code, codeVerifier);
 
-                // Procesar autenticación
+                // 3. Validar tokens recibidos
+                this.inputValidator.validateOAuthTokens(tokens, platform);
+
+                // 4. Procesar autenticación
                 const authResult = await this.handlePlatformAuth(profile, tokens, currentUserId);
 
-                // Conectar chat SOLO si se activó/actualizó la conexión de streaming
-                if (authResult.connectionActive) {
-                    void this.chatManager.connectProvider(authResult.user.id, platform);
-                }
+                // 5. Conectar chat si es necesario (sin bloquear autenticación)
+                await this.chatOrchestrator.connectIfNeeded({
+                    userId: authResult.user.id,
+                    platform,
+                    shouldConnect: authResult.connectionActive,
+                    reason: authResult.activationReason
+                });
 
                 return authResult;
             },
@@ -82,31 +115,25 @@ export class AuthService {
             throw new AppError('TikTok authentication requires an authenticated user', 401);
         }
 
-        // Limpiar username (remover @ si existe)
-        const cleanUsername = username.replace(/^@+/, '');
+        // 1. Validar y limpiar username
+        const cleanUsername = this.inputValidator.validateTikTokUsername(username);
 
-        // Construir perfil de TikTok
-        const profile: PlatformProfile = {
-            provider: 'tiktok',
-            providerId: `tiktok_${cleanUsername}`,
-            providerUsername: cleanUsername,
-            displayName: cleanUsername,
-            avatarUrl: ''
-        };
+        // 2. Construir perfil de TikTok (Capa de Construcción de Datos)
+        const profile = this.tiktokProfileFactory.createProfile(cleanUsername);
 
-        // TikTok no usa OAuth, tokens vacíos
-        const tokens: AuthTokens = {
-            access_token: '',
-            expires_in: 0
-        };
+        // 3. Generar tokens placeholder (Capa de Infraestructura)
+        const tokens = this.tiktokTokenGenerator.generatePlaceholderTokens(cleanUsername);
 
-        // Procesar autenticación
+        // 4. Procesar autenticación
         const result = await this.handlePlatformAuth(profile, tokens, currentUserId);
 
-        // Conectar chat SOLO si la conexión está activa
-        if (result.connectionActive) {
-            void this.chatManager.connectProvider(result.user.id, 'tiktok');
-        }
+        // 5. Conectar chat si es necesario
+        await this.chatOrchestrator.connectIfNeeded({
+            userId: result.user.id,
+            platform: 'tiktok',
+            shouldConnect: result.connectionActive,
+            reason: result.activationReason
+        });
 
         return result;
     }
@@ -121,20 +148,35 @@ export class AuthService {
     private async handlePlatformAuth(profile: PlatformProfile, tokens: AuthTokens, currentUserId?: string) {
         const result = await withErrorHandling(
             async () => {
-                // 1. Create or Find User
+                logger.info(
+                    { provider: profile.provider, providerId: profile.providerId, currentUserId },
+                    'Starting platform authentication'
+                );
+
+                // 1. Crear o encontrar usuario
                 const { user, isNew } = await this.userService.findOrCreateFromPlatform(profile, currentUserId);
+                logger.info({ userId: user.id, isNew }, 'User found or created');
 
-                // 2. Logic for Connection (Streaming Features)
-                // We authenticate the user (Login), but we only enable 'Streaming Connection' if:
-                // - It's a brand NEW registration (Auto-enable for convenience)
-                // - User is explicitly LINKING accounts from dashboard (currentUserId exists)
-                // - The connection ALREADY exists (Refresh tokens for active user)
+                // 2. Verificar si existe conexión previa
+                const existingConnection = await this.connectionService.getConnectionByProvider(
+                    profile.provider,
+                    profile.providerId
+                );
 
-                let connectionActive = false;
-                const existingConnection = await this.connectionService.getConnectionByProvider(profile.provider, profile.providerId);
-                const isExplicitLink = !!currentUserId;
+                // 3. Decidir si activar conexión de streaming
+                const activationContext: ConnectionActivationContext = {
+                    isNewUser: isNew,
+                    isLinkingAccount: !!currentUserId,
+                    hasExistingConnection: !!existingConnection,
+                    userId: user.id,
+                    platform: profile.provider
+                };
 
-                if (isNew || isExplicitLink || existingConnection) {
+                const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
+                const activationReason = this.activationDecider.getActivationReason(activationContext);
+
+                // 4. Crear o actualizar conexión si es necesario
+                if (shouldActivate) {
                     await this.connectionCreationService.createOrUpdate(
                         user.id,
                         profile.provider,
@@ -142,29 +184,31 @@ export class AuthService {
                         profile.providerId,
                         profile.providerUsername
                     );
-                    connectionActive = true;
+                    logger.info(
+                        { userId: user.id, platform: profile.provider, reason: activationReason },
+                        'Connection activated'
+                    );
                 }
 
-                // 3. Sync profile ONLY if:
-                // - It's a new registration (first time user enters the system)
-                // - OR it's a LOGIN flow (not linking) AND the provider is 'twitch' (Identity Provider)
-                const isLoginFlow = !currentUserId;
-                if (isNew || (isLoginFlow && profile.provider === 'twitch')) {
+                // 5. Sincronizar perfil si es necesario (Capa de Lógica de Negocio)
+                const syncContext: ProfileSyncContext = {
+                    isNewUser: isNew,
+                    isLinkingAccount: !!currentUserId,
+                    provider: profile.provider,
+                    userId: user.id
+                };
+
+                const shouldSyncProfile = this.profileSyncDecider.shouldSyncProfile(syncContext);
+                if (shouldSyncProfile) {
                     await this.profileSyncService.syncProfile(user, profile);
                 }
 
-                return {
-                    token: TokenService.generateToken(user),
-                    user: {
-                        id: user.id,
-                        username: user.username,
-                        displayName: user.displayName,
-                        avatar: user.avatarUrl
-                    },
-                    connectionActive // Return this internally to know if we should connect chat
-                };
+                logger.info({ userId: user.id, platform: profile.provider }, 'Platform authentication completed');
+
+                // 6. Construir respuesta (Capa de Presentación)
+                return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
             },
-            { action: 'handlePlatformAuth' },
+            { action: 'handlePlatformAuth', provider: profile.provider },
             { rethrow: true }
         );
 
@@ -179,37 +223,27 @@ export class AuthService {
         const user = await this.userService.getById(userId);
         if (!user) return null;
 
-        type ConnectionData = Record<string, { connected: boolean, username?: string }>;
-        const defaultConnections: ConnectionData = {
-            twitch: { connected: false },
-            youtube: { connected: false },
-            kick: { connected: false },
-            tiktok: { connected: false }
-        };
-
-        user.connections.forEach(conn => {
-            defaultConnections[conn.provider] = { connected: true, username: conn.providerUsername };
-        });
-
-        return {
-            user: {
-                id: user.id,
-                username: user.username,
-                displayName: user.displayName,
-                avatar: user.avatarUrl
-            },
-            connections: defaultConnections
-        };
+        // Construir respuesta usando UserProfileBuilder (Capa de Presentación)
+        return this.userProfileBuilder.buildUserProfile(user);
     }
 
     async disconnectPlatform(userId: string, provider: Platform) {
         logger.info({ userId, provider }, 'AuthService: Starting platform disconnection');
 
+        // 1. Remover conexión de la base de datos
         const deletedCount = await this.connectionService.removeConnection(userId, provider);
+
+        if (deletedCount === 0) {
+            logger.warn({ userId, provider }, 'AuthService: No connection found to disconnect');
+            throw new AppError('Connection not found', 404);
+        }
+
         logger.info({ userId, provider, deletedCount }, 'AuthService: Connection removed from database');
 
-        await this.chatManager.disconnectProvider(userId, provider);
-        logger.info({ userId, provider }, 'AuthService: Chat provider disconnected');
+        // 2. Desconectar chat (no bloquear si falla)
+        await this.chatOrchestrator.disconnect(userId, provider);
+
+        logger.info({ userId, provider }, 'AuthService: Platform disconnection completed');
 
         return true;
     }

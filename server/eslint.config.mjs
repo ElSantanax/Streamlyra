@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
     {
-        ignores: ["dist", "node_modules"]
+        ignores: ["dist", "node_modules", "coverage"]
     },
     {
         extends: [
@@ -24,15 +24,15 @@ export default tseslint.config(
             },
         },
         rules: {
-            "@typescript-eslint/no-explicit-any": "error", // Prohibido usar any explícito
+            "@typescript-eslint/no-explicit-any": "error",
             "@typescript-eslint/no-unused-vars": ["warn", {
                 "argsIgnorePattern": "^_",
                 "varsIgnorePattern": "^_"
             }],
-            "@typescript-eslint/no-unsafe-assignment": "warn", // Evita asignar un any a algo tipado
-            "@typescript-eslint/no-unsafe-member-access": "warn", // Evita entrar a propiedades de un any
+            "@typescript-eslint/no-unsafe-assignment": "warn",
+            "@typescript-eslint/no-unsafe-member-access": "warn",
             "no-console": "off",
-            "prefer-const": "error", // Obliga usar const si la variable no se reasigna
+            "prefer-const": "error",
         },
     }
 );

@@ -7,9 +7,9 @@
  * 3. No hay emisiones después de stopPolling()
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+ 
+ 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 describe('YouTubeChatPoller - Memory Leak Fix', () => {

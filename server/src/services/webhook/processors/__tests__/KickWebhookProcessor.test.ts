@@ -92,7 +92,7 @@ describe('KickWebhookProcessor', () => {
             });
 
             expect(mockWebhook.update).toHaveBeenCalledWith({
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                 
                 lastEventAt: expect.any(Date)
             });
 
@@ -202,7 +202,7 @@ describe('KickWebhookProcessor', () => {
             await processor.process(mockPayload);
 
             expect(mockWebhook.update).toHaveBeenCalledWith({
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                 
                 lastEventAt: expect.any(Date)
             });
         });

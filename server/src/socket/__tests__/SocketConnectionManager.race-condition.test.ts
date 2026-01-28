@@ -8,9 +8,9 @@
  * 4. El sistema maneja correctamente múltiples dispositivos/navegadores
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+ 
+ 
 
 import { SocketConnectionManager } from '../SocketConnectionManager';
 import { ChatManager } from '../../services/ChatManager';
