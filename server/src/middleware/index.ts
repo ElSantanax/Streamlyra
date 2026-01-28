@@ -14,6 +14,6 @@
  */
 
 export { authenticateToken, optionalAuthenticate, AuthRequest } from './auth.middleware';
-export { validateKickWebhook, validateYouTubeWebhook, validateTwitchWebhook } from './webhook.middleware';
+export { validateKickWebhook } from './webhook.middleware';
 export { errorHandler } from './error.middleware';
 export { validateZodBody } from './zod.middleware';
