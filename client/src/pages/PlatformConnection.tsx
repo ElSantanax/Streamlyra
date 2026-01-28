@@ -18,7 +18,7 @@ const PlatformConnection = () => {
     useEffect(() => {
         // Solo redirigir si estamos en /login o /register (no en /connect)
         const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-        
+
         if (isAuthenticated && isAuthPage) {
             navigate('/dashboard', { replace: true });
         }
@@ -33,7 +33,7 @@ const PlatformConnection = () => {
 
         const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID as string;
         const redirectUri = window.location.origin + '/auth/callback';
-        const scope = encodeURIComponent('user:read:email chat:read chat:edit');
+        const scope = encodeURIComponent('user:read:email chat:read user:write:chat');
         const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=twitch`;
         window.location.href = authUrl;
     };

@@ -107,10 +107,41 @@ export class SafeSocketEmitter {
         }
     }
 
+    private static ownerMessageCache = new Map<string, number>();
+
     /**
-     * Emite un mensaje de chat de forma segura
+     * Emite un mensaje de chat de forma segura con deduplicación para el streamer
      */
-    static emitChatMessage(io: Server, userId: string, message: unknown, platform?: string): boolean {
+    static emitChatMessage(io: Server, userId: string, message: any, platform?: string): boolean {
+        // Lógica de deduplicación para el dueño (streamer)
+        // Previene ver el mismo mensaje múltiples veces cuando se envía a varias plataformas
+        if (message && typeof message === 'object' && message.isOwner && typeof message.message === 'string') {
+            const cacheKey = `${userId}:${message.message}`;
+            const now = Date.now();
+            const lastTime = this.ownerMessageCache.get(cacheKey);
+
+            // Si el mismo mensaje fue emitido recientemente (ventana de 5 segundos), lo omitimos
+            if (lastTime && (now - lastTime) < 5000) {
+                logger.debug(
+                    { userId, platform, message: message.message },
+                    'SafeSocketEmitter: Omitiendo eco de mensaje del streamer (deduplicación)'
+                );
+                return false;
+            }
+
+            // Registrar en el cache
+            this.ownerMessageCache.set(cacheKey, now);
+
+            // Limpieza básica del cache para evitar crecimiento infinito
+            if (this.ownerMessageCache.size > 100) {
+                for (const [key, time] of this.ownerMessageCache.entries()) {
+                    if (now - time > 10000) {
+                        this.ownerMessageCache.delete(key);
+                    }
+                }
+            }
+        }
+
         return this.emit(io, {
             userId,
             event: 'chat_message',

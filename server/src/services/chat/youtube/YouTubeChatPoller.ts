@@ -64,11 +64,11 @@ export class YouTubeChatPoller {
             const timeoutId = setTimeout(() => {
                 const normalizedMessage = this.transformer.transformMessage(item);
                 SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'youtube');
-                
+
                 // Remover timeout completado del Set
                 userTimeouts.delete(timeoutId);
             }, delayBetweenMessages * index);
-            
+
             // Agregar timeout al Set de timeouts activos
             userTimeouts.add(timeoutId);
         });
@@ -84,17 +84,23 @@ export class YouTubeChatPoller {
         this.deduplicators.set(userId, dedup);
 
         const pollTask = async () => {
+            // Verificar si el polling sigue activo antes de empezar
+            if (!this.polling.isRunning(userId)) return;
+
             try {
                 const response = await axios.get<YouTubeChatMessagesResponse>('https://www.googleapis.com/youtube/v3/liveChat/messages', {
                     params: { liveChatId, part: 'snippet,authorDetails', pageToken: this.nextPageTokens.get(userId) },
                     headers: { Authorization: `Bearer ${accessToken}` }
                 });
 
+                // Verificar de nuevo después de la llamada asíncrona (race condition protection)
+                if (!this.polling.isRunning(userId)) return;
+
                 const { items, nextPageToken, pollingIntervalMillis } = response.data;
                 if (nextPageToken) this.nextPageTokens.set(userId, nextPageToken);
 
                 // Filtrar mensajes duplicados
-                const newMessages = items?.filter((item: YouTubeChatMessage) => 
+                const newMessages = items?.filter((item: YouTubeChatMessage) =>
                     !dedup.isDuplicate(item.id)
                 ) || [];
 
@@ -102,13 +108,25 @@ export class YouTubeChatPoller {
                 const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
                 this.distributeMessages(newMessages, userId, io, currentInterval);
 
-                // Update interval if provided by API
-                if (pollingIntervalMillis) {
+                // Update interval if provided by API - Solo si seguimos activos
+                if (pollingIntervalMillis && this.polling.isRunning(userId)) {
                     this.polling.start(userId, pollTask, pollingIntervalMillis);
                 }
 
             } catch (error: unknown) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
+
+                // Si es un error de autenticación o permisos (401, 403) o recurso no encontrado (404)
+                // lo mejor es detener el polling para no saturar los logs y ahorrar cuota
+                if (axios.isAxiosError(error)) {
+                    const status = error.response?.status;
+                    if (status === 401 || status === 403 || status === 404) {
+                        logger.warn({ userId, status, message: errorMessage }, 'YouTube chat polling stopped due to fatal API error');
+                        this.stopPolling(userId);
+                        return;
+                    }
+                }
+
                 logger.error({ message: errorMessage }, 'YouTube chat polling error');
             }
         };
@@ -122,7 +140,7 @@ export class YouTubeChatPoller {
         this.polling.stop(userId);
         this.deduplicators.delete(userId);
         this.nextPageTokens.delete(userId);
-        
+
         // Cancelar todos los timeouts activos para este usuario
         // Esto previene memory leaks y emisiones a usuarios desconectados
         const userTimeouts = this.activeTimeouts.get(userId);
@@ -131,7 +149,7 @@ export class YouTubeChatPoller {
                 { userId, cancelledTimeouts: userTimeouts.size },
                 'Cancelling active timeouts for disconnected user'
             );
-            
+
             userTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
             userTimeouts.clear();
             this.activeTimeouts.delete(userId);

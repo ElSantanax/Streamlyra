@@ -59,6 +59,41 @@ export class TokenRefreshService {
     }
 
     /**
+     * Fuerza la renovación de un token sin importar su fecha de expiración
+     * Útil cuando una plataforma rechaza un token con error 401
+     * 
+     * @param userId - ID del usuario
+     * @param platform - Plataforma (twitch, youtube, kick)
+     * @returns Nuevo access token o null si falla
+     */
+    async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
+        const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
+
+        if (!connection) {
+            logger.error({ userId, platform }, 'Cannot force refresh: No connection found');
+            return null;
+        }
+
+        // TikTok no tiene renovación de tokens
+        if (platform === 'tiktok') {
+            logger.warn({ userId, platform }, 'Cannot force refresh: TikTok does not support token refresh');
+            return null;
+        }
+
+        if (!connection.refreshToken) {
+            logger.error(
+                { userId, platform, connectionId: connection.id },
+                'Cannot force refresh: No refresh token available. User must reconnect the platform.'
+            );
+            return null;
+        }
+
+        logger.debug({ userId, platform, connectionId: connection.id }, 'Forcing token refresh');
+
+        return await this.refreshToken(connection, platform as OAuthPlatform);
+    }
+
+    /**
      * Verifica si un token es válido (no está próximo a expirar)
      */
     private isTokenValid(expiryDate: Date | null): boolean {

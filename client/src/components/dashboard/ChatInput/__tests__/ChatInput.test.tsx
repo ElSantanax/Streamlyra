@@ -1,0 +1,396 @@
+/**
+ * Unit tests for ChatInput component
+ * Feature: multi-platform-message-sending
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import ChatInput from '../index';
+import { toast } from '../../../../lib/notifications/toast';
+import { socket } from '../../../../services/socket';
+import type { MessageSentResult } from '../../../../types/message.types';
+
+// Mock dependencies
+vi.mock('../../../../lib/notifications/toast', () => ({
+    toast: {
+        error: vi.fn(),
+        warning: vi.fn(),
+        success: vi.fn(),
+    }
+}));
+
+vi.mock('../../../../services/socket', () => ({
+    socket: {
+        connected: true,
+        emit: vi.fn(),
+        on: vi.fn((event: string, handler: Function) => {
+            // Store handlers for manual triggering in tests
+            (socket as any)._handlers = (socket as any)._handlers || {};
+            (socket as any)._handlers[event] = handler;
+        }),
+        off: vi.fn(),
+    }
+}));
+
+vi.mock('../../../../hooks/useAuth', () => ({
+    useAuth: () => ({
+        user: { id: 'test-user-id', username: 'testuser' },
+        isAuthenticated: true,
+    })
+}));
+
+describe('ChatInput', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (socket as any).connected = true;
+    (socket as any)._handlers = {};
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  describe('Initial State', () => {
+    it('should mount with toggles in default values', () => {
+      // Requirements: 1.1
+      // Verify that the component initializes with correct default toggle states:
+      // - Twitch: enabled (checked)
+      // - YouTube: enabled (checked)
+      // - Kick: disabled (unchecked and disabled)
+      // - TikTok: not rendered
+
+      const { container } = render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      // Verify Twitch toggle is checked by default
+      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
+      expect(twitchToggle).toBeInTheDocument();
+      expect(twitchToggle.defaultChecked).toBe(true);
+      expect(twitchToggle.disabled).toBe(false);
+
+      // Verify YouTube toggle is checked by default
+      const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
+      expect(youtubeToggle).toBeInTheDocument();
+      expect(youtubeToggle.defaultChecked).toBe(true);
+      expect(youtubeToggle.disabled).toBe(false);
+
+      // Verify Kick toggle is unchecked and disabled by default
+      const kickToggle = container.querySelector('input#toggle-kick') as HTMLInputElement;
+      expect(kickToggle).toBeInTheDocument();
+      expect(kickToggle.defaultChecked).toBe(false);
+      expect(kickToggle.disabled).toBe(true);
+
+      // Verify TikTok toggle is not rendered (filtered out)
+      const tiktokToggle = container.querySelector('input#toggle-tiktok');
+      expect(tiktokToggle).not.toBeInTheDocument();
+
+      // Verify "Todos" toggle is checked by default
+      const todosToggle = container.querySelector('input#toggle-all') as HTMLInputElement;
+      expect(todosToggle).toBeInTheDocument();
+      expect(todosToggle.defaultChecked).toBe(true);
+
+      // Verify message input is present and empty
+      const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
+      expect(messageInput).toBeInTheDocument();
+      expect(messageInput.value).toBe('');
+
+      // Verify send button is present
+      const sendButton = screen.getByRole('button', { name: /enviar/i });
+      expect(sendButton).toBeInTheDocument();
+    });
+  });
+
+  describe('Toggle Interaction', () => {
+    it('should update platform state when toggle is clicked', async () => {
+      // Requirements: 1.2
+      // Verify that clicking a platform toggle updates the state immediately
+
+      const user = userEvent.setup();
+      const { container } = render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      // Get Twitch toggle (initially checked)
+      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
+      expect(twitchToggle.checked).toBe(true);
+
+      // Click to uncheck
+      await user.click(twitchToggle);
+      expect(twitchToggle.checked).toBe(false);
+
+      // Click to check again
+      await user.click(twitchToggle);
+      expect(twitchToggle.checked).toBe(true);
+    });
+
+    it('should update YouTube toggle independently', async () => {
+      // Requirements: 1.2
+      // Verify that YouTube toggle can be changed independently
+
+      const user = userEvent.setup();
+      const { container } = render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      // Get YouTube toggle (initially checked)
+      const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
+      expect(youtubeToggle.checked).toBe(true);
+
+      // Click to uncheck
+      await user.click(youtubeToggle);
+      expect(youtubeToggle.checked).toBe(false);
+
+      // Verify Twitch toggle is not affected
+      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
+      expect(twitchToggle.checked).toBe(true);
+    });
+  });
+
+  describe('Socket Listeners', () => {
+    /**
+     * Test: Resultado exitoso muestra toast verde y limpia input
+     * Requirements: 9.1
+     */
+    it('should display success toast and clear input when all platforms succeed', async () => {
+      const user = userEvent.setup();
+      
+      render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
+      
+      // Type a message
+      await user.type(messageInput, 'Test message for all platforms');
+      expect(messageInput.value).toBe('Test message for all platforms');
+
+      // Send the message
+      const sendButton = screen.getByRole('button', { name: /enviar/i });
+      await user.click(sendButton);
+
+      // Clear mocks to isolate listener behavior
+      vi.clearAllMocks();
+
+      // Simulate successful result from server
+      const successResult: MessageSentResult = {
+        success: true,
+        results: [
+          { platform: 'twitch', success: true },
+          { platform: 'youtube', success: true },
+        ],
+      };
+
+      // Trigger the message_sent_result handler
+      const handler = (socket as any)._handlers['message_sent_result'];
+      expect(handler).toBeDefined();
+      handler(successResult);
+
+      // Wait for state updates
+      await waitFor(() => {
+        // Verify success toast was called
+        expect(toast.success).toHaveBeenCalledTimes(1);
+        expect(toast.success).toHaveBeenCalledWith(
+          expect.stringContaining('twitch')
+        );
+        expect(toast.success).toHaveBeenCalledWith(
+          expect.stringContaining('youtube')
+        );
+      });
+
+      // Verify input was cleared
+      expect(messageInput.value).toBe('');
+
+      // Verify error and warning toasts were NOT called
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Test: Resultado parcial muestra toast amarillo con detalles
+     * Requirements: 9.2
+     */
+    it('should display warning toast with details when some platforms fail', async () => {
+      const user = userEvent.setup();
+      
+      render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
+      
+      // Type a message
+      await user.type(messageInput, 'Test partial success');
+      expect(messageInput.value).toBe('Test partial success');
+
+      // Send the message
+      const sendButton = screen.getByRole('button', { name: /enviar/i });
+      await user.click(sendButton);
+
+      vi.clearAllMocks();
+
+      // Simulate partial success result from server
+      const partialResult: MessageSentResult = {
+        success: true,
+        results: [
+          { platform: 'twitch', success: true },
+          { platform: 'youtube', success: false, error: 'No hay stream en vivo' },
+          { platform: 'kick', success: false, error: 'Token inválido' },
+        ],
+      };
+
+      // Trigger the message_sent_result handler
+      const handler = (socket as any)._handlers['message_sent_result'];
+      handler(partialResult);
+
+      // Wait for state updates
+      await waitFor(() => {
+        // Verify warning toast was called
+        expect(toast.warning).toHaveBeenCalledTimes(1);
+      });
+
+      // Get the warning message
+      const warningCall = (toast.warning as any).mock.calls[0][0];
+
+      // Verify the message includes successful platform
+      expect(warningCall).toContain('twitch');
+
+      // Verify the message includes failed platforms with error details
+      expect(warningCall).toContain('youtube');
+      expect(warningCall).toContain('No hay stream en vivo');
+      expect(warningCall).toContain('kick');
+      expect(warningCall).toContain('Token inválido');
+
+      // Verify input was cleared (partial success still clears input)
+      expect(messageInput.value).toBe('');
+
+      // Verify success and error toasts were NOT called
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Test: Resultado de error muestra toast rojo
+     * Requirements: 9.3
+     */
+    it('should display error toast when all platforms fail', async () => {
+      const user = userEvent.setup();
+      
+      render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
+      
+      // Type a message
+      await user.type(messageInput, 'Test complete failure');
+      expect(messageInput.value).toBe('Test complete failure');
+
+      // Send the message
+      const sendButton = screen.getByRole('button', { name: /enviar/i });
+      await user.click(sendButton);
+
+      vi.clearAllMocks();
+
+      // Simulate complete failure result from server
+      const failureResult: MessageSentResult = {
+        success: false,
+        results: [
+          { platform: 'twitch', success: false, error: 'No conectado' },
+          { platform: 'youtube', success: false, error: 'API error' },
+        ],
+      };
+
+      // Trigger the message_sent_result handler
+      const handler = (socket as any)._handlers['message_sent_result'];
+      handler(failureResult);
+
+      // Wait for state updates
+      await waitFor(() => {
+        // Verify error toast was called
+        expect(toast.error).toHaveBeenCalledTimes(1);
+      });
+
+      // Get the error message
+      const errorCall = (toast.error as any).mock.calls[0][0];
+
+      // Verify the message includes failed platforms with error details
+      expect(errorCall).toContain('twitch');
+      expect(errorCall).toContain('No conectado');
+      expect(errorCall).toContain('youtube');
+      expect(errorCall).toContain('API error');
+
+      // Verify input was NOT cleared (complete failure preserves input for retry)
+      expect(messageInput.value).toBe('Test complete failure');
+
+      // Verify success and warning toasts were NOT called
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Test: Error del servidor muestra toast con mensaje
+     * Requirements: 9.3
+     */
+    it('should display error toast with server error message', async () => {
+      const user = userEvent.setup();
+      
+      render(
+        <MemoryRouter>
+          <ChatInput />
+        </MemoryRouter>
+      );
+
+      const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
+      
+      // Type a message
+      await user.type(messageInput, 'Test server error');
+      expect(messageInput.value).toBe('Test server error');
+
+      // Send the message
+      const sendButton = screen.getByRole('button', { name: /enviar/i });
+      await user.click(sendButton);
+
+      vi.clearAllMocks();
+
+      // Simulate server error
+      const serverError = {
+        code: 'INVALID_PAYLOAD',
+        message: 'Datos inválidos. Verifica el mensaje y las plataformas.',
+      };
+
+      // Trigger the message_send_error handler
+      const handler = (socket as any)._handlers['message_send_error'];
+      expect(handler).toBeDefined();
+      handler(serverError);
+
+      // Wait for state updates
+      await waitFor(() => {
+        // Verify error toast was called with the server message
+        expect(toast.error).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledWith(serverError.message);
+      });
+
+      // Verify input was NOT cleared (error preserves input)
+      expect(messageInput.value).toBe('Test server error');
+
+      // Verify success and warning toasts were NOT called
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+  });
+});

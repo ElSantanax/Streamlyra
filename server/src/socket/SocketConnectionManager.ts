@@ -41,6 +41,15 @@ export class SocketConnectionManager {
     constructor(private chatManager: ChatManager) { }
 
     /**
+     * Obtiene el userId asociado a un socketId
+     * @param socketId - ID del socket
+     * @returns userId o undefined si no existe
+     */
+    getUserIdBySocketId(socketId: string): string | undefined {
+        return this.socketUserMap.get(socketId);
+    }
+
+    /**
      * Maneja la identificación del usuario
      * Flujo:
      * 1. Validar userId

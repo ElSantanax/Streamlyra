@@ -33,6 +33,8 @@ import { UserRepository } from './repositories/implementations/UserRepository';
 import { ConnectionRepository } from './repositories/implementations/ConnectionRepository';
 import { ConnectionService } from './services/connection/ConnectionService';
 import { setCsrfCookie, verifyCsrf } from './middleware/csrf.middleware';
+import { MessageSenderService } from './services/message/MessageSenderService';
+import { TwitchService, YouTubeService, KickService } from './services/platforms';
 
 /**
  * Conecta a la base de datos
@@ -59,6 +61,15 @@ const connectionRepository = new ConnectionRepository();
 
 // 2. Servicios (lógica de negocio)
 const connectionService = new ConnectionService(connectionRepository);
+const twitchService = new TwitchService();
+const youtubeService = new YouTubeService();
+const kickService = new KickService();
+const messageSenderService = new MessageSenderService(
+    connectionService,
+    twitchService,
+    youtubeService,
+    kickService
+);
 
 // 3. Express y Socket.io
 const app = express();
@@ -153,7 +164,7 @@ app.use(errorHandler);
 // CONFIGURACIÓN DE SOCKET.IO
 // ============================================================================
 
-setupSocketHandlers(io, chatManager);
+setupSocketHandlers(io, chatManager, messageSenderService);
 
 export { app, io, chatManager };
 export default server;

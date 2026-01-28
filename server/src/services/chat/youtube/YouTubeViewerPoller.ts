@@ -31,8 +31,19 @@ export class YouTubeViewerPoller {
                     'youtube',
                     parseInt(viewerCount)
                 );
-            } catch (error) {
-                logger.error({ err: error }, 'YouTube viewer polling error');
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+
+                if (axios.isAxiosError(error)) {
+                    const status = error.response?.status;
+                    if (status === 401 || status === 403 || status === 404) {
+                        logger.warn({ userId, status, message: errorMessage }, 'YouTube viewer polling stopped due to fatal API error');
+                        this.stopPolling(userId);
+                        return;
+                    }
+                }
+
+                logger.error({ message: errorMessage }, 'YouTube viewer polling error');
             }
         }, YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
     }
