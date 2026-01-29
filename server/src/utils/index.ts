@@ -2,13 +2,13 @@
 
 export { AppError } from './AppError';
 export { logger } from './logger';
-export { MessageDeduplicator } from './messageDeduplicate';
 export { retryWithInterval } from './retryWithInterval';
 export { retryWithExponentialBackoff, calculateBackoffDelay } from './retryWithExponentialBackoff';
 export type { ExponentialBackoffOptions } from './retryWithExponentialBackoff';
 export * from './oauth.utils';
 export { calculateTokenExpiry } from './tokenUtils';
 export { SafeSocketEmitter } from './SafeSocketEmitter';
+export { SentMessageCache, sentMessageCache } from './SentMessageCache';
 export {
     withErrorHandling
 } from './errorHandling';

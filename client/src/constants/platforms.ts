@@ -1,6 +1,6 @@
 import { FaTwitch, FaYoutube, FaTiktok } from 'react-icons/fa';
 import { SiKick } from 'react-icons/si';
-import { MdInfo } from 'react-icons/md';
+import { MdInfo, MdSend } from 'react-icons/md';
 
 export const PLATFORMS = {
     twitch: {
@@ -34,6 +34,14 @@ export const PLATFORMS = {
         textColor: 'text-[#0FA654] dark:text-[#0FA654]',
         iconColor: 'text-black',
         brandColor: '#53FC18'
+    },
+    dashboard: {
+        name: 'Dashboard',
+        Icon: MdSend,
+        color: 'bg-[#10B981]',
+        textColor: 'text-[#10B981] dark:text-[#10B981]',
+        iconColor: 'text-white',
+        brandColor: '#10B981'
     },
     system: {
         name: 'Sistema',

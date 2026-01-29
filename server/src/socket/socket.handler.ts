@@ -158,6 +158,33 @@ export const setupSocketHandlers = (
 
                 socket.emit('message_sent_result', result);
 
+                // Emitir el mensaje al dashboard del usuario para feedback inmediato
+                // Solo si al menos una plataforma tuvo éxito
+                if (result.success) {
+                    const chatMessage: {
+                        id: string;
+                        platform: string;
+                        user: string;
+                        message: string;
+                        time: string;
+                        color: string;
+                        isOwner: boolean;
+                    } = {
+                        id: `dashboard-${Date.now()}`,
+                        platform: 'dashboard',
+                        user: 'Tú',
+                        message,
+                        time: new Date().toLocaleTimeString('es-ES', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        }),
+                        color: '#10B981', // Verde para mensajes propios
+                        isOwner: true
+                    };
+
+                    io.to(sessionUserId).emit('chat_message', chatMessage);
+                }
+
                 logger.info(
                     { userId: sessionUserId, success: result.success, platformCount: result.results.length },
                     'Message send completed'

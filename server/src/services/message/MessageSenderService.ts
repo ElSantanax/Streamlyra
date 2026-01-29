@@ -6,6 +6,7 @@ import { YouTubeService } from '../platforms/YouTubeService';
 import { KickService } from '../platforms/KickService';
 import { PlatformSendHelper } from './PlatformSendHelper';
 import { logger } from '../../utils/logger';
+import { sentMessageCache } from '../../utils/SentMessageCache';
 import { SendMessageRequest, SendMessageResponse, PlatformResult } from '../../types/message.types';
 import { Platform } from '../../constants/platforms';
 
@@ -28,6 +29,9 @@ export class MessageSenderService {
             { userId, platforms, messageLength: message.length },
             'Starting message send to multiple platforms'
         );
+
+        // Marcar mensaje como enviado desde el dashboard para prevenir ecos
+        sentMessageCache.markAsSent(userId, message);
 
         // Si el array de plataformas está vacío, enviar a todas las plataformas conectadas
         let targetPlatforms: string[];

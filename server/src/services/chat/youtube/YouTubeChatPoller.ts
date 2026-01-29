@@ -3,7 +3,6 @@
 import axios from 'axios';
 import { Server } from 'socket.io';
 import { YouTubeChatMessage, YouTubeChatMessagesResponse } from '../../../types/youtube.types';
-import { MessageDeduplicator } from '../../../utils/messageDeduplicate';
 import { PollingManager } from '../PollingManager';
 import { YouTubeEventTransformer } from '../transformers/YouTubeEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
@@ -14,7 +13,6 @@ import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
     private nextPageTokens: Map<string, string> = new Map();
-    private deduplicators: Map<string, MessageDeduplicator> = new Map();
     private transformer: YouTubeEventTransformer;
     private activeTimeouts: Map<string, Set<NodeJS.Timeout>> = new Map();
 
@@ -64,9 +62,6 @@ export class YouTubeChatPoller {
     }
 
     async startPolling(userId: string, liveChatId: string, accessToken: string, io: Server): Promise<void> {
-        const dedup = new MessageDeduplicator();
-        this.deduplicators.set(userId, dedup);
-
         const pollTask = async () => {
             if (!this.polling.isRunning(userId)) return;
 
@@ -100,9 +95,7 @@ export class YouTubeChatPoller {
                 const { items, nextPageToken, pollingIntervalMillis } = response.data;
                 if (nextPageToken) this.nextPageTokens.set(userId, nextPageToken);
 
-                const newMessages = items?.filter((item: YouTubeChatMessage) =>
-                    !dedup.isDuplicate(item.id)
-                ) || [];
+                const newMessages = items || [];
 
                 const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
                 this.distributeMessages(newMessages, userId, io, currentInterval);
@@ -145,7 +138,6 @@ export class YouTubeChatPoller {
 
     stopPolling(userId: string): void {
         this.polling.stop(userId);
-        this.deduplicators.delete(userId);
         this.nextPageTokens.delete(userId);
 
         const userTimeouts = this.activeTimeouts.get(userId);

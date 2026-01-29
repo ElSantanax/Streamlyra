@@ -2,6 +2,7 @@
 
 import { Server } from 'socket.io';
 import { logger } from './logger';
+import { sentMessageCache } from './SentMessageCache';
 
 interface EmitOptions {
     userId: string;
@@ -91,8 +92,6 @@ export class SafeSocketEmitter {
         }
     }
 
-    private static ownerMessageCache = new Map<string, number>();
-
     static emitChatMessage(io: Server, userId: string, message: unknown, platform?: string): boolean {
         interface ChatMessage {
             isOwner?: boolean;
@@ -111,39 +110,14 @@ export class SafeSocketEmitter {
             'SafeSocketEmitter: emitChatMessage called'
         );
 
+        // Prevenir eco: Si es mensaje del streamer Y fue enviado desde el dashboard
         if (msg && typeof msg === 'object' && msg.isOwner && typeof msg.message === 'string') {
-            const cacheKey = `${userId}:${msg.message}`;
-            const now = Date.now();
-            const lastTime = this.ownerMessageCache.get(cacheKey);
-
-            logger.debug(
-                {
-                    userId,
-                    platform,
-                    cacheKey,
-                    lastTime,
-                    timeSinceLastEmit: lastTime ? now - lastTime : null,
-                    willDeduplicate: lastTime && (now - lastTime) < 5000
-                },
-                'SafeSocketEmitter: Checking deduplication for owner message'
-            );
-
-            if (lastTime && (now - lastTime) < 5000) {
+            if (sentMessageCache.wasSentFromDashboard(userId, msg.message)) {
                 logger.debug(
                     { userId, platform, message: msg.message },
-                    'SafeSocketEmitter: Omitiendo eco de mensaje del streamer (deduplicación)'
+                    'SafeSocketEmitter: Omitiendo eco de mensaje enviado desde dashboard'
                 );
                 return false;
-            }
-
-            this.ownerMessageCache.set(cacheKey, now);
-
-            if (this.ownerMessageCache.size > 100) {
-                for (const [key, time] of this.ownerMessageCache.entries()) {
-                    if (now - time > 10000) {
-                        this.ownerMessageCache.delete(key);
-                    }
-                }
             }
         }
 

@@ -3,6 +3,7 @@ import { setupSocketHandlers } from '../socket.handler';
 import { ChatManager } from '../../services/ChatManager';
 import { SocketConnectionManager } from '../SocketConnectionManager';
 import { MessageSenderService } from '../../services/message/MessageSenderService';
+import { ActivityService } from '../../services/ActivityService';
 import { logger } from '../../utils/logger';
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -10,6 +11,7 @@ import { logger } from '../../utils/logger';
 // Mock dependencies
 jest.mock('../SocketConnectionManager');
 jest.mock('../../services/message/MessageSenderService');
+jest.mock('../../services/ActivityService');
 jest.mock('../../utils/logger', () => ({
     logger: {
         info: jest.fn(),
@@ -24,6 +26,7 @@ describe('socket.handler', () => {
     let mockSocket: jest.Mocked<Socket>;
     let mockChatManager: jest.Mocked<ChatManager>;
     let mockMessageSenderService: jest.Mocked<MessageSenderService>;
+    let mockActivityService: jest.Mocked<ActivityService>;
     let mockSocketConnectionManager: jest.Mocked<SocketConnectionManager>;
 
     // Helpers to capture event handlers
@@ -35,6 +38,7 @@ describe('socket.handler', () => {
         jest.clearAllMocks();
 
         // Setup IO mock
+        const mockTo = jest.fn().mockReturnThis();
         mockIo = {
             on: jest.fn((event: string, handler: (socket: Socket) => void) => {
                 if (event === 'connection') {
@@ -44,6 +48,7 @@ describe('socket.handler', () => {
             use: jest.fn((fn: (socket: Socket, next: (err?: Error) => void) => void) => {
                 // For testing purposes, we automatically call next()
             }),
+            to: mockTo,
             emit: jest.fn(),
         } as unknown as jest.Mocked<Server>;
 
@@ -54,6 +59,7 @@ describe('socket.handler', () => {
             on: jest.fn(<T extends EventHandler>(event: string, handler: T): void => {
                 socketEventHandlers[event] = handler;
             }),
+            onAny: jest.fn(),
             emit: jest.fn(),
             disconnect: jest.fn(),
         } as unknown as jest.Mocked<Socket>;
@@ -64,6 +70,8 @@ describe('socket.handler', () => {
         mockMessageSenderService = {
             sendMessage: jest.fn().mockResolvedValue({ success: true, results: [] })
         } as unknown as jest.Mocked<MessageSenderService>;
+
+        mockActivityService = {} as jest.Mocked<ActivityService>;
 
         // Setup SocketConnectionManager mock instance
         mockSocketConnectionManager = {
@@ -76,7 +84,7 @@ describe('socket.handler', () => {
     });
 
     const triggerConnection = (userId: string = '550e8400-e29b-41d4-a716-446655440021') => {
-        setupSocketHandlers(mockIo, mockChatManager, mockMessageSenderService);
+        setupSocketHandlers(mockIo, mockChatManager, mockMessageSenderService, mockActivityService);
         // Simulate middleware setting userId
         (mockSocket.data as { userId?: string }).userId = userId;
         connectionHandler(mockSocket);
@@ -170,6 +178,16 @@ describe('socket.handler', () => {
             });
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_sent_result', expectedResult);
+            
+            // Verificar que se emitió el mensaje al dashboard para feedback inmediato
+            expect(mockIo.to).toHaveBeenCalledWith(userId);
+            expect(mockIo.emit).toHaveBeenCalledWith('chat_message', expect.objectContaining({
+                platform: 'dashboard',
+                user: 'Tú',
+                message: 'hello world',
+                isOwner: true
+            }));
+            
             expect(logger.info).toHaveBeenCalledWith(
                 expect.objectContaining({ userId: userId, success: true }),
                 'Message send completed'

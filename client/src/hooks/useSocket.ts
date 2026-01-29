@@ -161,6 +161,12 @@ export const useSocket = ({
   // Registrar listeners solo una vez
   useEffect(() => {
     const handleChatMessage = (msg: ChatMessage) => {
+      // Permitir mensajes del dashboard (feedback de mensajes enviados)
+      if (msg.platform === 'dashboard') {
+        onChatMessageRef.current?.(msg);
+        return;
+      }
+      
       // Filtrar mensajes de plataformas desconectadas usando ref actualizado
       if (msg.platform && !connectionsRef.current[msg.platform]?.connected) {
         return;
