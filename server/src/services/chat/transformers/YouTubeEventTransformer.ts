@@ -40,6 +40,7 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             message: displayMessage,
             specialMessage,
             time: this.formatTime(new Date((item.snippet?.publishedAt as string) || Date.now())),
+            color: '#FF0000', // Color rojo de YouTube
             avatar: item.authorDetails?.profileImageUrl as string,
             isMod: item.authorDetails?.isChatModerator as boolean,
             isOwner: item.authorDetails?.isChatOwner as boolean,
@@ -48,6 +49,7 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
         };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
     }

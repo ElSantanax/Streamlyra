@@ -8,13 +8,10 @@
  * 4. No hay memory leaks
  */
 
- 
- 
- 
-
 import { TwitchEventListener } from '../TwitchEventListener';
 import { TwitchEventTransformer } from '../../transformers/TwitchEventTransformer';
 import { Server } from 'socket.io';
+import tmi from 'tmi.js';
 import { EventEmitter } from 'events';
 
 // Mock de tmi.Client que extiende EventEmitter
@@ -29,7 +26,7 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
     let mockTransformer: jest.Mocked<TwitchEventTransformer>;
     let mockClient: MockTmiClient;
     let mockIo: jest.Mocked<Server>;
-    let emittedMessages: any[];
+    let emittedMessages: Array<{ event: string; data: unknown }>;
 
     beforeEach(() => {
         emittedMessages = [];
@@ -40,16 +37,16 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
             transformSubscription: jest.fn().mockReturnValue({ type: 'subscription', message: 'sub' }),
             transformResub: jest.fn().mockReturnValue({ type: 'resub', message: 'resub' }),
             transformCheer: jest.fn().mockReturnValue({ type: 'cheer', message: 'cheer' })
-        } as any;
+        } as unknown as jest.Mocked<TwitchEventTransformer>;
 
         // Mock Socket.IO
         mockIo = {
             to: jest.fn().mockReturnValue({
-                emit: jest.fn((event: string, data: any) => {
+                emit: jest.fn((event: string, data: unknown) => {
                     emittedMessages.push({ event, data });
                 })
             })
-        } as any;
+        } as unknown as jest.Mocked<Server>;
 
         // Mock tmi.Client
         mockClient = new MockTmiClient();
@@ -64,7 +61,7 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
     test('debe agregar listeners correctamente', () => {
         const userId = 'user-123';
 
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Verificar que los listeners fueron agregados
         expect(mockClient.listenerCount('message')).toBe(1);
@@ -77,11 +74,11 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
         const userId = 'user-456';
 
         // Agregar listeners
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
         expect(mockClient.listenerCount('message')).toBe(1);
 
         // Remover listeners
-        listener.removeListeners(userId, mockClient as any);
+        listener.removeListeners(userId, mockClient as unknown as tmi.Client);
 
         // Verificar que los listeners fueron removidos
         expect(mockClient.listenerCount('message')).toBe(0);
@@ -94,11 +91,11 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
         const userId = 'user-789';
 
         // Primera conexión
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
         expect(mockClient.listenerCount('message')).toBe(1);
 
         // Simular reconexión (sin desconectar primero)
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Verificar que NO hay duplicados (setupListeners llama a removeListeners primero)
         expect(mockClient.listenerCount('message')).toBe(1);
@@ -110,7 +107,7 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
     test('debe emitir mensajes correctamente cuando llegan eventos', () => {
         const userId = 'user-emit';
 
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Simular evento de mensaje
         mockClient.emit('message', '#channel', { username: 'testuser' }, 'Hello!', false);
@@ -125,10 +122,10 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
         const userId = 'user-no-emit';
 
         // Agregar listeners
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Remover listeners
-        listener.removeListeners(userId, mockClient as any);
+        listener.removeListeners(userId, mockClient as unknown as tmi.Client);
 
         // Simular evento de mensaje
         mockClient.emit('message', '#channel', { username: 'testuser' }, 'Hello!', false);
@@ -146,14 +143,14 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
         const mockClient2 = new MockTmiClient();
 
         // Agregar listeners para ambos usuarios
-        listener.setupListeners(user1, mockClient1 as any, mockIo);
-        listener.setupListeners(user2, mockClient2 as any, mockIo);
+        listener.setupListeners(user1, mockClient1 as unknown as tmi.Client, mockIo);
+        listener.setupListeners(user2, mockClient2 as unknown as tmi.Client, mockIo);
 
         expect(mockClient1.listenerCount('message')).toBe(1);
         expect(mockClient2.listenerCount('message')).toBe(1);
 
         // Remover listeners solo del user1
-        listener.removeListeners(user1, mockClient1 as any);
+        listener.removeListeners(user1, mockClient1 as unknown as tmi.Client);
 
         // Verificar que solo user1 fue limpiado
         expect(mockClient1.listenerCount('message')).toBe(0);
@@ -169,7 +166,7 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
 
         // Intentar remover listeners sin haberlos agregado
         expect(() => {
-            listener.removeListeners(userId, mockClient as any);
+            listener.removeListeners(userId, mockClient as unknown as tmi.Client);
         }).not.toThrow();
 
         // Verificar que no hay listeners
@@ -179,12 +176,12 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
     test('debe emitir todos los tipos de eventos correctamente', () => {
         const userId = 'user-all-events';
 
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Simular diferentes tipos de eventos
         mockClient.emit('message', '#channel', { username: 'user1' }, 'Hello!', false);
-        mockClient.emit('subscription', '#channel', 'user2', 'Prime', 'Thanks!', {});
-        mockClient.emit('resub', '#channel', 'user3', 12, 'Still here!', {}, {} as any);
+        mockClient.emit('subscription', '#channel', 'user2', 'Prime', 'Thanks!', {} as Record<string, unknown>);
+        mockClient.emit('resub', '#channel', 'user3', 12, 'Still here!', {} as Record<string, unknown>, {} as Record<string, unknown>);
         mockClient.emit('cheer', '#channel', { username: 'user4', bits: '100' }, 'Cheers!');
 
         // Verificar que se emitieron 4 mensajes
@@ -200,7 +197,7 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
 
         // Simular 5 reconexiones
         for (let i = 0; i < 5; i++) {
-            listener.setupListeners(userId, mockClient as any, mockIo);
+            listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
         }
 
         // Verificar que solo hay 1 listener de cada tipo (no 5)
@@ -220,14 +217,17 @@ describe('TwitchEventListener - Memory Leak Fix', () => {
         const userId = 'user-cleanup';
 
         // Agregar listeners
-        listener.setupListeners(userId, mockClient as any, mockIo);
+        listener.setupListeners(userId, mockClient as unknown as tmi.Client, mockIo);
 
         // Verificar que hay referencias internas
-        const listenerRefs = (listener as any).listenerRefs;
+        interface ListenerTestAccess {
+            listenerRefs: Map<string, unknown>;
+        }
+        const listenerRefs = (listener as unknown as ListenerTestAccess).listenerRefs;
         expect(listenerRefs.has(userId)).toBe(true);
 
         // Remover listeners
-        listener.removeListeners(userId, mockClient as any);
+        listener.removeListeners(userId, mockClient as unknown as tmi.Client);
 
         // Verificar que las referencias fueron limpiadas
         expect(listenerRefs.has(userId)).toBe(false);

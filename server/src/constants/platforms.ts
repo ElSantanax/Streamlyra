@@ -17,7 +17,7 @@ export const PLATFORM_NAMES: Record<Platform, string> = {
 export const PLATFORM_COLORS: Record<Platform, string> = {
     twitch: '#9146FF',
     youtube: '#FF0000',
-    kick: '#10A652',
+    kick: '#0FA654',
     tiktok: '#000000'
 };
 

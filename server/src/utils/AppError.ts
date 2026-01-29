@@ -1,3 +1,5 @@
+/** Clase de error personalizada para errores de aplicación */
+
 export class AppError extends Error {
     public readonly statusCode: number;
     public readonly isOperational: boolean;

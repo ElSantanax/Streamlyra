@@ -1,10 +1,4 @@
-/**
- * Exports de servicios de conexión
- * 
- * Responsabilidad: Gestionar conexiones de usuarios a plataformas
- * - ConnectionService: Orquesta conexiones
- * - TokenRefreshService: Renueva tokens OAuth
- */
+/** Exports centralizados de servicios de conexión */
 
 export { ConnectionService } from './ConnectionService';
 export { TokenRefreshService } from './TokenRefreshService';

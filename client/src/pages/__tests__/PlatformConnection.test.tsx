@@ -27,8 +27,8 @@ vi.mock('../../hooks/useAuth', () => ({
 }));
 
 // Mock de window.location
-delete (window as any).location;
-window.location = { href: 'http://localhost:3000' } as any;
+delete (window as unknown as { location: unknown }).location;
+window.location = { href: 'http://localhost:3000' } as Location;
 
 describe('PlatformConnection - Preservación de redirect', () => {
   beforeEach(() => {

@@ -1,7 +1,4 @@
-/**
- * Gestor de Conexión de Twitch
- * Responsabilidad: Gestionar conexión TMI.js a Twitch
- */
+/** Gestor de conexión TMI.js de Twitch con manejo de reconexión */
 
 import tmi from 'tmi.js';
 import { Connection } from '../../../models/Connection.model';
@@ -41,13 +38,8 @@ export class TwitchConnectionManager {
 
     async disconnect(client: tmi.Client): Promise<void> {
         try {
-            // Deshabilitar reconexión automática antes de desconectar
-            // TMI.js no expone opts directamente, pero disconnect() ya maneja esto
-            // Al llamar disconnect(), TMI.js internamente marca la desconexión como intencional
-            // y no intenta reconectar automáticamente
             await client.disconnect();
             
-            // Remover todos los listeners para asegurar limpieza completa
             client.removeAllListeners();
             
             logger.debug({}, 'Twitch client disconnected successfully');

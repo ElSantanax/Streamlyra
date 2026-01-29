@@ -1,3 +1,5 @@
+/** Servicio de gestión de conexiones de usuarios con plataformas y renovación de tokens */
+
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { TokenRefreshService } from './TokenRefreshService';
 import { Platform } from '../../constants/platforms';
@@ -39,14 +41,6 @@ export class ConnectionService {
         return this.tokenRefreshService.getValidAccessToken(userId, platform);
     }
 
-    /**
-     * Fuerza la renovación de un token sin importar su fecha de expiración
-     * Útil cuando una plataforma rechaza un token con error 401
-     * 
-     * @param userId - ID del usuario
-     * @param platform - Plataforma (twitch, youtube, kick)
-     * @returns Nuevo access token o null si falla
-     */
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
         return this.tokenRefreshService.forceTokenRefresh(userId, platform);
     }

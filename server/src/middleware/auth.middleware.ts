@@ -1,14 +1,5 @@
 /**
- * Middleware de Autenticación
- * Responsabilidad: Validar JWT y extraer información del usuario
- * 
- * IMPORTANTE: Diferentes plataformas tienen diferentes requisitos:
- * - Twitch, YouTube, Kick: Usan OAuth (requieren JWT para usuario)
- * - TikTok: Usa username (requiere JWT para usuario)
- * 
- * Este middleware soporta dos modos:
- * - authenticateToken: Requiere JWT válido (para rutas protegidas)
- * - optionalAuthenticate: JWT opcional (para rutas públicas con usuario opcional)
+ * Middleware de Autenticación - Valida JWT y extrae información del usuario
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -24,36 +15,18 @@ export interface AuthRequest extends Request {
     }
 }
 
-/**
- * Extrae el token JWT de las cookies o del header Authorization
- */
 const extractToken = (req: AuthRequest): string | null => {
-    // 1. Intentar desde cookies (preferido para HttpOnly)
     const tokenFromCookie = (req.cookies as Record<string, string> | undefined)?.auth_token;
     if (tokenFromCookie) return tokenFromCookie;
 
-    // 2. Intentar desde header (fallback para compatibilidad)
     const authHeader = req.headers['authorization'];
     return authHeader?.split(' ')[1] || null;
 };
 
-/**
- * Verifica y decodifica el token JWT
- * @throws Error si el token es inválido o expirado
- */
 const verifyToken = (token: string) => {
     return jwt.verify(token, config.jwtSecret) as { id: string; username: string };
 };
 
-/**
- * Middleware de autenticación requerida
- * Valida que el token JWT sea proporcionado y sea válido
- * 
- * Usado en rutas que requieren autenticación:
- * - GET /api/auth/me
- * - POST /api/auth/tiktok
- * - DELETE /api/auth/platform
- */
 export const authenticateToken = (req: AuthRequest, _res: Response, next: NextFunction) => {
     const token = extractToken(req);
     if (!token) {
@@ -79,18 +52,6 @@ export const authenticateToken = (req: AuthRequest, _res: Response, next: NextFu
     }
 };
 
-/**
- * Middleware de autenticación opcional
- * Intenta validar el token JWT si es proporcionado, pero no falla si no existe
- * 
- * Usado en rutas que soportan tanto usuarios autenticados como anónimos:
- * - POST /api/auth/twitch
- * - POST /api/auth/youtube
- * - POST /api/auth/kick
- * 
- * Esto permite que usuarios nuevos se registren sin token previo,
- * pero también permite que usuarios existentes conecten plataformas adicionales
- */
 export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: NextFunction) => {
     const token = extractToken(req);
     if (token) {
@@ -98,7 +59,6 @@ export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: Nex
             req.user = verifyToken(token);
             logger.debug({ userId: req.user.id }, 'Token opcional verificado');
         } catch (error) {
-            // Ignorar token inválido en modo opcional
             if (error instanceof TokenExpiredError) {
                 logger.debug({}, 'Token opcional expirado, continuando sin autenticación');
             } else if (error instanceof JsonWebTokenError) {

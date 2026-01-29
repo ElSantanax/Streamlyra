@@ -28,10 +28,10 @@ vi.mock('../../../../services/socket', () => ({
     socket: {
         connected: true,
         emit: vi.fn(),
-        on: vi.fn((event: string, handler: Function) => {
+        on: vi.fn((event: string, handler: (result: MessageSentResult) => void) => {
             // Store handlers for manual triggering in tests
-            (socket as any)._handlers = (socket as any)._handlers || {};
-            (socket as any)._handlers[event] = handler;
+            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers || {};
+            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers[event] = handler;
         }),
         off: vi.fn(),
     }
@@ -47,8 +47,8 @@ vi.mock('../../../../hooks/useAuth', () => ({
 describe('ChatInput Integration Tests', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (socket as any).connected = true;
-        (socket as any)._handlers = {};
+        (socket as { connected: boolean }).connected = true;
+        (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
     });
 
     afterEach(() => {
@@ -115,7 +115,7 @@ describe('ChatInput Integration Tests', () => {
             ]
         };
 
-        const handler = (socket as any)._handlers['message_sent_result'];
+        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
         expect(handler).toBeDefined();
         handler(successResult);
 
@@ -322,7 +322,7 @@ describe('ChatInput Integration Tests', () => {
             ]
         };
 
-        const handler = (socket as any)._handlers['message_sent_result'];
+        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
         handler(partialResult);
 
         // Step 5: Verify partial success notification is displayed
@@ -330,7 +330,7 @@ describe('ChatInput Integration Tests', () => {
             expect(toast.warning).toHaveBeenCalledTimes(1);
         });
 
-        const warningMessage = (toast.warning as any).mock.calls[0][0];
+        const warningMessage = vi.mocked(toast.warning).mock.calls[0][0];
 
         // Step 6: Verify notification includes successful platform
         expect(warningMessage).toContain('twitch');
@@ -396,7 +396,7 @@ describe('ChatInput Integration Tests', () => {
             ]
         };
 
-        const handler = (socket as any)._handlers['message_sent_result'];
+        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
         handler(completeFailure);
 
         // Step 4: Verify error notification is displayed
@@ -404,7 +404,7 @@ describe('ChatInput Integration Tests', () => {
             expect(toast.error).toHaveBeenCalledTimes(1);
         });
 
-        const errorMessage = (toast.error as any).mock.calls[0][0];
+        const errorMessage = vi.mocked(toast.error).mock.calls[0][0];
 
         // Step 5: Verify notification includes all failed platforms with details
         expect(errorMessage).toContain('twitch');
@@ -435,7 +435,7 @@ describe('ChatInput Integration Tests', () => {
         const user = userEvent.setup();
 
         // Set socket as disconnected
-        (socket as any).connected = false;
+        (socket as { connected: boolean }).connected = false;
 
         render(
             <MemoryRouter>
@@ -587,7 +587,7 @@ describe('ChatInput Integration Tests', () => {
         // Step 3: Verify socket event contains trimmed message
         expect(socket.emit).toHaveBeenCalledTimes(1);
 
-        const emitCall = (socket.emit as any).mock.calls[0];
+        const emitCall = vi.mocked(socket.emit).mock.calls[0];
         const payload = emitCall[1] as SendMessagePayload;
 
         expect(payload.message).toBe(expectedTrimmed);

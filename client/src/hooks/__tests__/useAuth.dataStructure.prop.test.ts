@@ -36,7 +36,7 @@ describe('useAuth Data Structure Property-based Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    (useNavigate as any).mockReturnValue(vi.fn());
+    vi.mocked(useNavigate).mockReturnValue(vi.fn());
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -176,12 +176,12 @@ describe('useAuth Data Structure Property-based Tests', () => {
         });
 
         // Login con datos que tienen campos extra
-        result.current.login(userData as any);
+        result.current.login(userData as unknown as User);
 
         const storedUserStr = localStorage.getItem('user');
         expect(storedUserStr).not.toBeNull();
 
-        const storedUser = JSON.parse(storedUserStr!);
+        const storedUser = JSON.parse(storedUserStr!) as User;
 
         // PROPIEDAD: Los campos base deben estar presentes
         expect(storedUser.id).toBe(userData.id);

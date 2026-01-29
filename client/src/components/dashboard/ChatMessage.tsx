@@ -7,6 +7,7 @@ export interface ChatMessageProps {
     message: string;
     time: string;
     platform: PlatformKey;
+    color?: string;
     isSub?: boolean;
     isMod?: boolean;
     isVIP?: boolean;
@@ -19,6 +20,7 @@ const ChatMessage = ({
     message,
     time,
     platform,
+    color: userColor,
     isSub,
     isMod,
     isVIP,
@@ -69,7 +71,12 @@ const ChatMessage = ({
             <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between gap-2 overflow-hidden">
                     <div className="flex items-center gap-1.5 md:gap-2.5 min-w-0">
-                        <span className={`${textColor} font-bold text-sm md:text-base tracking-tight truncate`}>{user}</span>
+                        <span
+                            className={`font-bold text-sm md:text-base tracking-tight truncate ${!userColor ? textColor : ''}`}
+                            style={userColor ? { color: userColor } : undefined}
+                        >
+                            {user}
+                        </span>
                         <div className={`flex items-center justify-center size-5 md:size-6 rounded-full shrink-0 ${color} ${iconColor} shadow-sm ring-1 ring-white/10`}>
                             <Icon size={platform === 'tiktok' ? 10 : 12} className="md:hidden" />
                             <Icon size={platform === 'tiktok' ? 12 : 14} className="hidden md:block" />

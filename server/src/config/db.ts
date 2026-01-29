@@ -7,7 +7,7 @@ import { KickWebhook } from "../models/KickWebhook.model";
 const db = new Sequelize(config.databaseUrl, {
     dialect: "postgres",
     logging: false,
-    models: [User, Connection, KickWebhook], // Modelos explícitos = Menos errores
+    models: [User, Connection, KickWebhook],
 });
 
 export default db;

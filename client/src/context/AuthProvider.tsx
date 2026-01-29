@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = useCallback(
     (userData: User) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { token: _token, ...safeUser } = userData as unknown as Record<string, unknown>;
       setUser(safeUser as unknown as User);
       setStatus('authenticated');

@@ -1,3 +1,7 @@
+/**
+ * Configuración de polling para YouTube API
+ * Gestiona intervalos y consumo de cuota
+ */
 export const YouTubePollingConfig = {
     CHAT_POLLING_INTERVAL: 9000,
     VIEWER_POLLING_INTERVAL: 90000,

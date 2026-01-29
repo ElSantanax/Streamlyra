@@ -7,14 +7,28 @@
  * 3. No hay emisiones después de stopPolling()
  */
 
- 
- 
- 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
+import { Server } from 'socket.io';
+
+interface YouTubeChatPollerModule {
+    YouTubeChatPoller: new () => YouTubeChatPollerTestAccess;
+}
+
+interface YouTubeChatPollerTestAccess {
+    distributeMessages: (messages: unknown[], userId: string, io: Server, interval: number) => void;
+    activeTimeouts: Map<string, Set<NodeJS.Timeout>>;
+    stopPolling: (userId: string) => void;
+}
+
+interface EmittedMessage {
+    event: string;
+    data: unknown;
+}
+
 describe('YouTubeChatPoller - Memory Leak Fix', () => {
-    let mockIo: any;
-    let emittedMessages: any[];
+    let mockIo: jest.Mocked<Server>;
+    let emittedMessages: EmittedMessage[];
 
     beforeEach(() => {
         jest.clearAllTimers();
@@ -24,11 +38,11 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         // Mock de Socket.IO
         mockIo = {
             to: jest.fn().mockReturnValue({
-                emit: jest.fn((event: string, data: any) => {
+                emit: jest.fn((event: string, data: unknown) => {
                     emittedMessages.push({ event, data });
                 })
             })
-        };
+        } as unknown as jest.Mocked<Server>;
     });
 
     afterEach(() => {
@@ -38,8 +52,8 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
 
     test('debe cancelar timeouts activos al llamar stopPolling()', () => {
         // Importar dinámicamente para evitar problemas de módulos
-        const YouTubeChatPoller = require('../YouTubeChatPoller').YouTubeChatPoller;
-        const poller = new YouTubeChatPoller();
+        const module = require('../YouTubeChatPoller') as YouTubeChatPollerModule;
+        const poller = new module.YouTubeChatPoller();
 
         const userId = 'test-user-123';
         
@@ -57,13 +71,13 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         }));
 
         // Acceder al método privado para testing
-        const distributeMessages = (poller as any).distributeMessages.bind(poller);
+        const distributeMessages = poller.distributeMessages.bind(poller);
         distributeMessages(messages, userId, mockIo, 5000);
 
         // Verificar que se crearon timeouts
-        const activeTimeouts = (poller as any).activeTimeouts.get(userId);
+        const activeTimeouts = poller.activeTimeouts.get(userId);
         expect(activeTimeouts).toBeDefined();
-        expect(activeTimeouts.size).toBe(50);
+        expect(activeTimeouts?.size).toBe(50);
 
         // Verificar que no se han emitido mensajes aún
         expect(emittedMessages.length).toBe(0);
@@ -72,7 +86,7 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         poller.stopPolling(userId);
 
         // Verificar que los timeouts fueron cancelados
-        const activeTimeoutsAfter = (poller as any).activeTimeouts.get(userId);
+        const activeTimeoutsAfter = poller.activeTimeouts.get(userId);
         expect(activeTimeoutsAfter).toBeUndefined();
 
         // Avanzar el tiempo para verificar que los timeouts NO se ejecutan
@@ -83,8 +97,8 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
     });
 
     test('debe permitir que timeouts completados se ejecuten normalmente', () => {
-        const YouTubeChatPoller = require('../YouTubeChatPoller').YouTubeChatPoller;
-        const poller = new YouTubeChatPoller();
+        const module = require('../YouTubeChatPoller') as YouTubeChatPollerModule;
+        const poller = new module.YouTubeChatPoller();
 
         const userId = 'test-user-456';
         
@@ -100,12 +114,12 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
             }
         }));
 
-        const distributeMessages = (poller as any).distributeMessages.bind(poller);
+        const distributeMessages = poller.distributeMessages.bind(poller);
         distributeMessages(messages, userId, mockIo, 5000);
 
         // Verificar que se crearon 10 timeouts
-        let activeTimeouts = (poller as any).activeTimeouts.get(userId);
-        expect(activeTimeouts.size).toBe(10);
+        let activeTimeouts = poller.activeTimeouts.get(userId);
+        expect(activeTimeouts?.size).toBe(10);
 
         // Avanzar tiempo para que se ejecuten algunos timeouts
         jest.advanceTimersByTime(2000);
@@ -115,8 +129,8 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         expect(emittedMessages.length).toBeLessThan(10);
 
         // Los timeouts completados deberían haberse removido del Set
-        activeTimeouts = (poller as any).activeTimeouts.get(userId);
-        expect(activeTimeouts.size).toBeLessThan(10);
+        activeTimeouts = poller.activeTimeouts.get(userId);
+        expect(activeTimeouts && activeTimeouts.size).toBeLessThan(10);
 
         // Avanzar el resto del tiempo
         jest.advanceTimersByTime(5000);
@@ -125,15 +139,15 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         expect(emittedMessages.length).toBe(10);
 
         // El Set debería estar vacío o no existir
-        activeTimeouts = (poller as any).activeTimeouts.get(userId);
+        activeTimeouts = poller.activeTimeouts.get(userId);
         if (activeTimeouts) {
             expect(activeTimeouts.size).toBe(0);
         }
     });
 
     test('debe manejar múltiples usuarios independientemente', () => {
-        const YouTubeChatPoller = require('../YouTubeChatPoller').YouTubeChatPoller;
-        const poller = new YouTubeChatPoller();
+        const module = require('../YouTubeChatPoller') as YouTubeChatPollerModule;
+        const poller = new module.YouTubeChatPoller();
 
         const user1 = 'user-1';
         const user2 = 'user-2';
@@ -162,22 +176,22 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
             }
         }));
 
-        const distributeMessages = (poller as any).distributeMessages.bind(poller);
+        const distributeMessages = poller.distributeMessages.bind(poller);
         distributeMessages(messages1, user1, mockIo, 5000);
         distributeMessages(messages2, user2, mockIo, 5000);
 
         // Verificar que ambos usuarios tienen timeouts
-        const timeouts1 = (poller as any).activeTimeouts.get(user1);
-        const timeouts2 = (poller as any).activeTimeouts.get(user2);
-        expect(timeouts1.size).toBe(20);
-        expect(timeouts2.size).toBe(30);
+        const timeouts1 = poller.activeTimeouts.get(user1);
+        const timeouts2 = poller.activeTimeouts.get(user2);
+        expect(timeouts1?.size).toBe(20);
+        expect(timeouts2?.size).toBe(30);
 
         // Desconectar solo user1
         poller.stopPolling(user1);
 
         // Verificar que solo user1 fue limpiado
-        expect((poller as any).activeTimeouts.get(user1)).toBeUndefined();
-        expect((poller as any).activeTimeouts.get(user2).size).toBe(30);
+        expect(poller.activeTimeouts.get(user1)).toBeUndefined();
+        expect(poller.activeTimeouts.get(user2)?.size).toBe(30);
 
         // Avanzar tiempo
         jest.advanceTimersByTime(10000);
@@ -186,15 +200,16 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         expect(emittedMessages.length).toBe(30);
 
         // Verificar que todos son de user2
-        const allFromUser2 = emittedMessages.every(m => 
-            m.data.message?.includes('User2') || m.data.username === 'User2'
-        );
+        const allFromUser2 = emittedMessages.every(m => {
+            const data = m.data as { message?: string; username?: string };
+            return data.message?.includes('User2') || data.username === 'User2';
+        });
         expect(allFromUser2).toBe(true);
     });
 
     test('debe manejar stopPolling() cuando no hay timeouts activos', () => {
-        const YouTubeChatPoller = require('../YouTubeChatPoller').YouTubeChatPoller;
-        const poller = new YouTubeChatPoller();
+        const module = require('../YouTubeChatPoller') as YouTubeChatPollerModule;
+        const poller = new module.YouTubeChatPoller();
         
         const userId = 'user-no-timeouts';
         
@@ -204,12 +219,12 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
         }).not.toThrow();
 
         // Verificar que no hay entry en el Map
-        expect((poller as any).activeTimeouts.get(userId)).toBeUndefined();
+        expect(poller.activeTimeouts.get(userId)).toBeUndefined();
     });
 
     test('debe loguear cuando cancela timeouts', () => {
-        const YouTubeChatPoller = require('../YouTubeChatPoller').YouTubeChatPoller;
-        const poller = new YouTubeChatPoller();
+        const module = require('../YouTubeChatPoller') as YouTubeChatPollerModule;
+        const poller = new module.YouTubeChatPoller();
 
         const userId = 'test-user-logging';
         
@@ -225,18 +240,18 @@ describe('YouTubeChatPoller - Memory Leak Fix', () => {
             }
         }));
 
-        const distributeMessages = (poller as any).distributeMessages.bind(poller);
+        const distributeMessages = poller.distributeMessages.bind(poller);
         distributeMessages(messages, userId, mockIo, 5000);
 
         // Verificar que se crearon 25 timeouts
-        const activeTimeoutsBefore = (poller as any).activeTimeouts.get(userId);
-        expect(activeTimeoutsBefore.size).toBe(25);
+        const activeTimeoutsBefore = poller.activeTimeouts.get(userId);
+        expect(activeTimeoutsBefore?.size).toBe(25);
 
         // Llamar stopPolling
         poller.stopPolling(userId);
 
         // Verificar que todos los timeouts fueron cancelados
-        const activeTimeoutsAfter = (poller as any).activeTimeouts.get(userId);
+        const activeTimeoutsAfter = poller.activeTimeouts.get(userId);
         expect(activeTimeoutsAfter).toBeUndefined();
     });
 });

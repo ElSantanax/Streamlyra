@@ -1,3 +1,6 @@
+/**
+ * Middleware de validación Zod - Valida y transforma datos usando schemas Zod
+ */
 import { NextFunction, Request, Response } from 'express';
 import { ZodError, ZodSchema } from 'zod';
 import { AppError } from '../utils/AppError';

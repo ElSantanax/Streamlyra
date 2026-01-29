@@ -1,7 +1,4 @@
-/**
- * Encuestador de Espectadores de Twitch
- * Responsabilidad: Hacer polling de espectadores en vivo
- */
+/** Encuestador de espectadores de Twitch con polling de estadísticas de stream */
 
 import axios from 'axios';
 import { Server } from 'socket.io';

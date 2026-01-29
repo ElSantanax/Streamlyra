@@ -31,7 +31,7 @@ export const PLATFORMS = {
         name: 'Kick',
         Icon: SiKick,
         color: 'bg-[#53FC18]',
-        textColor: 'text-[#1A7A08] dark:text-[#53FC18]',
+        textColor: 'text-[#0FA654] dark:text-[#0FA654]',
         iconColor: 'text-black',
         brandColor: '#53FC18'
     },

@@ -1,19 +1,4 @@
-/**
- * Safe Socket Emitter
- * Responsabilidad: Wrapper seguro para emisiones de Socket.IO con manejo de errores
- * 
- * PROBLEMA QUE RESUELVE:
- * - Emisiones que fallan silenciosamente
- * - Datos malformados que causan crashes
- * - Falta de logs cuando algo sale mal
- * - Imposibilidad de debuggear problemas de emisión
- * 
- * SOLUCIÓN:
- * - Validación de datos antes de emitir
- * - Try-catch en todas las emisiones
- * - Logs detallados con contexto
- * - Verificación de usuarios conectados
- */
+/** Wrapper seguro para emisiones de Socket.IO con manejo de errores */
 
 import { Server } from 'socket.io';
 import { logger } from './logger';
@@ -26,18 +11,10 @@ interface EmitOptions {
 }
 
 export class SafeSocketEmitter {
-    /**
-     * Emite un evento de Socket.IO de forma segura con manejo de errores
-     * 
-     * @param io - Instancia de Socket.IO
-     * @param options - Opciones de emisión (userId, event, data, platform)
-     * @returns true si la emisión fue exitosa, false si falló
-     */
     static emit(io: Server, options: EmitOptions): boolean {
         const { userId, event, data, platform } = options;
 
         try {
-            // 1. Validar que userId existe
             if (!userId || typeof userId !== 'string') {
                 logger.warn(
                     { userId, event, platform },
@@ -46,7 +23,6 @@ export class SafeSocketEmitter {
                 return false;
             }
 
-            // 2. Validar que el evento existe
             if (!event || typeof event !== 'string') {
                 logger.warn(
                     { userId, event, platform },
@@ -55,7 +31,6 @@ export class SafeSocketEmitter {
                 return false;
             }
 
-            // 3. Validar que data no es undefined (null está permitido)
             if (data === undefined) {
                 logger.warn(
                     { userId, event, platform },
@@ -64,10 +39,21 @@ export class SafeSocketEmitter {
                 return false;
             }
 
-            // 4. Verificar que el usuario tiene sockets conectados (solo en producción)
-            // En tests, io.sockets.adapter puede no existir, así que lo omitimos
             if (io.sockets?.adapter?.rooms) {
                 const sockets = io.sockets.adapter.rooms.get(userId);
+
+                logger.debug(
+                    {
+                        userId,
+                        event,
+                        platform,
+                        hasRoom: !!sockets,
+                        socketCount: sockets?.size || 0,
+                        allRooms: Array.from(io.sockets.adapter.rooms.keys()).slice(0, 10)
+                    },
+                    'SafeSocketEmitter: Verificando room del usuario'
+                );
+
                 if (!sockets || sockets.size === 0) {
                     logger.debug(
                         { userId, event, platform },
@@ -77,7 +63,6 @@ export class SafeSocketEmitter {
                 }
             }
 
-            // 5. Intentar serializar data para detectar referencias circulares
             try {
                 JSON.stringify(data);
             } catch (serializationError) {
@@ -88,7 +73,6 @@ export class SafeSocketEmitter {
                 return false;
             }
 
-            // 6. Emitir el evento
             io.to(userId).emit(event, data);
 
             logger.debug(
@@ -109,12 +93,7 @@ export class SafeSocketEmitter {
 
     private static ownerMessageCache = new Map<string, number>();
 
-    /**
-     * Emite un mensaje de chat de forma segura con deduplicación para el streamer
-     */
     static emitChatMessage(io: Server, userId: string, message: unknown, platform?: string): boolean {
-        // Lógica de deduplicación para el dueño (streamer)
-        // Previene ver el mismo mensaje múltiples veces cuando se envía a varias plataformas
         interface ChatMessage {
             isOwner?: boolean;
             message?: string;
@@ -122,12 +101,33 @@ export class SafeSocketEmitter {
 
         const msg = message as ChatMessage;
 
+        logger.debug(
+            {
+                userId,
+                platform,
+                isOwner: msg?.isOwner,
+                messagePreview: typeof msg?.message === 'string' ? msg.message.substring(0, 50) : undefined
+            },
+            'SafeSocketEmitter: emitChatMessage called'
+        );
+
         if (msg && typeof msg === 'object' && msg.isOwner && typeof msg.message === 'string') {
             const cacheKey = `${userId}:${msg.message}`;
             const now = Date.now();
             const lastTime = this.ownerMessageCache.get(cacheKey);
 
-            // Si el mismo mensaje fue emitido recientemente (ventana de 5 segundos), lo omitimos
+            logger.debug(
+                {
+                    userId,
+                    platform,
+                    cacheKey,
+                    lastTime,
+                    timeSinceLastEmit: lastTime ? now - lastTime : null,
+                    willDeduplicate: lastTime && (now - lastTime) < 5000
+                },
+                'SafeSocketEmitter: Checking deduplication for owner message'
+            );
+
             if (lastTime && (now - lastTime) < 5000) {
                 logger.debug(
                     { userId, platform, message: msg.message },
@@ -136,10 +136,8 @@ export class SafeSocketEmitter {
                 return false;
             }
 
-            // Registrar en el cache
             this.ownerMessageCache.set(cacheKey, now);
 
-            // Limpieza básica del cache para evitar crecimiento infinito
             if (this.ownerMessageCache.size > 100) {
                 for (const [key, time] of this.ownerMessageCache.entries()) {
                     if (now - time > 10000) {
@@ -157,9 +155,6 @@ export class SafeSocketEmitter {
         });
     }
 
-    /**
-     * Emite una actualización de viewers de forma segura
-     */
     static emitViewersUpdate(
         io: Server,
         userId: string,
@@ -174,9 +169,6 @@ export class SafeSocketEmitter {
         });
     }
 
-    /**
-     * Emite un estado de conexión de forma segura
-     */
     static emitConnectionStatus(
         io: Server,
         userId: string,
@@ -192,9 +184,6 @@ export class SafeSocketEmitter {
         });
     }
 
-    /**
-     * Emite un error de forma segura
-     */
     static emitError(
         io: Server,
         userId: string,

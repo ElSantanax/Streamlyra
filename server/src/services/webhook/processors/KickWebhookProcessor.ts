@@ -1,7 +1,4 @@
-/**
- * Procesador de Webhooks de Kick
- * Responsabilidad: Procesar eventos de webhook de Kick con validación de estado
- */
+/** Procesador de webhooks de Kick con validación de estado y sockets activos */
 
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
@@ -20,9 +17,25 @@ export class KickWebhookProcessor {
 
     async process(payload: KickChatMessagePayload): Promise<void> {
         try {
+            logger.info({
+                payloadKeys: Object.keys(payload || {}),
+                broadcaster: payload?.broadcaster?.username,
+                sender: payload?.sender?.username,
+                contentPreview: payload?.content?.substring(0, 50)
+            }, '🔄 KICK WEBHOOK PROCESSOR: Iniciando procesamiento');
+
             const { broadcaster } = payload;
 
             const chatMessage = this.transformer.transformMessage(payload);
+            
+            logger.info({
+                transformedMessage: {
+                    user: chatMessage.user,
+                    messagePreview: chatMessage.message?.substring(0, 50),
+                    isOwner: chatMessage.isOwner,
+                    platform: chatMessage.platform
+                }
+            }, '✅ KICK WEBHOOK PROCESSOR: Mensaje transformado');
 
             const broadcasterKickId = broadcaster?.user_id;
             if (!broadcasterKickId) {
@@ -42,8 +55,13 @@ export class KickWebhookProcessor {
                 logger.warn({ broadcasterKickId }, 'No connection found for Kick broadcaster');
                 return;
             }
+            
+            logger.info({
+                broadcasterKickId,
+                userId: connection.userId,
+                connectionId: connection.id
+            }, '✅ KICK WEBHOOK PROCESSOR: Conexión encontrada');
 
-            // VALIDACIÓN: Verificar si el webhook está activo en nuestra DB
             const webhook = await KickWebhook.findOne({
                 where: {
                     broadcasterId: broadcasterKickId.toString(),
@@ -61,9 +79,25 @@ export class KickWebhookProcessor {
                 );
                 return;
             }
+            
+            logger.info({
+                webhookId: webhook.id,
+                isActive: webhook.isActive
+            }, '✅ KICK WEBHOOK PROCESSOR: Webhook activo verificado');
 
-            // VALIDACIÓN: Verificar si el usuario tiene sockets conectados
             const userSockets = await this.io.in(connection.userId).fetchSockets();
+            
+            logger.info(
+                { 
+                    broadcasterKickId, 
+                    userId: connection.userId,
+                    socketCount: userSockets.length,
+                    socketIds: userSockets.map(s => s.id),
+                    rooms: Array.from(this.io.sockets.adapter.rooms.keys())
+                }, 
+                'Kick webhook: Verificando sockets del usuario'
+            );
+            
             if (userSockets.length === 0) {
                 logger.warn(
                     { 
@@ -75,11 +109,28 @@ export class KickWebhookProcessor {
                 return;
             }
 
-            // Actualizar timestamp del último evento
             void webhook.update({ lastEventAt: new Date() });
 
-            logger.info({ userId: connection.userId }, 'Emitting Kick chat message to user');
-            SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
+            logger.info(
+                { 
+                    userId: connection.userId,
+                    message: chatMessage.message,
+                    user: chatMessage.user,
+                    isOwner: chatMessage.isOwner
+                }, 
+                'Emitting Kick chat message to user'
+            );
+            
+            const emitResult = SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
+            
+            logger.info(
+                { 
+                    userId: connection.userId,
+                    emitResult,
+                    platform: 'kick'
+                }, 
+                'KICK WEBHOOK PROCESSOR: Resultado de emisión'
+            );
         } catch (error) {
             logger.error({ err: error }, 'Error processing Kick webhook event');
         }

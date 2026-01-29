@@ -5,6 +5,19 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+
+// Mock socket module before importing
+vi.mock('../../services/socket', () => ({
+  socket: {
+    connected: false,
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  },
+}));
+
 import { useSocket } from '../useSocket';
 import { socket } from '../../services/socket';
 
@@ -12,7 +25,7 @@ describe('useSocket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset socket state
-    (socket as any).connected = false;
+    (socket as { connected: boolean }).connected = false;
   });
 
   describe('Limpieza de Listeners', () => {
@@ -83,8 +96,8 @@ describe('useSocket', () => {
       );
 
       // Contar cuántas veces se registró 'chat_message' inicialmente
-      const initialOnCalls = (socket.on as any).mock.calls.filter(
-        (call: any[]) => call[0] === 'chat_message'
+      const initialOnCalls = vi.mocked(socket.on).mock.calls.filter(
+        (call: unknown[]) => call[0] === 'chat_message'
       ).length;
 
       expect(initialOnCalls).toBe(1);
@@ -97,8 +110,8 @@ describe('useSocket', () => {
 
       await waitFor(() => {
         // NO debe registrar el listener de nuevo
-        const newOnCalls = (socket.on as any).mock.calls.filter(
-          (call: any[]) => call[0] === 'chat_message'
+        const newOnCalls = vi.mocked(socket.on).mock.calls.filter(
+          (call: unknown[]) => call[0] === 'chat_message'
         ).length;
 
         expect(newOnCalls).toBe(0); // No debe haber nuevos registros
@@ -118,8 +131,8 @@ describe('useSocket', () => {
       );
 
       // Contar registros iniciales
-      const initialOnCalls = (socket.on as any).mock.calls.filter(
-        (call: any[]) => call[0] === 'chat_message'
+      const initialOnCalls = vi.mocked(socket.on).mock.calls.filter(
+        (call: unknown[]) => call[0] === 'chat_message'
       ).length;
 
       expect(initialOnCalls).toBe(1);
@@ -134,8 +147,8 @@ describe('useSocket', () => {
 
       await waitFor(() => {
         // NO debe haber nuevos registros
-        const newOnCalls = (socket.on as any).mock.calls.filter(
-          (call: any[]) => call[0] === 'chat_message'
+        const newOnCalls = vi.mocked(socket.on).mock.calls.filter(
+          (call: unknown[]) => call[0] === 'chat_message'
         ).length;
 
         expect(newOnCalls).toBe(0);
@@ -143,15 +156,16 @@ describe('useSocket', () => {
     });
 
     it('debe usar refs para callbacks actualizados sin re-registrar listeners', async () => {
-      let capturedCallback: ((...args: any[]) => void) | null = null;
+      type MessageCallback = (msg: unknown) => void;
+      let capturedCallback: MessageCallback | null = null;
 
       // Mock socket.on para capturar el callback
       const originalOn = socket.on;
-      (socket.on as any) = vi.fn((event: string, callback: (...args: any[]) => void) => {
+      vi.mocked(socket.on).mockImplementation((event: string, callback: MessageCallback) => {
         if (event === 'chat_message') {
           capturedCallback = callback;
         }
-        return originalOn.call(socket, event, callback);
+        return socket as never;
       });
 
       const callback1 = vi.fn();
@@ -176,17 +190,15 @@ describe('useSocket', () => {
         expect(capturedCallback).not.toBeNull();
       });
 
-      const originalCallback = capturedCallback as ((...args: any[]) => void) | null;
+      const originalCallback = capturedCallback!;
 
       // Simular mensaje
-      if (originalCallback) {
-        originalCallback({
-          id: '1',
-          username: 'test',
-          message: 'hello',
-          platform: 'twitch',
-        });
-      }
+      originalCallback({
+        id: '1',
+        username: 'test',
+        message: 'hello',
+        platform: 'twitch',
+      });
 
       await waitFor(() => {
         expect(callback1).toHaveBeenCalledTimes(1);
@@ -202,14 +214,12 @@ describe('useSocket', () => {
       });
 
       // Simular otro mensaje - debe usar el nuevo callback
-      if (originalCallback) {
-        originalCallback({
-          id: '2',
-          username: 'test',
-          message: 'world',
-          platform: 'twitch',
-        });
-      }
+      originalCallback({
+        id: '2',
+        username: 'test',
+        message: 'world',
+        platform: 'twitch',
+      });
 
       await waitFor(() => {
         // El nuevo callback debe ser llamado
@@ -235,7 +245,7 @@ describe('useSocket', () => {
     });
 
     it('debe identificar al usuario cuando se conecta', () => {
-      (socket as any).connected = true;
+      (socket as { connected: boolean }).connected = true;
 
       renderHook(() =>
         useSocket({
@@ -258,13 +268,15 @@ describe('useSocket', () => {
     });
 
     it('debe filtrar mensajes de plataformas desconectadas', () => {
+      type MessageCallback = (msg: unknown) => void;
       const onChatMessage = vi.fn();
-      let capturedCallback: Function | null = null;
+      let capturedCallback: MessageCallback | null = null;
 
-      (socket.on as any).mockImplementation((event: string, callback: Function) => {
+      vi.mocked(socket.on).mockImplementation((event: string, callback: MessageCallback) => {
         if (event === 'chat_message') {
           capturedCallback = callback;
         }
+        return socket as never;
       });
 
       renderHook(() =>
@@ -279,26 +291,23 @@ describe('useSocket', () => {
       );
 
       // Mensaje de plataforma conectada - debe pasar
-      if (capturedCallback) {
-        (capturedCallback as (...args: any[]) => void)({
-          id: '1',
-          username: 'test',
-          message: 'hello',
-          platform: 'twitch',
-        });
-      }
+      expect(capturedCallback).not.toBeNull();
+      capturedCallback!({
+        id: '1',
+        username: 'test',
+        message: 'hello',
+        platform: 'twitch',
+      });
 
       expect(onChatMessage).toHaveBeenCalledTimes(1);
 
       // Mensaje de plataforma desconectada - debe ser filtrado
-      if (capturedCallback) {
-        (capturedCallback as (...args: any[]) => void)({
-          id: '2',
-          username: 'test',
-          message: 'world',
-          platform: 'kick',
-        });
-      }
+      capturedCallback!({
+        id: '2',
+        username: 'test',
+        message: 'world',
+        platform: 'kick',
+      });
 
       // No debe haber sido llamado de nuevo
       expect(onChatMessage).toHaveBeenCalledTimes(1);
@@ -350,7 +359,7 @@ describe('useSocket', () => {
         }
       );
 
-      const initialOnCalls = (socket.on as any).mock.calls.length;
+      const initialOnCalls = vi.mocked(socket.on).mock.calls.length;
 
       // Cambiar connections
       rerender({
@@ -362,7 +371,7 @@ describe('useSocket', () => {
 
       await waitFor(() => {
         // No debe haber nuevos registros de listeners
-        const newOnCalls = (socket.on as any).mock.calls.length;
+        const newOnCalls = vi.mocked(socket.on).mock.calls.length;
         expect(newOnCalls).toBe(initialOnCalls);
       });
     });

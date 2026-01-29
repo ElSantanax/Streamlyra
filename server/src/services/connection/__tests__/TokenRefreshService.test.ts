@@ -29,17 +29,18 @@ describe('TokenRefreshService', () => {
     // Since TokenRefreshService instantiates them at module level, they correspond to
     // the first instance of each mock.
     let mockTwitchService: jest.Mocked<TwitchService>;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let mockYouTubeService: jest.Mocked<YouTubeService>;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let mockKickService: jest.Mocked<KickService>;
 
     const mockUserId = 'user-123';
 
     beforeAll(() => {
         // Access the instances created by the module import
-        // Note: Casting to jest.Mock because proper types hide the .mock property
-        mockTwitchService = (TwitchService as unknown as jest.Mock).mock.instances[0];
-        mockYouTubeService = (YouTubeService as unknown as jest.Mock).mock.instances[0];
-        mockKickService = (KickService as unknown as jest.Mock).mock.instances[0];
+        mockTwitchService = (TwitchService as unknown as jest.Mock).mock.instances[0] as jest.Mocked<TwitchService>;
+        mockYouTubeService = (YouTubeService as unknown as jest.Mock).mock.instances[0] as jest.Mocked<YouTubeService>;
+        mockKickService = (KickService as unknown as jest.Mock).mock.instances[0] as jest.Mocked<KickService>;
 
         if (!mockTwitchService) {
             throw new Error('TwitchService mock instance not found. Maintainer: Ensure jest.mock is working and module instantiation happens.');

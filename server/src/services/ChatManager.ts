@@ -1,7 +1,4 @@
-/**
- * Gestor de Chat
- * Responsabilidad: Orquestar conexión a proveedores de chat
- */
+/** Gestor de chat con orquestación de proveedores por plataforma */
 
 import { Server } from 'socket.io';
 import { Platform } from '../constants/platforms';
@@ -27,18 +24,13 @@ export class ChatManager {
         this.tiktokProvider = new TikTokChatProvider();
     }
 
-    /**
-     * Conecta todas las plataformas del usuario
-     */
     async connectUser(userId: string): Promise<void> {
         await withErrorHandling(
             async () => {
                 logger.info({ userId }, 'Connecting active chat providers');
 
-                // 1. Obtener conexiones activas del usuario
                 const connections = await this.connectionService.getAllConnections(userId);
 
-                // 2. Conectar solo las plataformas que tienen conexión
                 const promises = connections.map((conn: { provider: string }) =>
                     this.connectProvider(userId, conn.provider as Platform)
                 );
@@ -52,15 +44,11 @@ export class ChatManager {
         );
     }
 
-    /**
-     * Desconecta todas las plataformas del usuario
-     */
     async disconnectUser(userId: string): Promise<void> {
         await withErrorHandling(
             async () => {
                 logger.info({ userId }, 'Disconnecting all chat providers');
 
-                // Desconectar todas las plataformas
                 const platforms: Platform[] = ['twitch', 'youtube', 'kick', 'tiktok'];
                 const promises = platforms.map(platform =>
                     this.disconnectProvider(userId, platform)
@@ -75,9 +63,6 @@ export class ChatManager {
         );
     }
 
-    /**
-     * Conecta una plataforma específica
-     */
     async connectProvider(userId: string, platform: Platform): Promise<void> {
         await withErrorHandling(
             async () => {
@@ -97,7 +82,6 @@ export class ChatManager {
                         await this.tiktokProvider.connect(userId, this.io);
                         break;
                     default:
-                        // No lanzar error para no interrumpir otros flujos, solo logear
                         logger.warn({ platform }, 'Unknown platform for chat connection');
                 }
 
@@ -108,15 +92,11 @@ export class ChatManager {
         );
     }
 
-    /**
-     * Desconecta una plataforma específica
-     */
     async disconnectProvider(userId: string, platform: Platform): Promise<void> {
         await withErrorHandling(
             async () => {
                 logger.info({ platform, userId }, 'ChatManager: Disconnecting chat provider');
 
-                // Notificar al cliente que se desconectó (UI update)
                 SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0);
 
                 switch (platform) {

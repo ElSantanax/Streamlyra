@@ -19,16 +19,16 @@ beforeEach(() => {
 
 // Mock socket.io-client
 vi.mock('socket.io-client', () => {
-  const mockSocket = {
+  const createMockSocket = () => ({
     connected: false,
     on: vi.fn(),
     off: vi.fn(),
     emit: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
-  };
+  });
   
   return {
-    io: vi.fn(() => mockSocket),
+    io: vi.fn(() => createMockSocket()),
   };
 });

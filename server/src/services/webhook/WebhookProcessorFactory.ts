@@ -1,7 +1,4 @@
-/**
- * Factory para obtener el procesador de webhook correcto
- * Responsabilidad: Crear instancias del procesador apropiado por plataforma
- */
+/** Factory para crear instancias del procesador de webhook apropiado por plataforma */
 
 import { Server } from 'socket.io';
 import { Platform } from '../../constants/platforms';

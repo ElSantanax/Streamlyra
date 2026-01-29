@@ -1,9 +1,4 @@
-/**
- * Factory para crear instancias de servicios OAuth de plataformas
- * Centraliza la creación y gestión de servicios OAuth
- * 
- * Responsabilidad: Proporcionar el servicio correcto según la plataforma
- */
+/** Factory para crear instancias de servicios OAuth de plataformas */
 
 import { TwitchService } from './TwitchService';
 import { YouTubeService } from './YouTubeService';
@@ -19,12 +14,6 @@ export class PlatformServiceFactory {
         kick: new KickService()
     };
 
-    /**
-     * Obtiene el servicio OAuth para una plataforma
-     * @param platform - Plataforma (twitch, youtube, kick)
-     * @returns Servicio OAuth de la plataforma
-     * @throws AppError si la plataforma no es soportada
-     */
     static getService(platform: Platform): OAuthService {
         const service = this.OAUTH_SERVICES[platform];
         
@@ -35,11 +24,6 @@ export class PlatformServiceFactory {
         return service;
     }
 
-    /**
-     * Verifica si una plataforma soporta OAuth
-     * @param platform - Plataforma a verificar
-     * @returns true si la plataforma soporta OAuth
-     */
     static supportsOAuth(platform: Platform): boolean {
         return platform in this.OAUTH_SERVICES;
     }

@@ -1,3 +1,5 @@
+/** Configuración de logger con pino para desarrollo y producción */
+
 import pino from 'pino';
 import { config } from '../config';
 

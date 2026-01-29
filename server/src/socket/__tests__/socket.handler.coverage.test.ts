@@ -5,6 +5,8 @@ import { SocketConnectionManager } from '../SocketConnectionManager';
 import { MessageSenderService } from '../../services/message/MessageSenderService';
 import { logger } from '../../utils/logger';
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 // Mock dependencies
 jest.mock('../SocketConnectionManager');
 jest.mock('../../services/message/MessageSenderService');
@@ -26,14 +28,15 @@ describe('socket.handler', () => {
 
     // Helpers to capture event handlers
     let connectionHandler: (socket: Socket) => void;
-    const socketEventHandlers: Record<string, (payload?: unknown) => Promise<void>> = {};
+    type EventHandler = (payload?: unknown) => Promise<void>;
+    const socketEventHandlers: Record<string, EventHandler> = {};
 
     beforeEach(() => {
         jest.clearAllMocks();
 
         // Setup IO mock
         mockIo = {
-            on: jest.fn((event, handler) => {
+            on: jest.fn((event: string, handler: (socket: Socket) => void) => {
                 if (event === 'connection') {
                     connectionHandler = handler;
                 }
@@ -44,7 +47,8 @@ describe('socket.handler', () => {
         // Setup Socket mock
         mockSocket = {
             id: 'socket-123',
-            on: jest.fn((event, handler) => {
+             
+            on: jest.fn(<T extends EventHandler>(event: string, handler: T): void => {
                 socketEventHandlers[event] = handler;
             }),
             emit: jest.fn(),
@@ -78,9 +82,12 @@ describe('socket.handler', () => {
         });
 
         it('should emit error if payload is invalid (missing fields)', async () => {
-            const invalidPayload = { userId: '123' }; // Missing message and platforms
+            const invalidPayload: Record<string, unknown> = { userId: '123' }; // Missing message and platforms
 
-            await socketEventHandlers['send_message'](invalidPayload);
+            const handler = socketEventHandlers['send_message'];
+            if (handler) {
+                await handler(invalidPayload);
+            }
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_send_error', {
                 code: 'INVALID_PAYLOAD',
@@ -93,13 +100,16 @@ describe('socket.handler', () => {
         });
 
         it('should emit error if payload has invalid types', async () => {
-            const invalidPayload = {
+            const invalidPayload: Record<string, unknown> = {
                 userId: '123',
                 message: 123, // Should be string
                 platforms: ['twitch']
             };
 
-            await socketEventHandlers['send_message'](invalidPayload);
+            const handler = socketEventHandlers['send_message'];
+            if (handler) {
+                await handler(invalidPayload);
+            }
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_send_error', {
                 code: 'INVALID_PAYLOAD',

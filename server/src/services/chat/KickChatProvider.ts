@@ -1,3 +1,5 @@
+/** Proveedor de chat de Kick con polling de espectadores y webhooks */
+
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
 import { KickManager } from './kick/KickManager';
@@ -47,7 +49,6 @@ export class KickChatProvider implements ChatProvider {
             if (this.manager.isPolling(userId)) {
                 logger.debug({ userId }, 'Kick already connected and polling');
                 SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
-                // Al usar el manager unificado, startViewerPolling ya hace la primera llamada
                 this.manager.startViewerPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;
@@ -68,13 +69,11 @@ export class KickChatProvider implements ChatProvider {
 
             await this.disconnect(userId);
 
-            // Iniciar polling de espectadores
             this.manager.startViewerPolling(userId, accessToken, io);
 
             logger.info({ slug, userId }, 'Connected to Kick chat');
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
 
-            // Registrar webhook (ahora con tracking en DB)
             void this.manager.registerWebhook(userId, accessToken, broadcasterId);
 
         } catch (error) {
@@ -108,13 +107,5 @@ export class KickChatProvider implements ChatProvider {
         }
 
         logger.info({ userId }, 'KickChatProvider: Disconnect completed');
-
-        // NOTA: Kick no proporciona API para desregistrar webhooks
-        // Los webhooks quedan registrados en Kick hasta que expiren
-        // Sin embargo, ahora los trackeamos en DB y los marcamos como inactivos
-        // El webhook processor verificará el estado antes de procesar eventos
-        // 
-        // TODO: Investigar si Kick agregó API para desregistrar webhooks
-        // Referencia: https://docs.kick.com/docs/webhooks (verificar actualizaciones)
     }
 }

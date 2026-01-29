@@ -1,4 +1,5 @@
-import { TokenService } from './auth/TokenService';
+/** Servicio de autenticación con OAuth y gestión de perfiles de usuario por plataforma */
+
 import { PlatformServiceFactory } from './platforms/PlatformServiceFactory';
 import { ProfileSyncService } from './auth/ProfileSyncService';
 import { ConnectionCreationService } from './auth/ConnectionCreationService';
@@ -54,14 +55,6 @@ export class AuthService {
         this.profileSyncDecider = new ProfileSyncDecider();
     }
 
-    /**
-     * Maneja autenticación OAuth para plataformas (Twitch, YouTube, Kick)
-     * @param platform - Plataforma (twitch, youtube, kick)
-     * @param code - Código de autorización
-     * @param codeVerifier - Verificador de código (PKCE)
-     * @param currentUserId - ID del usuario actual (si está vinculando)
-     * @returns Token JWT y datos del usuario
-     */
     async handleOAuthAuth(
         platform: Platform,
         code: string,
@@ -70,20 +63,15 @@ export class AuthService {
     ) {
         const result = await withErrorHandling(
             async () => {
-                // 1. Validar entrada
                 this.inputValidator.validateAuthorizationCode(code, platform);
 
-                // 2. Obtener perfil y tokens de la plataforma
                 const oauthService = PlatformServiceFactory.getService(platform);
                 const { profile, tokens } = await oauthService.getProfileAndTokens(code, codeVerifier);
 
-                // 3. Validar tokens recibidos
                 this.inputValidator.validateOAuthTokens(tokens, platform);
 
-                // 4. Procesar autenticación
                 const authResult = await this.handlePlatformAuth(profile, tokens, currentUserId);
 
-                // 5. Conectar chat si es necesario (sin bloquear autenticación)
                 await this.chatOrchestrator.connectIfNeeded({
                     userId: authResult.user.id,
                     platform,
@@ -104,30 +92,19 @@ export class AuthService {
         return result;
     }
 
-    /**
-     * Maneja autenticación de TikTok (basada en username, sin OAuth)
-     * @param username - Username de TikTok
-     * @param currentUserId - ID del usuario actual
-     * @returns Token JWT y datos del usuario
-     */
     async handleTikTokAuth(username: string, currentUserId?: string) {
         if (!currentUserId) {
             throw new AppError('TikTok authentication requires an authenticated user', 401);
         }
 
-        // 1. Validar y limpiar username
         const cleanUsername = this.inputValidator.validateTikTokUsername(username);
 
-        // 2. Construir perfil de TikTok (Capa de Construcción de Datos)
         const profile = this.tiktokProfileFactory.createProfile(cleanUsername);
 
-        // 3. Generar tokens placeholder (Capa de Infraestructura)
         const tokens = this.tiktokTokenGenerator.generatePlaceholderTokens(cleanUsername);
 
-        // 4. Procesar autenticación
         const result = await this.handlePlatformAuth(profile, tokens, currentUserId);
 
-        // 5. Conectar chat si es necesario
         await this.chatOrchestrator.connectIfNeeded({
             userId: result.user.id,
             platform: 'tiktok',
@@ -138,13 +115,6 @@ export class AuthService {
         return result;
     }
 
-    /**
-     * Procesa autenticación de plataforma (lógica común)
-     * @param profile - Perfil de la plataforma
-     * @param tokens - Tokens de acceso
-     * @param currentUserId - ID del usuario actual (si está vinculando)
-     * @returns Token JWT y datos del usuario
-     */
     private async handlePlatformAuth(profile: PlatformProfile, tokens: AuthTokens, currentUserId?: string) {
         const result = await withErrorHandling(
             async () => {
@@ -153,17 +123,14 @@ export class AuthService {
                     'Starting platform authentication'
                 );
 
-                // 1. Crear o encontrar usuario
                 const { user, isNew } = await this.userService.findOrCreateFromPlatform(profile, currentUserId);
                 logger.info({ userId: user.id, isNew }, 'User found or created');
 
-                // 2. Verificar si existe conexión previa
                 const existingConnection = await this.connectionService.getConnectionByProvider(
                     profile.provider,
                     profile.providerId
                 );
 
-                // 3. Decidir si activar conexión de streaming
                 const activationContext: ConnectionActivationContext = {
                     isNewUser: isNew,
                     isLinkingAccount: !!currentUserId,
@@ -175,7 +142,6 @@ export class AuthService {
                 const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
                 const activationReason = this.activationDecider.getActivationReason(activationContext);
 
-                // 4. Crear o actualizar conexión si es necesario
                 if (shouldActivate) {
                     await this.connectionCreationService.createOrUpdate(
                         user.id,
@@ -190,7 +156,6 @@ export class AuthService {
                     );
                 }
 
-                // 5. Sincronizar perfil si es necesario (Capa de Lógica de Negocio)
                 const syncContext: ProfileSyncContext = {
                     isNewUser: isNew,
                     isLinkingAccount: !!currentUserId,
@@ -205,7 +170,6 @@ export class AuthService {
 
                 logger.info({ userId: user.id, platform: profile.provider }, 'Platform authentication completed');
 
-                // 6. Construir respuesta (Capa de Presentación)
                 return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
             },
             { action: 'handlePlatformAuth', provider: profile.provider },
@@ -223,14 +187,12 @@ export class AuthService {
         const user = await this.userService.getById(userId);
         if (!user) return null;
 
-        // Construir respuesta usando UserProfileBuilder (Capa de Presentación)
         return this.userProfileBuilder.buildUserProfile(user);
     }
 
     async disconnectPlatform(userId: string, provider: Platform) {
         logger.info({ userId, provider }, 'AuthService: Starting platform disconnection');
 
-        // 1. Remover conexión de la base de datos
         const deletedCount = await this.connectionService.removeConnection(userId, provider);
 
         if (deletedCount === 0) {
@@ -240,7 +202,6 @@ export class AuthService {
 
         logger.info({ userId, provider, deletedCount }, 'AuthService: Connection removed from database');
 
-        // 2. Desconectar chat (no bloquear si falla)
         await this.chatOrchestrator.disconnect(userId, provider);
 
         logger.info({ userId, provider }, 'AuthService: Platform disconnection completed');

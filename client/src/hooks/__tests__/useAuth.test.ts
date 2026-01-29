@@ -44,24 +44,24 @@ describe('useAuth', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (useNavigate as any).mockReturnValue(mockNavigate);
+        vi.mocked(useNavigate).mockReturnValue(mockNavigate);
         localStorage.clear();
 
-        delete (window as any).location;
+        delete (window as unknown as { location: unknown }).location;
         window.location = {
             ...originalLocation,
             href: '',
             pathname: '/dashboard',
-        } as any;
+        } as Location;
     });
 
     afterEach(() => {
-        (window as any).location = originalLocation;
+        (window as unknown as { location: Location }).location = originalLocation;
     });
 
     describe('checkAuth', () => {
         it('debe llamar a /auth/me automáticamente al montar', async () => {
-            (authService.getMe as any).mockResolvedValue({ user: { id: '1' } });
+            vi.mocked(authService.getMe).mockResolvedValue({ user: { id: '1' } });
 
             renderHook(() => useAuth(), { wrapper });
 
@@ -72,7 +72,7 @@ describe('useAuth', () => {
 
         it('debe actualizar el usuario tras una respuesta exitosa de /auth/me', async () => {
             const mockUser = { id: '1', username: 'testuser' };
-            (authService.getMe as any).mockResolvedValue({ user: mockUser });
+            vi.mocked(authService.getMe).mockResolvedValue({ user: mockUser });
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -88,7 +88,7 @@ describe('useAuth', () => {
         });
 
         it('debe limpiar la sesión si /auth/me falla', async () => {
-            (authService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
+            vi.mocked(authService.getMe).mockRejectedValue(new Error('Unauthorized'));
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -101,15 +101,15 @@ describe('useAuth', () => {
         });
 
         it('debe manejar el estado isChecking correctamente', async () => {
-            let resolveGetMe: (value: any) => void;
-            const promise = new Promise((resolve) => {
+            let resolveGetMe: ((value: { user: { id: string } }) => void) | undefined;
+            const promise = new Promise<{ user: { id: string } }>((resolve) => {
                 resolveGetMe = resolve;
             });
-            (authService.getMe as any).mockReturnValue(promise);
+            vi.mocked(authService.getMe).mockReturnValue(promise);
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
-            let checkPromise: Promise<any>;
+            let checkPromise: Promise<unknown>;
             act(() => {
                 checkPromise = result.current.checkAuth();
             });
@@ -132,8 +132,8 @@ describe('useAuth', () => {
 
     describe('logout', () => {
         it('debe limpiar todo al cerrar sesión', async () => {
-            (authService.logout as any).mockResolvedValue({ success: true });
-            (authService.getMe as any).mockRejectedValue(new Error('Unauthorized'));
+            vi.mocked(authService.logout).mockResolvedValue({ success: true });
+            vi.mocked(authService.getMe).mockRejectedValue(new Error('Unauthorized'));
             localStorage.setItem('user', JSON.stringify({ id: '1' }));
 
             const { result } = renderHook(() => useAuth(), { wrapper });

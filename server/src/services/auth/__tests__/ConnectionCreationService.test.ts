@@ -3,6 +3,8 @@ import { Connection } from '../../../models/Connection.model';
 import { logger } from '../../../utils/logger';
 import { AuthTokens } from '../../../types';
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 // Mock dependencies
 jest.mock('../../../models/Connection.model');
 jest.mock('../../../utils/logger', () => ({
@@ -32,14 +34,22 @@ describe('ConnectionCreationService', () => {
     describe('createOrUpdate', () => {
         it('should update existing connection if found', async () => {
             // Mock existing connection
-            const mockConnection = {
+            interface MockConnection {
+                id: string;
+                userId: string;
+                provider: string;
+                update: jest.Mock;
+            }
+            
+            const mockConnection: MockConnection = {
                 id: 'conn-1',
                 userId: mockUserId,
                 provider: mockPlatform,
                 update: jest.fn().mockResolvedValue(true)
             };
 
-            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
+            const findOneMock = Connection.findOne as jest.Mock;
+            findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
 
             const result = await service.createOrUpdate(
                 mockUserId,
@@ -69,7 +79,16 @@ describe('ConnectionCreationService', () => {
         });
 
         it('should use existing provider details if new ones not provided during update', async () => {
-            const mockConnection = {
+            interface MockConnection {
+                id: string;
+                userId: string;
+                provider: string;
+                providerId: string;
+                providerUsername: string;
+                update: jest.Mock;
+            }
+            
+            const mockConnection: MockConnection = {
                 id: 'conn-1',
                 userId: mockUserId,
                 provider: mockPlatform,
@@ -78,7 +97,9 @@ describe('ConnectionCreationService', () => {
                 update: jest.fn().mockResolvedValue(true)
             };
 
-            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
+             
+            const findOneMock = Connection.findOne as jest.Mock;
+            findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
 
             await service.createOrUpdate(
                 mockUserId,
@@ -132,7 +153,7 @@ describe('ConnectionCreationService', () => {
             try {
                 await service.createOrUpdate(mockUserId, mockPlatform, mockTokens);
                 fail('Should have thrown an error');
-            } catch (e) {
+            } catch (e: unknown) {
                 expect(e).toBe(error);
                 expect(logger.error).toHaveBeenCalledWith(
                     expect.objectContaining({ err: error }),

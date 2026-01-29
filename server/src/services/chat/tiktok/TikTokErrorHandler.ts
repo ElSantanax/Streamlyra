@@ -1,7 +1,4 @@
-/**
- * Manejador de Errores de TikTok
- * Responsabilidad: Categorizar y proporcionar información sobre errores de conexión
- */
+/** Manejador de errores de TikTok con categorización y mensajes específicos por tipo */
 
 export interface TikTokErrorInfo {
     type: string;
@@ -19,7 +16,6 @@ export class TikTokErrorHandler {
         const errorStr = String(error);
         const errorObj = error as ErrorWithAggregates;
 
-        // Error de usuario no encontrado (permanente)
         if (this.isUserNotFoundError(errorStr, errorObj)) {
             return {
                 type: 'user_not_found',
@@ -29,7 +25,6 @@ export class TikTokErrorHandler {
             };
         }
 
-        // Error de cuenta privada/oculta (permanente)
         if (this.isPrivateAccountError(errorStr)) {
             return {
                 type: 'private_account',
@@ -39,7 +34,6 @@ export class TikTokErrorHandler {
             };
         }
 
-        // Error de bloqueo por TikTok (temporal pero requiere atención)
         if (this.isBlockedError(errorStr)) {
             return {
                 type: 'blocked',
@@ -49,7 +43,6 @@ export class TikTokErrorHandler {
             };
         }
 
-        // Usuario no está en vivo (temporal - recuperable)
         if (this.isNotLiveError(errorStr)) {
             return {
                 type: 'not_live',
@@ -59,7 +52,6 @@ export class TikTokErrorHandler {
             };
         }
 
-        // Timeout de conexión (temporal - recuperable)
         if (this.isTimeoutError(errorStr)) {
             return {
                 type: 'timeout',
@@ -69,7 +61,6 @@ export class TikTokErrorHandler {
             };
         }
 
-        // Error genérico (temporal - recuperable)
         return {
             type: 'unknown',
             isPermanent: false,

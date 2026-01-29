@@ -1,12 +1,7 @@
-/**
- * Constructor de Perfiles de Usuario
- * Responsabilidad: Construir respuestas de perfil de usuario (Capa de Presentación)
- * 
- * Transforma datos del modelo de usuario en DTOs de respuesta,
- * separando la transformación de datos de la lógica de negocio.
- */
+/** Constructor de perfiles de usuario para transformar datos del modelo en DTOs de respuesta */
 
 import { User } from '../../models/User.model';
+import { Connection } from '../../models/Connection.model';
 import { Platform } from '../../constants/platforms';
 
 interface ConnectionData {
@@ -27,11 +22,6 @@ export interface UserProfileResponse {
 }
 
 export class UserProfileBuilder {
-    /**
-     * Construye la respuesta completa de perfil de usuario
-     * @param user - Usuario del modelo (con conexiones cargadas)
-     * @returns Respuesta de perfil formateada
-     */
     buildUserProfile(user: User): UserProfileResponse {
         return {
             user: this.buildUserDTO(user),
@@ -39,11 +29,6 @@ export class UserProfileBuilder {
         };
     }
 
-    /**
-     * Construye el DTO de usuario básico
-     * @param user - Usuario del modelo
-     * @returns DTO de usuario
-     */
     private buildUserDTO(user: User) {
         return {
             id: user.id,
@@ -53,17 +38,7 @@ export class UserProfileBuilder {
         };
     }
 
-    /**
-     * Construye el mapa de conexiones de plataformas
-     * 
-     * Crea un mapa con todas las plataformas soportadas,
-     * marcando como conectadas solo las que el usuario tiene activas.
-     * 
-     * @param connections - Conexiones del usuario
-     * @returns Mapa de conexiones por plataforma
-     */
-    private buildConnectionsMap(connections: any[]): ConnectionsMap {
-        // Inicializar todas las plataformas como desconectadas
+    private buildConnectionsMap(connections: Connection[]): ConnectionsMap {
         const connectionsMap: ConnectionsMap = {
             twitch: { connected: false },
             youtube: { connected: false },
@@ -71,11 +46,13 @@ export class UserProfileBuilder {
             tiktok: { connected: false }
         };
 
-        // Marcar como conectadas las plataformas activas
-        connections.forEach(conn => {
-            connectionsMap[conn.provider as Platform] = {
+        connections.forEach((conn) => {
+            const provider = conn.provider as Platform;
+            if (!provider || !connectionsMap[provider]) return;
+
+            connectionsMap[provider] = {
                 connected: true,
-                username: conn.providerUsername
+                username: conn.providerUsername || undefined
             };
         });
 

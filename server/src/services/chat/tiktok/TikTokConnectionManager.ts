@@ -1,16 +1,13 @@
-/**
- * Gestor de Conexión de TikTok
- * Responsabilidad: Gestionar conexión WebSocket a TikTok
- */
+/** Gestor de conexión WebSocket de TikTok con timeout de conexión */
 
-import { WebcastPushConnection } from 'tiktok-live-connector';
+import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { logger } from '../../../utils/logger';
 
 export class TikTokConnectionManager {
     private static readonly CONNECTION_TIMEOUT_MS = 15000;
 
-    async connect(username: string): Promise<WebcastPushConnection> {
-        const tiktokChat = new WebcastPushConnection(username);
+    async connect(username: string): Promise<TikTokLiveConnection> {
+        const tiktokChat = new TikTokLiveConnection(username);
 
         await Promise.race([
             tiktokChat.connect(),
@@ -23,7 +20,7 @@ export class TikTokConnectionManager {
         return tiktokChat;
     }
 
-    async disconnect(connection: WebcastPushConnection): Promise<void> {
+    async disconnect(connection: TikTokLiveConnection): Promise<void> {
         try {
             connection.disconnect();
         } catch (error) {

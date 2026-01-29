@@ -1,7 +1,4 @@
-/**
- * Servicio de Creación de Conexión
- * Responsabilidad: Crear o actualizar conexión de usuario con plataforma
- */
+/** Servicio de creación y actualización de conexiones de usuario con plataformas */
 
 import { Platform } from '../../constants/platforms';
 import { Connection } from '../../models/Connection.model';

@@ -21,10 +21,10 @@ vi.mock('../../../../services/socket', () => ({
     socket: {
         connected: true,
         emit: vi.fn(),
-        on: vi.fn((event: string, handler: Function) => {
+        on: vi.fn((event: string, handler: (result: MessageSentResult) => void) => {
             // Store handlers for manual triggering in tests
-            (socket as any)._handlers = (socket as any)._handlers || {};
-            (socket as any)._handlers[event] = handler;
+            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers || {};
+            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers[event] = handler;
         }),
         off: vi.fn(),
     }
@@ -45,8 +45,8 @@ vi.mock('../../../../hooks/useAuth', () => ({
 describe('Feature: multi-platform-message-sending, Property 19: Notification matches result type', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (socket as any).connected = true;
-        (socket as any)._handlers = {};
+        (socket as { connected: boolean }).connected = true;
+        (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
     });
 
     afterEach(() => {
@@ -124,7 +124,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                         };
 
                         // Trigger the message_sent_result handler
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         if (!handler) {
                             throw new Error('message_sent_result handler not registered');
                         }
@@ -133,7 +133,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                         // Wait for state updates
                         await waitFor(() => {
                             // UI OPTIMISTA: No debe llamar a toast.success para no saturar al usuario
-                            if ((toast.success as any).mock.calls.length > 0) {
+                            if (vi.mocked(toast.success).mock.calls.length > 0) {
                                 throw new Error('toast.success should NOT be called in optimistic UI to avoid clutter');
                             }
                         }, { timeout: 1000 });
@@ -208,23 +208,23 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                             results: mixedResults,
                         };
 
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
                             // Property: toast.warning should be called for partial success
-                            if ((toast.warning as any).mock.calls.length === 0) {
+                            if (vi.mocked(toast.warning).mock.calls.length === 0) {
                                 throw new Error('toast.warning should be called when some platforms fail');
                             }
                         }, { timeout: 1000 });
 
                         // Verify toast.success was NOT called (should be warning instead)
-                        if ((toast.success as any).mock.calls.length > 0) {
+                        if (vi.mocked(toast.success).mock.calls.length > 0) {
                             throw new Error('toast.success should not be called when some platforms fail');
                         }
 
                         // Verify the warning message includes both successful and failed platforms
-                        const warningCall = (toast.warning as any).mock.calls[0];
+                        const warningCall = vi.mocked(toast.warning).mock.calls[0];
                         const warningMessage = warningCall[0] as string;
 
                         const successfulPlatforms = mixedResults.filter(r => r.success);
@@ -309,26 +309,26 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                             results: failedResults,
                         };
 
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
                             // Property: toast.error should be called when all platforms fail
-                            if ((toast.error as any).mock.calls.length === 0) {
+                            if (vi.mocked(toast.error).mock.calls.length === 0) {
                                 throw new Error('toast.error should be called when all platforms fail');
                             }
                         }, { timeout: 1000 });
 
                         // Verify toast.success and toast.warning were NOT called
-                        if ((toast.success as any).mock.calls.length > 0) {
+                        if (vi.mocked(toast.success).mock.calls.length > 0) {
                             throw new Error('toast.success should not be called when all platforms fail');
                         }
-                        if ((toast.warning as any).mock.calls.length > 0) {
+                        if (vi.mocked(toast.warning).mock.calls.length > 0) {
                             throw new Error('toast.warning should not be called when all platforms fail');
                         }
 
                         // Verify the error message includes failed platforms
-                        const errorCall = (toast.error as any).mock.calls[0];
+                        const errorCall = vi.mocked(toast.error).mock.calls[0];
                         const errorMessage = errorCall[0] as string;
 
                         for (const result of failedResults) {
@@ -353,8 +353,8 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
 describe('Feature: multi-platform-message-sending, Property 20: Platform errors include details', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (socket as any).connected = true;
-        (socket as any)._handlers = {};
+        (socket as { connected: boolean }).connected = true;
+        (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
     });
 
     afterEach(() => {
@@ -422,17 +422,17 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             results: failedResults,
                         };
 
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
                             // Should call toast.error for complete failure
-                            if ((toast.error as any).mock.calls.length === 0) {
+                            if (vi.mocked(toast.error).mock.calls.length === 0) {
                                 throw new Error('toast.error should be called');
                             }
                         }, { timeout: 1000 });
 
-                        const errorCall = (toast.error as any).mock.calls[0];
+                        const errorCall = vi.mocked(toast.error).mock.calls[0];
                         const errorMessage = errorCall[0] as string;
 
                         // Property: For each failed platform, the notification must include:
@@ -513,17 +513,17 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             results: [successResult, failureResult],
                         };
 
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
                             // Should call toast.warning for partial success
-                            if ((toast.warning as any).mock.calls.length === 0) {
+                            if (vi.mocked(toast.warning).mock.calls.length === 0) {
                                 throw new Error('toast.warning should be called for partial success');
                             }
                         }, { timeout: 1000 });
 
-                        const warningCall = (toast.warning as any).mock.calls[0];
+                        const warningCall = vi.mocked(toast.warning).mock.calls[0];
                         const warningMessage = warningCall[0] as string;
 
                         // Property: Failed platform details must be included in partial success notification
@@ -607,16 +607,16 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             }],
                         };
 
-                        const handler = (socket as any)._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
-                            if ((toast.error as any).mock.calls.length === 0) {
+                            if (vi.mocked(toast.error).mock.calls.length === 0) {
                                 throw new Error('toast.error should be called');
                             }
                         }, { timeout: 1000 });
 
-                        const errorCall = (toast.error as any).mock.calls[0];
+                        const errorCall = vi.mocked(toast.error).mock.calls[0];
                         const errorMessage = errorCall[0] as string;
 
                         // Property: Specific error message must be preserved in notification

@@ -10,6 +10,7 @@ export interface ChatMessage {
   message: string;
   time: string;
   platform: PlatformKey;
+  color?: string;
   isSub?: boolean;
   isMod?: boolean;
   isVIP?: boolean;

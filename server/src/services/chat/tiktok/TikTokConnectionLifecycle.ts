@@ -1,10 +1,7 @@
-/**
- * Ciclo de Vida de Conexión de TikTok
- * Responsabilidad: Gestionar el proceso completo de conexión y desconexión
- */
+/** Ciclo de vida de conexión de TikTok con gestión completa de conexión y desconexión */
 
 import { Server } from 'socket.io';
-import { WebcastPushConnection } from 'tiktok-live-connector';
+import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { Connection } from '../../../models/Connection.model';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
@@ -21,7 +18,7 @@ export class TikTokConnectionLifecycle {
         private readonly stateManager: TikTokConnectionStateManager,
         private readonly errorHandler: TikTokErrorHandler,
         private readonly reconnectionStrategy: TikTokReconnectionStrategy
-    ) {}
+    ) { }
 
     async validateAndGetUsername(userId: string): Promise<string | null> {
         const connection = await Connection.findOne({
@@ -46,7 +43,7 @@ export class TikTokConnectionLifecycle {
         userId: string,
         username: string,
         io: Server,
-        onConnect: (connection: WebcastPushConnection) => void
+        onConnect: (connection: TikTokLiveConnection) => void
     ): Promise<void> {
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting');
         logger.info({ username, userId }, 'Attempting TikTok connection');
@@ -72,7 +69,6 @@ export class TikTokConnectionLifecycle {
 
         const errorInfo = this.errorHandler.categorizeError(error, username);
 
-        // Log del error completo para debugging
         logger.debug({
             username,
             userId,
@@ -81,7 +77,6 @@ export class TikTokConnectionLifecycle {
             errorMessage: String(error)
         }, 'TikTok connection error details');
 
-        // Log según severidad del error
         if (errorInfo.isPermanent) {
             logger.warn({ username, userId, errorType: errorInfo.type }, errorInfo.logMessage);
         } else {
@@ -90,23 +85,24 @@ export class TikTokConnectionLifecycle {
 
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'error', errorInfo.userMessage);
 
-        // Solo reintentar si el error es recuperable y debe reconectar
         if (!errorInfo.isPermanent && this.stateManager.shouldAutoReconnect(userId)) {
             const cleanup = this.reconnectionStrategy.startRetry(retryFn, username);
             this.stateManager.setRetryCleanup(userId, cleanup);
         } else {
-            // Error permanente - no tiene sentido reintentar
             this.stateManager.removeConnecting(userId);
             this.stateManager.disableAutoReconnect(userId);
         }
     }
 
-    setupDisconnectionHandler(userId: string, connection: WebcastPushConnection, io: Server, reconnectFn: () => void): void {
-        connection.on('disconnected', async () => {
+    setupDisconnectionHandler(userId: string, connection: TikTokLiveConnection, io: Server, reconnectFn: () => void): void {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        const conn = connection as any;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        conn.on('disconnected', async () => {
             logger.info({ userId }, 'TikTok disconnected');
             this.stateManager.removeActiveConnection(userId);
 
-            // Solo reconectar si está habilitado y la conexión todavía existe en BD
             if (this.stateManager.shouldAutoReconnect(userId)) {
                 const stillExists = await this.checkConnectionStillExists(userId);
 
@@ -122,7 +118,8 @@ export class TikTokConnectionLifecycle {
             }
         });
 
-        connection.on('error', (error: Error) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        conn.on('error', (error: Error) => {
             logger.error({ error, userId }, 'TikTok connection error');
             connection.disconnect();
         });
@@ -131,22 +128,22 @@ export class TikTokConnectionLifecycle {
     async performDisconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'TikTokChatProvider: Starting disconnect');
 
-        // IMPORTANTE: Remover listeners PRIMERO para evitar que el evento 'disconnected'
-        // se dispare después de que eliminemos shouldReconnect
         const connection = this.stateManager.getActiveConnection(userId);
         if (connection) {
             logger.debug({ userId }, 'TikTokChatProvider: Removing event listeners');
-            connection.removeAllListeners('disconnected'); // Evitar reconexión automática
-            connection.removeAllListeners('error');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+            const conn = connection as any;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            conn.removeAllListeners('disconnected');
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            conn.removeAllListeners('error');
         } else {
             logger.debug({ userId }, 'TikTokChatProvider: No active connection found');
         }
 
-        // Ahora es seguro deshabilitar reconexión automática
         logger.debug({ userId }, 'TikTokChatProvider: Disabling auto-reconnect');
         this.stateManager.disableAutoReconnect(userId);
 
-        // Cancelar cualquier reintento pendiente
         const cleanup = this.stateManager.getRetryCleanup(userId);
         if (cleanup) {
             logger.debug({ userId }, 'TikTokChatProvider: Canceling retry cleanup');
@@ -156,7 +153,6 @@ export class TikTokConnectionLifecycle {
             logger.debug({ userId }, 'TikTokChatProvider: No retry cleanup found to cancel');
         }
 
-        // Finalmente desconectar y limpiar
         if (connection) {
             logger.debug({ userId }, 'TikTokChatProvider: Disconnecting WebSocket');
             await this.connectionManager.disconnect(connection);

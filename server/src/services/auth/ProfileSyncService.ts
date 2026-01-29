@@ -1,7 +1,4 @@
-/**
- * Servicio de Sincronización de Perfil
- * Responsabilidad: Sincronizar datos del perfil de plataforma con usuario local
- */
+/** Servicio de sincronización de datos del perfil de plataforma con usuario local */
 
 import { User } from '../../models/User.model';
 import { PlatformProfile } from '../../types/index';

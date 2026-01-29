@@ -1,3 +1,5 @@
+/** Utilidades para intercambio de códigos OAuth y refresh de tokens */
+
 import axios from 'axios';
 
 export interface OAuthExchangeOptions {

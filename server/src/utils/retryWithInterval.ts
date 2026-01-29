@@ -1,7 +1,5 @@
-/**
- * Retry with Interval - Execute a function repeatedly until success
- * Useful for polling, reconnection attempts, discovery patterns
- */
+/** Reintentos con intervalo fijo para polling y reconexión */
+
 export interface RetryOptions {
     intervalMs?: number;
     onSuccess?: () => void;
@@ -31,6 +29,5 @@ export function retryWithInterval(
         }
     }, intervalMs);
 
-    // Return cleanup function
     return () => clearInterval(interval);
 }

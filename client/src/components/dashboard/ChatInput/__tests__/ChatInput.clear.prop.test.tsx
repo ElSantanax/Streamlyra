@@ -45,10 +45,10 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
         messageResultHandler = null;
 
         // Ensure socket is connected
-        (socket as any).connected = true;
+        (socket as { connected: boolean }).connected = true;
 
         // Capture the message_sent_result handler when socket.on is called
-        (socket.on as any).mockImplementation((event: string, handler: any) => {
+        vi.mocked(socket.on).mockImplementation((event: string, handler: (result: MessageSentResult) => void) => {
             if (event === 'message_sent_result') {
                 messageResultHandler = handler;
             }

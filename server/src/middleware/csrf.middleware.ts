@@ -1,3 +1,6 @@
+/**
+ * Middleware de protección CSRF - Genera y valida tokens CSRF para prevenir ataques
+ */
 import crypto from 'crypto';
 import { NextFunction, Response } from 'express';
 import { AppError } from '../utils/AppError';

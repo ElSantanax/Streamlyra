@@ -1,12 +1,4 @@
-/**
- * Utilidades para Manejo de Errores
- * Responsabilidad: Centralizar patrones de manejo de errores
- * 
- * Proporciona funciones helper para:
- * - Ejecutar código con logging automático
- * - Manejar errores de forma consistente
- * - Emitir eventos de error a Socket.io
- */
+/** Utilidades para manejo de errores con logging automático */
 
 import { logger } from './logger';
 
@@ -17,15 +9,6 @@ export interface ErrorContext {
     [key: string]: unknown;
 }
 
-/**
- * Ejecuta una función con manejo de errores automático
- * 
- * Características:
- * - Logging automático de inicio y fin
- * - Logging automático de errores
- * - Opcionalmente relanza el error
- * - Contexto personalizado en logs
- */
 export async function withErrorHandling<T>(
     fn: () => Promise<T>,
     context: ErrorContext & { action: string },

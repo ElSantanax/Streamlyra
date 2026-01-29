@@ -21,7 +21,7 @@ export class KickEventTransformer extends BaseEventTransformer {
             user: sender?.username || 'Sistema',
             message: content || '',
             time: this.formatTime(new Date(created_at || Date.now())),
-            color: sender?.identity?.username_color || '#53FC18',
+            color: '#53fc18', // Color verde de Kick
             isMod: sender?.identity?.badges?.some((b) => b.type === 'moderator') || false,
             isSub: sender?.identity?.badges?.some((b) => b.type === 'subscriber') || false,
             isVIP: sender?.is_verified || false,
@@ -29,6 +29,7 @@ export class KickEventTransformer extends BaseEventTransformer {
         };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
     }

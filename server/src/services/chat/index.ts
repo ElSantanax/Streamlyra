@@ -1,14 +1,4 @@
-/**
- * Exports de servicios de chat
- * 
- * IMPORTANTE: Cada plataforma tiene su propio provider porque:
- * - Twitch: Usa tmi.js (biblioteca externa)
- * - YouTube: Usa HTTP polling
- * - Kick: Usa HTTP polling + Webhook
- * - TikTok: Usa WebSocket (tiktok-live-connector)
- * 
- * Responsabilidad: Conectar a chat de cada plataforma y emitir eventos
- */
+/** Exports centralizados de servicios de chat por plataforma */
 
 export { ChatProvider } from './ChatProvider';
 export { TwitchChatProvider } from './TwitchChatProvider';

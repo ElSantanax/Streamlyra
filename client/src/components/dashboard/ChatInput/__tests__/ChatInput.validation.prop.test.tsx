@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import ChatInput from '../index';
 import { toast } from '../../../../lib/notifications/toast';
 import { socket } from '../../../../services/socket';
+import type { SendMessagePayload } from '../../../../types/message.types';
 
 // Mock dependencies
 vi.mock('../../../../lib/notifications/toast', () => ({
@@ -97,14 +98,14 @@ describe('Feature: multi-platform-message-sending, Property 5: Empty messages ar
                         await user.click(sendButton);
 
                         // Verify that an error toast was shown
-                        if ((toast.error as any).mock.calls.length === 0) {
+                        if (vi.mocked(toast.error).mock.calls.length === 0) {
                             throw new Error(
                                 `Expected error toast for invalid message "${invalidMessage}", but none was shown`
                             );
                         }
 
                         // Verify that the socket emit was NOT called (message was rejected)
-                        if ((socket.emit as any).mock.calls.length > 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length > 0) {
                             throw new Error(
                                 `Socket emit should not be called for invalid message "${invalidMessage}"`
                             );
@@ -155,12 +156,12 @@ describe('Feature: multi-platform-message-sending, Property 5: Empty messages ar
                         await user.type(messageInput, '{Enter}');
 
                         // Verify error toast was shown
-                        if ((toast.error as any).mock.calls.length === 0) {
+                        if (vi.mocked(toast.error).mock.calls.length === 0) {
                             throw new Error('Expected error toast when submitting empty message via Enter');
                         }
 
                         // Verify socket emit was not called
-                        if ((socket.emit as any).mock.calls.length > 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length > 0) {
                             throw new Error('Socket emit should not be called for empty message via Enter');
                         }
 
@@ -294,7 +295,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
     beforeEach(() => {
         vi.clearAllMocks();
         // Ensure socket is connected for these tests
-        (socket as any).connected = true;
+        (socket as { connected: boolean }).connected = true;
     });
 
     afterEach(() => {
@@ -345,15 +346,15 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                         await user.click(sendButton);
 
                         // Verify that socket emit WAS called (send process initiated)
-                        if ((socket.emit as any).mock.calls.length === 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length === 0) {
                             throw new Error(
                                 `Socket emit should be called for valid message "${validMessage}"`
                             );
                         }
 
                         // Verify the emit was called with 'send_message' event
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCall = emitCalls.find((call: any[]) => call[0] === 'send_message');
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCall = emitCalls.find((call: unknown[]) => call[0] === 'send_message');
                         
                         if (!sendMessageCall) {
                             throw new Error(
@@ -362,7 +363,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                         }
 
                         // Verify the payload contains the trimmed message
-                        const payload = sendMessageCall[1];
+                        const payload = sendMessageCall[1] as SendMessagePayload;
                         if (payload.message !== validMessage.trim()) {
                             throw new Error(
                                 `Expected payload message to be "${validMessage.trim()}", got "${payload.message}"`
@@ -370,7 +371,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                         }
 
                         // Verify no error toast was shown
-                        if ((toast.error as any).mock.calls.length > 0) {
+                        if (vi.mocked(toast.error).mock.calls.length > 0) {
                             throw new Error(
                                 `Error toast should not be shown for valid message "${validMessage}"`
                             );
@@ -436,16 +437,16 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                         await user.click(sendButton);
 
                         // Verify socket emit was called
-                        if ((socket.emit as any).mock.calls.length === 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length === 0) {
                             throw new Error(
                                 `Socket emit should be called for message with whitespace "${fullMessage}"`
                             );
                         }
 
                         // Verify the payload contains the TRIMMED message
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCall = emitCalls.find((call: any[]) => call[0] === 'send_message');
-                        const payload = sendMessageCall[1];
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCall = emitCalls.find((call: unknown[]) => call[0] === 'send_message');
+                        const payload = sendMessageCall?.[1] as SendMessagePayload;
                         
                         if (payload.message !== fullMessage.trim()) {
                             throw new Error(
@@ -500,7 +501,7 @@ describe('Feature: multi-platform-message-sending, Property 7: Valid messages tr
                         await user.type(messageInput, '{Enter}');
 
                         // Verify socket emit was called
-                        if ((socket.emit as any).mock.calls.length === 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length === 0) {
                             throw new Error(
                                 `Socket emit should be called when submitting valid message via Enter: "${validMessage}"`
                             );

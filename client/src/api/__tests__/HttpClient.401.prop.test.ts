@@ -17,18 +17,18 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
         vi.clearAllMocks();
 
         // Mock window.location
-        delete (window as any).location;
+        delete (window as unknown as { location: unknown }).location;
         window.location = {
             ...originalLocation,
             href: '',
             pathname: '/dashboard',
-        } as any;
+        } as Location;
 
         vi.stubGlobal('fetch', vi.fn());
     });
 
     afterEach(() => {
-        (window as any).location = originalLocation;
+        (window as unknown as { location: Location }).location = originalLocation;
     });
 
     /**
@@ -44,11 +44,11 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
                 fc.object(),
                 async (endpoint, method, body) => {
                     // Setup fetch to return 401
-                    (fetch as any).mockResolvedValue({
+                    vi.mocked(fetch).mockResolvedValue({
                         ok: false,
                         status: 401,
                         json: async () => ({ error: 'Unauthorized' }),
-                    });
+                    } as Response);
 
                     vi.clearAllMocks();
 
@@ -81,11 +81,11 @@ describe('HttpClient Property-based Tests - 401 Handling', () => {
             fc.asyncProperty(
                 fc.integer({ min: 2, max: 10 }), // Número de llamadas paralelas
                 async (numCalls) => {
-                    (fetch as any).mockResolvedValue({
+                    vi.mocked(fetch).mockResolvedValue({
                         ok: false,
                         status: 401,
                         json: async () => ({ error: 'Unauthorized' }),
-                    });
+                    } as Response);
 
                     vi.clearAllMocks();
 

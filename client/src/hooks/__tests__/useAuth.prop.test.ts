@@ -34,7 +34,7 @@ describe('useAuth Property-based Tests', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
-        (useNavigate as any).mockReturnValue(vi.fn());
+        vi.mocked(useNavigate).mockReturnValue(vi.fn());
     });
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -67,12 +67,12 @@ describe('useAuth Property-based Tests', () => {
                 // Note: En el nuevo flujo, el token viene en la cookie, 
                 // pero queremos asegurar que useAuth no lo guarde si por error se le pasa
                 await vi.waitFor(() => {
-                    result.current.login(userData as any);
+                    result.current.login(userData as unknown as User);
                 });
 
                 // Verificación 1: El estado del usuario no debe tener el campo token si es que existía
                 // (dependiendo de cómo hayamos implementado login, pero el requisito es robustez)
-                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}') as Record<string, unknown>;
 
                 // LA PROPIEDAD: No debe existir rastro del token en localStorage
                 expect(storedUser.token).toBeUndefined();
@@ -118,11 +118,11 @@ describe('useAuth Property-based Tests', () => {
         const expectedStates = ['user', 'isAuthenticated', 'isChecking'];
 
         expectedMethods.forEach(method => {
-            expect(typeof (result.current as any)[method]).toBe('function');
+            expect(typeof result.current[method as keyof typeof result.current]).toBe('function');
         });
 
         expectedStates.forEach(state => {
-            expect((result.current as any)[state]).toBeDefined();
+            expect(result.current[state as keyof typeof result.current]).toBeDefined();
         });
     });
 });

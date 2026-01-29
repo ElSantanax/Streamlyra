@@ -1,7 +1,4 @@
-/**
- * Servicio de renovación de tokens
- * Responsable de renovar tokens OAuth cuando están próximos a expirar
- */
+/** Servicio de renovación de tokens OAuth con verificación de expiración */
 
 import { Connection } from '../../models/Connection.model';
 import { ConnectionRepository } from '../../repositories/implementations/ConnectionRepository';
@@ -29,13 +26,10 @@ const PLATFORM_SERVICES: Record<OAuthPlatform, PlatformService> = {
 };
 
 export class TokenRefreshService {
-    private static readonly BUFFER_TIME_MS = 5 * 60 * 1000; // 5 minutos
+    private static readonly BUFFER_TIME_MS = 5 * 60 * 1000;
 
     constructor(private connectionRepository: ConnectionRepository) { }
 
-    /**
-     * Obtiene un token de acceso válido, renovándolo si es necesario
-     */
     async getValidAccessToken(userId: string, platform: Platform): Promise<string | null> {
         const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
 
@@ -44,28 +38,17 @@ export class TokenRefreshService {
             return null;
         }
 
-        // TikTok no tiene renovación de tokens
         if (platform === 'tiktok') {
             return connection.accessToken;
         }
 
-        // Verificar si token está próximo a expirar
         if (this.isTokenValid(connection.expiryDate)) {
             return connection.accessToken;
         }
 
-        // Intentar renovar token
         return await this.refreshToken(connection, platform as OAuthPlatform);
     }
 
-    /**
-     * Fuerza la renovación de un token sin importar su fecha de expiración
-     * Útil cuando una plataforma rechaza un token con error 401
-     * 
-     * @param userId - ID del usuario
-     * @param platform - Plataforma (twitch, youtube, kick)
-     * @returns Nuevo access token o null si falla
-     */
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
         const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
 
@@ -74,7 +57,6 @@ export class TokenRefreshService {
             return null;
         }
 
-        // TikTok no tiene renovación de tokens
         if (platform === 'tiktok') {
             logger.warn({ userId, platform }, 'Cannot force refresh: TikTok does not support token refresh');
             return null;
@@ -93,9 +75,6 @@ export class TokenRefreshService {
         return await this.refreshToken(connection, platform as OAuthPlatform);
     }
 
-    /**
-     * Verifica si un token es válido (no está próximo a expirar)
-     */
     private isTokenValid(expiryDate: Date | null): boolean {
         if (!expiryDate) return false;
 
@@ -103,9 +82,6 @@ export class TokenRefreshService {
         return timeUntilExpiry > TokenRefreshService.BUFFER_TIME_MS;
     }
 
-    /**
-     * Renueva un token de acceso
-     */
     private async refreshToken(connection: Connection, platform: OAuthPlatform): Promise<string> {
         if (!connection.refreshToken) {
             logger.warn({ platform, connectionId: connection.id }, 'No refresh token available');
@@ -118,7 +94,6 @@ export class TokenRefreshService {
             const platformService = PLATFORM_SERVICES[platform];
             const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
 
-            // Actualizar conexión con nuevos tokens
             connection.accessToken = newTokens.access_token;
             if (newTokens.refresh_token) {
                 connection.refreshToken = newTokens.refresh_token;
@@ -135,10 +110,7 @@ export class TokenRefreshService {
                 { err: error, platform, connectionId: connection.id },
                 'Failed to refresh token'
             );
-            // Devolver token actual como fallback
             return connection.accessToken;
         }
     }
-
-
 }

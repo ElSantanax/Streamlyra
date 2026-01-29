@@ -1,9 +1,5 @@
 /**
- * Middlewares de Validación de Webhooks
- * Responsabilidad: Validar y extraer datos de webhooks
- * 
- * IMPORTANTE: Cada plataforma tiene su propio middleware porque
- * tienen diferentes headers, métodos de verificación y estructuras.
+ * Middlewares de Validación de Webhooks - Valida y extrae datos de webhooks
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -28,17 +24,19 @@ interface RequestWithWebhookData extends RequestWithRawBody {
     webhookData?: WebhookData;
 }
 
-/**
- * Middleware de validación para webhooks de Kick
- * Extrae headers, valida presencia y verifica firma
- */
 export const validateKickWebhook = async (
     req: RequestWithWebhookData,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
-        // Extraer headers (con fallbacks para variaciones)
+        logger.info({
+            method: req.method,
+            url: req.url,
+            headers: Object.keys(req.headers),
+            bodySize: req.rawBody?.length || 0
+        }, 'KICK WEBHOOK RECIBIDO');
+
         const signature =
             req.header('Kick-Event-Signature') ||
             req.header('X-Kick-Signature') ||
@@ -61,19 +59,21 @@ export const validateKickWebhook = async (
             messageIdPrefix: messageId?.substring(0, 20),
             timestamp,
             signaturePresent: !!signature,
-            bodySize: req.rawBody?.length
+            bodySize: req.rawBody?.length,
+            bodyPreview: JSON.stringify(req.body).substring(0, 200)
         }, 'Kick webhook validation started');
 
-        // Validar presencia de headers requeridos
         if (!signature || !timestamp || !messageId) {
-            logger.error({}, 'Missing required Kick webhook headers');
+            logger.error({
+                hasSignature: !!signature,
+                hasTimestamp: !!timestamp,
+                hasMessageId: !!messageId
+            }, 'Missing required Kick webhook headers');
             throw new AppError('Missing signature, timestamp, or message id', 400);
         }
 
-        // Obtener body raw para verificación de firma
         const rawBody = req.rawBody || JSON.stringify(req.body);
 
-        // Verificar firma (con opción de skip para desarrollo)
         const skipSignature = config.skipKickSignatureVerification || false;
         logger.debug({ skipSignature }, 'Kick webhook signature verification');
 
@@ -89,9 +89,8 @@ export const validateKickWebhook = async (
             throw new AppError('Invalid signature', 401);
         }
 
-        logger.info({}, 'Kick webhook validation passed');
+        logger.info({}, '✅ Kick webhook validation passed');
 
-        // Pasar datos validados al controlador
         req.webhookData = {
             signature,
             timestamp,

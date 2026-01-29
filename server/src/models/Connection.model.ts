@@ -1,3 +1,6 @@
+/**
+ * Modelo de Connection - Representa conexiones de usuarios con plataformas
+ */
 import { Table, Column, Model, DataType, ForeignKey, BelongsTo, Default, PrimaryKey } from "sequelize-typescript";
 import { User } from "./User.model";
 
@@ -15,22 +18,22 @@ export class Connection extends Model {
         type: DataType.STRING,
         allowNull: false
     })
-    declare provider: string; // Ej: 'twitch', 'youtube', 'kick'
+    declare provider: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    declare providerId: string; // El ID único del usuario en esa plataforma (ej: '12345678')
+    declare providerId: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true
     })
-    declare providerUsername: string; // El nickname del usuario en esa plataforma (ej: para Twitch Chat)
+    declare providerUsername: string;
 
     @Column({
-        type: DataType.TEXT, // TEXT porque los tokens pueden ser muy largos
+        type: DataType.TEXT,
         allowNull: false
     })
     declare accessToken: string;
@@ -45,9 +48,8 @@ export class Connection extends Model {
         type: DataType.DATE,
         allowNull: true
     })
-    declare expiryDate: Date; // Para saber cuándo renovar el token
+    declare expiryDate: Date;
 
-    // Relación con User
     @ForeignKey(() => User)
     @Column(DataType.UUID)
     declare userId: string;

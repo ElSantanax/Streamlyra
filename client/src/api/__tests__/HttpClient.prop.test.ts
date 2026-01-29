@@ -25,7 +25,7 @@ describe('HttpClient Property-based Tests - Credentials Inclusion', () => {
                 fc.oneof(fc.constant(undefined), fc.object()), // Cualquier body o ninguno
                 async (endpoint, method, _headers, body) => {
                     // Reset mock for each iteration
-                    (fetch as any).mockClear();
+                    vi.mocked(fetch).mockClear();
 
                     try {
                         // Realizar la petición
@@ -44,8 +44,9 @@ describe('HttpClient Property-based Tests - Credentials Inclusion', () => {
                         }
 
                         // Verificación de la propiedad
-                        const fetchCall = (fetch as any).mock.calls[0];
-                        const options = fetchCall[1];
+                        const fetchMock = vi.mocked(fetch);
+                        const fetchCall = fetchMock.mock.calls[0];
+                        const options = fetchCall[1] as RequestInit;
 
                         // LA PROPIEDAD: credentials debe ser SIEMPRE 'include'
                         expect(options.credentials).toBe('include');

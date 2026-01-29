@@ -1,3 +1,5 @@
+/** Servicio de gestión de usuarios con creación desde perfiles de plataformas */
+
 import { User } from '../../models/User.model';
 import { PlatformProfile } from '../../types/index';
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
@@ -24,23 +26,19 @@ export class UserService {
     }
 
     async findOrCreateFromPlatform(profile: PlatformProfile, currentUserId?: string): Promise<{ user: User, isNew: boolean }> {
-        // 1. If linking (already logged in)
         if (currentUserId) {
             const user = await this.userRepository.findById(currentUserId);
             if (user) return { user, isNew: false };
         }
 
-        // 2. If login/re-auth: Search by existing connection
         const existingUserByConn = await this.findByPlatformId(profile.provider, profile.providerId);
         if (existingUserByConn) return { user: existingUserByConn, isNew: false };
 
-        // 3. Match by Email (Ghost User Prevention)
         if (profile.email) {
             const existingUserByEmail = await this.findByEmail(profile.email);
             if (existingUserByEmail) return { user: existingUserByEmail, isNew: false };
         }
 
-        // 4. New User Registration
         const user = await this.createFromProfile(profile);
         return { user, isNew: true };
     }

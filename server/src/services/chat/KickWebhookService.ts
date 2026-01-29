@@ -1,3 +1,5 @@
+/** Servicio de verificación de firmas de webhooks de Kick con clave pública RSA-SHA256 */
+
 import * as crypto from 'crypto';
 import axios from 'axios';
 import { KickApiResponse } from '../../types/kick.types';
@@ -6,7 +8,6 @@ export class KickWebhookService {
     private static publicKey: string | null = null;
     private static lastKeyFetch: number = 0;
 
-    // Obtener la clave pública de Kick (se cachea por 1 hora)
     private static async getPublicKey(): Promise<string | null> {
         const now = Date.now();
         if (this.publicKey && (now - this.lastKeyFetch < 3600000)) {
@@ -24,7 +25,6 @@ export class KickWebhookService {
         }
     }
 
-    // Verificar la firma del webhook
     static async verifySignature(
         signature: string,
         messageId: string,
@@ -42,7 +42,6 @@ export class KickWebhookService {
         }
 
         try {
-            // Docs oficiales: signature_payload := "{messageID}.{timestamp}.{body}"
             const signaturePayload = `${messageId}.${timestamp}.${rawBody}`;
             console.log('[KickWebhook] Verificando firma con payload:', signaturePayload.substring(0, 50) + '...');
 

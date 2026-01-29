@@ -1,7 +1,4 @@
-/**
- * Proveedor de Chat de TikTok
- * Responsabilidad: Orquestar conexión a chat de TikTok
- */
+/** Proveedor de chat de TikTok con orquestación de conexión WebSocket */
 
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
@@ -59,14 +56,12 @@ export class TikTokChatProvider implements ChatProvider {
                 return;
             }
 
-            // Marcar que este usuario debe reconectar automáticamente
             this.stateManager.enableAutoReconnect(userId);
 
             this.stateManager.executeAndRemoveRetryCleanup(userId);
 
             const startConnection = async () => {
                 try {
-                    // Verificar si todavía debe reconectar
                     if (!this.stateManager.shouldAutoReconnect(userId)) {
                         logger.debug({ userId }, 'Reconnection disabled for user, stopping');
                         this.stateManager.executeAndRemoveRetryCleanup(userId);

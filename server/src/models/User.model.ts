@@ -1,3 +1,6 @@
+/**
+ * Modelo de User - Representa usuarios del sistema
+ */
 import { Table, Column, Model, DataType, Default, PrimaryKey, HasMany, Unique } from "sequelize-typescript";
 import { Connection } from "./Connection.model";
 

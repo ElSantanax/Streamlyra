@@ -25,10 +25,10 @@ vi.mock('../../../../services/socket', () => ({
   socket: {
     connected: true,
     emit: vi.fn(),
-    on: vi.fn((event: string, handler: Function) => {
+    on: vi.fn((event: string, handler: (result: MessageSentResult) => void) => {
       // Store handlers for manual triggering in tests
-      (socket as any)._handlers = (socket as any)._handlers || {};
-      (socket as any)._handlers[event] = handler;
+      (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers || {};
+      (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers[event] = handler;
     }),
     off: vi.fn(),
   }
@@ -44,8 +44,8 @@ vi.mock('../../../../hooks/useAuth', () => ({
 describe('ChatInput', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (socket as any).connected = true;
-    (socket as any)._handlers = {};
+    (socket as { connected: boolean }).connected = true;
+    (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
   });
 
   afterEach(() => {
@@ -192,7 +192,7 @@ describe('ChatInput', () => {
       };
 
       // Trigger the message_sent_result handler
-      const handler = (socket as any)._handlers['message_sent_result'];
+      const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
       expect(handler).toBeDefined();
       handler(successResult);
 
@@ -246,7 +246,7 @@ describe('ChatInput', () => {
       };
 
       // Trigger the message_sent_result handler
-      const handler = (socket as any)._handlers['message_sent_result'];
+      const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
       handler(partialResult);
 
       // Wait for state updates
@@ -256,7 +256,7 @@ describe('ChatInput', () => {
       });
 
       // Get the warning message
-      const warningCall = (toast.warning as any).mock.calls[0][0];
+      const warningCall = vi.mocked(toast.warning).mock.calls[0][0];
 
       // Verify the message includes successful platform
       expect(warningCall).toContain('twitch');
@@ -310,7 +310,7 @@ describe('ChatInput', () => {
       };
 
       // Trigger the message_sent_result handler
-      const handler = (socket as any)._handlers['message_sent_result'];
+      const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
       handler(failureResult);
 
       // Wait for state updates
@@ -320,7 +320,7 @@ describe('ChatInput', () => {
       });
 
       // Get the error message
-      const errorCall = (toast.error as any).mock.calls[0][0];
+      const errorCall = vi.mocked(toast.error).mock.calls[0][0];
 
       // Verify the message includes failed platforms with error details
       expect(errorCall).toContain('twitch');
@@ -368,7 +368,7 @@ describe('ChatInput', () => {
       };
 
       // Trigger the message_send_error handler
-      const handler = (socket as any)._handlers['message_send_error'];
+      const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_send_error'];
       expect(handler).toBeDefined();
       handler(serverError);
 

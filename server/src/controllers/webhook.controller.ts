@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { WebhookProcessor } from '../services/webhook/WebhookProcessor';
 import { AppError } from '../utils/AppError';
 import { KickChatMessagePayload } from '../types/kick.types';
+import { logger } from '../utils/logger';
 
 interface WebhookData {
     signature: string;
@@ -16,21 +17,11 @@ interface RequestWithWebhookData extends Request {
 }
 
 /**
- * Controlador de Webhooks
- * Responsabilidad: Manejar peticiones/respuestas HTTP
- * Lógica de negocio delegada a WebhookProcessor
+ * Controlador de Webhooks - Maneja peticiones HTTP para webhooks
  */
 export class WebhookController {
     constructor(private webhookProcessor: WebhookProcessor) { }
 
-    /**
-     * Maneja webhook genérico para cualquier plataforma
-     * 
-     * Flujo:
-     * 1. Validar que webhookData existe
-     * 2. Procesar evento según plataforma
-     * 3. Retornar OK
-     */
     private async handleWebhook(
         platform: string,
         req: RequestWithWebhookData,
@@ -50,10 +41,14 @@ export class WebhookController {
         res.status(200).send('OK');
     }
 
-    /**
-     * Maneja webhook de Kick
-     */
     handleKickWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
+        logger.info({
+            webhookData: req.webhookData,
+            bodyKeys: Object.keys(req.body || {})
+        }, 'KICK WEBHOOK CONTROLLER: Procesando evento');
+
         await this.handleWebhook('kick', req, res);
+
+        logger.info({}, 'KICK WEBHOOK CONTROLLER: Evento procesado exitosamente');
     };
 }

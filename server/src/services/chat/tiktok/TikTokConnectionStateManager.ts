@@ -1,13 +1,10 @@
-/**
- * Gestor de Estado de Conexiones de TikTok
- * Responsabilidad: Mantener y gestionar el estado de las conexiones activas
- */
+/** Gestor de estado de conexiones activas de TikTok con tracking de reconexión */
 
-import { WebcastPushConnection } from 'tiktok-live-connector';
+import { TikTokLiveConnection } from 'tiktok-live-connector';
 
 export class TikTokConnectionStateManager {
     private connectingUsers: Set<string> = new Set();
-    private activeConnections: Map<string, WebcastPushConnection> = new Map();
+    private activeConnections: Map<string, TikTokLiveConnection> = new Map();
     private retryCleanup: Map<string, () => void> = new Map();
     private shouldReconnect: Map<string, boolean> = new Map();
 
@@ -27,11 +24,11 @@ export class TikTokConnectionStateManager {
         return this.activeConnections.has(userId);
     }
 
-    getActiveConnection(userId: string): WebcastPushConnection | undefined {
+    getActiveConnection(userId: string): TikTokLiveConnection | undefined {
         return this.activeConnections.get(userId);
     }
 
-    setActiveConnection(userId: string, connection: WebcastPushConnection): void {
+    setActiveConnection(userId: string, connection: TikTokLiveConnection): void {
         this.activeConnections.set(userId, connection);
     }
 

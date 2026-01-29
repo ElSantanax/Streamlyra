@@ -41,7 +41,7 @@ describe('Feature: multi-platform-message-sending, Property 8: Socket event emis
     beforeEach(() => {
         vi.clearAllMocks();
         // Ensure socket is connected for these tests
-        (socket as any).connected = true;
+        (socket as { connected: boolean }).connected = true;
     });
 
     afterEach(() => {
@@ -108,13 +108,13 @@ describe('Feature: multi-platform-message-sending, Property 8: Socket event emis
                         await user.click(sendButton);
 
                         // Verify socket.emit was called
-                        if ((socket.emit as any).mock.calls.length === 0) {
+                        if (vi.mocked(socket.emit).mock.calls.length === 0) {
                             throw new Error('Socket emit should be called for valid message');
                         }
 
                         // Find the send_message event call
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCall = emitCalls.find((call: any[]) => call[0] === 'send_message');
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCall = emitCalls.find((call: unknown[]) => call[0] === 'send_message');
 
                         if (!sendMessageCall) {
                             throw new Error('Expected send_message event to be emitted');
@@ -221,8 +221,8 @@ describe('Feature: multi-platform-message-sending, Property 8: Socket event emis
                         await user.type(messageInput, '{Enter}');
 
                         // Verify socket.emit was called with required data
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCall = emitCalls.find((call: any[]) => call[0] === 'send_message');
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCall = emitCalls.find((call: unknown[]) => call[0] === 'send_message');
 
                         if (!sendMessageCall) {
                             throw new Error('Expected send_message event via Enter key');
@@ -295,8 +295,8 @@ describe('Feature: multi-platform-message-sending, Property 8: Socket event emis
                         const sendButton = screen.getByRole('button', { name: /enviar/i });
                         await user.click(sendButton);
 
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCall = emitCalls.find((call: any[]) => call[0] === 'send_message');
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCall = emitCalls.find((call: unknown[]) => call[0] === 'send_message');
                         const payload = sendMessageCall[1] as SendMessagePayload;
 
                         // Build expected platforms array (only enabled platforms)
@@ -329,7 +329,7 @@ describe('Feature: multi-platform-message-sending, Property 8: Socket event emis
 describe('Feature: multi-platform-message-sending, Property 10: Send button is disabled during operation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (socket as any).connected = true;
+        (socket as { connected: boolean }).connected = true;
     });
 
     afterEach(() => {
@@ -426,7 +426,7 @@ describe('Feature: multi-platform-message-sending, Property 10: Send button is d
                         await user.type(messageInput, '{Enter}');
 
                         // Verify first emit happened
-                        const firstEmitCount = (socket.emit as any).mock.calls.length;
+                        const firstEmitCount = vi.mocked(socket.emit).mock.calls.length;
                         if (firstEmitCount === 0) {
                             throw new Error('First emit should have occurred');
                         }
@@ -435,7 +435,7 @@ describe('Feature: multi-platform-message-sending, Property 10: Send button is d
                         await user.type(messageInput, '{Enter}');
 
                         // Verify no additional emit occurred (button/input disabled)
-                        const secondEmitCount = (socket.emit as any).mock.calls.length;
+                        const secondEmitCount = vi.mocked(socket.emit).mock.calls.length;
                         if (secondEmitCount > firstEmitCount) {
                             throw new Error(
                                 `Duplicate submission should be prevented. First: ${firstEmitCount}, Second: ${secondEmitCount}`
@@ -487,8 +487,8 @@ describe('Feature: multi-platform-message-sending, Property 10: Send button is d
                         }
 
                         // Property: Only ONE emit should have occurred despite multiple clicks
-                        const emitCalls = (socket.emit as any).mock.calls;
-                        const sendMessageCalls = emitCalls.filter((call: any[]) => call[0] === 'send_message');
+                        const emitCalls = vi.mocked(socket.emit).mock.calls;
+                        const sendMessageCalls = emitCalls.filter((call: unknown[]) => call[0] === 'send_message');
 
                         if (sendMessageCalls.length !== 1) {
                             throw new Error(

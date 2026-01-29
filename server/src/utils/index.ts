@@ -1,8 +1,4 @@
-/**
- * Exports centralizados de todas las utilidades
- * 
- * Responsabilidad: Funciones helper generales
- */
+/** Exports centralizados de todas las utilidades */
 
 export { AppError } from './AppError';
 export { logger } from './logger';

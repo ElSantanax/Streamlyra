@@ -9,23 +9,23 @@ describe('SessionManager (Client)', () => {
         localStorage.clear();
 
         // Mock window.location
-        delete (window as any).location;
+        delete (window as unknown as { location: unknown }).location;
         window.location = {
             ...originalLocation,
             href: '',
             pathname: '/dashboard',
-        } as any;
+        } as Location;
 
         // Mock console.warn para verificar logging
         vi.spyOn(console, 'warn').mockImplementation(() => { });
 
         // El servicio es un singleton, así que reseteamos su estado interno
         vi.useFakeTimers();
-        (sessionManager as any).isHandlingExpiry = false;
+        (sessionManager as unknown as { isHandlingExpiry: boolean }).isHandlingExpiry = false;
     });
 
     afterEach(() => {
-        (window as any).location = originalLocation;
+        (window as unknown as { location: Location }).location = originalLocation;
         vi.useRealTimers();
     });
 

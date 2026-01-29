@@ -1,7 +1,4 @@
-/**
- * Descubridor de Broadcast en Vivo de YouTube
- * Responsabilidad: Encontrar broadcast en vivo del usuario
- */
+/** Descubridor de broadcast en vivo de YouTube con detección de cuota agotada */
 
 import axios from 'axios';
 import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtube.types';
@@ -25,7 +22,6 @@ export class YouTubeBroadcastDiscovery {
 
             return broadcast;
         } catch (error) {
-            // Detectar error 403 que indica cuota agotada de YouTube API
             if (axios.isAxiosError(error) && error.response?.status === 403) {
                 logger.warn(
                     { 
@@ -34,7 +30,6 @@ export class YouTubeBroadcastDiscovery {
                     }, 
                     'YouTube API quota exceeded - Daily quota exhausted'
                 );
-                // Lanzar error específico para que el provider pueda manejarlo
                 throw new Error('YOUTUBE_QUOTA_EXCEEDED');
             } else {
                 logger.error({ err: error }, 'Error discovering YouTube broadcast');

@@ -13,6 +13,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
      * Transforma mensaje de chat de Twitch
      * Implementación de la interfaz base
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     transformMessage(_data: unknown): NormalizedChatMessage {
         // Este método es requerido por la interfaz base
         // pero Twitch usa métodos específicos (transformChatMessage con tags, transformSubscription, etc)
@@ -23,6 +24,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
      * Transforma evento especial de Twitch
      * Implementación de la interfaz base
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformSubscription, transformResub, or transformCheer instead');
     }
@@ -37,7 +39,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             user: (tags['display-name'] as string) || (tags.username as string) || 'Unknown',
             message,
             time: this.formatTime(new Date()),
-            color: (tags.color as string) || '#9146FF',
+            color: '#9146FF', // Color morado de Twitch
             isMod: (tags.mod as boolean) || false,
             isSub: (tags.subscriber as boolean) || false,
             isVIP: !!(tags.vip as boolean),

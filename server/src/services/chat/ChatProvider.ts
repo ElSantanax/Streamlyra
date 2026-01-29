@@ -1,3 +1,5 @@
+/** Interfaz base para proveedores de chat de plataformas */
+
 import { Server } from 'socket.io';
 
 export interface ChatProvider {

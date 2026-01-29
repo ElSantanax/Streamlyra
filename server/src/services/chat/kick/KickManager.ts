@@ -1,12 +1,4 @@
-/**
- * Gestor Unificado de Kick
- * Responsabilidad: Centralizar toda la lógica de Kick (Canal, Espectadores y Webhooks)
- * 
- * MEJORAS:
- * - Reduce duplicación de llamadas a la API de Kick
- * - Centraliza la gestión de estado de Kick para un usuario
- * - Simplifica la interfaz para KickChatProvider
- */
+/** Gestor unificado de Kick con canal, espectadores y webhooks centralizados */
 
 import { Server } from 'socket.io';
 import { KickService } from '../../platforms/KickService';
@@ -18,9 +10,6 @@ import { logger } from '../../../utils/logger';
 export class KickManager {
     private poller: PollingManager = new PollingManager();
 
-    /**
-     * Obtiene información del canal y actualiza el conteo de espectadores si es necesario
-     */
     async getChannelInfo(accessToken: string, userId?: string, io?: Server): Promise<{ broadcasterId: string; slug: string; viewerCount: number } | null> {
         try {
             const channels = await KickService.getChannelByToken(accessToken);
@@ -39,7 +28,6 @@ export class KickManager {
                 return null;
             }
 
-            // Si se proporciona IO y userId, emitir actualización inmediata
             if (io && userId) {
                 SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount);
             }
@@ -51,9 +39,6 @@ export class KickManager {
         }
     }
 
-    /**
-     * Inicia el polling de espectadores usando el token de acceso
-     */
     startViewerPolling(userId: string, accessToken: string, io: Server): void {
         this.poller.start(userId, async () => {
             try {
@@ -64,7 +49,7 @@ export class KickManager {
             } catch (error) {
                 logger.error({ err: error, userId }, 'Kick viewer polling error');
             }
-        }, 30000); // Polling cada 30 segundos
+        }, 30000);
     }
 
     stopViewerPolling(userId: string): void {
@@ -75,9 +60,6 @@ export class KickManager {
         return this.poller.isRunning(userId);
     }
 
-    /**
-     * Gestión de Webhooks (Migrado de KickWebhookManager)
-     */
     async registerWebhook(userId: string, accessToken: string, broadcasterId: string): Promise<void> {
         try {
             if (!process.env.APP_URL?.startsWith('https://')) {
@@ -87,7 +69,6 @@ export class KickManager {
 
             const callbackUrl = `${process.env.APP_URL}/api/webhooks/kick`;
 
-            // Verificar si ya existe un webhook activo o inactivo para reutilizar
             const existingWebhook = await KickWebhook.findOne({
                 where: { broadcasterId }
             });
@@ -98,7 +79,6 @@ export class KickManager {
             }
 
             if (existingWebhook) {
-                // Reactivar
                 existingWebhook.isActive = true;
                 existingWebhook.deactivatedAt = null;
                 existingWebhook.registeredAt = new Date();
@@ -107,7 +87,6 @@ export class KickManager {
                 return;
             }
 
-            // Crear nuevo
             logger.info({ userId, broadcasterId }, 'Suscribiendo nuevo webhook de Kick');
             await KickService.subscribeToChat(accessToken, broadcasterId, callbackUrl);
 

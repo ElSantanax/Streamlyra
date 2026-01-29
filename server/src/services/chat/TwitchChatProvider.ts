@@ -1,3 +1,5 @@
+/** Proveedor de chat de Twitch con cliente tmi.js y polling de espectadores */
+
 import tmi from 'tmi.js';
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
@@ -26,18 +28,15 @@ export class TwitchChatProvider implements ChatProvider {
     }
 
     async connect(userId: string, io: Server): Promise<void> {
-        // Evitar múltiples conexiones simultáneas para el mismo usuario
         if (this.connectingUsers.has(userId)) {
             logger.debug({ userId }, 'Already connecting to Twitch, skipping...');
             return;
         }
 
-        // Si ya está conectado, asegurar que el cliente reciba el estado actual
         if (this.activeClients.has(userId)) {
             logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
 
-            // Provocar un poll inmediato para que el cliente reciba estadísticas rápido
             const connection = await Connection.findOne({
                 where: { userId: String(userId), provider: 'twitch' }
             });
@@ -61,7 +60,6 @@ export class TwitchChatProvider implements ChatProvider {
 
             this.eventListener.setupListeners(userId, client, io);
 
-            // Get username for polling
             const connection = await Connection.findOne({
                 where: { userId: String(userId), provider: 'twitch' }
             });
@@ -87,7 +85,6 @@ export class TwitchChatProvider implements ChatProvider {
         const client = this.activeClients.get(userId);
         if (client) {
             logger.debug({ userId }, 'TwitchChatProvider: Removing event listeners');
-            // Remover listeners antes de desconectar para prevenir memory leaks
             this.eventListener.removeListeners(userId, client);
 
             logger.debug({ userId }, 'TwitchChatProvider: Disconnecting client');

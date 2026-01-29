@@ -1,7 +1,4 @@
-/**
- * Encuestador de Espectadores de YouTube
- * Responsabilidad: Hacer polling de espectadores en vivo
- */
+/** Encuestador de espectadores de YouTube con polling de estadísticas en vivo */
 
 import axios from 'axios';
 import { Server } from 'socket.io';

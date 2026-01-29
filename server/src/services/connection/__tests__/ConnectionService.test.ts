@@ -2,6 +2,7 @@ import { ConnectionService } from '../ConnectionService';
 import { ConnectionRepository } from '../../../repositories/implementations/ConnectionRepository';
 import { TokenRefreshService } from '../TokenRefreshService';
 import { AuthTokens } from '../../../types';
+import { Connection } from '../../../models/Connection.model';
 
 // Mock dependencies
 jest.mock('../../../repositories/implementations/ConnectionRepository');
@@ -36,7 +37,7 @@ describe('ConnectionService', () => {
             const providerId = '123';
             const mockConnection = { id: 'conn-1', provider, providerId };
 
-            mockRepository.findByProvider.mockResolvedValue(mockConnection as any);
+            mockRepository.findByProvider.mockResolvedValue(mockConnection as Connection);
 
             const result = await service.getConnectionByProvider(provider, providerId);
 
@@ -50,7 +51,7 @@ describe('ConnectionService', () => {
             const userId = 'user-1';
             const mockConnections = [{ id: 'conn-1' }, { id: 'conn-2' }];
 
-            mockRepository.findAllByUserId.mockResolvedValue(mockConnections as any);
+            mockRepository.findAllByUserId.mockResolvedValue(mockConnections as Connection[]);
 
             const result = await service.getAllConnections(userId);
 
@@ -72,7 +73,7 @@ describe('ConnectionService', () => {
             };
             const mockConnection = { id: 'conn-1', userId, provider };
 
-            mockRepository.createOrUpdate.mockResolvedValue(mockConnection as any);
+            mockRepository.createOrUpdate.mockResolvedValue(mockConnection as Connection);
 
             const result = await service.createOrUpdateConnection(userId, provider, providerId, username, tokens);
 

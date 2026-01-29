@@ -1,7 +1,4 @@
-/**
- * Estrategia de Reconexión de TikTok
- * Responsabilidad: Gestionar la lógica de reintentos con backoff exponencial
- */
+/** Estrategia de reconexión de TikTok con backoff exponencial */
 
 import { retryWithExponentialBackoff } from '../../../utils/retryWithExponentialBackoff';
 import { logger } from '../../../utils/logger';

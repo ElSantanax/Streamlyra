@@ -373,10 +373,10 @@ describe('AuthCallback - Redirección post-autenticación', () => {
       expect(mockLogin).toHaveBeenCalledWith(mockUser);
       expect(mockLogin).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: expect.any(String),
-          username: expect.any(String),
-          displayName: expect.any(String),
-          avatar: expect.any(String),
+          id: expect.any(String) as string,
+          username: expect.any(String) as string,
+          displayName: expect.any(String) as string,
+          avatar: expect.any(String) as string,
         })
       );
     });

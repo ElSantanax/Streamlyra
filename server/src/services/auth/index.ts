@@ -1,3 +1,5 @@
+/** Exports centralizados de servicios de autenticación */
+
 export { ProfileSyncService } from './ProfileSyncService';
 export { ConnectionCreationService } from './ConnectionCreationService';
 export { TokenService } from './TokenService';

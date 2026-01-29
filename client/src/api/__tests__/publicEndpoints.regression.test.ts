@@ -23,11 +23,11 @@ describe('Public Endpoints Regression Tests', () => {
     describe('/auth/me endpoint (public)', () => {
         it('debe funcionar sin autenticación cuando el usuario no está logueado', async () => {
             // Simular respuesta 401 del servidor (usuario no autenticado)
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: false,
                 status: 401,
                 json: async () => ({ error: 'Unauthorized' }),
-            });
+            } as Response);
 
             // El endpoint /auth/me se llama con requiresAuth=false
             // No debe redirigir ni limpiar sesión, solo debe lanzar error
@@ -59,11 +59,11 @@ describe('Public Endpoints Regression Tests', () => {
             };
 
             // Simular respuesta exitosa del servidor
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => mockUserData,
-            });
+            } as Response);
 
             const result = await authService.getMe();
 
@@ -78,16 +78,17 @@ describe('Public Endpoints Regression Tests', () => {
         });
 
         it('debe incluir credentials en la petición para enviar cookies HttpOnly', async () => {
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ id: '1', email: 'test@test.com', username: 'test' }),
-            });
+            } as Response);
 
             await authService.getMe();
 
-            const fetchCall = (fetch as any).mock.calls[0];
-            const options = fetchCall[1];
+            const fetchMock = vi.mocked(fetch);
+            const fetchCall = fetchMock.mock.calls[0];
+            const options = fetchCall[1] as RequestInit;
 
             // Verificar que credentials: 'include' está presente
             expect(options.credentials).toBe('include');
@@ -98,11 +99,11 @@ describe('Public Endpoints Regression Tests', () => {
             const sessionManagerModule = await import('../../services/SessionManager');
             const handleSessionExpiredSpy = vi.spyOn(sessionManagerModule.sessionManager, 'handleSessionExpired');
 
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: false,
                 status: 401,
                 json: async () => ({ error: 'Unauthorized' }),
-            });
+            } as Response);
 
             try {
                 await authService.getMe();
@@ -119,11 +120,11 @@ describe('Public Endpoints Regression Tests', () => {
 
     describe('Public endpoints - General behavior', () => {
         it('debe permitir peticiones GET sin autenticación', async () => {
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ data: 'public data' }),
-            });
+            } as Response);
 
             const result = await apiClient.get('/public/endpoint', false);
 
@@ -138,11 +139,11 @@ describe('Public Endpoints Regression Tests', () => {
         });
 
         it('debe permitir peticiones POST sin autenticación', async () => {
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ success: true }),
-            });
+            } as Response);
 
             const result = await apiClient.post('/public/action', { data: 'test' }, false);
 
@@ -158,7 +159,7 @@ describe('Public Endpoints Regression Tests', () => {
         });
 
         it('debe manejar errores de red en endpoints públicos', async () => {
-            (fetch as any).mockRejectedValueOnce(new Error('Network failure'));
+            vi.mocked(fetch).mockRejectedValueOnce(new Error('Network failure'));
 
             await expect(apiClient.get('/public/endpoint', false)).rejects.toThrow(ApiError);
             await expect(apiClient.get('/public/endpoint', false)).rejects.toThrow('Network error');
@@ -169,11 +170,11 @@ describe('Public Endpoints Regression Tests', () => {
             const errorCodes = [400, 403, 404, 500, 503];
 
             for (const code of errorCodes) {
-                (fetch as any).mockResolvedValueOnce({
+                vi.mocked(fetch).mockResolvedValueOnce({
                     ok: false,
                     status: code,
                     json: async () => ({ error: `Error ${code}` }),
-                });
+                } as Response);
 
                 await expect(apiClient.get('/public/endpoint', false)).rejects.toThrow(ApiError);
             }
@@ -206,44 +207,48 @@ describe('Public Endpoints Regression Tests', () => {
             ];
 
             for (const endpoint of endpoints) {
-                (fetch as any).mockResolvedValueOnce({
+                vi.mocked(fetch).mockResolvedValueOnce({
                     ok: true,
                     status: 200,
                     json: async () => ({ success: true }),
-                });
+                } as Response);
 
                 await apiClient.get(endpoint.path, endpoint.requiresAuth);
 
-                const lastCall = (fetch as any).mock.calls[(fetch as any).mock.calls.length - 1];
-                expect(lastCall[1].credentials).toBe('include');
+                const fetchMock = vi.mocked(fetch);
+                const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+                const options = lastCall[1] as RequestInit;
+                expect(options.credentials).toBe('include');
             }
         });
     });
 
     describe('HttpOnly cookie migration compatibility', () => {
         it('debe enviar cookies automáticamente en peticiones públicas', async () => {
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ data: 'test' }),
-            });
+            } as Response);
 
             await apiClient.get('/auth/me', false);
 
             // Verificar que credentials: 'include' permite envío automático de cookies
-            const fetchCall = (fetch as any).mock.calls[0];
-            expect(fetchCall[1].credentials).toBe('include');
+            const fetchMock = vi.mocked(fetch);
+            const fetchCall = fetchMock.mock.calls[0];
+            const options = fetchCall[1] as RequestInit;
+            expect(options.credentials).toBe('include');
         });
 
         it('NO debe intentar leer tokens de localStorage para endpoints públicos', async () => {
             // Mock de localStorage
             const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
 
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ data: 'test' }),
-            });
+            } as Response);
 
             await apiClient.get('/public/endpoint', false);
 
@@ -256,16 +261,18 @@ describe('Public Endpoints Regression Tests', () => {
         });
 
         it('NO debe añadir Authorization header en peticiones públicas', async () => {
-            (fetch as any).mockResolvedValueOnce({
+            vi.mocked(fetch).mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ data: 'test' }),
-            });
+            } as Response);
 
             await apiClient.get('/public/endpoint', false);
 
-            const fetchCall = (fetch as any).mock.calls[0];
-            const headers = fetchCall[1].headers;
+            const fetchMock = vi.mocked(fetch);
+            const fetchCall = fetchMock.mock.calls[0];
+            const options = fetchCall[1] as RequestInit;
+            const headers = options.headers as Record<string, string>;
 
             // No debe haber Authorization header
             expect(headers.Authorization).toBeUndefined();

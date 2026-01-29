@@ -1,3 +1,5 @@
+/** Servicio de YouTube con OAuth, detección de cuota agotada y envío de mensajes */
+
 import axios from 'axios';
 import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
 import { YouTubeChannelResponse } from '../../types/youtube.types';
@@ -18,23 +20,6 @@ interface YouTubeChannel {
     };
 }
 
-/**
- * Servicio de YouTube
- * Responsabilidad: Autenticación OAuth específica de YouTube
- * 
- * Hereda métodos genéricos de BasePlatformService:
- * - getProfileAndTokens(code, codeVerifier)
- * - refreshAccessToken(refreshToken)
- * 
- * Implementa métodos específicos de YouTube:
- * - fetchUserProfile(accessToken)
- * - normalizePlatformProfile(channel)
- * 
- * NOTA: YouTube tiene estructura diferente:
- * - Retorna array de canales (items)
- * - Requiere validación de que items no esté vacío
- * - Genera providerUsername a partir del título
- */
 import { Platform } from '../../constants/platforms';
 
 export class YouTubeService extends BasePlatformService {
@@ -47,15 +32,6 @@ export class YouTubeService extends BasePlatformService {
         redirectUri: config.youtube.redirectUri!
     };
 
-    /**
-     * Obtiene perfil del usuario desde la API de YouTube
-     * 
-     * Endpoint: GET https://www.googleapis.com/youtube/v3/channels
-     * Parámetros: part=snippet, mine=true
-     * Retorna: Array de canales (items)
-     * 
-     * IMPORTANTE: YouTube requiere validación de que items no esté vacío
-     */
     protected async fetchUserProfile(accessToken: string): Promise<YouTubeChannel> {
         try {
             logger.debug({ platform: this.platformName }, 'Fetching YouTube user profile');
@@ -78,7 +54,6 @@ export class YouTubeService extends BasePlatformService {
             logger.debug({ platform: this.platformName, channelId: items[0].id }, 'YouTube profile fetched successfully');
             return items[0];
         } catch (error: unknown) {
-            // Detectar error de cuota agotada de YouTube
             if (axios.isAxiosError(error) && error.response?.status === 403) {
                 const errorData = error.response.data as { error?: { message?: string; errors?: Array<{ reason?: string }> } };
                 const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
@@ -113,14 +88,6 @@ export class YouTubeService extends BasePlatformService {
         }
     }
 
-    /**
-     * Normaliza perfil de YouTube al formato común
-     * 
-     * NOTA: YouTube no proporciona username, se genera a partir del título
-     * - Elimina espacios
-     * - Convierte a minúsculas
-     * - Limita a 15 caracteres
-     */
     protected normalizePlatformProfile(channel: YouTubeChannel): PlatformProfile {
         return {
             provider: 'youtube',
@@ -134,17 +101,6 @@ export class YouTubeService extends BasePlatformService {
         };
     }
 
-    /**
-     * Obtiene el liveChatId del broadcast activo del usuario
-     * 
-     * @param accessToken - Token de acceso de YouTube
-     * @returns liveChatId si hay un broadcast activo, null en caso contrario
-     * 
-     * Endpoint: GET /youtube/v3/liveBroadcasts
-     * Parámetros: part=snippet, broadcastStatus=active, broadcastType=all
-     * 
-     * Validates: Requirements 6.1, 6.2
-     */
     async getActiveLiveChatId(accessToken: string): Promise<string | null> {
         try {
             logger.debug({ platform: this.platformName }, 'Fetching active live chat ID');
@@ -178,19 +134,6 @@ export class YouTubeService extends BasePlatformService {
         }
     }
 
-    /**
-     * Envía un mensaje al chat en vivo de YouTube
-     * 
-     * @param accessToken - Token de acceso de YouTube
-     * @param liveChatId - ID del chat en vivo
-     * @param message - Mensaje a enviar
-     * 
-     * Endpoint: POST /youtube/v3/liveChat/messages
-     * Query: part=snippet
-     * Body: { snippet: { liveChatId, type, textMessageDetails } }
-     * 
-     * Validates: Requirements 6.1, 6.2
-     */
     async sendChatMessage(
         accessToken: string,
         liveChatId: string,
@@ -227,14 +170,11 @@ export class YouTubeService extends BasePlatformService {
 
             logger.info({ platform: this.platformName, liveChatId }, 'Chat message sent successfully');
         } catch (error: unknown) {
-            // Manejar errores de API con mensajes descriptivos
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
                 const errorData = error.response?.data as { error?: { message?: string } } | undefined;
 
                 if (status === 401) {
-                    // Para 401, re-lanzar el error original de axios para que MessageSenderService 
-                    // pueda detectarlo y ejecutar la lógica de retry con refresh de token
                     error.message = 'Token de acceso inválido o expirado';
                     throw error;
                 } else if (status === 403) {
