@@ -7,18 +7,60 @@ import { AppError } from '../utils/AppError';
 import { config } from '../config';
 import type { AuthRequest } from './auth.middleware';
 
-const CSRF_COOKIE_NAME = 'csrf_token';
-const CSRF_HEADER_NAME = 'x-csrf-token';
+/**
+ * Configuración centralizada de CSRF
+ */
+const CSRF_CONFIG = {
+    COOKIE_NAME: 'csrf_token',
+    HEADER_NAME: 'x-csrf-token',
+    AUTH_COOKIE_NAME: 'auth_token',
+    SAFE_METHODS: ['GET', 'HEAD', 'OPTIONS'] as const,
+    EXCLUDED_PATHS: ['/api/webhooks'],
+    TOKEN_LENGTH: 32
+} as const;
 
-const generateToken = () => {
-    return crypto.randomBytes(32).toString('hex');
+/**
+ * Obtiene una cookie de forma segura con validación de tipo
+ */
+const getCookie = (req: AuthRequest, name: string): string | undefined => {
+    const cookies = req.cookies as Record<string, unknown> | undefined;
+    const value = cookies?.[name];
+    return typeof value === 'string' ? value : undefined;
 };
 
-export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunction) => {
-    const token = (req.cookies as Record<string, string> | undefined)?.[CSRF_COOKIE_NAME];
+/**
+ * Genera un token CSRF aleatorio
+ */
+const generateToken = (): string => {
+    return crypto.randomBytes(CSRF_CONFIG.TOKEN_LENGTH).toString('hex');
+};
+
+/**
+ * Determina si la petición requiere validación CSRF
+ */
+const shouldValidateCsrf = (req: AuthRequest): boolean => {
+    const method = req.method.toUpperCase();
+    const isMutating = !CSRF_CONFIG.SAFE_METHODS.includes(method as typeof CSRF_CONFIG.SAFE_METHODS[number]);
+    
+    if (!isMutating) return false;
+    
+    // Excluir rutas específicas (webhooks)
+    if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) return false;
+    
+    // Solo validar si hay token de autenticación
+    if (!getCookie(req, CSRF_CONFIG.AUTH_COOKIE_NAME)) return false;
+    
+    return true;
+};
+
+/**
+ * Middleware que establece la cookie CSRF si no existe
+ */
+export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const token = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
 
     if (!token) {
-        res.cookie(CSRF_COOKIE_NAME, generateToken(), {
+        res.cookie(CSRF_CONFIG.COOKIE_NAME, generateToken(), {
             httpOnly: false,
             secure: config.cookie.secure,
             sameSite: config.cookie.sameSite,
@@ -30,20 +72,16 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
     next();
 };
 
-export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction) => {
-    const method = req.method.toUpperCase();
-    const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+/**
+ * Middleware que valida el token CSRF en peticiones mutantes
+ */
+export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction): void => {
+    if (!shouldValidateCsrf(req)) {
+        return next();
+    }
 
-    if (!isMutating) return next();
-
-    const path = req.path;
-    if (path.startsWith('/api/webhooks')) return next();
-
-    const authToken = (req.cookies as Record<string, string> | undefined)?.auth_token;
-    if (!authToken) return next();
-
-    const cookieToken = (req.cookies as Record<string, string> | undefined)?.[CSRF_COOKIE_NAME];
-    const headerToken = req.headers[CSRF_HEADER_NAME] as string | undefined;
+    const cookieToken = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
+    const headerToken = req.headers[CSRF_CONFIG.HEADER_NAME] as string | undefined;
 
     if (!cookieToken || !headerToken || cookieToken !== headerToken) {
         return next(new AppError('CSRF token inválido o ausente.', 403));

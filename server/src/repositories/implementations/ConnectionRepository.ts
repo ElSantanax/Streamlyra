@@ -73,6 +73,4 @@ export class ConnectionRepository implements IConnectionRepository {
         await connection.save();
         return connection;
     }
-
-
 }

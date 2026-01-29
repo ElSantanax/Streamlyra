@@ -15,44 +15,73 @@ export interface AuthRequest extends Request {
     }
 }
 
+/**
+ * Extrae el token JWT de las cookies o del header Authorization
+ */
 const extractToken = (req: AuthRequest): string | null => {
-    const tokenFromCookie = (req.cookies as Record<string, string> | undefined)?.auth_token;
+    const cookies = req.cookies as Record<string, unknown> | undefined;
+    const tokenFromCookie = typeof cookies?.auth_token === 'string' ? cookies.auth_token : null;
     if (tokenFromCookie) return tokenFromCookie;
 
     const authHeader = req.headers['authorization'];
     return authHeader?.split(' ')[1] || null;
 };
 
-const verifyToken = (token: string) => {
-    return jwt.verify(token, config.jwtSecret) as { id: string; username: string };
+/**
+ * Verifica y decodifica el token JWT, validando su estructura
+ */
+const verifyToken = (token: string): { id: string; username: string } => {
+    const decoded = jwt.verify(token, config.jwtSecret);
+    
+    // Validar que el payload tenga la estructura esperada
+    if (typeof decoded === 'string' || !decoded || typeof decoded !== 'object') {
+        throw new AppError('Token con estructura inválida', 403);
+    }
+    
+    const payload = decoded as Record<string, unknown>;
+    
+    if (typeof payload.id !== 'string' || typeof payload.username !== 'string') {
+        throw new AppError('Token con estructura inválida', 403);
+    }
+    
+    return { id: payload.id, username: payload.username };
 };
 
-export const authenticateToken = (req: AuthRequest, _res: Response, next: NextFunction) => {
-    const token = extractToken(req);
-    if (!token) {
-        logger.warn({}, 'Token no proporcionado');
-        throw new AppError('Acceso denegado. Token no proporcionado.', 401);
-    }
-
+/**
+ * Middleware que requiere autenticación válida
+ */
+export const authenticateToken = (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
+        const token = extractToken(req);
+        if (!token) {
+            logger.warn('Token no proporcionado');
+            return next(new AppError('Acceso denegado. Token no proporcionado.', 401));
+        }
+
         req.user = verifyToken(token);
         logger.debug({ userId: req.user.id }, 'Token verificado exitosamente');
         next();
     } catch (error) {
         if (error instanceof TokenExpiredError) {
             logger.warn({ expiredAt: error.expiredAt }, 'Token expirado');
-            throw new AppError('Token expirado. Por favor, inicia sesión nuevamente.', 403);
+            return next(new AppError('Token expirado. Por favor, inicia sesión nuevamente.', 403));
         }
         if (error instanceof JsonWebTokenError) {
             logger.warn({ message: error.message }, 'Token inválido');
-            throw new AppError('Token inválido.', 403);
+            return next(new AppError('Token inválido.', 403));
+        }
+        if (error instanceof AppError) {
+            return next(error);
         }
         logger.error({ err: error }, 'Error verificando token');
-        throw new AppError('Error al verificar token.', 500);
+        return next(new AppError('Error al verificar token.', 500));
     }
 };
 
-export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: NextFunction) => {
+/**
+ * Middleware que permite autenticación opcional (no falla si no hay token)
+ */
+export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: NextFunction): void => {
     const token = extractToken(req);
     if (token) {
         try {
@@ -60,7 +89,7 @@ export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: Nex
             logger.debug({ userId: req.user.id }, 'Token opcional verificado');
         } catch (error) {
             if (error instanceof TokenExpiredError) {
-                logger.debug({}, 'Token opcional expirado, continuando sin autenticación');
+                logger.debug('Token opcional expirado, continuando sin autenticación');
             } else if (error instanceof JsonWebTokenError) {
                 logger.debug({ message: (error as Error).message }, 'Token opcional inválido, continuando sin autenticación');
             } else {
