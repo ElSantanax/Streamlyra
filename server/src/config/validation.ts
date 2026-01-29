@@ -15,7 +15,9 @@ export function validateConfig(): void {
         'YOUTUBE_REDIRECT_URI',
         'KICK_CLIENT_ID',
         'KICK_CLIENT_SECRET',
-        'KICK_REDIRECT_URI'
+        'KICK_REDIRECT_URI',
+        'ENCRYPTION_KEY',
+        'APP_URL'
     ];
 
     const missing = requiredVars.filter(varName => !process.env[varName]);
@@ -38,5 +40,14 @@ export function validateConfig(): void {
         throw new Error(
             `Invalid COOKIE_SECURE value. Expected true or false. Received: ${process.env.COOKIE_SECURE}`
         );
+    }
+
+    if (process.env.NODE_ENV === 'production' && process.env.KICK_WEBHOOK_SKIP_SIGNATURE === 'true') {
+        console.warn('ADVERTENCIA DE SEGURIDAD: KICK_WEBHOOK_SKIP_SIGNATURE está en true en producción. La verificación de firmas webhooks se forzará a activada por seguridad.');
+    }
+
+    const encryptionKey = process.env.ENCRYPTION_KEY || '';
+    if (encryptionKey && !/^[0-9a-fA-F]{64}$/.test(encryptionKey)) {
+        throw new Error('Invalid ENCRYPTION_KEY. Must be a 64-character hex string (32 bytes).');
     }
 }

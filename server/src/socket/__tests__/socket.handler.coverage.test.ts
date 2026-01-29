@@ -41,17 +41,21 @@ describe('socket.handler', () => {
                     connectionHandler = handler;
                 }
             }),
+            use: jest.fn((fn: (socket: Socket, next: (err?: Error) => void) => void) => {
+                // For testing purposes, we automatically call next()
+            }),
             emit: jest.fn(),
         } as unknown as jest.Mocked<Server>;
 
         // Setup Socket mock
         mockSocket = {
             id: 'socket-123',
-             
+            data: {},
             on: jest.fn(<T extends EventHandler>(event: string, handler: T): void => {
                 socketEventHandlers[event] = handler;
             }),
             emit: jest.fn(),
+            disconnect: jest.fn(),
         } as unknown as jest.Mocked<Socket>;
 
         // Setup other mocks
@@ -71,8 +75,10 @@ describe('socket.handler', () => {
         (SocketConnectionManager as jest.Mock).mockImplementation(() => mockSocketConnectionManager);
     });
 
-    const triggerConnection = () => {
+    const triggerConnection = (userId: string = '550e8400-e29b-41d4-a716-446655440021') => {
         setupSocketHandlers(mockIo, mockChatManager, mockMessageSenderService);
+        // Simulate middleware setting userId
+        (mockSocket.data as { userId?: string }).userId = userId;
         connectionHandler(mockSocket);
     };
 
@@ -82,7 +88,7 @@ describe('socket.handler', () => {
         });
 
         it('should emit error if payload is invalid (missing fields)', async () => {
-            const invalidPayload: Record<string, unknown> = { userId: '123' }; // Missing message and platforms
+            const invalidPayload: Record<string, unknown> = { userId: '550e8400-e29b-41d4-a716-446655440021' }; // Missing message and platforms
 
             const handler = socketEventHandlers['send_message'];
             if (handler) {
@@ -101,7 +107,7 @@ describe('socket.handler', () => {
 
         it('should emit error if payload has invalid types', async () => {
             const invalidPayload: Record<string, unknown> = {
-                userId: '123',
+                userId: '550e8400-e29b-41d4-a716-446655440021',
                 message: 123, // Should be string
                 platforms: ['twitch']
             };
@@ -117,12 +123,13 @@ describe('socket.handler', () => {
             });
         });
 
-        it('should emit unauthorized error if socket is not mapped to user', async () => {
-            // Mock connection manager returning null (not identified)
-            mockSocketConnectionManager.getUserIdBySocketId.mockReturnValue(undefined);
+        it('should emit unauthorized error if socket user mismatch', async () => {
+            // Trigger connection as user-22
+            const userId2 = '550e8400-e29b-41d4-a716-446655440022';
+            triggerConnection(userId2);
 
             const payload = {
-                userId: 'user-1',
+                userId: '550e8400-e29b-41d4-a716-446655440021', // Requesting for user-21 but socket is user-22
                 message: 'hello',
                 platforms: ['twitch']
             };
@@ -131,36 +138,18 @@ describe('socket.handler', () => {
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_send_error', {
                 code: 'UNAUTHORIZED',
-                message: 'No autorizado'
+                message: expect.stringContaining('No autorizado')
             });
             expect(logger.warn).toHaveBeenCalledWith(
-                expect.objectContaining({ reason: 'UserId mismatch or no session found' }),
-                expect.stringContaining('Authorization validation failed')
+                expect.objectContaining({ reason: 'UserId spoofing attempt' }),
+                expect.stringContaining('SECURITY: Blocked attempt to send message as another user')
             );
         });
 
-        it('should emit unauthorized error if socket user mismatch', async () => {
-            mockSocketConnectionManager.getUserIdBySocketId.mockReturnValue('user-2');
-
-            const payload = {
-                userId: 'user-1', // Requesting for user-1 but socket is user-2
-                message: 'hello',
-                platforms: ['twitch']
-            };
-
-            await socketEventHandlers['send_message'](payload);
-
-            expect(mockSocket.emit).toHaveBeenCalledWith('message_send_error', {
-                code: 'UNAUTHORIZED',
-                message: 'No autorizado'
-            });
-        });
-
         it('should process message successfully when valid', async () => {
-            mockSocketConnectionManager.getUserIdBySocketId.mockReturnValue('user-1');
-
+            const userId = '550e8400-e29b-41d4-a716-446655440021';
             const payload = {
-                userId: 'user-1',
+                userId: userId,
                 message: 'hello world',
                 platforms: ['twitch', 'kick']
             };
@@ -174,28 +163,23 @@ describe('socket.handler', () => {
 
             await socketEventHandlers['send_message'](payload);
 
-            // Should verify filtering of TikTok is NOT happening yet (Wait, logic says it DOES filter)
-            // Code: const filteredPlatforms = platforms.filter(p => p !== 'tiktok');
-            // So if I send tiktok, it should be removed.
-
             expect(mockMessageSenderService.sendMessage).toHaveBeenCalledWith({
-                userId: 'user-1',
+                userId: userId,
                 message: 'hello world',
                 platforms: ['twitch', 'kick']
             });
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_sent_result', expectedResult);
             expect(logger.info).toHaveBeenCalledWith(
-                expect.objectContaining({ userId: 'user-1', success: true }),
+                expect.objectContaining({ userId: userId, success: true }),
                 'Message send completed'
             );
         });
 
         it('should filter TikTok from platforms', async () => {
-            mockSocketConnectionManager.getUserIdBySocketId.mockReturnValue('user-1');
-
+            const userId = '550e8400-e29b-41d4-a716-446655440021';
             const payload = {
-                userId: 'user-1',
+                userId: userId,
                 message: 'hello',
                 platforms: ['twitch', 'tiktok', 'youtube']
             };
@@ -210,11 +194,11 @@ describe('socket.handler', () => {
         });
 
         it('should handle logic errors gracefully', async () => {
-            mockSocketConnectionManager.getUserIdBySocketId.mockReturnValue('user-1');
+            const userId = '550e8400-e29b-41d4-a716-446655440021';
             mockMessageSenderService.sendMessage.mockRejectedValue(new Error('Logic error'));
 
             const payload = {
-                userId: 'user-1',
+                userId: userId,
                 message: 'hello',
                 platforms: ['twitch']
             };
@@ -234,18 +218,24 @@ describe('socket.handler', () => {
 
     describe('identify event', () => {
         beforeEach(() => {
-            triggerConnection();
+            triggerConnection('550e8400-e29b-41d4-a716-446655440020'); // Identify as mockUserId during connection
         });
 
-        it('should call handleIdentify', async () => {
-            const userId = 'user-123';
-            await socketEventHandlers['identify'](userId);
-
+        it('should have called handleIdentify during connection', () => {
             expect(mockSocketConnectionManager.handleIdentify).toHaveBeenCalledWith(
-                userId,
+                '550e8400-e29b-41d4-a716-446655440020',
                 mockSocket,
                 mockIo
             );
+        });
+
+        it('should emit identified when identify event is received', async () => {
+            await socketEventHandlers['identify']();
+
+            expect(mockSocket.emit).toHaveBeenCalledWith('identified', {
+                userId: '550e8400-e29b-41d4-a716-446655440020',
+                message: expect.any(String)
+            });
         });
     });
 

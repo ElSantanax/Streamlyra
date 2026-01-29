@@ -8,6 +8,7 @@ import { authenticateToken, optionalAuthenticate } from '../middleware/auth.midd
 import { validateZodBody } from '../middleware/zod.middleware';
 import { disconnectPlatformSchema, oauthCodeSchema, tiktokSchema } from '../dtos/auth.dto';
 import { logger } from '../utils/logger';
+import { authLimiter } from '../middleware/rateLimit.middleware';
 
 export const createAuthRoutes = (authController: AuthController) => {
     const router = Router();
@@ -16,17 +17,17 @@ export const createAuthRoutes = (authController: AuthController) => {
 
     router.get('/me', authenticateToken, authController.getMe);
 
-    router.post('/twitch', optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.twitchAuth);
+    router.post('/twitch', authLimiter, optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.twitchAuth);
 
-    router.post('/youtube', optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.youtubeAuth);
+    router.post('/youtube', authLimiter, optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.youtubeAuth);
 
-    router.post('/kick', optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.kickAuth);
+    router.post('/kick', authLimiter, optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.kickAuth);
 
     router.post('/tiktok', authenticateToken, validateZodBody(tiktokSchema), authController.tiktokAuth);
 
     router.delete('/platform', authenticateToken, validateZodBody(disconnectPlatformSchema), authController.disconnectPlatform);
 
-    router.post('/logout', authController.logout);
+    router.post('/logout', authenticateToken, authController.logout);
 
     return router;
 };

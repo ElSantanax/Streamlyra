@@ -18,8 +18,9 @@ export class TwitchViewerPoller {
                     params: { user_login: username },
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
-                        'Client-Id': config.twitch.clientId!
-                    }
+                        'Client-ID': config.oauth.twitch.clientId!
+                    },
+                    timeout: 10000
                 });
 
                 const stream = response.data.data[0];

@@ -48,6 +48,11 @@ const extractHeader = (req: Request, headerNames: readonly string[]): string => 
 /**
  * Valida que todos los headers requeridos estén presentes
  */
+const MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000; // 5 minutos
+
+/**
+ * Valida que todos los headers requeridos estén presentes
+ */
 const validateRequiredHeaders = (signature: string, timestamp: string, messageId: string): void => {
     if (!signature || !timestamp || !messageId) {
         logger.error({
@@ -56,6 +61,33 @@ const validateRequiredHeaders = (signature: string, timestamp: string, messageId
             hasMessageId: !!messageId
         }, 'Missing required Kick webhook headers');
         throw new AppError('Missing signature, timestamp, or message id', 400);
+    }
+};
+
+/**
+ * Valida la antigüedad del timestamp para prevenir replay attacks
+ */
+const validateTimestamp = (timestamp: string): void => {
+    const timestampDate = new Date(timestamp);
+    const now = new Date();
+
+    // Verificar si es una fecha válida
+    if (isNaN(timestampDate.getTime())) {
+        throw new AppError('Invalid timestamp format', 400);
+    }
+
+    const age = now.getTime() - timestampDate.getTime();
+
+    // Verificar si el timestamp está demasiado en el pasado
+    if (age > MAX_TIMESTAMP_AGE_MS) {
+        logger.warn({ timestamp, age }, 'Webhook timestamp too old');
+        throw new AppError('Webhook timestamp too old', 400);
+    }
+
+    // Verificar si está demasiado en el futuro (clock skew)
+    if (age < -MAX_TIMESTAMP_AGE_MS) {
+        logger.warn({ timestamp, age }, 'Webhook timestamp from future');
+        throw new AppError('Webhook timestamp from future', 400);
     }
 };
 
@@ -93,9 +125,12 @@ export const validateKickWebhook = async (
         // Validar headers requeridos
         validateRequiredHeaders(signature, timestamp, messageId);
 
+        // Validar timestamp anti-replay
+        validateTimestamp(timestamp);
+
         const rawBody = req.rawBody || JSON.stringify(req.body);
         const skipSignature = config.skipKickSignatureVerification || false;
-        
+
         logger.debug({ skipSignature }, 'Kick webhook signature verification');
 
         // Verificar firma si no está deshabilitado

@@ -1,5 +1,7 @@
 /** Gestor de polling genérico con manejo de errores y ejecución inmediata */
 
+import { logger } from '../../utils/logger';
+
 export class PollingManager {
     private intervals: Map<string, NodeJS.Timeout> = new Map();
 
@@ -10,7 +12,7 @@ export class PollingManager {
             try {
                 await task();
             } catch (error) {
-                console.error(`[PollingManager] Error in polling task ${id}:`, error);
+                logger.error({ err: error, pollingId: id }, 'Error in polling task');
             }
         };
 

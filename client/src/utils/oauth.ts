@@ -22,7 +22,7 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
             authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
             scope: 'https://www.googleapis.com/auth/youtube.force-ssl email profile',
             state: `youtube_${Date.now()}`,
-            extras: 'access_type=offline&prompt=consent&include_granted_scopes=false'
+            extras: 'access_type=offline&prompt=select_account&include_granted_scopes=false'
         },
         kick: {
             clientId: import.meta.env.VITE_KICK_CLIENT_ID as string,

@@ -10,12 +10,14 @@ const isValidUserId = (userId: unknown): userId is string => {
     if (typeof userId !== 'string') {
         return false;
     }
-    
+
     if (userId.length === 0 || userId.length > 100) {
         return false;
     }
-    
-    return /^[a-zA-Z0-9-_]+$/.test(userId);
+
+    // Validar formato UUID (v4)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(userId);
 };
 
 export class SocketConnectionManager {
@@ -61,7 +63,7 @@ export class SocketConnectionManager {
 
             if (currentCount === 0) {
                 logger.info({ userId }, 'Primer socket del usuario, conectando plataformas');
-                
+
                 const connectionPromise = (async () => {
                     try {
                         const connectPromise = this.chatManager.connectUser(userId);
@@ -73,7 +75,7 @@ export class SocketConnectionManager {
                         this.connectingLocks.delete(userId);
                     }
                 })();
-                
+
                 this.connectingLocks.set(userId, connectionPromise);
                 await connectionPromise;
             } else {
@@ -117,7 +119,7 @@ export class SocketConnectionManager {
 
     async handleDisconnect(socketId: string): Promise<void> {
         const userId = this.socketUserMap.get(socketId);
-        
+
         if (!userId) {
             logger.debug({ socketId }, 'Socket desconectado sin userId asociado');
             return;
@@ -125,17 +127,17 @@ export class SocketConnectionManager {
 
         const currentCount = this.userSocketCount.get(userId) || 0;
         const newCount = Math.max(0, currentCount - 1);
-        
+
         if (newCount === 0) {
             logger.info({ userId, socketId }, 'Último socket del usuario desconectado, limpiando plataformas');
             this.userSocketCount.delete(userId);
-            
+
             const existingLock = this.connectingLocks.get(userId);
             if (existingLock) {
                 logger.debug({ userId }, 'Esperando a que termine conexión en progreso antes de desconectar');
                 await existingLock.catch(() => { /* Ignorar errores */ });
             }
-            
+
             await this.chatManager.disconnectUser(userId);
         } else {
             logger.debug({ userId, socketId, remainingSockets: newCount }, 'Socket desconectado, otros sockets activos');

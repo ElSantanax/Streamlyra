@@ -42,15 +42,16 @@ export class KickService extends BasePlatformService {
 
     protected readonly oauthOptions: OAuthExchangeOptions = {
         baseUrl: KickService.TOKEN_URL,
-        clientId: config.kick.clientId!,
-        clientSecret: config.kick.clientSecret!,
-        redirectUri: config.kick.redirectUri!,
+        clientId: config.oauth.kick.clientId!,
+        clientSecret: config.oauth.kick.clientSecret!,
+        redirectUri: config.oauth.kick.redirectUri!,
         contentType: 'form'
     };
 
     protected async fetchUserProfile(accessToken: string): Promise<KickUser> {
         const userResponse = await axios.get<KickUserResponse>(KickService.USER_URL, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+            timeout: 10000
         });
 
         return userResponse.data.data[0];
@@ -72,7 +73,8 @@ export class KickService extends BasePlatformService {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Accept': 'application/json'
-            }
+            },
+            timeout: 10000
         });
         return response.data.data;
     }
@@ -90,7 +92,8 @@ export class KickService extends BasePlatformService {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                timeout: 10000
             });
         } catch (error) {
             logger.error({ err: error, platform: 'kick', broadcasterUserId }, 'Error subscribing to Kick chat webhook');
@@ -114,7 +117,8 @@ export class KickService extends BasePlatformService {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
-                    }
+                    },
+                    timeout: 10000
                 }
             );
 

@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import PlatformToggle from './PlatformToggle';
-import { PLATFORMS } from '../../../constants/platforms';
-import type { PlatformSelection, SendMessagePayload, MessageSentResult } from '../../../types';
+import type { SendMessagePayload, MessageSentResult } from '../../../types';
 import { useAuth } from '../../../hooks/useAuth';
 import { socket } from '../../../services/socket';
 import { toast } from '../../../lib/notifications/toast';
@@ -9,17 +7,6 @@ import { toast } from '../../../lib/notifications/toast';
 const ChatInput = () => {
     // Get user from auth context
     const { user } = useAuth();
-
-    // State management for platform selection
-    const [platforms, setPlatforms] = useState<PlatformSelection>({
-        twitch: true,
-        youtube: true,
-        kick: true,
-        tiktok: false
-    });
-
-    // State for "Todos" toggle
-    const [allToggle, setAllToggle] = useState(true);
 
     // State for message input
     const [message, setMessage] = useState('');
@@ -94,44 +81,6 @@ const ChatInput = () => {
     }, []); // Empty dependency array - listener only registered once
 
     /**
-     * Handles individual platform toggle changes
-     * Prevents changes to TikTok (always false)
-     * Updates "Todos" toggle state based on individual platform states
-     */
-    const handleToggleChange = (platform: keyof PlatformSelection, checked: boolean) => {
-        // TikTok is always disabled - prevent any changes
-        if (platform === 'tiktok') {
-            return;
-        }
-
-        // Update the platform state with the new value
-        const newPlatforms = {
-            ...platforms,
-            [platform]: checked
-        };
-        setPlatforms(newPlatforms);
-
-        // Update "Todos" toggle based on enabled platforms
-        // "Todos" should be checked only if all enabled platforms (twitch, youtube, kick) are checked
-        const allEnabledChecked = newPlatforms.twitch && newPlatforms.youtube && newPlatforms.kick;
-        setAllToggle(allEnabledChecked);
-    };
-
-    /**
-     * Handles "Todos" toggle - synchronizes all enabled platforms
-     * TikTok always remains false (disabled)
-     */
-    const handleToggleAll = (checked: boolean) => {
-        setAllToggle(checked);
-        setPlatforms({
-            twitch: checked,
-            youtube: checked,
-            kick: checked,
-            tiktok: false // Always false (disabled)
-        });
-    };
-
-    /**
      * Validates that a message is not empty and doesn't contain only whitespace
      * @param message - The message to validate
      * @returns true if the message is valid, false otherwise
@@ -142,26 +91,14 @@ const ChatInput = () => {
     };
 
     /**
-     * Handles sending a message to selected platforms
-     * Validates message, checks platform selection, verifies socket connection,
-     * and emits the send_message event
+     * Handles sending a message to all connected platforms
+     * Validates message, verifies socket connection, and emits the send_message event
      */
     const handleSendMessage = () => {
         // Validate message using validateMessage
         if (!validateMessage(message)) {
             // Show error if message is invalid and maintain text in input
             toast.error('El mensaje no puede estar vacío');
-            return;
-        }
-
-        // Verify that at least one platform is selected
-        const selectedPlatforms = Object.entries(platforms)
-            .filter(([key, value]) => value && key !== 'tiktok')
-            .map(([key]) => key);
-
-        if (selectedPlatforms.length === 0) {
-            // Show warning if no platforms are selected
-            toast.warning('Selecciona al menos una plataforma');
             return;
         }
 
@@ -181,11 +118,12 @@ const ChatInput = () => {
         // Set isSending to true
         setIsSending(true);
 
-        // Emit 'send_message' event with userId, message, platforms
+        // Emit 'send_message' event with userId and message
+        // Server will send to all connected platforms automatically
         const payload: SendMessagePayload = {
             userId: user.id,
             message: message.trim(),
-            platforms: selectedPlatforms
+            platforms: [] // Empty array signals to send to all connected platforms
         };
 
         socket.emit('send_message', payload);
@@ -202,37 +140,13 @@ const ChatInput = () => {
 
     return (
         <div className="p-4 border-t border-surface-border bg-background-dark">
-            <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Enviar A:</span>
-                <PlatformToggle
-                    id="toggle-all"
-                    label="Todos"
-                    colorClass="text-primary focus:ring-primary"
-                    checked={allToggle}
-                    onChange={handleToggleAll}
-                />
-
-                {Object.entries(PLATFORMS)
-                    .filter(([key]) => key !== 'system' && key !== 'tiktok')
-                    .map(([key, platform]) => (
-                        <PlatformToggle
-                            key={key}
-                            id={`toggle-${key}`}
-                            label={platform.name}
-                            colorClass={`${platform.textColor} focus:ring-[${platform.brandColor}]`}
-                            checked={platforms[key as keyof PlatformSelection]}
-                            onChange={(checked) => handleToggleChange(key as keyof PlatformSelection, checked)}
-                        />
-                    ))}
-            </div>
-
             <div className="relative flex items-center gap-2">
                 <div className="absolute left-1.5 top-1/2 -translate-y-1/2 size-8 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
                     <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
                 </div>
                 <input
                     ref={inputRef}
-                    className="w-full bg-surface-dark border border-surface-border rounded-lg pl-10 pr-32 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                    className="w-full bg-surface-dark border border-surface-border rounded-lg pl-10 pr-32 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition-all shadow-sm"
                     placeholder="Enviar un mensaje"
                     type="text"
                     id="chat-message-input"

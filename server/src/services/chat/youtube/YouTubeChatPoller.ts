@@ -9,6 +9,7 @@ import { YouTubeEventTransformer } from '../transformers/YouTubeEventTransformer
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
+import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
@@ -69,11 +70,30 @@ export class YouTubeChatPoller {
         const pollTask = async () => {
             if (!this.polling.isRunning(userId)) return;
 
+            const quotaManager = YouTubeQuotaManager.getInstance();
+            const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE;
+
+            if (!quotaManager.hasQuota(cost)) {
+                logger.warn({ userId }, 'YouTube chat polling paused: Quota exhausted');
+                this.stopPolling(userId);
+                SafeSocketEmitter.emitError(
+                    io,
+                    userId,
+                    'YOUTUBE_QUOTA_EXHAUSTED',
+                    'La cuota de YouTube se ha agotado. El chat se reanudará mañana.',
+                    'youtube'
+                );
+                return;
+            }
+
             try {
                 const response = await axios.get<YouTubeChatMessagesResponse>('https://www.googleapis.com/youtube/v3/liveChat/messages', {
                     params: { liveChatId, part: 'snippet,authorDetails', pageToken: this.nextPageTokens.get(userId) },
-                    headers: { Authorization: `Bearer ${accessToken}` }
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    timeout: 10000
                 });
+
+                quotaManager.consumeQuota(cost);
 
                 if (!this.polling.isRunning(userId)) return;
 
@@ -94,9 +114,22 @@ export class YouTubeChatPoller {
             } catch (error: unknown) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
 
-                if (axios.isAxiosError(error)) {
-                    const status = error.response?.status;
-                    if (status === 401 || status === 403 || status === 404) {
+                if (axios.isAxiosError(error) && error.response) {
+                    const status = error.response.status;
+
+                    if (status === 403) {
+                        const errorData = error.response.data as { error?: { errors?: Array<{ reason?: string }> } };
+                        const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
+
+                        if (isQuotaError) {
+                            quotaManager.markAsExhausted();
+                            logger.warn({ userId }, 'YouTube chat polling stopped: Quota exceeded error');
+                            this.stopPolling(userId);
+                            return;
+                        }
+                    }
+
+                    if (status === 401 || status === 404) {
                         logger.warn({ userId, status, message: errorMessage }, 'YouTube chat polling stopped due to fatal API error');
                         this.stopPolling(userId);
                         return;

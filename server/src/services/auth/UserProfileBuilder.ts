@@ -3,6 +3,7 @@
 import { User } from '../../models/User.model';
 import { Connection } from '../../models/Connection.model';
 import { Platform } from '../../constants/platforms';
+import { buildUserDTO, UserDTO } from '../../utils/userUtils';
 
 interface ConnectionData {
     connected: boolean;
@@ -12,29 +13,15 @@ interface ConnectionData {
 type ConnectionsMap = Record<Platform, ConnectionData>;
 
 export interface UserProfileResponse {
-    user: {
-        id: string;
-        username: string;
-        displayName: string;
-        avatar: string;
-    };
+    user: UserDTO;
     connections: ConnectionsMap;
 }
 
 export class UserProfileBuilder {
     buildUserProfile(user: User): UserProfileResponse {
         return {
-            user: this.buildUserDTO(user),
+            user: buildUserDTO(user),
             connections: this.buildConnectionsMap(user.connections)
-        };
-    }
-
-    private buildUserDTO(user: User) {
-        return {
-            id: user.id,
-            username: user.username,
-            displayName: user.displayName,
-            avatar: user.avatarUrl
         };
     }
 

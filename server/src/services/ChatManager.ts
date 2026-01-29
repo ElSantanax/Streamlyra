@@ -119,8 +119,6 @@ export class ChatManager {
                 }
 
                 logger.info({ platform, userId }, 'ChatManager: Chat provider disconnected successfully');
-
-                logger.info({ platform, userId }, 'Chat provider disconnected');
             },
             { platform, userId, action: 'disconnectProvider' },
             { rethrow: false }

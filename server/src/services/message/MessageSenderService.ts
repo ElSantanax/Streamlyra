@@ -29,10 +29,26 @@ export class MessageSenderService {
             'Starting message send to multiple platforms'
         );
 
-        const validPlatforms = platforms.filter(p => p !== 'tiktok');
+        // Si el array de plataformas está vacío, enviar a todas las plataformas conectadas
+        let targetPlatforms: string[];
+        
+        if (platforms.length === 0) {
+            logger.info({ userId }, 'Empty platforms array - fetching all connected platforms');
+            const connections = await this.connectionService.getAllConnections(userId);
+            targetPlatforms = connections
+                .map(conn => conn.provider)
+                .filter(p => p !== 'tiktok');
+            
+            logger.info(
+                { userId, connectedPlatforms: targetPlatforms },
+                'Sending to all connected platforms'
+            );
+        } else {
+            targetPlatforms = platforms.filter(p => p !== 'tiktok');
+        }
 
-        const sendPromises = validPlatforms.map(platform =>
-            this.sendToPlatform(userId, message, platform)
+        const sendPromises = targetPlatforms.map(platform =>
+            this.sendToPlatform(userId, message, platform as Platform)
         );
 
         const results = await Promise.all(sendPromises);

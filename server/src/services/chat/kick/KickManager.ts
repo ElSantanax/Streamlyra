@@ -6,6 +6,7 @@ import { KickWebhook } from '../../../models/KickWebhook.model';
 import { PollingManager } from '../PollingManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
+import { config } from '../../../config';
 
 export class KickManager {
     private poller: PollingManager = new PollingManager();
@@ -62,12 +63,12 @@ export class KickManager {
 
     async registerWebhook(userId: string, accessToken: string, broadcasterId: string): Promise<void> {
         try {
-            if (!process.env.APP_URL?.startsWith('https://')) {
+            if (!config.appUrl?.startsWith('https://')) {
                 logger.warn({}, 'APP_URL is not HTTPS, webhooks disabled');
                 return;
             }
 
-            const callbackUrl = `${process.env.APP_URL}/api/webhooks/kick`;
+            const callbackUrl = `${config.appUrl}/api/webhooks/kick`;
 
             const existingWebhook = await KickWebhook.findOne({
                 where: { broadcasterId }

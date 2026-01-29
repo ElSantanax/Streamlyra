@@ -2,11 +2,11 @@ import { ConnectionCreationService } from '../ConnectionCreationService';
 import { Connection } from '../../../models/Connection.model';
 import { logger } from '../../../utils/logger';
 import { AuthTokens } from '../../../types';
+import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 // Mock dependencies
-jest.mock('../../../models/Connection.model');
 jest.mock('../../../utils/logger', () => ({
     logger: {
         info: jest.fn(),
@@ -18,6 +18,8 @@ jest.mock('../../../utils/logger', () => ({
 
 describe('ConnectionCreationService', () => {
     let service: ConnectionCreationService;
+    let mockRepository: jest.Mocked<IConnectionRepository>;
+
     const mockUserId = 'user-123';
     const mockPlatform = 'twitch' as const;
     const mockTokens: AuthTokens = {
@@ -28,28 +30,22 @@ describe('ConnectionCreationService', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        service = new ConnectionCreationService();
+
+        mockRepository = {
+            createOrUpdate: jest.fn(),
+            findByUserId: jest.fn(),
+            findByPlatform: jest.fn(),
+            delete: jest.fn(),
+            getConnection: jest.fn(),
+        } as unknown as jest.Mocked<IConnectionRepository>;
+
+        service = new ConnectionCreationService(mockRepository);
     });
 
     describe('createOrUpdate', () => {
-        it('should update existing connection if found', async () => {
-            // Mock existing connection
-            interface MockConnection {
-                id: string;
-                userId: string;
-                provider: string;
-                update: jest.Mock;
-            }
-            
-            const mockConnection: MockConnection = {
-                id: 'conn-1',
-                userId: mockUserId,
-                provider: mockPlatform,
-                update: jest.fn().mockResolvedValue(true)
-            };
-
-            const findOneMock = Connection.findOne as jest.Mock;
-            findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
+        it('should call repository.createOrUpdate with correct parameters', async () => {
+            const mockConnection = { id: 'conn-1' } as Connection;
+            mockRepository.createOrUpdate.mockResolvedValue(mockConnection);
 
             const result = await service.createOrUpdate(
                 mockUserId,
@@ -59,107 +55,42 @@ describe('ConnectionCreationService', () => {
                 'username-1'
             );
 
-            expect(Connection.findOne).toHaveBeenCalledWith({
-                where: { userId: mockUserId, provider: mockPlatform }
-            });
-
-            expect(mockConnection.update).toHaveBeenCalledWith({
-                accessToken: mockTokens.access_token,
-                refreshToken: mockTokens.refresh_token,
-                expiresAt: expect.any(Date),
-                providerId: 'provider-id-1',
-                providerUsername: 'username-1'
-            });
-
-            expect(result).toBe(mockConnection);
-            expect(logger.info).toHaveBeenCalledWith(
-                expect.objectContaining({ userId: mockUserId }),
-                'Updating existing connection'
-            );
-        });
-
-        it('should use existing provider details if new ones not provided during update', async () => {
-            interface MockConnection {
-                id: string;
-                userId: string;
-                provider: string;
-                providerId: string;
-                providerUsername: string;
-                update: jest.Mock;
-            }
-            
-            const mockConnection: MockConnection = {
-                id: 'conn-1',
-                userId: mockUserId,
-                provider: mockPlatform,
-                providerId: 'old-id',
-                providerUsername: 'old-user',
-                update: jest.fn().mockResolvedValue(true)
-            };
-
-             
-            const findOneMock = Connection.findOne as jest.Mock;
-            findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
-
-            await service.createOrUpdate(
+            expect(mockRepository.createOrUpdate).toHaveBeenCalledWith(
                 mockUserId,
                 mockPlatform,
+                'provider-id-1',
+                'username-1',
                 mockTokens
             );
 
-            expect(mockConnection.update).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    providerId: 'old-id', // Should preserve old value
-                    providerUsername: 'old-user'
-                })
-            );
-        });
-
-        it('should create new connection if not found', async () => {
-            (Connection.findOne as jest.Mock).mockResolvedValue(null);
-
-            const newConnectionMock = { id: 'new-conn' };
-            (Connection.create as jest.Mock).mockResolvedValue(newConnectionMock);
-
-            const result = await service.createOrUpdate(
-                mockUserId,
-                mockPlatform,
-                mockTokens,
-                'provider-id-1',
-                'username-1'
-            );
-
-            expect(Connection.create).toHaveBeenCalledWith({
-                userId: mockUserId,
-                provider: mockPlatform,
-                accessToken: mockTokens.access_token,
-                refreshToken: mockTokens.refresh_token,
-                expiresAt: expect.any(Date),
-                providerId: 'provider-id-1',
-                providerUsername: 'username-1'
-            });
-
-            expect(result).toBe(newConnectionMock);
+            expect(result).toBe(mockConnection);
             expect(logger.info).toHaveBeenCalledWith(
-                expect.objectContaining({ userId: mockUserId }),
-                'Creating new connection'
+                expect.objectContaining({ userId: mockUserId, platform: mockPlatform }),
+                'Creating or updating connection via repository'
             );
         });
 
         it('should handle errors gracefully', async () => {
             const error = new Error('Database connection failed');
-            (Connection.findOne as jest.Mock).mockRejectedValue(error);
+            mockRepository.createOrUpdate.mockRejectedValue(error);
 
             try {
-                await service.createOrUpdate(mockUserId, mockPlatform, mockTokens);
+                await service.createOrUpdate(
+                    mockUserId,
+                    mockPlatform,
+                    mockTokens,
+                    'provider-id-1',
+                    'username-1'
+                );
                 fail('Should have thrown an error');
             } catch (e: unknown) {
                 expect(e).toBe(error);
                 expect(logger.error).toHaveBeenCalledWith(
-                    expect.objectContaining({ err: error }),
+                    expect.objectContaining({ err: error, userId: mockUserId, platform: mockPlatform }),
                     'Error creating or updating connection'
                 );
             }
         });
     });
 });
+

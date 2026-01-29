@@ -6,7 +6,19 @@ import { User } from "./User.model";
 
 @Table({
     tableName: "connections",
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        {
+            name: 'idx_connections_user_provider',
+            unique: true,
+            fields: ['userId', 'provider']
+        },
+        {
+            name: 'idx_connections_provider_providerId',
+            unique: true,
+            fields: ['provider', 'providerId']
+        }
+    ]
 })
 export class Connection extends Model {
     @PrimaryKey

@@ -26,8 +26,8 @@ export class OAuthUtils {
         if (redirectUri) data.redirect_uri = redirectUri;
 
         const config = contentType === 'form'
-            ? { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, transformRequest: [(data: Record<string, string>) => new URLSearchParams(data).toString()] }
-            : {};
+            ? { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, transformRequest: [(data: Record<string, string>) => new URLSearchParams(data).toString()], timeout: 10000 }
+            : { timeout: 10000 };
 
         const response = await axios.post<T>(baseUrl, data, config);
         return response.data;
@@ -44,8 +44,8 @@ export class OAuthUtils {
         };
 
         const config = contentType === 'form'
-            ? { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, transformRequest: [(data: Record<string, string>) => new URLSearchParams(data).toString()] }
-            : {};
+            ? { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, transformRequest: [(data: Record<string, string>) => new URLSearchParams(data).toString()], timeout: 10000 }
+            : { timeout: 10000 };
 
         const response = await axios.post<T>(baseUrl, data, config);
         return response.data;

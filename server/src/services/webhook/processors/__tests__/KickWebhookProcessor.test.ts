@@ -82,10 +82,10 @@ describe('KickWebhookProcessor', () => {
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
-            
+
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)
-            }) as any;
+            }) as unknown as typeof mockIo.in;
 
             await processor.process(mockPayload);
 
@@ -139,14 +139,14 @@ describe('KickWebhookProcessor', () => {
                 provider: string;
                 providerId: string;
             }
-            
+
             const mockConnection: MockConnection = {
                 userId: 'user-123',
                 provider: 'kick',
                 providerId: '123'
             };
 
-             
+
             const findOneMock = Connection.findOne as jest.Mock;
             findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
             (KickWebhook.findOne as jest.Mock).mockResolvedValue(null); // No encuentra webhook activo
@@ -174,10 +174,10 @@ describe('KickWebhookProcessor', () => {
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
-            
+
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue([]) // Sin sockets
-            }) as any;
+            }) as unknown as typeof mockIo.in;
 
             await processor.process(mockPayload);
 
@@ -203,7 +203,7 @@ describe('KickWebhookProcessor', () => {
                 provider: string;
                 providerId: string;
             }
-            
+
             const mockConnection: MockConnection = {
                 userId: 'user-123',
                 provider: 'kick',
@@ -223,14 +223,14 @@ describe('KickWebhookProcessor', () => {
             const userRoom = new Set(['socket-1']);
             mockIo.sockets.adapter.rooms.set('user-123', userRoom);
 
-             
+
             const findOneMock = Connection.findOne as jest.Mock;
             findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
             (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
-            
+
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)
-            }) as any;
+            }) as unknown as typeof mockIo.in;
 
             await processor.process(mockPayload);
 

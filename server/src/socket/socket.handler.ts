@@ -1,19 +1,29 @@
 /** Manejador de Socket.io con configuración de listeners */
 
 import { Server, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
 import { ChatManager } from '../services/ChatManager';
 import { SocketConnectionManager } from './SocketConnectionManager';
 import { logger } from '../utils/logger';
 import { MessageSenderService } from '../services/message/MessageSenderService';
 import { SendMessageRequest } from '../types/message.types';
+import { ActivityService } from '../services/ActivityService';
+
+// Extender interfaz SocketData
+declare module 'socket.io' {
+    interface SocketData {
+        userId?: string;
+    }
+}
 
 function isValidSendMessagePayload(payload: unknown): payload is SendMessageRequest {
     if (!payload || typeof payload !== 'object') {
         return false;
     }
-    
+
     const p = payload as Record<string, unknown>;
-    
+
     return (
         typeof p.userId === 'string' &&
         typeof p.message === 'string' &&
@@ -25,26 +35,76 @@ function isValidSendMessagePayload(payload: unknown): payload is SendMessageRequ
 export const setupSocketHandlers = (
     io: Server,
     chatManager: ChatManager,
-    messageSenderService: MessageSenderService
+    messageSenderService: MessageSenderService,
+    activityService: ActivityService
 ) => {
     logger.info({}, 'Configurando manejadores de Socket.io');
 
     const connectionManager = new SocketConnectionManager(chatManager);
 
-    io.on('connection', (socket: Socket) => {
-        logger.info({ socketId: socket.id }, 'Cliente conectado a Socket.io');
+    // Middleware de autenticación JWT
+    io.use((socket, next) => {
+        let token = (socket.handshake.auth.token as string | undefined) || (socket.handshake.headers.authorization?.split(' ')[1]);
 
-        socket.on('identify', async (userId: unknown) => {
-            await connectionManager.handleIdentify(userId, socket, io);
+        // Si no hay token en auth o headers, intentar buscar en cookies
+        if (!token) {
+            const cookieHeader = socket.handshake.headers.cookie;
+            if (cookieHeader) {
+                const cookies = cookieHeader.split(';').reduce((acc, curr) => {
+                    const [key, value] = curr.split('=').map(c => c.trim());
+                    if (key && value) {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {} as Record<string, string>);
+
+                token = cookies['auth_token'];
+            }
+        }
+
+        if (!token) {
+            logger.warn({ socketId: socket.id }, 'Socket connection attempt without token');
+            return next(new Error('Authentication error: Token required'));
+        }
+
+        try {
+            const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
+            (socket.data as { userId?: string }).userId = decoded.id;
+            next();
+        } catch (err) {
+            logger.warn({ socketId: socket.id, err }, 'Socket authentication failed');
+            return next(new Error('Authentication error: Invalid token'));
+        }
+    });
+
+    io.on('connection', (socket: Socket) => {
+        const authenticatedUserId = (socket.data as { userId?: string }).userId;
+
+        if (!authenticatedUserId) {
+            socket.disconnect();
+            return;
+        }
+
+        logger.info({ socketId: socket.id, userId: authenticatedUserId }, 'Cliente autenticado conectado a Socket.io');
+
+        // Automáticamente identificar al usuario autenticado
+        // Ya no confiamos en un evento 'identify' con el ID en el payload
+        connectionManager.handleIdentify(authenticatedUserId, socket, io);
+
+        // Mantener compatibilidad con clientes que envían 'identify'
+        // pero ignorar el payload y usar el ID autenticado
+        socket.on('identify', async () => {
+            // Ya manejado al conectar, pero respondemos por compatibilidad
+            socket.emit('identified', { userId: authenticatedUserId, message: 'Conectado de forma segura' });
         });
 
         socket.on('send_message', async (payload: unknown) => {
             logger.info({ socketId: socket.id }, 'Received send_message event');
-            
+
             try {
                 if (!isValidSendMessagePayload(payload)) {
-                    logger.warn({ 
-                        socketId: socket.id, 
+                    logger.warn({
+                        socketId: socket.id,
                         payload,
                         reason: 'Invalid payload structure'
                     }, 'Payload validation failed for send_message');
@@ -58,35 +118,40 @@ export const setupSocketHandlers = (
 
                 const { userId, message, platforms } = payload;
 
-                const sessionUserId = connectionManager.getUserIdBySocketId(socket.id);
-                if (!sessionUserId || sessionUserId !== userId) {
+                // VALIDACIÓN CRÍTICA DE SEGURIDAD
+                // Asegurar que el usuario solo pueda enviar mensajes como él mismo
+                if (authenticatedUserId !== userId) {
                     logger.warn(
-                        { 
-                            socketId: socket.id, 
-                            payloadUserId: userId, 
-                            sessionUserId,
-                            reason: 'UserId mismatch or no session found'
+                        {
+                            socketId: socket.id,
+                            payloadUserId: userId,
+                            authenticatedUserId,
+                            reason: 'UserId spoofing attempt'
                         },
-                        'Authorization validation failed in send_message'
+                        'SECURITY: Blocked attempt to send message as another user'
                     );
                     socket.emit('message_send_error', {
                         code: 'UNAUTHORIZED',
-                        message: 'No autorizado'
+                        message: 'No autorizado para enviar mensajes como este usuario'
                     });
                     return;
                 }
-                
-                logger.debug({ socketId: socket.id, userId }, 'Authorization validation passed');
+
+                // La validación de autorización ahora se realiza directamente con authenticatedUserId
+                // y se asume que el payload.userId es el mismo que authenticatedUserId
+                const sessionUserId = authenticatedUserId as string;
+
+                logger.debug({ socketId: socket.id, userId: sessionUserId }, 'Authorization validation passed');
 
                 const filteredPlatforms = platforms.filter(p => p !== 'tiktok');
 
                 logger.info(
-                    { userId, platforms: filteredPlatforms, messageLength: message.length },
+                    { userId: sessionUserId, platforms: filteredPlatforms, messageLength: message.length },
                     'Processing send_message request'
                 );
 
                 const result = await messageSenderService.sendMessage({
-                    userId,
+                    userId: sessionUserId,
                     message,
                     platforms: filteredPlatforms
                 });
@@ -94,13 +159,13 @@ export const setupSocketHandlers = (
                 socket.emit('message_sent_result', result);
 
                 logger.info(
-                    { userId, success: result.success, platformCount: result.results.length },
+                    { userId: sessionUserId, success: result.success, platformCount: result.results.length },
                     'Message send completed'
                 );
 
             } catch (error) {
-                logger.error({ 
-                    err: error, 
+                logger.error({
+                    err: error,
                     socketId: socket.id,
                     errorMessage: error instanceof Error ? error.message : 'Unknown error',
                     errorStack: error instanceof Error ? error.stack : undefined,
@@ -115,7 +180,27 @@ export const setupSocketHandlers = (
 
         socket.on('disconnect', async () => {
             logger.info({ socketId: socket.id }, 'Cliente desconectado de Socket.io');
+            const userId = connectionManager.getUserIdBySocketId(socket.id);
             await connectionManager.handleDisconnect(socket.id);
+
+            // Si el usuario ya no tiene sockets, limpiar actividad
+            if (userId && !io.sockets.adapter.rooms.get(userId)) {
+                activityService.cleanupUser(userId);
+            }
+        });
+
+        // Registrar actividad en cualquier evento
+        socket.onAny(() => {
+            if (authenticatedUserId) {
+                activityService.recordActivity(authenticatedUserId);
+            }
+        });
+
+        // Evento explícito de heartbeat
+        socket.on('heartbeat', () => {
+            if (authenticatedUserId) {
+                activityService.recordActivity(authenticatedUserId);
+            }
         });
 
         socket.on('error', (error: unknown) => {

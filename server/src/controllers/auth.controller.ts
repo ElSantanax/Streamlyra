@@ -19,7 +19,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 30 * 24 * 60 * 60 * 1000,
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
     }
 
@@ -33,7 +33,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matches JWT expiry)
         });
 
         this.setCsrfCookie(res);
@@ -96,7 +96,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 30 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
         this.setCsrfCookie(res);
@@ -106,7 +106,9 @@ export class AuthController {
         res.json(responseData);
     };
 
-    logout = async (_req: AuthRequest, res: Response): Promise<void> => {
+    logout = async (req: AuthRequest, res: Response): Promise<void> => {
+        await this.authService.logout(req.user?.id);
+
         res.clearCookie('auth_token', {
             httpOnly: true,
             secure: config.cookie.secure,

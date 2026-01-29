@@ -7,6 +7,39 @@ import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent } from '../../../ty
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
+interface TikTokUser {
+    nickname: string;
+    uniqueId: string;
+    userId: string;
+    profilePicture?: {
+        url?: string[];
+    };
+    profilePictureUrl?: string;
+}
+
+interface TikTokInternalEvent {
+    user?: TikTokUser;
+    nickname?: string;
+    uniqueId?: string;
+    userId?: string;
+    profilePicture?: {
+        url?: string[];
+    };
+    profilePictureUrl?: string;
+    common?: {
+        msgId?: string;
+    };
+    gift?: {
+        name?: string;
+        giftName?: string;
+        id?: string;
+    };
+    name?: string;
+    giftName?: string;
+    id?: string;
+    repeatCount?: number;
+}
+
 export class TikTokEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'tiktok';
 
@@ -55,15 +88,14 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      */
     transformChatMessage(data: TikTokChatEvent): NormalizedChatMessage {
         // Manejar estructura nueva (con objeto user anidado) y vieja (propiedades en raíz)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const eventData = data as any;
+        const eventData = data as unknown as TikTokInternalEvent;
         const userObj = eventData.user || eventData;
-        
+
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
-        const username = this.selectDisplayName(userObj.nickname, userObj.uniqueId);
-        const userId = userObj.userId || data.userId;
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl;
-        
+        const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
+        const userId = userObj.userId || data.userId || 'unknown';
+        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
+
         return {
             id: eventData.common?.msgId || data.msgId || `tk_chat_${Date.now()}_${userId}`,
             platform: 'tiktok',
@@ -83,15 +115,14 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      */
     transformGift(data: TikTokGiftEvent): NormalizedChatMessage {
         // Manejar estructura nueva (con objeto user anidado) y vieja (propiedades en raíz)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const eventData = data as any;
+        const eventData = data as unknown as TikTokInternalEvent;
         const userObj = eventData.user || eventData;
-        
+
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
-        const username = this.selectDisplayName(userObj.nickname, userObj.uniqueId);
-        const userId = userObj.userId || data.userId;
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl;
-        
+        const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
+        const userId = userObj.userId || data.userId || 'unknown';
+        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
+
         // Extraer información del regalo de diferentes estructuras posibles
         const giftInfo = eventData.gift || eventData;
         const giftName = giftInfo.name || giftInfo.giftName || data.giftName || 'Regalo';
@@ -116,14 +147,13 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      */
     transformFollow(data: TikTokFollowEvent): NormalizedChatMessage {
         // Manejar estructura nueva (con objeto user anidado) y vieja (propiedades en raíz)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const eventData = data as any;
+        const eventData = data as unknown as TikTokInternalEvent;
         const userObj = eventData.user || eventData;
-        
+
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
-        const username = this.selectDisplayName(userObj.nickname, userObj.uniqueId);
-        const userId = userObj.userId || data.userId;
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl;
+        const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
+        const userId = userObj.userId || data.userId || 'unknown';
+        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
         const followId = `tk_follow_${userId}_${Date.now()}`;
 
         return {

@@ -73,7 +73,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe prevenir conexiones duplicadas cuando 2 sockets se identifican simultáneamente', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-123';
+        const userId = '550e8400-e29b-41d4-a716-446655440001';
 
         // Simular 2 sockets identificándose al mismo tiempo
         const promise1 = manager.handleIdentify(userId, mockSocket1, mockIo);
@@ -107,7 +107,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe manejar 3 sockets simultáneos (múltiples dispositivos)', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-456';
+        const userId = '550e8400-e29b-41d4-a716-446655440002';
 
         // Simular 3 dispositivos conectándose al mismo tiempo
         const promise1 = manager.handleIdentify(userId, mockSocket1, mockIo);
@@ -136,7 +136,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe permitir que el segundo socket reutilice la conexión existente', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-789';
+        const userId = '550e8400-e29b-41d4-a716-446655440003';
 
         // Primer socket se identifica
         const promise1 = manager.handleIdentify(userId, mockSocket1, mockIo);
@@ -164,7 +164,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe limpiar el lock después de una conexión exitosa', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-cleanup';
+        const userId = '550e8400-e29b-41d4-a716-446655440004';
 
         // Primera conexión
         const promise1 = manager.handleIdentify(userId, mockSocket1, mockIo);
@@ -190,7 +190,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe limpiar el lock en caso de error', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-error';
+        const userId = '550e8400-e29b-41d4-a716-446655440005';
 
         // Mock para que falle la conexión
         mockChatManager.connectUser.mockRejectedValueOnce(new Error('Connection failed'));
@@ -214,7 +214,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe manejar timeout y limpiar el lock', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-timeout';
+        const userId = '550e8400-e29b-41d4-a716-446655440006';
 
         // Mock para que la conexión tarde más de 30 segundos
         mockChatManager.connectUser.mockImplementation(async () => {
@@ -223,7 +223,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
 
         // Intentar conectar
         const promise = manager.handleIdentify(userId, mockSocket1, mockIo);
-        
+
         // Avanzar 31 segundos (más que el timeout de 30s)
         jest.advanceTimersByTime(31000);
 
@@ -242,7 +242,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe manejar desconexión mientras hay una conexión en progreso', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-disconnect-during-connect';
+        const userId = '550e8400-e29b-41d4-a716-446655440007';
 
         // Iniciar conexión
         const promise = manager.handleIdentify(userId, mockSocket1, mockIo);
@@ -265,8 +265,8 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe manejar múltiples usuarios diferentes simultáneamente', async () => {
         jest.useFakeTimers();
 
-        const user1 = 'user-1';
-        const user2 = 'user-2';
+        const user1 = '550e8400-e29b-41d4-a716-446655440008';
+        const user2 = '550e8400-e29b-41d4-a716-446655440009';
 
         // Dos usuarios diferentes conectándose al mismo tiempo
         const promise1 = manager.handleIdentify(user1, mockSocket1, mockIo);
@@ -303,7 +303,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     test('debe mantener contador de sockets correcto con múltiples conexiones', async () => {
         jest.useFakeTimers();
 
-        const userId = 'user-counter';
+        const userId = '550e8400-e29b-41d4-a716-446655440010';
 
         // Conectar primer socket
         const promise1 = manager.handleIdentify(userId, mockSocket1, mockIo);

@@ -44,7 +44,7 @@ export class AuthService {
         this.userService = new UserService(userRepository, connectionRepository);
         this.connectionService = new ConnectionService(connectionRepository);
         this.profileSyncService = new ProfileSyncService();
-        this.connectionCreationService = new ConnectionCreationService();
+        this.connectionCreationService = new ConnectionCreationService(connectionRepository);
         this.inputValidator = new AuthInputValidator();
         this.activationDecider = new ConnectionActivationDecider();
         this.chatOrchestrator = new AuthChatOrchestrator(chatManager);
@@ -207,5 +207,18 @@ export class AuthService {
         logger.info({ userId, provider }, 'AuthService: Platform disconnection completed');
 
         return true;
+    }
+
+    async logout(userId: string | undefined): Promise<void> {
+        if (!userId) return;
+
+        logger.info({ userId }, 'AuthService: Starting global logout cleanup');
+
+        try {
+            await this.chatOrchestrator.disconnectAll(userId);
+            logger.info({ userId }, 'AuthService: Global logout cleanup completed');
+        } catch (error) {
+            logger.error({ err: error, userId }, 'AuthService: Error during logout cleanup');
+        }
     }
 }

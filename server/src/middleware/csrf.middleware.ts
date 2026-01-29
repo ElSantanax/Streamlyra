@@ -41,15 +41,15 @@ const generateToken = (): string => {
 const shouldValidateCsrf = (req: AuthRequest): boolean => {
     const method = req.method.toUpperCase();
     const isMutating = !CSRF_CONFIG.SAFE_METHODS.includes(method as typeof CSRF_CONFIG.SAFE_METHODS[number]);
-    
+
     if (!isMutating) return false;
-    
+
     // Excluir rutas específicas (webhooks)
     if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) return false;
-    
+
     // Solo validar si hay token de autenticación
     if (!getCookie(req, CSRF_CONFIG.AUTH_COOKIE_NAME)) return false;
-    
+
     return true;
 };
 
@@ -83,8 +83,17 @@ export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction)
     const cookieToken = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
     const headerToken = req.headers[CSRF_CONFIG.HEADER_NAME] as string | undefined;
 
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+    if (!cookieToken || !headerToken) {
         return next(new AppError('CSRF token inválido o ausente.', 403));
+    }
+
+    // Comparación segura contra timing attacks
+    const cookieBuffer = Buffer.from(cookieToken);
+    const headerBuffer = Buffer.from(headerToken);
+
+    // Timing safe check: longitud debe ser igual y contenido idéntico
+    if (cookieBuffer.length !== headerBuffer.length || !crypto.timingSafeEqual(cookieBuffer, headerBuffer)) {
+        return next(new AppError('CSRF token inválido.', 403));
     }
 
     next();

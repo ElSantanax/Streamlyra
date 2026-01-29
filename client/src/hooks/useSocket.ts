@@ -115,6 +115,36 @@ export const useSocket = ({
     };
   }, [userId]);
 
+  // Heartbeat para hibernación (Fase B del Plan Maestro)
+  useEffect(() => {
+    if (!isConnected || !userId) return;
+
+    const HEARTBEAT_INTERVAL = 30000; // 30 segundos
+
+    const sendHeartbeat = () => {
+      // Solo enviar heartbeat si la pestaña es visible para ahorrar más recursos
+      if (document.visibilityState === 'visible') {
+        socket.emit('heartbeat');
+      }
+    };
+
+    const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+    // También enviar uno inmediatamente cuando cambie la visibilidad a visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        socket.emit('heartbeat');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isConnected, userId]);
+
   // Efecto separado para handlers de mensajes (sin causar reconexión)
   // Usar refs para evitar re-registrar listeners cuando cambian los callbacks
   const onChatMessageRef = useRef(onChatMessage);

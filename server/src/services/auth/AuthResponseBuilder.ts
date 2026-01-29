@@ -2,15 +2,11 @@
 
 import { TokenService } from './TokenService';
 import { User } from '../../models/User.model';
+import { buildUserDTO, UserDTO } from '../../utils/userUtils';
 
 export interface AuthResponse {
     token: string;
-    user: {
-        id: string;
-        username: string;
-        displayName: string;
-        avatar: string;
-    };
+    user: UserDTO;
     connectionActive: boolean;
     activationReason: string;
 }
@@ -23,18 +19,9 @@ export class AuthResponseBuilder {
     ): AuthResponse {
         return {
             token: TokenService.generateToken(user),
-            user: this.buildUserDTO(user),
+            user: buildUserDTO(user),
             connectionActive,
             activationReason
-        };
-    }
-
-    private buildUserDTO(user: User) {
-        return {
-            id: user.id,
-            username: user.username,
-            displayName: user.displayName,
-            avatar: user.avatarUrl
         };
     }
 }

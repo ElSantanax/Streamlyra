@@ -21,17 +21,18 @@ export class TwitchService extends BasePlatformService {
 
     protected readonly oauthOptions: OAuthExchangeOptions = {
         baseUrl: 'https://id.twitch.tv/oauth2/token',
-        clientId: config.twitch.clientId!,
-        clientSecret: config.twitch.clientSecret!,
-        redirectUri: config.twitch.redirectUri!
+        clientId: config.oauth.twitch.clientId!,
+        clientSecret: config.oauth.twitch.clientSecret!,
+        redirectUri: config.oauth.twitch.redirectUri!
     };
 
     protected async fetchUserProfile(accessToken: string): Promise<TwitchUser> {
         const userResponse = await axios.get<TwitchUserResponse>('https://api.twitch.tv/helix/users', {
             headers: {
-                'Client-ID': config.twitch.clientId!,
+                'Client-ID': config.oauth.twitch.clientId!,
                 'Authorization': `Bearer ${accessToken}`
-            }
+            },
+            timeout: 10000
         });
 
         return userResponse.data.data[0];
@@ -65,9 +66,10 @@ export class TwitchService extends BasePlatformService {
                 {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
-                        'Client-ID': config.twitch.clientId!,
+                        'Client-ID': config.oauth.twitch.clientId!,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 10000
                 }
             );
 
@@ -78,7 +80,7 @@ export class TwitchService extends BasePlatformService {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
                 const errorData = error.response?.data as { message?: string } | undefined;
-                
+
                 if (status === 401) {
                     error.message = 'Token de acceso inválido o expirado';
                     throw error;

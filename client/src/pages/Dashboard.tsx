@@ -3,12 +3,13 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import { useAuth, useConnections, useChatMessages, useSocket } from '../hooks';
+import { toast } from '../lib/notifications';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
 const ChatMessage = lazy(() => import('../components/dashboard/ChatMessage'));
@@ -20,9 +21,20 @@ const Dashboard = () => {
     const { user, isAuthenticated } = useAuth();
     const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
     const { messages, addMessage, messagesEndRef } = useChatMessages();
+    const messagesAreaRef = useRef<HTMLDivElement>(null);
     
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+
+    // Configurar el área de toasts dentro del contenedor de mensajes
+    useEffect(() => {
+        if (messagesAreaRef.current) {
+            toast.setTargetElement(messagesAreaRef.current);
+        }
+        return () => {
+            toast.setTargetElement(null);
+        };
+    }, []);
 
     // Proteger ruta - usar useEffect para navegación
     useEffect(() => {
@@ -107,7 +119,7 @@ const Dashboard = () => {
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
                     {/* Messages Area */}
                     <LocalErrorBoundary section="Chat Feed">
-                        <div className="flex-1 min-h-0 overflow-y-auto p-4 md:px-2 md:py-2 custom-scrollbar">
+                        <div ref={messagesAreaRef} className="flex-1 min-h-0 overflow-y-auto p-4 md:px-2 md:py-2 custom-scrollbar relative">
                             <div className="flex flex-col gap-2 min-h-full">
                                 <Suspense fallback={
                                     <div className="flex-1 flex items-center justify-center">

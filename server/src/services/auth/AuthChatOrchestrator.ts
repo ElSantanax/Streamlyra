@@ -13,7 +13,7 @@ export interface ChatConnectionContext {
 }
 
 export class AuthChatOrchestrator {
-    constructor(private chatManager: ChatManager) {}
+    constructor(private chatManager: ChatManager) { }
 
     async connectIfNeeded(context: ChatConnectionContext): Promise<void> {
         const { userId, platform, shouldConnect, reason } = context;
@@ -78,5 +78,16 @@ export class AuthChatOrchestrator {
             shouldConnect: true,
             reason: 'reconnection'
         });
+    }
+
+    async disconnectAll(userId: string): Promise<void> {
+        await withErrorHandling(
+            async () => {
+                logger.info({ userId }, 'AuthChatOrchestrator: Disconnecting all chats');
+                await this.chatManager.disconnectUser(userId);
+            },
+            { userId, action: 'disconnectAll' },
+            { rethrow: false }
+        );
     }
 }

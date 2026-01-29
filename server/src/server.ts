@@ -24,18 +24,23 @@ import { ConnectionService } from './services/connection/ConnectionService';
 import { setCsrfCookie, verifyCsrf } from './middleware/csrf.middleware';
 import { MessageSenderService } from './services/message/MessageSenderService';
 import { TwitchService, YouTubeService, KickService } from './services/platforms';
+import { apiLimiter, authLimiter, webhookLimiter } from './middleware/rateLimit.middleware';
+import { ActivityService } from './services/ActivityService';
 
-async function connectToDatabase() {
+
+export async function connectToDatabase() {
     try {
         await db.authenticate();
         await db.sync();
         logger.info('Conexión exitosa a la base de datos.');
     } catch (error) {
         logger.error({ err: error }, 'Hubo un error al conectar a la base de datos');
+        process.exit(1); // Si la DB falla al arrancar, cerramos el proceso
     }
 }
 
-connectToDatabase();
+// Ya no llamamos a connectToDatabase() aquí para evitar condiciones de carrera.
+// Se exporta para que index.ts (punto de entrada) controle el orden de arranque.
 
 const userRepository = new UserRepository();
 const connectionRepository = new ConnectionRepository();
@@ -72,6 +77,9 @@ const webhookProcessor = new WebhookProcessor(io);
 
 const authController = new AuthController(authService);
 const webhookController = new WebhookController(webhookProcessor);
+
+const activityService = new ActivityService(chatManager);
+activityService.start();
 
 app.use(cors({
     origin: config.frontendUrl,
@@ -111,9 +119,15 @@ app.use(express.json({
     }
 }));
 
+// Aplicar Rate Limiting GLOBAL para endpoints que empiecen con /api/
+app.use('/api/', apiLimiter);
+
+// Aplicar Rate Limiting ESTRICTO para autenticación (sobrescribe o suma al global si se anidan, 
+// pero aqui se aplica justo antes del router de auth)
 app.use('/api/auth', createAuthRoutes(authController));
 
-app.use('/api/webhooks', createWebhookRoutes(webhookController));
+// Aplicar Rate Limiting ESPECÍFICO para webhooks (alto tráfico permitido)
+app.use('/api/webhooks', webhookLimiter, createWebhookRoutes(webhookController));
 
 app.get('/api/status', (_req, res) => {
     res.json({ status: 'ok', message: 'Streamlyra API esta funcionando' });
@@ -125,7 +139,7 @@ app.get('/', (_req, res) => {
 
 app.use(errorHandler);
 
-setupSocketHandlers(io, chatManager, messageSenderService);
+setupSocketHandlers(io, chatManager, messageSenderService, activityService);
 
 export { app, io, chatManager };
 export default server;
