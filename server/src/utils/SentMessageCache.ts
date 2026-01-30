@@ -3,12 +3,18 @@
 export class SentMessageCache {
     private cache = new Map<string, Map<string, NodeJS.Timeout>>();
     private readonly TTL_MS = 8000; // 8 segundos para dar tiempo a que llegue el eco
+    private readonly MAX_ENTRIES = 1000; // Límite máximo de entradas totales para prevenir memory leaks
 
     /**
      * Marca un mensaje como enviado desde el dashboard
      * Se auto-limpia después del TTL
      */
     markAsSent(userId: string, message: string): void {
+        // Verificar límite antes de agregar
+        if (this.size() >= this.MAX_ENTRIES) {
+            this.evictOldest();
+        }
+
         if (!this.cache.has(userId)) {
             this.cache.set(userId, new Map());
         }
@@ -43,6 +49,17 @@ export class SentMessageCache {
     }
 
     /**
+     * Elimina la entrada más antigua cuando se alcanza el límite
+     * Estrategia: eliminar el primer usuario del Map (FIFO)
+     */
+    private evictOldest(): void {
+        const firstUserId = this.cache.keys().next().value;
+        if (firstUserId) {
+            this.clearUser(firstUserId);
+        }
+    }
+
+    /**
      * Limpia todos los mensajes de un usuario
      */
     clearUser(userId: string): void {
@@ -73,6 +90,13 @@ export class SentMessageCache {
             total += userCache.size;
         });
         return total;
+    }
+
+    /**
+     * Obtiene el límite máximo de entradas
+     */
+    getMaxEntries(): number {
+        return this.MAX_ENTRIES;
     }
 }
 

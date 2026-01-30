@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MdReply, MdBlock, MdDeleteOutline, MdError } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
@@ -18,7 +19,7 @@ export interface ChatMessageProps {
     errorMessage?: string;
 }
 
-const ChatMessage = ({
+const ChatMessage = memo(({
     user,
     message,
     time,
@@ -151,6 +152,8 @@ const ChatMessage = ({
             </div>
         </div>
     );
-};
+});
+
+ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;

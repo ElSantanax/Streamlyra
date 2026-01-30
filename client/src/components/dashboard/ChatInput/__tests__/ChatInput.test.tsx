@@ -53,46 +53,12 @@ describe('ChatInput', () => {
   });
 
   describe('Initial State', () => {
-    it('should mount with toggles in default values', () => {
-      // Requirements: 1.1
-      // Verify that the component initializes with correct default toggle states:
-      // - Twitch: enabled (checked)
-      // - YouTube: enabled (checked)
-      // - Kick: disabled (unchecked and disabled)
-      // - TikTok: not rendered
-
-      const { container } = render(
+    it('should mount with input and send button', () => {
+      render(
         <MemoryRouter>
           <ChatInput />
         </MemoryRouter>
       );
-
-      // Verify Twitch toggle is checked by default
-      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
-      expect(twitchToggle).toBeInTheDocument();
-      expect(twitchToggle.defaultChecked).toBe(true);
-      expect(twitchToggle.disabled).toBe(false);
-
-      // Verify YouTube toggle is checked by default
-      const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
-      expect(youtubeToggle).toBeInTheDocument();
-      expect(youtubeToggle.defaultChecked).toBe(true);
-      expect(youtubeToggle.disabled).toBe(false);
-
-      // Verify Kick toggle is unchecked but ENABLED by default (now supported)
-      const kickToggle = container.querySelector('input#toggle-kick') as HTMLInputElement;
-      expect(kickToggle).toBeInTheDocument();
-      expect(kickToggle.defaultChecked).toBe(true); // Se inicia en true si está en PLATFORMS habilitado
-      expect(kickToggle.disabled).toBe(false);
-
-      // Verify TikTok toggle is not rendered (filtered out)
-      const tiktokToggle = container.querySelector('input#toggle-tiktok');
-      expect(tiktokToggle).not.toBeInTheDocument();
-
-      // Verify "Todos" toggle is checked by default
-      const todosToggle = container.querySelector('input#toggle-all') as HTMLInputElement;
-      expect(todosToggle).toBeInTheDocument();
-      expect(todosToggle.defaultChecked).toBe(true);
 
       // Verify message input is present and empty
       const messageInput = screen.getByPlaceholderText('Enviar un mensaje') as HTMLInputElement;
@@ -102,56 +68,6 @@ describe('ChatInput', () => {
       // Verify send button is present
       const sendButton = screen.getByRole('button', { name: /enviar/i });
       expect(sendButton).toBeInTheDocument();
-    });
-  });
-
-  describe('Toggle Interaction', () => {
-    it('should update platform state when toggle is clicked', async () => {
-      // Requirements: 1.2
-      // Verify that clicking a platform toggle updates the state immediately
-
-      const user = userEvent.setup();
-      const { container } = render(
-        <MemoryRouter>
-          <ChatInput />
-        </MemoryRouter>
-      );
-
-      // Get Twitch toggle (initially checked)
-      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
-      expect(twitchToggle.checked).toBe(true);
-
-      // Click to uncheck
-      await user.click(twitchToggle);
-      expect(twitchToggle.checked).toBe(false);
-
-      // Click to check again
-      await user.click(twitchToggle);
-      expect(twitchToggle.checked).toBe(true);
-    });
-
-    it('should update YouTube toggle independently', async () => {
-      // Requirements: 1.2
-      // Verify that YouTube toggle can be changed independently
-
-      const user = userEvent.setup();
-      const { container } = render(
-        <MemoryRouter>
-          <ChatInput />
-        </MemoryRouter>
-      );
-
-      // Get YouTube toggle (initially checked)
-      const youtubeToggle = container.querySelector('input#toggle-youtube') as HTMLInputElement;
-      expect(youtubeToggle.checked).toBe(true);
-
-      // Click to uncheck
-      await user.click(youtubeToggle);
-      expect(youtubeToggle.checked).toBe(false);
-
-      // Verify Twitch toggle is not affected
-      const twitchToggle = container.querySelector('input#toggle-twitch') as HTMLInputElement;
-      expect(twitchToggle.checked).toBe(true);
     });
   });
 

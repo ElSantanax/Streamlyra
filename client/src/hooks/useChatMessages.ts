@@ -6,7 +6,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, MessageStatus } from '../types';
 
-const MAX_MESSAGES = 100;
+const MAX_MESSAGES = 50;
 
 export const useChatMessages = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

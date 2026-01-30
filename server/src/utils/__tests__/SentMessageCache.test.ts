@@ -120,4 +120,55 @@ describe('SentMessageCache', () => {
             expect(cache.size()).toBe(1);
         });
     });
+
+    describe('memory leak prevention', () => {
+        it('debe respetar el límite máximo de entradas', () => {
+            const maxEntries = cache.getMaxEntries();
+            
+            // Agregar más mensajes que el límite
+            for (let i = 0; i < maxEntries + 100; i++) {
+                cache.markAsSent(`user${i}`, `message${i}`);
+            }
+
+            // El tamaño no debe exceder el límite
+            expect(cache.size()).toBeLessThanOrEqual(maxEntries);
+        });
+
+        it('debe eliminar las entradas más antiguas cuando se alcanza el límite', () => {
+            const maxEntries = cache.getMaxEntries();
+            
+            // Llenar el caché hasta el límite
+            for (let i = 0; i < maxEntries; i++) {
+                cache.markAsSent(`user${i}`, `message${i}`);
+            }
+
+            // Verificar que el primer mensaje está en caché
+            expect(cache.wasSentFromDashboard('user0', 'message0')).toBe(true);
+
+            // Agregar uno más (debe eliminar el más antiguo)
+            cache.markAsSent('userNew', 'messageNew');
+
+            // El primer mensaje debe haber sido eliminado
+            expect(cache.wasSentFromDashboard('user0', 'message0')).toBe(false);
+            
+            // El nuevo mensaje debe estar presente
+            expect(cache.wasSentFromDashboard('userNew', 'messageNew')).toBe(true);
+        });
+
+        it('debe mantener el tamaño en o por debajo del límite durante adiciones continuas', () => {
+            const maxEntries = cache.getMaxEntries();
+            
+            // Agregar mensajes continuamente
+            for (let i = 0; i < maxEntries * 2; i++) {
+                cache.markAsSent(`user${i}`, `message${i}`);
+                
+                // Verificar que nunca excede el límite
+                expect(cache.size()).toBeLessThanOrEqual(maxEntries);
+            }
+        });
+
+        it('debe retornar el límite máximo correcto', () => {
+            expect(cache.getMaxEntries()).toBe(1000);
+        });
+    });
 });
