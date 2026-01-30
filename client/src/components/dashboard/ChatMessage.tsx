@@ -1,6 +1,7 @@
-import { MdReply, MdBlock, MdDeleteOutline } from 'react-icons/md';
+import { MdReply, MdBlock, MdDeleteOutline, MdError } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
+import type { MessageStatus } from '../../types/chat.types';
 
 export interface ChatMessageProps {
     user: string;
@@ -13,6 +14,8 @@ export interface ChatMessageProps {
     isVIP?: boolean;
     isOwner?: boolean;
     specialMessage?: string;
+    status?: MessageStatus;
+    errorMessage?: string;
 }
 
 const ChatMessage = ({
@@ -26,10 +29,37 @@ const ChatMessage = ({
     isVIP,
     isOwner,
     specialMessage,
+    status,
+    errorMessage,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP;
     const isYouTube = platform === 'youtube';
+
+    // Renderizar indicador de estado (solo para mensajes propios)
+    const renderStatusIndicator = () => {
+        if (!status) return null;
+
+        switch (status) {
+            case 'sending':
+                // No mostrar nada mientras se envía
+                // El mensaje aparece instantáneamente, el usuario no necesita ver "Enviando..."
+                return null;
+            case 'sent':
+                // No mostrar nada cuando el mensaje se envió exitosamente
+                // El usuario asume que si no hay error, el mensaje se envió
+                return null;
+            case 'error':
+                return (
+                    <div className="flex items-center gap-1 text-red-500" title={errorMessage || 'Error al enviar'}>
+                        <MdError size={14} />
+                        <span className="text-xs">Error</span>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
     // Badge configuration
     const getBadge = (type: 'sub' | 'mod' | 'vip' | 'streamer') => {
@@ -86,6 +116,7 @@ const ChatMessage = ({
                         {isVIP && <div className="shrink-0 scale-90 md:scale-100">{getBadge('vip')}</div>}
                         {isSub && <div className="shrink-0 scale-90 md:scale-100">{getBadge('sub')}</div>}
                         <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
+                        {renderStatusIndicator()}
                     </div>
                     {platform !== 'system' && (
                         <div className="flex items-center gap-1 md:gap-1.5 ml-2 md:ml-4 transition-opacity shrink-0">

@@ -10,6 +10,7 @@ import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionInfo
 interface UseSocketOptions {
   userId?: string;
   onChatMessage?: (message: ChatMessage) => void;
+  onMessageStatusUpdate?: (messageId: string, status: 'sending' | 'sent' | 'error', errorMessage?: string) => void;
   onViewersUpdate?: (data: ViewersUpdate) => void;
   onConnectionStatus?: (data: ConnectionStatusUpdate) => void;
   connections?: Record<string, ConnectionInfo>;
@@ -18,6 +19,7 @@ interface UseSocketOptions {
 export const useSocket = ({
   userId,
   onChatMessage,
+  onMessageStatusUpdate,
   onViewersUpdate,
   onConnectionStatus,
   connections = {},
@@ -148,15 +150,17 @@ export const useSocket = ({
   // Efecto separado para handlers de mensajes (sin causar reconexión)
   // Usar refs para evitar re-registrar listeners cuando cambian los callbacks
   const onChatMessageRef = useRef(onChatMessage);
+  const onMessageStatusUpdateRef = useRef(onMessageStatusUpdate);
   const onViewersUpdateRef = useRef(onViewersUpdate);
   const onConnectionStatusRef = useRef(onConnectionStatus);
 
   // Mantener refs actualizados
   useEffect(() => {
     onChatMessageRef.current = onChatMessage;
+    onMessageStatusUpdateRef.current = onMessageStatusUpdate;
     onViewersUpdateRef.current = onViewersUpdate;
     onConnectionStatusRef.current = onConnectionStatus;
-  }, [onChatMessage, onViewersUpdate, onConnectionStatus]);
+  }, [onChatMessage, onMessageStatusUpdate, onViewersUpdate, onConnectionStatus]);
 
   // Registrar listeners solo una vez
   useEffect(() => {
@@ -174,6 +178,10 @@ export const useSocket = ({
       onChatMessageRef.current?.(msg);
     };
 
+    const handleMessageStatusUpdate = (data: { messageId: string; status: 'sending' | 'sent' | 'error'; errorMessage?: string }) => {
+      onMessageStatusUpdateRef.current?.(data.messageId, data.status, data.errorMessage);
+    };
+
     const handleViewersUpdate = (data: ViewersUpdate) => {
       // Filtrar actualizaciones de plataformas desconectadas usando ref actualizado
       if (!connectionsRef.current[data.platform]?.connected) {
@@ -187,11 +195,13 @@ export const useSocket = ({
     };
 
     socket.on('chat_message', handleChatMessage);
+    socket.on('message_status_update', handleMessageStatusUpdate);
     socket.on('viewers_update', handleViewersUpdate);
     socket.on('connection_status', handleConnectionStatus);
 
     return () => {
       socket.off('chat_message', handleChatMessage);
+      socket.off('message_status_update', handleMessageStatusUpdate);
       socket.off('viewers_update', handleViewersUpdate);
       socket.off('connection_status', handleConnectionStatus);
     };

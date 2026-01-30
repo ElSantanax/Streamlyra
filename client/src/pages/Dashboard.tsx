@@ -20,7 +20,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
-    const { messages, addMessage, messagesEndRef } = useChatMessages();
+    const { messages, addMessage, updateMessageStatus, messagesEndRef } = useChatMessages();
     const messagesAreaRef = useRef<HTMLDivElement>(null);
     
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -47,6 +47,7 @@ const Dashboard = () => {
     const { isConnected } = useSocket({
         userId: user?.id,
         onChatMessage: addMessage,
+        onMessageStatusUpdate: updateMessageStatus,
         onViewersUpdate: (data) => {
             updateConnection(data.platform, { viewers: data.count });
         },

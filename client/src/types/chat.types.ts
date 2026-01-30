@@ -4,6 +4,8 @@
 
 import type { PlatformKey } from '../constants/platforms';
 
+export type MessageStatus = 'sending' | 'sent' | 'error';
+
 export interface ChatMessage {
   id?: string;
   user: string;
@@ -16,6 +18,8 @@ export interface ChatMessage {
   isVIP?: boolean;
   isOwner?: boolean;
   specialMessage?: string;
+  status?: MessageStatus; // Estado del mensaje (solo para mensajes propios)
+  errorMessage?: string; // Mensaje de error si falló
 }
 
 export interface ViewersUpdate {

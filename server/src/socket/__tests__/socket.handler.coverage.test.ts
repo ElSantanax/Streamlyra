@@ -171,15 +171,7 @@ describe('socket.handler', () => {
 
             await socketEventHandlers['send_message'](payload);
 
-            expect(mockMessageSenderService.sendMessage).toHaveBeenCalledWith({
-                userId: userId,
-                message: 'hello world',
-                platforms: ['twitch', 'kick']
-            });
-
-            expect(mockSocket.emit).toHaveBeenCalledWith('message_sent_result', expectedResult);
-            
-            // Verificar que se emitió el mensaje al dashboard para feedback inmediato
+            // Verificar que se emitió el mensaje al dashboard ANTES de enviar a plataformas (feedback optimista)
             expect(mockIo.to).toHaveBeenCalledWith(userId);
             expect(mockIo.emit).toHaveBeenCalledWith('chat_message', expect.objectContaining({
                 platform: 'dashboard',
@@ -187,6 +179,16 @@ describe('socket.handler', () => {
                 message: 'hello world',
                 isOwner: true
             }));
+
+            // Verificar que se envió a las plataformas
+            expect(mockMessageSenderService.sendMessage).toHaveBeenCalledWith({
+                userId: userId,
+                message: 'hello world',
+                platforms: ['twitch', 'kick']
+            });
+
+            // Verificar que se emitió el resultado
+            expect(mockSocket.emit).toHaveBeenCalledWith('message_sent_result', expectedResult);
             
             expect(logger.info).toHaveBeenCalledWith(
                 expect.objectContaining({ userId: userId, success: true }),

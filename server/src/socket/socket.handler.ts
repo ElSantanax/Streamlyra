@@ -150,40 +150,69 @@ export const setupSocketHandlers = (
                     'Processing send_message request'
                 );
 
+                // Emitir el mensaje al dashboard INMEDIATAMENTE para feedback optimista
+                // Esto da sensación de rapidez mientras se envía a las plataformas en background
+                const messageId = `dashboard-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const chatMessage: {
+                    id: string;
+                    platform: string;
+                    user: string;
+                    message: string;
+                    time: string;
+                    color: string;
+                    isOwner: boolean;
+                    status: string;
+                } = {
+                    id: messageId,
+                    platform: 'dashboard',
+                    user: 'Tú',
+                    message,
+                    time: new Date().toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    }),
+                    color: '#10B981', // Verde para mensajes propios
+                    isOwner: true,
+                    status: 'sending' // Estado inicial: enviando
+                };
+
+                io.to(sessionUserId).emit('chat_message', chatMessage);
+
+                // Enviar a las plataformas (esto puede tardar varios segundos)
                 const result = await messageSenderService.sendMessage({
                     userId: sessionUserId,
                     message,
                     platforms: filteredPlatforms
                 });
 
-                socket.emit('message_sent_result', result);
+                // Actualizar el estado del mensaje según el resultado
+                const successfulPlatforms = result.results.filter(r => r.success);
+                const failedPlatforms = result.results.filter(r => !r.success);
 
-                // Emitir el mensaje al dashboard del usuario para feedback inmediato
-                // Solo si al menos una plataforma tuvo éxito
-                if (result.success) {
-                    const chatMessage: {
-                        id: string;
-                        platform: string;
-                        user: string;
-                        message: string;
-                        time: string;
-                        color: string;
-                        isOwner: boolean;
-                    } = {
-                        id: `dashboard-${Date.now()}`,
-                        platform: 'dashboard',
-                        user: 'Tú',
-                        message,
-                        time: new Date().toLocaleTimeString('es-ES', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                        }),
-                        color: '#10B981', // Verde para mensajes propios
-                        isOwner: true
-                    };
+                let finalStatus: string;
+                let errorMessage: string | undefined;
 
-                    io.to(sessionUserId).emit('chat_message', chatMessage);
+                if (successfulPlatforms.length === result.results.length) {
+                    // Éxito total
+                    finalStatus = 'sent';
+                } else if (successfulPlatforms.length > 0) {
+                    // Éxito parcial
+                    finalStatus = 'error';
+                    errorMessage = `Falló en: ${failedPlatforms.map(r => r.platform).join(', ')}`;
+                } else {
+                    // Error total
+                    finalStatus = 'error';
+                    errorMessage = 'No se pudo enviar a ninguna plataforma';
                 }
+
+                // Emitir actualización del estado del mensaje
+                io.to(sessionUserId).emit('message_status_update', {
+                    messageId,
+                    status: finalStatus,
+                    errorMessage
+                });
+
+                socket.emit('message_sent_result', result);
 
                 logger.info(
                     { userId: sessionUserId, success: result.success, platformCount: result.results.length },

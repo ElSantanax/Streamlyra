@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, MessageStatus } from '../types';
 
 const MAX_MESSAGES = 100;
 
@@ -28,6 +28,16 @@ export const useChatMessages = () => {
     });
   }, []);
 
+  const updateMessageStatus = useCallback((messageId: string, status: MessageStatus, errorMessage?: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, status, errorMessage } 
+          : msg
+      )
+    );
+  }, []);
+
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, []);
@@ -44,6 +54,7 @@ export const useChatMessages = () => {
   return {
     messages,
     addMessage,
+    updateMessageStatus,
     clearMessages,
     messagesEndRef,
     scrollToBottom,
