@@ -98,10 +98,14 @@ export class YouTubeChatPoller {
                 const newMessages = items || [];
 
                 const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
-                this.distributeMessages(newMessages, userId, io, currentInterval);
+                const adaptiveInterval = quotaManager.getAdaptiveInterval(currentInterval);
 
-                if (pollingIntervalMillis && this.polling.isRunning(userId)) {
-                    this.polling.start(userId, pollTask, pollingIntervalMillis);
+                this.distributeMessages(newMessages, userId, io, adaptiveInterval);
+
+                // Si detectamos que el intervalo debería cambiar (ya sea por YouTube o por nuestra cuota), 
+                // reiniciamos el polling con el nuevo valor.
+                if (this.polling.isRunning(userId)) {
+                    this.polling.start(userId, pollTask, adaptiveInterval);
                 }
 
             } catch (error: unknown) {

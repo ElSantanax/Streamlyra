@@ -56,7 +56,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
         >
             <div className="flex flex-col gap-4">
                 {Object.entries(PLATFORMS)
-                    .filter(([key]) => key !== 'system' && key !== 'tiktok')
+                    .filter(([key]) => key !== 'system' && key !== 'tiktok' && key !== 'dashboard')
                     .map(([key, platform]) => {
                         const conn = connections[key];
                         const isConnected = !!conn?.connected;

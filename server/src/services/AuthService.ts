@@ -21,6 +21,7 @@ import { Platform } from '../constants/platforms';
 import { AppError } from '../utils/AppError';
 import { withErrorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
+import db from '../config/db';
 
 export class AuthService {
     private userService: UserService;
@@ -120,57 +121,72 @@ export class AuthService {
             async () => {
                 logger.info(
                     { provider: profile.provider, providerId: profile.providerId, currentUserId },
-                    'Starting platform authentication'
+                    'Starting platform authentication with transaction'
                 );
 
-                const { user, isNew } = await this.userService.findOrCreateFromPlatform(profile, currentUserId);
-                logger.info({ userId: user.id, isNew }, 'User found or created');
+                /**
+                 * CRITICAL: Toda la operación de autenticación se ejecuta dentro de una transacción
+                 * para garantizar atomicidad. Si cualquier paso falla (creación de usuario, conexión
+                 * o sincronización de perfil), se hace rollback automático evitando datos huérfanos.
+                 * 
+                 * Esto resuelve el problema de integridad donde un fallo parcial podía dejar
+                 * usuarios sin conexiones o conexiones sin usuarios en la base de datos.
+                 */
+                return await db.transaction(async (transaction) => {
+                    const { user, isNew } = await this.userService.findOrCreateFromPlatform(
+                        profile,
+                        currentUserId,
+                        transaction
+                    );
+                    logger.info({ userId: user.id, isNew }, 'User found or created');
 
-                const existingConnection = await this.connectionService.getConnectionByProvider(
-                    profile.provider,
-                    profile.providerId
-                );
-
-                const activationContext: ConnectionActivationContext = {
-                    isNewUser: isNew,
-                    isLinkingAccount: !!currentUserId,
-                    hasExistingConnection: !!existingConnection,
-                    userId: user.id,
-                    platform: profile.provider
-                };
-
-                const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
-                const activationReason = this.activationDecider.getActivationReason(activationContext);
-
-                if (shouldActivate) {
-                    await this.connectionCreationService.createOrUpdate(
-                        user.id,
+                    const existingConnection = await this.connectionService.getConnectionByProvider(
                         profile.provider,
-                        tokens,
-                        profile.providerId,
-                        profile.providerUsername
+                        profile.providerId
                     );
-                    logger.info(
-                        { userId: user.id, platform: profile.provider, reason: activationReason },
-                        'Connection activated'
-                    );
-                }
 
-                const syncContext: ProfileSyncContext = {
-                    isNewUser: isNew,
-                    isLinkingAccount: !!currentUserId,
-                    provider: profile.provider,
-                    userId: user.id
-                };
+                    const activationContext: ConnectionActivationContext = {
+                        isNewUser: isNew,
+                        isLinkingAccount: !!currentUserId,
+                        hasExistingConnection: !!existingConnection,
+                        userId: user.id,
+                        platform: profile.provider
+                    };
 
-                const shouldSyncProfile = this.profileSyncDecider.shouldSyncProfile(syncContext);
-                if (shouldSyncProfile) {
-                    await this.profileSyncService.syncProfile(user, profile);
-                }
+                    const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
+                    const activationReason = this.activationDecider.getActivationReason(activationContext);
 
-                logger.info({ userId: user.id, platform: profile.provider }, 'Platform authentication completed');
+                    if (shouldActivate) {
+                        await this.connectionCreationService.createOrUpdate(
+                            user.id,
+                            profile.provider,
+                            tokens,
+                            profile.providerId,
+                            profile.providerUsername,
+                            transaction
+                        );
+                        logger.info(
+                            { userId: user.id, platform: profile.provider, reason: activationReason },
+                            'Connection activated'
+                        );
+                    }
 
-                return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
+                    const syncContext: ProfileSyncContext = {
+                        isNewUser: isNew,
+                        isLinkingAccount: !!currentUserId,
+                        provider: profile.provider,
+                        userId: user.id
+                    };
+
+                    const shouldSyncProfile = this.profileSyncDecider.shouldSyncProfile(syncContext);
+                    if (shouldSyncProfile) {
+                        await this.profileSyncService.syncProfile(user, profile, transaction);
+                    }
+
+                    logger.info({ userId: user.id, platform: profile.provider }, 'Platform authentication completed successfully');
+
+                    return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
+                });
             },
             { action: 'handlePlatformAuth', provider: profile.provider },
             { rethrow: true }

@@ -19,7 +19,17 @@ interface KickWebhookAttributes {
 @Table({
     tableName: 'kick_webhooks',
     timestamps: true,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+            name: 'idx_kick_webhooks_broadcaster_active',
+            fields: ['broadcaster_id', 'is_active']
+        },
+        {
+            name: 'idx_kick_webhooks_user',
+            fields: ['user_id']
+        }
+    ]
 })
 export class KickWebhook extends Model<KickWebhookAttributes> {
     @Column({

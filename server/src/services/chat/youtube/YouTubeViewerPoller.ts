@@ -16,7 +16,9 @@ export class YouTubeViewerPoller {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.VIDEO_DETAILS;
 
-        this.polling.start(userId, async () => {
+        const pollTask = async () => {
+            if (!this.polling.isRunning(userId)) return;
+
             if (!quotaManager.hasQuota(cost)) {
                 logger.warn({ userId }, 'YouTube viewer polling paused: Quota exhausted');
                 this.stopPolling(userId);
@@ -41,6 +43,11 @@ export class YouTubeViewerPoller {
                     'youtube',
                     parseInt(viewerCount)
                 );
+
+                const adaptiveInterval = quotaManager.getAdaptiveInterval(YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
+                if (this.polling.isRunning(userId)) {
+                    this.polling.start(userId, pollTask, adaptiveInterval);
+                }
             } catch (error: unknown) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -68,7 +75,9 @@ export class YouTubeViewerPoller {
 
                 logger.error({ message: errorMessage }, 'YouTube viewer polling error');
             }
-        }, YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
+        };
+
+        this.polling.start(userId, pollTask, YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
     }
 
     stopPolling(userId: string): void {

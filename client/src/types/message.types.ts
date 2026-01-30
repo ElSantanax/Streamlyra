@@ -3,16 +3,6 @@
  */
 
 /**
- * Estado de selección de plataformas para envío de mensajes
- */
-export interface PlatformSelection {
-    twitch: boolean;
-    youtube: boolean;
-    kick: boolean;
-    tiktok: boolean;
-}
-
-/**
  * Payload para enviar un mensaje desde el cliente
  */
 export interface SendMessagePayload {

@@ -5,6 +5,7 @@ import { Connection } from '../../models/Connection.model';
 import { AuthTokens } from '../../types/index';
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { logger } from '../../utils/logger';
+import { Transaction } from 'sequelize';
 
 export class ConnectionCreationService {
     constructor(private readonly connectionRepository: IConnectionRepository) { }
@@ -14,7 +15,8 @@ export class ConnectionCreationService {
         platform: Platform,
         tokens: AuthTokens,
         providerId: string,
-        providerUsername: string
+        providerUsername: string,
+        transaction?: Transaction
     ): Promise<Connection> {
         try {
             logger.info({ userId, platform }, 'Creating or updating connection via repository');
@@ -24,7 +26,8 @@ export class ConnectionCreationService {
                 platform,
                 providerId,
                 providerUsername,
-                tokens
+                tokens,
+                transaction
             );
         } catch (error) {
             logger.error({ err: error, userId, platform }, 'Error creating or updating connection');

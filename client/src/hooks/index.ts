@@ -10,5 +10,4 @@ export * from './useSocket';
 
 // Generic reusable hooks
 export * from './useLocalStorage';
-export * from './useAsync';
 export * from './useToggle';

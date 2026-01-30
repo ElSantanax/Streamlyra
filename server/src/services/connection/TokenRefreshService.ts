@@ -28,6 +28,14 @@ const PLATFORM_SERVICES: Record<OAuthPlatform, PlatformService> = {
 export class TokenRefreshService {
     private static readonly BUFFER_TIME_MS = 5 * 60 * 1000;
 
+    /**
+     * Promise Cache para evitar "Thundering Herd":
+     * Múltiples requests simultáneos para el mismo token esperan a la misma Promise
+     * en lugar de hacer múltiples llamadas HTTP a la API de OAuth.
+     * Key format: "userId:platform"
+     */
+    private refreshPromises: Map<string, Promise<string>> = new Map();
+
     constructor(private connectionRepository: ConnectionRepository) { }
 
     async getValidAccessToken(userId: string, platform: Platform): Promise<string | null> {
@@ -46,7 +54,23 @@ export class TokenRefreshService {
             return connection.accessToken;
         }
 
-        return await this.refreshToken(connection, platform as OAuthPlatform);
+        // Usar Promise Cache para evitar múltiples refreshes simultáneos
+        const cacheKey = `${userId}:${platform}`;
+        const existingRefresh = this.refreshPromises.get(cacheKey);
+
+        if (existingRefresh) {
+            logger.debug({ userId, platform }, 'Reusing existing token refresh promise');
+            return existingRefresh;
+        }
+
+        const refreshPromise = this.refreshToken(connection, platform as OAuthPlatform)
+            .finally(() => {
+                // Limpiar el cache cuando termine (éxito o error)
+                this.refreshPromises.delete(cacheKey);
+            });
+
+        this.refreshPromises.set(cacheKey, refreshPromise);
+        return refreshPromise;
     }
 
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
@@ -72,7 +96,22 @@ export class TokenRefreshService {
 
         logger.debug({ userId, platform, connectionId: connection.id }, 'Forcing token refresh');
 
-        return await this.refreshToken(connection, platform as OAuthPlatform);
+        // Usar Promise Cache también para force refresh
+        const cacheKey = `${userId}:${platform}`;
+        const existingRefresh = this.refreshPromises.get(cacheKey);
+
+        if (existingRefresh) {
+            logger.debug({ userId, platform }, 'Reusing existing forced token refresh promise');
+            return existingRefresh;
+        }
+
+        const refreshPromise = this.refreshToken(connection, platform as OAuthPlatform)
+            .finally(() => {
+                this.refreshPromises.delete(cacheKey);
+            });
+
+        this.refreshPromises.set(cacheKey, refreshPromise);
+        return refreshPromise;
     }
 
     private isTokenValid(expiryDate: Date | null): boolean {

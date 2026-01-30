@@ -4,6 +4,5 @@
  */
 
 /* eslint-disable react-refresh/only-export-components */
-export * from './test-utils';
 export * from './test-components';
 export * from './mocks';

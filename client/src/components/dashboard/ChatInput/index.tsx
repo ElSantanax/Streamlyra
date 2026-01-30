@@ -118,24 +118,22 @@ const ChatInput = () => {
         // Set isSending to true
         setIsSending(true);
 
+        // Guardar mensaje antes de limpiar (por si falla)
+        const messageToSend = message.trim();
+
         // Emit 'send_message' event with userId and message
         // Server will send to all connected platforms automatically
         const payload: SendMessagePayload = {
             userId: user.id,
-            message: message.trim(),
+            message: messageToSend,
             platforms: [] // Empty array signals to send to all connected platforms
         };
 
         socket.emit('send_message', payload);
 
-        // Optimistic UI: Limpiar input inmediatamente para permitir el siguiente mensaje
+        // Limpiar input solo después de emitir exitosamente
         setMessage('');
-
-        // Mantener el foco en el input para que el usuario pueda seguir escribiendo
-        setTimeout(() => {
-            setIsSending(false);
-            inputRef.current?.focus();
-        }, 100);
+        inputRef.current?.focus();
     };
 
     return (

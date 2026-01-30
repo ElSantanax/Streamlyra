@@ -58,8 +58,8 @@ describe('UserService', () => {
 
             const result = await service.findByPlatformId('twitch', '12345');
 
-            expect(mockConnectionRepository.findByProvider).toHaveBeenCalledWith('twitch', '12345');
-            expect(mockUserRepository.findById).toHaveBeenCalledWith('user-1');
+            expect(mockConnectionRepository.findByProvider).toHaveBeenCalledWith('twitch', '12345', undefined);
+            expect(mockUserRepository.findById).toHaveBeenCalledWith('user-1', undefined);
             expect(result).toBe(mockUser);
         });
     });
@@ -72,7 +72,7 @@ describe('UserService', () => {
 
             const result = await service.findByEmail(email);
 
-            expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(email);
+            expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(email, undefined);
             expect(result).toBe(mockUser);
         });
     });
@@ -94,7 +94,7 @@ describe('UserService', () => {
 
             const result = await service.findOrCreateFromPlatform(profile, currentUserId);
 
-            expect(mockUserRepository.findById).toHaveBeenCalledWith(currentUserId);
+            expect(mockUserRepository.findById).toHaveBeenCalledWith(currentUserId, undefined);
             expect(result).toEqual({ user: mockUser, isNew: false });
         });
 
@@ -107,7 +107,7 @@ describe('UserService', () => {
 
             const result = await service.findOrCreateFromPlatform(profile);
 
-            expect(mockConnectionRepository.findByProvider).toHaveBeenCalledWith(profile.provider, profile.providerId);
+            expect(mockConnectionRepository.findByProvider).toHaveBeenCalledWith(profile.provider, profile.providerId, undefined);
             expect(result).toEqual({ user: mockUser, isNew: false });
         });
 
@@ -118,7 +118,7 @@ describe('UserService', () => {
 
             const result = await service.findOrCreateFromPlatform(profile);
 
-            expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(profile.email);
+            expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(profile.email, undefined);
             expect(result).toEqual({ user: mockUser, isNew: false });
         });
 
@@ -137,7 +137,7 @@ describe('UserService', () => {
                 displayName: profile.displayName,
                 avatarUrl: profile.avatarUrl,
                 email: profile.email
-            });
+            }, undefined);
             expect(result).toEqual({ user: newUser, isNew: true });
         });
 
@@ -158,7 +158,7 @@ describe('UserService', () => {
             expect(mockUserRepository.usernameExists).toHaveBeenCalledTimes(2);
             expect(mockUserRepository.create).toHaveBeenCalledWith(expect.objectContaining({
                 username: 'testuser1'
-            }));
+            }), undefined);
         });
     });
 
@@ -172,7 +172,7 @@ describe('UserService', () => {
             expect(mockUserRepository.update).toHaveBeenCalledWith('user-1', {
                 avatarUrl: 'new-url',
                 displayName: 'New Name'
-            });
+            }, undefined);
         });
 
         it('should NOT update user if nothing changed', async () => {

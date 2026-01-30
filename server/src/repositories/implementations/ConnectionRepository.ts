@@ -2,6 +2,7 @@ import { Connection } from '../../models/Connection.model';
 import { IConnectionRepository } from '../interfaces/IConnectionRepository';
 import { AuthTokens } from '../../types/index';
 import { calculateTokenExpiry } from '../../utils/tokenUtils';
+import { Transaction } from 'sequelize';
 
 /**
  * Implementación del repositorio de conexiones usando Sequelize
@@ -68,24 +69,27 @@ export class ConnectionRepository implements IConnectionRepository {
         return connection;
     }
 
-    async findByProvider(provider: string, providerId: string): Promise<Connection | null> {
+    async findByProvider(provider: string, providerId: string, transaction?: Transaction): Promise<Connection | null> {
         const connection = await Connection.findOne({
             where: { provider, providerId },
-            include: ['user']
+            include: ['user'],
+            transaction
         });
         return this.decryptConnection(connection);
     }
 
-    async findByUserAndProvider(userId: string, provider: string): Promise<Connection | null> {
+    async findByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<Connection | null> {
         const connection = await Connection.findOne({
-            where: { userId: String(userId), provider }
+            where: { userId: String(userId), provider },
+            transaction
         });
         return this.decryptConnection(connection);
     }
 
-    async findAllByUserId(userId: string): Promise<Connection[]> {
+    async findAllByUserId(userId: string, transaction?: Transaction): Promise<Connection[]> {
         const connections = await Connection.findAll({
-            where: { userId: String(userId) }
+            where: { userId: String(userId) },
+            transaction
         });
         return connections.map(conn => this.decryptConnection(conn)!);
     }
@@ -95,9 +99,10 @@ export class ConnectionRepository implements IConnectionRepository {
         provider: string,
         providerId: string,
         username: string,
-        tokens: AuthTokens
+        tokens: AuthTokens,
+        transaction?: Transaction
     ): Promise<Connection> {
-        let connection = await Connection.findOne({ where: { provider, providerId } });
+        let connection = await Connection.findOne({ where: { provider, providerId }, transaction });
 
         // Encriptar tokens antes de guardar
         const encryptedAccessToken = this.encryptionService.encrypt(tokens.access_token);
@@ -112,7 +117,7 @@ export class ConnectionRepository implements IConnectionRepository {
             }
             connection.expiryDate = calculateTokenExpiry(tokens.expires_in);
             connection.providerUsername = username;
-            await connection.save();
+            await connection.save({ transaction });
         } else {
             connection = await Connection.create({
                 provider,
@@ -122,7 +127,7 @@ export class ConnectionRepository implements IConnectionRepository {
                 refreshToken: encryptedRefreshToken || '',
                 expiryDate: calculateTokenExpiry(tokens.expires_in),
                 userId
-            });
+            }, { transaction });
         }
 
         // Retornar con tokens planos para que la aplicación los pueda usar inmediatamente
@@ -135,12 +140,12 @@ export class ConnectionRepository implements IConnectionRepository {
         return connection;
     }
 
-    async removeByUserAndProvider(userId: string, provider: string): Promise<number> {
-        return Connection.destroy({ where: { userId, provider } });
+    async removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number> {
+        return Connection.destroy({ where: { userId, provider }, transaction });
     }
 
-    async updateTokens(connectionId: string, tokens: AuthTokens): Promise<Connection | null> {
-        const connection = await Connection.findByPk(connectionId);
+    async updateTokens(connectionId: string, tokens: AuthTokens, transaction?: Transaction): Promise<Connection | null> {
+        const connection = await Connection.findByPk(connectionId, { transaction });
         if (!connection) return null;
 
         connection.accessToken = this.encryptionService.encrypt(tokens.access_token);
@@ -148,7 +153,7 @@ export class ConnectionRepository implements IConnectionRepository {
             connection.refreshToken = this.encryptionService.encrypt(tokens.refresh_token);
         }
         connection.expiryDate = calculateTokenExpiry(tokens.expires_in);
-        await connection.save();
+        await connection.save({ transaction });
 
         // Retornar desencriptado para uso inmediato
         connection.accessToken = tokens.access_token;

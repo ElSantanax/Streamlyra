@@ -27,19 +27,3 @@ export const env = {
     enableKick: true,
   },
 } as const;
-
-// Validación de variables críticas
-export const validateEnv = () => {
-  const required = [
-    { key: 'VITE_TWITCH_CLIENT_ID', value: env.oauth.twitch.clientId },
-  ];
-
-  const missing = required.filter(({ value }) => !value);
-
-  if (missing.length > 0) {
-    console.warn(
-      '⚠️ Missing environment variables:',
-      missing.map(({ key }) => key).join(', ')
-    );
-  }
-};

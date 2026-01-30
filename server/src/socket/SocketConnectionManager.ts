@@ -43,77 +43,70 @@ export class SocketConnectionManager {
         }
 
         try {
-            logger.debug({ userId, socketId: socket.id }, 'Identificando usuario');
+            logger.debug({ userId, socketId: socket.id }, 'Iniciando identificación de usuario');
 
+            // 1. Registro del socket
             this.socketUserMap.set(socket.id, userId);
             const currentCount = this.userSocketCount.get(userId) || 0;
+            const isFirstSocket = currentCount === 0;
             this.userSocketCount.set(userId, currentCount + 1);
 
             socket.join(userId);
-            logger.debug({ userId, socketId: socket.id, socketCount: currentCount + 1 }, 'Socket unido a sala del usuario');
 
-            const existingLock = this.connectingLocks.get(userId);
-            if (existingLock) {
-                logger.debug({ userId, socketId: socket.id }, 'Conexión ya en progreso, esperando...');
-                await existingLock;
-                logger.info({ userId, socketId: socket.id }, 'Usuario identificado (reutilizando conexión existente)');
-                socket.emit('identified', { userId, message: 'Conectado a plataformas' });
-                return;
-            }
+            // 2. Manejo de la conexión a plataformas con Lock
+            let connectionPromise = this.connectingLocks.get(userId);
 
-            if (currentCount === 0) {
-                logger.info({ userId }, 'Primer socket del usuario, conectando plataformas');
+            if (isFirstSocket && !connectionPromise) {
+                logger.info({ userId }, 'Primer socket: Iniciando conexión a plataformas');
 
-                const connectionPromise = (async () => {
+                connectionPromise = (async () => {
                     try {
                         const connectPromise = this.chatManager.connectUser(userId);
                         const timeoutPromise = new Promise<void>((_, reject) =>
                             setTimeout(() => reject(new Error('Connection timeout')), CONNECTION_TIMEOUT_MS)
                         );
                         await Promise.race([connectPromise, timeoutPromise]);
+                        logger.info({ userId }, 'Conexión a plataformas completada exitosamente');
+                    } catch (error) {
+                        logger.error({ err: error, userId }, 'Error durante la conexión inicial a plataformas');
+                        throw error;
                     } finally {
                         this.connectingLocks.delete(userId);
                     }
                 })();
 
                 this.connectingLocks.set(userId, connectionPromise);
-                await connectionPromise;
-            } else {
-                logger.debug({ userId, socketCount: currentCount + 1 }, 'Usuario ya tiene sockets activos, reutilizando conexiones');
             }
 
-            logger.info({ userId, socketId: socket.id }, 'Usuario identificado y plataformas conectadas');
+            if (connectionPromise) {
+                logger.debug({ userId, socketId: socket.id }, 'Esperando a que termine la conexión en curso...');
+                await connectionPromise;
+            }
+
+            logger.info({ userId, socketId: socket.id }, 'Usuario identificado y verificado');
             socket.emit('identified', { userId, message: 'Conectado a plataformas' });
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-            logger.error({ err: error, userId, socketId: socket.id }, 'Error identificando usuario');
+            logger.error({ err: error, userId, socketId: socket.id }, 'Error fatal en handleIdentify');
 
+            // Limpieza en caso de error
             this.socketUserMap.delete(socket.id);
-            const currentCount = this.userSocketCount.get(userId) || 0;
-            if (currentCount > 0) {
-                const newCount = currentCount - 1;
+            const count = this.userSocketCount.get(userId) || 0;
+            if (count > 0) {
+                const newCount = count - 1;
                 if (newCount === 0) {
-                    logger.warn({ userId }, 'Error en identificación, limpiando conexiones parciales');
-                    await this.chatManager.disconnectUser(userId);
                     this.userSocketCount.delete(userId);
-                    this.connectingLocks.delete(userId);
+                    await this.chatManager.disconnectUser(userId).catch(() => { });
                 } else {
                     this.userSocketCount.set(userId, newCount);
                 }
             }
 
-            if (errorMessage === 'Connection timeout') {
-                socket.emit('error', {
-                    code: 'CONNECTION_TIMEOUT',
-                    message: 'Timeout al conectar a plataformas. Intenta de nuevo.'
-                });
-            } else {
-                socket.emit('error', {
-                    code: 'CONNECTION_ERROR',
-                    message: 'Error al conectar a plataformas. Intenta de nuevo.'
-                });
-            }
+            socket.emit('error', {
+                code: errorMessage === 'Connection timeout' ? 'CONNECTION_TIMEOUT' : 'CONNECTION_ERROR',
+                message: 'Error al conectar a plataformas. Intenta de nuevo.'
+            });
         }
     }
 
@@ -125,25 +118,31 @@ export class SocketConnectionManager {
             return;
         }
 
+        this.socketUserMap.delete(socketId);
         const currentCount = this.userSocketCount.get(userId) || 0;
         const newCount = Math.max(0, currentCount - 1);
 
         if (newCount === 0) {
-            logger.info({ userId, socketId }, 'Último socket del usuario desconectado, limpiando plataformas');
+            logger.info({ userId, socketId }, 'Último socket desconectado: Preparando limpieza');
             this.userSocketCount.delete(userId);
 
+            // IMPORTANTE: Esperar a cualquier conexión que esté en curso antes de desconectar
             const existingLock = this.connectingLocks.get(userId);
             if (existingLock) {
-                logger.debug({ userId }, 'Esperando a que termine conexión en progreso antes de desconectar');
-                await existingLock.catch(() => { /* Ignorar errores */ });
+                logger.debug({ userId }, 'Esperando cierre de conexión pendiente antes de desconectar');
+                await existingLock.catch(() => { });
             }
 
-            await this.chatManager.disconnectUser(userId);
+            // Doble verificación: ¿entró un socket nuevo mientras esperábamos el lock?
+            if (!this.userSocketCount.has(userId)) {
+                await this.chatManager.disconnectUser(userId);
+                logger.info({ userId }, 'Plataformas desconectadas correctamente');
+            } else {
+                logger.info({ userId }, 'Nueva conexión detectada durante la limpieza, abortando desconexión');
+            }
         } else {
-            logger.debug({ userId, socketId, remainingSockets: newCount }, 'Socket desconectado, otros sockets activos');
+            logger.debug({ userId, socketId, remainingSockets: newCount }, 'Socket removido, aún quedan sockets activos');
             this.userSocketCount.set(userId, newCount);
         }
-
-        this.socketUserMap.delete(socketId);
     }
 }

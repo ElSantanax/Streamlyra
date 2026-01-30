@@ -60,7 +60,8 @@ describe('ConnectionCreationService', () => {
                 mockPlatform,
                 'provider-id-1',
                 'username-1',
-                mockTokens
+                mockTokens,
+                undefined // transaction parameter
             );
 
             expect(result).toBe(mockConnection);

@@ -67,12 +67,36 @@ export class YouTubeQuotaManager {
      */
     public getStatus() {
         this.checkAndResetDaily();
+        const percentUsed = (this.unitsUsed / YouTubePollingConfig.DAILY_QUOTA_LIMIT) * 100;
         return {
             unitsUsed: this.unitsUsed,
             limit: YouTubePollingConfig.DAILY_QUOTA_LIMIT,
             isExhausted: this.isExhausted,
-            remaining: Math.max(0, YouTubePollingConfig.DAILY_QUOTA_LIMIT - this.unitsUsed)
+            remaining: Math.max(0, YouTubePollingConfig.DAILY_QUOTA_LIMIT - this.unitsUsed),
+            percentUsed
         };
+    }
+
+    /**
+     * Calcula un intervalo de polling adaptativo basado en la cuota restante.
+     * Si queda poca cuota, aumenta el intervalo para estirar el tiempo de uso.
+     */
+    public getAdaptiveInterval(baseInterval: number): number {
+        const stats = this.getStatus();
+
+        if (stats.isExhausted) return baseInterval * 10; // Si está agotado, no debería llamarse pero por seguridad
+
+        // Si hemos usado más del 80% de la cuota, triplicamos el intervalo
+        if (stats.percentUsed > 80) {
+            return baseInterval * 3;
+        }
+
+        // Si hemos usado más del 50%, lo duplicamos
+        if (stats.percentUsed > 50) {
+            return baseInterval * 2;
+        }
+
+        return baseInterval;
     }
 
     private checkAndResetDaily(): void {

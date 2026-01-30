@@ -117,7 +117,11 @@ describe('SafeSocketEmitter', () => {
             expect(mockTo).not.toHaveBeenCalled();
         });
 
-        test('debe detectar referencias circulares', () => {
+        test('debe detectar referencias circulares en desarrollo', () => {
+            // Guardar NODE_ENV original
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'development';
+
             // Crear objeto con referencia circular
             const circularObj: { name: string; self?: unknown } = { name: 'test' };
             circularObj.self = circularObj;
@@ -131,6 +135,35 @@ describe('SafeSocketEmitter', () => {
 
             expect(result).toBe(false);
             expect(mockTo).not.toHaveBeenCalled();
+
+            // Restaurar NODE_ENV
+            process.env.NODE_ENV = originalEnv;
+        });
+
+        test('debe omitir validación de serialización en producción', () => {
+            // Guardar NODE_ENV original
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'production';
+
+            // Crear objeto con referencia circular
+            const circularObj: { name: string; self?: unknown } = { name: 'test' };
+            circularObj.self = circularObj;
+
+            // En producción, no valida serialización preventivamente
+            // Socket.IO manejará el error internamente
+            const result = SafeSocketEmitter.emit(mockIo, {
+                userId: 'user-123',
+                event: 'chat_message',
+                data: circularObj,
+                platform: 'twitch'
+            });
+
+            // Debería intentar emitir (Socket.IO manejará el error)
+            expect(result).toBe(true);
+            expect(mockTo).toHaveBeenCalled();
+
+            // Restaurar NODE_ENV
+            process.env.NODE_ENV = originalEnv;
         });
 
         test('debe funcionar sin adapter (modo test)', () => {

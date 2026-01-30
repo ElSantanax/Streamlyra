@@ -3,9 +3,10 @@
 import { User } from '../../models/User.model';
 import { PlatformProfile } from '../../types/index';
 import { logger } from '../../utils/logger';
+import { Transaction } from 'sequelize';
 
 export class ProfileSyncService {
-    async syncProfile(user: User, profile: PlatformProfile): Promise<void> {
+    async syncProfile(user: User, profile: PlatformProfile, transaction?: Transaction): Promise<void> {
         try {
             logger.info({ userId: user.id }, 'Syncing profile data');
 
@@ -24,7 +25,7 @@ export class ProfileSyncService {
             }
 
             if (Object.keys(updates).length > 0) {
-                await user.update(updates);
+                await user.update(updates, { transaction });
                 logger.info({ userId: user.id }, 'Profile synced');
             } else {
                 logger.debug({ userId: user.id }, 'Profile already up to date');
