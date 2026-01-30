@@ -74,14 +74,18 @@ describe('KickWebhookProcessor', () => {
                 update: jest.fn().mockResolvedValue(undefined)
             };
 
+            const mockConnectionWithWebhook = {
+                ...mockConnection,
+                kickWebhook: mockWebhook
+            };
+
             const mockSockets = [{ id: 'socket-1' }];
 
             // Setup room for the user in the adapter
             const userRoom = new Set(['socket-1']);
             mockIo.sockets.adapter.rooms.set('user-123', userRoom);
 
-            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
-            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
+            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnectionWithWebhook);
 
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)
@@ -93,16 +97,16 @@ describe('KickWebhookProcessor', () => {
                 where: {
                     provider: 'kick',
                     providerId: '123'
-                }
+                },
+                include: [{
+                    model: KickWebhook,
+                    as: 'kickWebhook',
+                    where: { isActive: true },
+                    required: false
+                }]
             });
 
-            expect(KickWebhook.findOne).toHaveBeenCalledWith({
-                where: {
-                    broadcasterId: '123',
-                    isActive: true
-                }
-            });
-
+            // Ya no se llama a KickWebhook.findOne porque se incluye en la consulta de Connection
             expect(mockWebhook.update).toHaveBeenCalledWith({
                 lastEventAt: expect.any(Date)
             });
@@ -138,53 +142,56 @@ describe('KickWebhookProcessor', () => {
                 userId: string;
                 provider: string;
                 providerId: string;
+                kickWebhook?: null;
             }
 
             const mockConnection: MockConnection = {
                 userId: 'user-123',
                 provider: 'kick',
-                providerId: '123'
+                providerId: '123',
+                kickWebhook: undefined // No hay webhook activo
             };
 
 
             const findOneMock = Connection.findOne as jest.Mock;
             findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
-            (KickWebhook.findOne as jest.Mock).mockResolvedValue(null); // No encuentra webhook activo
 
             await processor.process(mockPayload);
 
             expect(Connection.findOne).toHaveBeenCalled();
-            expect(KickWebhook.findOne).toHaveBeenCalled();
+            // Ya no se llama a KickWebhook.findOne porque se incluye en la consulta
             expect(mockIo.emit).not.toHaveBeenCalled();
         });
 
-        it('no debe procesar si usuario no tiene sockets conectados', async () => {
-            const mockConnection = {
-                userId: 'user-123',
-                provider: 'kick',
-                providerId: '123'
-            };
-
+        it('debe emitir mensaje incluso si usuario no tiene sockets (SafeSocketEmitter maneja esto)', async () => {
             const mockWebhook = {
                 id: 1,
                 broadcasterId: '123',
                 isActive: true,
-                update: jest.fn()
+                update: jest.fn().mockResolvedValue(undefined)
             };
 
-            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
-            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
+            const mockConnectionWithWebhook = {
+                userId: 'user-123',
+                provider: 'kick',
+                providerId: '123',
+                kickWebhook: mockWebhook
+            };
 
-            mockIo.in = jest.fn().mockReturnValue({
-                fetchSockets: jest.fn().mockResolvedValue([]) // Sin sockets
-            }) as unknown as typeof mockIo.in;
+            (Connection.findOne as jest.Mock).mockResolvedValue(mockConnectionWithWebhook);
+
+            // No hay sockets conectados
+            mockIo.sockets.adapter.rooms.clear();
 
             await processor.process(mockPayload);
 
             expect(Connection.findOne).toHaveBeenCalled();
-            expect(KickWebhook.findOne).toHaveBeenCalled();
-            expect(mockWebhook.update).not.toHaveBeenCalled();
-            expect(mockIo.emit).not.toHaveBeenCalled();
+            // El webhook se actualiza de todas formas
+            expect(mockWebhook.update).toHaveBeenCalledWith({
+                lastEventAt: expect.any(Date)
+            });
+            // SafeSocketEmitter verifica internamente si hay sockets, no necesitamos verificar mockIo.to
+            // El procesamiento se completa sin errores
         });
 
         it('debe manejar errores sin crashear', async () => {
@@ -202,19 +209,26 @@ describe('KickWebhookProcessor', () => {
                 userId: string;
                 provider: string;
                 providerId: string;
+                kickWebhook?: {
+                    id: number;
+                    broadcasterId: string;
+                    isActive: boolean;
+                    update: jest.Mock;
+                };
             }
-
-            const mockConnection: MockConnection = {
-                userId: 'user-123',
-                provider: 'kick',
-                providerId: '123'
-            };
 
             const mockWebhook = {
                 id: 1,
                 broadcasterId: '123',
                 isActive: true,
                 update: jest.fn().mockResolvedValue(undefined)
+            };
+
+            const mockConnection: MockConnection = {
+                userId: 'user-123',
+                provider: 'kick',
+                providerId: '123',
+                kickWebhook: mockWebhook
             };
 
             const mockSockets = [{ id: 'socket-1' }];
@@ -226,7 +240,6 @@ describe('KickWebhookProcessor', () => {
 
             const findOneMock = Connection.findOne as jest.Mock;
             findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
-            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
 
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)

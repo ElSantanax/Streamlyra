@@ -251,7 +251,7 @@ describe('Message States Logic', () => {
 
     describe('Edge cases', () => {
         it('should handle empty results array', () => {
-            const results: any[] = [];
+            const results: Array<{ platform: string; success: boolean }> = [];
 
             const successfulPlatforms = results.filter(r => r.success);
             const failedPlatforms = results.filter(r => !r.success);

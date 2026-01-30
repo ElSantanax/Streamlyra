@@ -24,6 +24,10 @@ export class PollingManager {
             }
         };
 
+        // Marcar como running antes de la primera ejecución
+        // Usamos un placeholder temporal que será reemplazado por el timeout real
+        this.intervals.set(id, setTimeout(() => {}, 0));
+        
         // Primera ejecución inmediata
         void runTask();
     }

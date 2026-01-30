@@ -61,10 +61,10 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
             { provider: 'kick', providerId: 'kick123', username: 'user1', userId }
         ];
 
-        mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as any);
+        mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as unknown as Connection[]);
 
         // Mock Connection.findOne to return the appropriate connection based on where clause
-        (Connection.findOne as jest.Mock).mockImplementation((options: any) => {
+        (Connection.findOne as jest.Mock).mockImplementation((options: { where?: { userId?: string; provider?: string } }) => {
             const { userId: queryUserId, provider } = options.where || {};
             const connection = mockConnections.find(c => 
                 c.userId === queryUserId && c.provider === provider
@@ -109,10 +109,10 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
             { provider: 'tiktok', providerId: 'tiktok123', username: 'user1', userId }
         ];
 
-        mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as any);
+        mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as unknown as Connection[]);
 
         // Mock Connection.findOne to return the appropriate connection based on where clause
-        (Connection.findOne as jest.Mock).mockImplementation((options: any) => {
+        (Connection.findOne as jest.Mock).mockImplementation((options: { where?: { userId?: string; provider?: string } }) => {
             const { userId: queryUserId, provider } = options.where || {};
             const connection = mockConnections.find(c => 
                 c.userId === queryUserId && c.provider === provider
@@ -141,7 +141,7 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         const message = 'Test message';
 
         // Mock Connection.findOne with where clause
-        (Connection.findOne as jest.Mock).mockImplementation((options: any) => {
+        (Connection.findOne as jest.Mock).mockImplementation((options: { where?: { userId?: string; provider?: string } }) => {
             const { userId: queryUserId, provider } = options.where || {};
             if (queryUserId === userId && provider === 'twitch') {
                 return Promise.resolve({

@@ -24,7 +24,7 @@ import { ConnectionService } from './services/connection/ConnectionService';
 import { setCsrfCookie, verifyCsrf } from './middleware/csrf.middleware';
 import { MessageSenderService } from './services/message/MessageSenderService';
 import { TwitchService, YouTubeService, KickService } from './services/platforms';
-import { apiLimiter, authLimiter, webhookLimiter } from './middleware/rateLimit.middleware';
+import { apiLimiter, webhookLimiter } from './middleware/rateLimit.middleware';
 import { ActivityService } from './services/ActivityService';
 
 

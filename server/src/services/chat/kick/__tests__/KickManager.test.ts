@@ -79,8 +79,8 @@ describe('KickManager', () => {
 
             manager.startViewerPolling(userId, accessToken, mockIo);
 
-            // Primer poll inmediato
-            await jest.advanceTimersByTimeAsync(100);
+            // Ejecutar el placeholder timeout y la primera ejecución inmediata
+            await jest.advanceTimersByTimeAsync(0);
             expect(KickService.getChannelByToken).toHaveBeenCalledTimes(1);
 
             // Segundo poll tras 30s

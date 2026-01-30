@@ -45,7 +45,7 @@ describe('socket.handler', () => {
                     connectionHandler = handler;
                 }
             }),
-            use: jest.fn((fn: (socket: Socket, next: (err?: Error) => void) => void) => {
+            use: jest.fn(() => {
                 // For testing purposes, we automatically call next()
             }),
             to: mockTo,

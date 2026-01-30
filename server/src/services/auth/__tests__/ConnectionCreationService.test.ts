@@ -4,8 +4,6 @@ import { logger } from '../../../utils/logger';
 import { AuthTokens } from '../../../types';
 import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 // Mock dependencies
 jest.mock('../../../utils/logger', () => ({
     logger: {
