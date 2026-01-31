@@ -7,6 +7,7 @@ import { sessionManager } from '../../services/SessionManager';
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthProvider';
 import { useAuth } from '../useAuth';
+import type { User, ConnectionInfo } from '../../types/user.types';
 
 // Mock dependencies
 vi.mock('../../api/services/auth.service', () => ({
@@ -48,7 +49,7 @@ describe('useAuth', () => {
         localStorage.clear();
 
         delete (window as unknown as { location: unknown }).location;
-        window.location = {
+        (window as unknown as { location: Location }).location = {
             ...originalLocation,
             href: '',
             pathname: '/dashboard',
@@ -61,7 +62,10 @@ describe('useAuth', () => {
 
     describe('checkAuth', () => {
         it('debe llamar a /auth/me automáticamente al montar', async () => {
-            vi.mocked(authService.getMe).mockResolvedValue({ user: { id: '1' } });
+            vi.mocked(authService.getMe).mockResolvedValue({ 
+                user: { id: '1', username: 'testuser', displayName: 'Test User', avatar: '' },
+                connections: {}
+            });
 
             renderHook(() => useAuth(), { wrapper });
 
@@ -71,8 +75,8 @@ describe('useAuth', () => {
         });
 
         it('debe actualizar el usuario tras una respuesta exitosa de /auth/me', async () => {
-            const mockUser = { id: '1', username: 'testuser' };
-            vi.mocked(authService.getMe).mockResolvedValue({ user: mockUser });
+            const mockUser: User = { id: '1', username: 'testuser', displayName: 'Test User', avatar: '' };
+            vi.mocked(authService.getMe).mockResolvedValue({ user: mockUser, connections: {} });
 
             const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -101,8 +105,8 @@ describe('useAuth', () => {
         });
 
         it('debe manejar el estado isChecking correctamente', async () => {
-            let resolveGetMe: ((value: { user: { id: string } }) => void) | undefined;
-            const promise = new Promise<{ user: { id: string } }>((resolve) => {
+            let resolveGetMe: ((value: { user: User; connections: Record<string, ConnectionInfo> }) => void) | undefined;
+            const promise = new Promise<{ user: User; connections: Record<string, ConnectionInfo> }>((resolve) => {
                 resolveGetMe = resolve;
             });
             vi.mocked(authService.getMe).mockReturnValue(promise);
@@ -121,7 +125,10 @@ describe('useAuth', () => {
 
             // Resolver
             await act(async () => {
-                resolveGetMe!({ user: { id: '1' } });
+                resolveGetMe!({ 
+                    user: { id: '1', username: 'testuser', displayName: 'Test User', avatar: '' },
+                    connections: {}
+                });
                 await checkPromise;
             });
 
@@ -132,7 +139,7 @@ describe('useAuth', () => {
 
     describe('logout', () => {
         it('debe limpiar todo al cerrar sesión', async () => {
-            vi.mocked(authService.logout).mockResolvedValue({ success: true });
+            vi.mocked(authService.logout).mockResolvedValue(undefined);
             vi.mocked(authService.getMe).mockRejectedValue(new Error('Unauthorized'));
             localStorage.setItem('user', JSON.stringify({ id: '1' }));
 

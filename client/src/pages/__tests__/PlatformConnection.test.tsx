@@ -27,8 +27,9 @@ vi.mock('../../hooks/useAuth', () => ({
 }));
 
 // Mock de window.location
+const originalLocation = window.location;
 delete (window as unknown as { location: unknown }).location;
-window.location = { href: 'http://localhost:3000' } as Location;
+(window as unknown as { location: Location }).location = { href: 'http://localhost:3000' } as Location;
 
 describe('PlatformConnection - Preservación de redirect', () => {
   beforeEach(() => {
@@ -43,6 +44,7 @@ describe('PlatformConnection - Preservación de redirect', () => {
 
   afterEach(() => {
     localStorage.clear();
+    (window as unknown as { location: Location }).location = originalLocation;
   });
 
   describe('Propiedad 4: Preservación de URL para redirección post-auth', () => {

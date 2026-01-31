@@ -52,6 +52,7 @@ describe('Feature: multi-platform-message-sending, Property 9: Successful send c
             if (event === 'message_sent_result') {
                 messageResultHandler = handler;
             }
+            return socket;
         });
     });
 

@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthProvider';
 import { useAuth } from '../useAuth';
+import type { User } from '../../types/user.types';
 
 // Mock dependencies
 vi.mock('react-router-dom', async () => {

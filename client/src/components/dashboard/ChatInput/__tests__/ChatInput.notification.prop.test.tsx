@@ -23,8 +23,10 @@ vi.mock('../../../../services/socket', () => ({
         emit: vi.fn(),
         on: vi.fn((event: string, handler: (result: MessageSentResult) => void) => {
             // Store handlers for manual triggering in tests
-            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers || {};
-            (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers[event] = handler;
+            const sock = socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> };
+            sock._handlers = sock._handlers || {};
+            sock._handlers[event] = handler;
+            return socket;
         }),
         off: vi.fn(),
     }
@@ -46,7 +48,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
     beforeEach(() => {
         vi.clearAllMocks();
         (socket as { connected: boolean }).connected = true;
-        (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
+        (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers = {};
     });
 
     afterEach(() => {
@@ -124,7 +126,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                         };
 
                         // Trigger the message_sent_result handler
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         if (!handler) {
                             throw new Error('message_sent_result handler not registered');
                         }
@@ -208,7 +210,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                             results: mixedResults,
                         };
 
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
@@ -309,7 +311,7 @@ describe('Feature: multi-platform-message-sending, Property 19: Notification mat
                             results: failedResults,
                         };
 
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
@@ -354,7 +356,7 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
     beforeEach(() => {
         vi.clearAllMocks();
         (socket as { connected: boolean }).connected = true;
-        (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers = {};
+        (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers = {};
     });
 
     afterEach(() => {
@@ -422,7 +424,7 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             results: failedResults,
                         };
 
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
@@ -513,7 +515,7 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             results: [successResult, failureResult],
                         };
 
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {
@@ -607,7 +609,7 @@ describe('Feature: multi-platform-message-sending, Property 20: Platform errors 
                             }],
                         };
 
-                        const handler = (socket as unknown as { _handlers: Record<string, ((result: MessageSentResult) => void)[]> })._handlers['message_sent_result'];
+                        const handler = (socket as unknown as { _handlers: Record<string, (result: MessageSentResult) => void> })._handlers['message_sent_result'];
                         handler(result);
 
                         await waitFor(() => {

@@ -10,7 +10,7 @@ describe('SessionManager (Client)', () => {
 
         // Mock window.location
         delete (window as unknown as { location: unknown }).location;
-        window.location = {
+        (window as unknown as { location: Location }).location = {
             ...originalLocation,
             href: '',
             pathname: '/dashboard',
