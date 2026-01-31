@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import Spinner from '../components/common/Spinner';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
-import { useAuth, useConnections, useChatMessages, useSocket } from '../hooks';
+import { useAuth, useConnections, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
 
 const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
@@ -20,7 +20,10 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
-    const { messages, addMessage, updateMessageStatus, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
+    const { messages, addMessage, updateMessageStatus, removeMessage, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
+    const { deleteMessage, banUser, replyToUser } = useModeration({ 
+        onMessageDeleted: removeMessage 
+    });
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
@@ -131,7 +134,13 @@ const Dashboard = () => {
                                         {messages.length > 0 ? (
                                             <div className="flex flex-col gap-y-2">
                                                 {messages.map((msg) => (
-                                                    <ChatMessage key={msg.id} {...msg} />
+                                                    <ChatMessage 
+                                                        key={msg.id} 
+                                                        {...msg}
+                                                        onReply={replyToUser}
+                                                        onDelete={(messageId) => deleteMessage(messageId, msg.platform)}
+                                                        onBan={(userId, username) => banUser(userId, username, msg.platform)}
+                                                    />
                                                 ))}
                                             </div>
                                         ) : (

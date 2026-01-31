@@ -53,6 +53,10 @@ export const useChatMessages = () => {
     );
   }, []);
 
+  const removeMessage = useCallback((messageId: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+  }, []);
+
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, []);
@@ -156,6 +160,7 @@ export const useChatMessages = () => {
     messages,
     addMessage,
     updateMessageStatus,
+    removeMessage,
     clearMessages,
     messagesEndRef,
     containerRef,

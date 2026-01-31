@@ -31,3 +31,17 @@ export interface SendMessageResponse {
     results: PlatformResult[];
     timestamp: string;
 }
+
+/**
+ * Request para acciones de moderación
+ */
+export interface ModerationActionRequest {
+    userId: string; // ID del usuario autenticado que realiza la acción
+    platform: Platform;
+    action: 'delete' | 'ban' | 'timeout';
+    messageId?: string; // Requerido para 'delete'
+    targetUserId?: string; // Requerido para 'ban' y 'timeout'
+    targetUsername?: string; // Para respuestas
+    reason?: string; // Opcional para ban/timeout
+    duration?: number; // Opcional para timeout (en segundos)
+}

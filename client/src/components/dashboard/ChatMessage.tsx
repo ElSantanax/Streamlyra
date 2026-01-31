@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { MdReply, MdBlock, MdDeleteOutline, MdError } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
@@ -17,6 +17,12 @@ export interface ChatMessageProps {
     specialMessage?: string;
     status?: MessageStatus;
     errorMessage?: string;
+    // Campos para moderación
+    messageId?: string;
+    userId?: string;
+    onReply?: (username: string) => void;
+    onDelete?: (messageId: string) => void;
+    onBan?: (userId: string, username: string) => void;
 }
 
 const ChatMessage = memo(({
@@ -32,23 +38,41 @@ const ChatMessage = memo(({
     specialMessage,
     status,
     errorMessage,
+    messageId,
+    userId,
+    onReply,
+    onDelete,
+    onBan,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP;
     const isYouTube = platform === 'youtube';
 
-    // Renderizar indicador de estado (solo para mensajes propios)
+    const handleReply = useCallback(() => {
+        if (onReply) {
+            onReply(user);
+        }
+    }, [onReply, user]);
+
+    const handleDelete = useCallback(() => {
+        if (onDelete && messageId) {
+            onDelete(messageId);
+        }
+    }, [onDelete, messageId]);
+
+    const handleBan = useCallback(() => {
+        if (onBan && userId) {
+            onBan(userId, user);
+        }
+    }, [onBan, userId, user]);
+
     const renderStatusIndicator = () => {
         if (!status) return null;
 
         switch (status) {
             case 'sending':
-                // No mostrar nada mientras se envía
-                // El mensaje aparece instantáneamente, el usuario no necesita ver "Enviando..."
                 return null;
             case 'sent':
-                // No mostrar nada cuando el mensaje se envió exitosamente
-                // El usuario asume que si no hay error, el mensaje se envió
                 return null;
             case 'error':
                 return (
@@ -62,7 +86,6 @@ const ChatMessage = memo(({
         }
     };
 
-    // Badge configuration
     const getBadge = (type: 'sub' | 'mod' | 'vip' | 'streamer') => {
         const configs = {
             sub: {
@@ -122,20 +145,26 @@ const ChatMessage = memo(({
                     {platform !== 'system' && (
                         <div className="flex items-center gap-1 md:gap-1.5 ml-2 md:ml-4 transition-opacity shrink-0">
                             <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-white hover:bg-white/5 border border-surface-border rounded-lg transition-all cursor-pointer"
+                                className="flex items-center justify-center size-8 text-gray-400 hover:text-white hover:bg-white/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Responder"
+                                onClick={handleReply}
+                                disabled={!onReply}
                             >
                                 <MdReply size={18} />
                             </button>
                             <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-400 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer"
+                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-400 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Banear"
+                                onClick={handleBan}
+                                disabled={!onBan || !userId}
                             >
                                 <MdBlock size={18} />
                             </button>
                             <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-500 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer"
+                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-500 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Eliminar Mensaje"
+                                onClick={handleDelete}
+                                disabled={!onDelete || !messageId}
                             >
                                 <MdDeleteOutline size={18} />
                             </button>

@@ -4,6 +4,7 @@ import { TwitchService } from '../../platforms/TwitchService';
 import { YouTubeService } from '../../platforms/YouTubeService';
 import { KickService } from '../../platforms/KickService';
 import { Connection } from '../../../models/Connection.model';
+import { sentMessageCache } from '../../../utils/SentMessageCache';
 
 /**
  * Unit Tests for MessageSenderService - YouTube Edge Cases
@@ -50,6 +51,10 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
             mockYouTubeService,
             mockKickService
         );
+    });
+
+    afterEach(() => {
+        sentMessageCache.clear();
     });
 
     describe('No live broadcast', () => {

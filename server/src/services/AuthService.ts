@@ -1,5 +1,3 @@
-/** Servicio de autenticación con OAuth y gestión de perfiles de usuario por plataforma */
-
 import { PlatformServiceFactory } from './platforms/PlatformServiceFactory';
 import { ProfileSyncService } from './auth/ProfileSyncService';
 import { ConnectionCreationService } from './auth/ConnectionCreationService';
@@ -99,9 +97,7 @@ export class AuthService {
         }
 
         const cleanUsername = this.inputValidator.validateTikTokUsername(username);
-
         const profile = this.tiktokProfileFactory.createProfile(cleanUsername);
-
         const tokens = this.tiktokTokenGenerator.generatePlaceholderTokens(cleanUsername);
 
         const result = await this.handlePlatformAuth(profile, tokens, currentUserId);
@@ -124,14 +120,6 @@ export class AuthService {
                     'Starting platform authentication with transaction'
                 );
 
-                /**
-                 * CRITICAL: Toda la operación de autenticación se ejecuta dentro de una transacción
-                 * para garantizar atomicidad. Si cualquier paso falla (creación de usuario, conexión
-                 * o sincronización de perfil), se hace rollback automático evitando datos huérfanos.
-                 * 
-                 * Esto resuelve el problema de integridad donde un fallo parcial podía dejar
-                 * usuarios sin conexiones o conexiones sin usuarios en la base de datos.
-                 */
                 return await db.transaction(async (transaction) => {
                     const { user, isNew } = await this.userService.findOrCreateFromPlatform(
                         profile,

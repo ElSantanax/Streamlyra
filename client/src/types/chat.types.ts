@@ -20,6 +20,9 @@ export interface ChatMessage {
   specialMessage?: string;
   status?: MessageStatus; // Estado del mensaje (solo para mensajes propios)
   errorMessage?: string; // Mensaje de error si falló
+  // Campos adicionales para moderación
+  userId?: string; // ID del usuario que envió el mensaje
+  roomId?: string; // ID del canal/room
 }
 
 export interface ViewersUpdate {

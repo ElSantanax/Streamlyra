@@ -7,6 +7,7 @@ export * from './useAuth';
 export * from './useConnections';
 export * from './useChatMessages';
 export * from './useSocket';
+export * from './useModeration';
 
 // Generic reusable hooks
 export * from './useLocalStorage';

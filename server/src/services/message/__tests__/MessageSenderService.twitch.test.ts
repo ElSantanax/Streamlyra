@@ -4,6 +4,7 @@ import { TwitchService } from '../../platforms/TwitchService';
 import { YouTubeService } from '../../platforms/YouTubeService';
 import { KickService } from '../../platforms/KickService';
 import { Connection } from '../../../models/Connection.model';
+import { sentMessageCache } from '../../../utils/SentMessageCache';
 
 /**
  * Unit Tests for MessageSenderService - Twitch Edge Cases
@@ -48,6 +49,10 @@ describe('MessageSenderService - Twitch Edge Cases', () => {
             mockYouTubeService,
             mockKickService
         );
+    });
+
+    afterEach(() => {
+        sentMessageCache.clear();
     });
 
     describe('Connection not found', () => {

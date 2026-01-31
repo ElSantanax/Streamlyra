@@ -17,4 +17,8 @@ export interface NormalizedChatMessage {
     isVIP?: boolean;
     isOwner?: boolean;
     isSpecial?: boolean;
+    // Campos adicionales para moderación (específicos de plataforma)
+    messageId?: string; // ID único del mensaje para eliminar (UUID en Twitch)
+    userId?: string; // ID del usuario que envió el mensaje
+    roomId?: string; // ID del canal/room (broadcaster_id en Twitch)
 }

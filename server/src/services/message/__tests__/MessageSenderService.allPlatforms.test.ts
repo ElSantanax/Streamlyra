@@ -4,6 +4,7 @@ import { TwitchService } from '../../platforms/TwitchService';
 import { YouTubeService } from '../../platforms/YouTubeService';
 import { KickService } from '../../platforms/KickService';
 import { Connection } from '../../../models/Connection.model';
+import { sentMessageCache } from '../../../utils/SentMessageCache';
 
 /**
  * Unit Tests for MessageSenderService - Send to All Connected Platforms
@@ -48,6 +49,10 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
             mockYouTubeService,
             mockKickService
         );
+    });
+
+    afterEach(() => {
+        sentMessageCache.clear();
     });
 
     it('should send to all connected platforms when platforms array is empty', async () => {

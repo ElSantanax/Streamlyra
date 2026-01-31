@@ -18,6 +18,25 @@ const ChatInput = () => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     /**
+     * Listener for reply_to_user custom event
+     * Automatically adds @username to the input when replying
+     */
+    useEffect(() => {
+        const handleReplyToUser = (event: Event) => {
+            const customEvent = event as CustomEvent<{ username: string }>;
+            const { username } = customEvent.detail;
+            setMessage(`@${username} `);
+            inputRef.current?.focus();
+        };
+
+        window.addEventListener('reply_to_user', handleReplyToUser);
+
+        return () => {
+            window.removeEventListener('reply_to_user', handleReplyToUser);
+        };
+    }, []);
+
+    /**
      * Listener for message_sent_result event from server
      * Handles the result of sending messages to platforms
      */
