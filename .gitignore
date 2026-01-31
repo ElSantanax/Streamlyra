@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 *.env
 *.env.local
-*.kiro
+*.kiro/steering
 
 # Testing
 /coverage
