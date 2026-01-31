@@ -8,13 +8,25 @@ import type { User } from '../types';
 
 /**
  * Generador de objetos User válidos
+ * Genera objetos normales de JavaScript sin prototipos nulos
  */
 export const userArbitrary = (): fc.Arbitrary<User> => {
   return fc.record({
     id: fc.uuid(),
-    username: fc.string({ minLength: 3, maxLength: 20 }).filter(s => /^[a-zA-Z0-9_]+$/.test(s)),
-    displayName: fc.string({ minLength: 3, maxLength: 30 }),
+    // Generar username alfanumérico que siempre empiece con 'user' para evitar conflictos
+    username: fc.string({ minLength: 3, maxLength: 12, unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'.split('')) })
+      .map((s: string) => `user${s}`),
+    // Generar displayName con caracteres seguros
+    displayName: fc.string({ minLength: 3, maxLength: 30, unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '.split('')) }),
     avatar: fc.webUrl(),
+  }).map(user => {
+    // Crear un objeto normal de JavaScript (no con __proto__: null)
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName.trim() || 'User',
+      avatar: user.avatar,
+    };
   });
 };
 

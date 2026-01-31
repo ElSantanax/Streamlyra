@@ -30,6 +30,12 @@ class ToastManager {
       }
       this.container = null;
     }
+    
+    // Limpiar Set de toasts activos cuando se desmonta el componente
+    // Esto previene memory leaks si el usuario navega antes de que expiren los toasts
+    if (element === null) {
+      this.activeToasts.clear();
+    }
   }
 
   private ensureContainer() {

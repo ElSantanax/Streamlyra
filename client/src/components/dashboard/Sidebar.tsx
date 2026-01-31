@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
@@ -95,7 +96,10 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: SidebarProps) => {
-    const totalViewers = Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0);
+    const totalViewers = useMemo(
+        () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
+        [connections]
+    );
 
     return (
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">

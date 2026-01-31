@@ -52,19 +52,24 @@ export function useLocalStorage<T>(
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       try {
-        const valueToStore = value instanceof Function ? value(storedValue) : value;
-        setStoredValue(valueToStore);
+        setStoredValue((prevValue) => {
+          // Calcular el nuevo valor usando prevValue del setState
+          const valueToStore = value instanceof Function ? value(prevValue) : value;
 
-        if (valueToStore === null || valueToStore === undefined) {
-          localStorage.removeItem(key);
-        } else {
-          localStorage.setItem(key, JSON.stringify(valueToStore));
-        }
+          // Actualizar localStorage
+          if (valueToStore === null || valueToStore === undefined) {
+            localStorage.removeItem(key);
+          } else {
+            localStorage.setItem(key, JSON.stringify(valueToStore));
+          }
+
+          return valueToStore;
+        });
       } catch (error) {
         console.error(`Error setting localStorage key "${key}":`, error);
       }
     },
-    [key, storedValue]
+    [key]
   );
 
   // Función para limpiar el valor

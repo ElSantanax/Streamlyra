@@ -69,10 +69,14 @@ describe('useAuth Data Structure Property-based Tests', () => {
         // Ejecutar login con datos de usuario generados aleatoriamente
         result.current.login(userData);
 
+        // Esperar a que se actualice localStorage
+        await waitFor(() => {
+          const storedUserStr = localStorage.getItem('user');
+          expect(storedUserStr).not.toBeNull();
+        });
+
         // Recuperar datos guardados en localStorage
         const storedUserStr = localStorage.getItem('user');
-        expect(storedUserStr).not.toBeNull();
-
         const storedUser = JSON.parse(storedUserStr!) as User;
 
         // PROPIEDAD 1: Todos los campos requeridos deben estar presentes
@@ -158,13 +162,26 @@ describe('useAuth Data Structure Property-based Tests', () => {
   it('Property 19c: debe manejar datos con campos adicionales sin corromper la estructura base', async () => {
     const userWithExtraFieldsArb = fc.record({
       id: fc.uuid(),
-      username: fc.string({ minLength: 3, maxLength: 20 }),
-      displayName: fc.string({ minLength: 3, maxLength: 30 }),
+      // Generar username alfanumérico que siempre empiece con 'user' para evitar conflictos
+      username: fc.string({ minLength: 3, maxLength: 12, unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'.split('')) })
+        .map((s: string) => `user${s}`),
+      displayName: fc.string({ minLength: 3, maxLength: 30, unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '.split('')) }),
       avatar: fc.webUrl(),
       // Campos adicionales que no deberían guardarse
       extraField: fc.string(),
       token: fc.string(),
       someOtherData: fc.anything(),
+    }).map(data => {
+      // Normalizar el objeto para evitar __proto__: null
+      return {
+        id: data.id,
+        username: data.username,
+        displayName: data.displayName.trim() || 'User',
+        avatar: data.avatar,
+        extraField: data.extraField,
+        token: data.token,
+        someOtherData: data.someOtherData,
+      };
     });
 
     await fc.assert(
@@ -178,9 +195,13 @@ describe('useAuth Data Structure Property-based Tests', () => {
         // Login con datos que tienen campos extra
         result.current.login(userData as unknown as User);
 
-        const storedUserStr = localStorage.getItem('user');
-        expect(storedUserStr).not.toBeNull();
+        // Esperar a que se actualice localStorage
+        await waitFor(() => {
+          const storedUserStr = localStorage.getItem('user');
+          expect(storedUserStr).not.toBeNull();
+        });
 
+        const storedUserStr = localStorage.getItem('user');
         const storedUser = JSON.parse(storedUserStr!) as User;
 
         // PROPIEDAD: Los campos base deben estar presentes

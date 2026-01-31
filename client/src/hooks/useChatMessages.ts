@@ -41,7 +41,7 @@ export const useChatMessages = () => {
 
       return [...prev, messageWithId];
     });
-  }, [isAutoScrollEnabled]);
+  }, []);
 
   const updateMessageStatus = useCallback((messageId: string, status: MessageStatus, errorMessage?: string) => {
     setMessages(prev =>
