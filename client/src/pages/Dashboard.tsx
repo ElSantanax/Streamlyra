@@ -20,9 +20,10 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
-    const { messages, addMessage, updateMessageStatus, removeMessage, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
+    const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
     const { deleteMessage, banUser, replyToUser } = useModeration({ 
-        onMessageDeleted: removeMessage 
+        onMessageDeleted: removeMessage,
+        onUserBanned: removeMessagesByUserId
     });
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);

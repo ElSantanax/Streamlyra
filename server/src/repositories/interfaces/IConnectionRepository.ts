@@ -18,7 +18,8 @@ export interface IConnectionRepository {
         providerId: string,
         username: string,
         tokens: AuthTokens,
-        transaction?: Transaction
+        transaction?: Transaction,
+        chatroomId?: string
     ): Promise<Connection>;
 
     removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number>;

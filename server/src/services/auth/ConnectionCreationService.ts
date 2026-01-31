@@ -16,7 +16,8 @@ export class ConnectionCreationService {
         tokens: AuthTokens,
         providerId: string,
         providerUsername: string,
-        transaction?: Transaction
+        transaction?: Transaction,
+        chatroomId?: string
     ): Promise<Connection> {
         try {
             logger.info({ userId, platform }, 'Creating or updating connection via repository');
@@ -27,7 +28,8 @@ export class ConnectionCreationService {
                 providerId,
                 providerUsername,
                 tokens,
-                transaction
+                transaction,
+                chatroomId
             );
         } catch (error) {
             logger.error({ err: error, userId, platform }, 'Error creating or updating connection');

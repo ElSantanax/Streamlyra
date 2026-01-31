@@ -9,11 +9,12 @@ import { useAuth } from './useAuth';
 
 interface UseModerationOptions {
   onMessageDeleted?: (messageId: string) => void;
+  onUserBanned?: (userId: string) => void;
 }
 
 export const useModeration = (options?: UseModerationOptions) => {
   const { user } = useAuth();
-  const { onMessageDeleted } = options || {};
+  const { onMessageDeleted, onUserBanned } = options || {};
 
   // Escuchar eventos de moderación
   useEffect(() => {
@@ -33,14 +34,23 @@ export const useModeration = (options?: UseModerationOptions) => {
       // No hacemos nada aquí porque el optimistic update ya ocurrió
     };
 
+    const handleUserBanned = (data: { platform: string; targetUserId: string; action: string }) => {
+      // Eliminar todos los mensajes del usuario baneado
+      if (data.targetUserId && onUserBanned) {
+        onUserBanned(data.targetUserId);
+      }
+    };
+
     socket.on('moderation_success', handleModerationSuccess);
     socket.on('moderation_error', handleModerationError);
+    socket.on('user_banned', handleUserBanned);
 
     return () => {
       socket.off('moderation_success', handleModerationSuccess);
       socket.off('moderation_error', handleModerationError);
+      socket.off('user_banned', handleUserBanned);
     };
-  }, [onMessageDeleted]);
+  }, [onMessageDeleted, onUserBanned]);
 
   const deleteMessage = useCallback((messageId: string, platform: string) => {
     if (!user?.id) {

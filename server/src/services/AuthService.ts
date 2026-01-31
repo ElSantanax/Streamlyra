@@ -1,4 +1,5 @@
 import { PlatformServiceFactory } from './platforms/PlatformServiceFactory';
+import { KickService } from './platforms/KickService';
 import { ProfileSyncService } from './auth/ProfileSyncService';
 import { ConnectionCreationService } from './auth/ConnectionCreationService';
 import { AuthInputValidator } from './auth/AuthInputValidator';
@@ -145,13 +146,36 @@ export class AuthService {
                     const activationReason = this.activationDecider.getActivationReason(activationContext);
 
                     if (shouldActivate) {
+                        let chatroomId: string | undefined;
+
+                        // Obtener chatroomId para Kick
+                        if (profile.provider === 'kick') {
+                            try {
+                                const channelDetails = await KickService.getChannelDetails(
+                                    profile.providerUsername,
+                                    tokens.access_token
+                                );
+                                chatroomId = channelDetails.chatroom?.id?.toString();
+                                logger.info(
+                                    { userId: user.id, chatroomId },
+                                    'Kick chatroomId obtained'
+                                );
+                            } catch (error) {
+                                logger.warn(
+                                    { err: error, userId: user.id },
+                                    'Could not obtain Kick chatroomId, will continue without it'
+                                );
+                            }
+                        }
+
                         await this.connectionCreationService.createOrUpdate(
                             user.id,
                             profile.provider,
                             tokens,
                             profile.providerId,
                             profile.providerUsername,
-                            transaction
+                            transaction,
+                            chatroomId
                         );
                         logger.info(
                             { userId: user.id, platform: profile.provider, reason: activationReason },

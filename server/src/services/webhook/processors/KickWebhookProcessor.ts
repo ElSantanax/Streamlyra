@@ -27,27 +27,28 @@ export class KickWebhookProcessor {
 
             const chatMessage = this.transformer.transformMessage(payload);
 
-            // OPTIMIZACIÓN 1: Unificar consultas (Connection + KickWebhook) en una sola query
-            // Esto reduce el uso del pool de conexiones a la mitad por cada mensaje.
+            // Buscar la conexión del broadcaster
             const connection = await Connection.findOne({
                 where: {
                     provider: 'kick',
                     providerId: broadcasterKickId
-                },
-                include: [{
-                    model: KickWebhook,
-                    as: 'kickWebhook', // Asumiendo que esta es la relación definida
-                    where: { isActive: true },
-                    required: false // Queremos la conexión aunque el webhook no esté (para logging o estados)
-                }]
-            }) as (Connection & { kickWebhook?: KickWebhook }) | null;
+                }
+            });
 
             if (!connection) {
                 logger.debug({ broadcasterKickId }, 'No connection found for Kick broadcaster');
                 return;
             }
 
-            if (!connection.kickWebhook) {
+            // Buscar el webhook activo
+            const webhook = await KickWebhook.findOne({
+                where: {
+                    broadcasterId: broadcasterKickId,
+                    isActive: true
+                }
+            });
+
+            if (!webhook) {
                 logger.debug({ userId: connection.userId, broadcasterKickId }, 'Webhook inactivo o no encontrado');
                 return;
             }
@@ -63,9 +64,9 @@ export class KickWebhookProcessor {
                 'Processing Kick chat message'
             );
 
-            // Actualización asíncrona del timestamp (Batching manual al no ser crítico el tiempo real exacto)
-            void connection.kickWebhook.update({ lastEventAt: new Date() }).catch((err: unknown) =>
-                logger.error({ err, webhookId: connection.kickWebhook?.id }, 'Error updating webhook timestamp')
+            // Actualización asíncrona del timestamp
+            void webhook.update({ lastEventAt: new Date() }).catch((err: unknown) =>
+                logger.error({ err, webhookId: webhook.id }, 'Error updating webhook timestamp')
             );
 
             // OPTIMIZACIÓN 4: Emisión directa

@@ -40,8 +40,8 @@ export interface ModerationActionRequest {
     platform: Platform;
     action: 'delete' | 'ban' | 'timeout';
     messageId?: string; // Requerido para 'delete'
-    targetUserId?: string; // Requerido para 'ban' y 'timeout'
-    targetUsername?: string; // Para respuestas
-    reason?: string; // Opcional para ban/timeout
-    duration?: number; // Opcional para timeout (en segundos)
+    targetUserId?: string; // Requerido para 'ban' y 'timeout' (Twitch y Kick usan IDs numéricos)
+    targetUsername?: string; // Opcional, solo para referencia en respuestas
+    reason?: string; // Opcional para ban/timeout (máximo 100 caracteres en Kick)
+    duration?: number; // Opcional para timeout (segundos en Twitch, minutos en Kick: 1-10080)
 }

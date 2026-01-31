@@ -25,7 +25,11 @@ export class KickEventTransformer extends BaseEventTransformer {
             isMod: sender?.identity?.badges?.some((b) => b.type === 'moderator') || false,
             isSub: sender?.identity?.badges?.some((b) => b.type === 'subscriber') || false,
             isVIP: sender?.is_verified || false,
-            isOwner: broadcaster?.user_id === sender?.user_id
+            isOwner: broadcaster?.user_id === sender?.user_id,
+            // Campos para moderación
+            messageId: message_id || '',
+            userId: sender?.user_id?.toString() || '',
+            roomId: broadcaster?.user_id?.toString() || ''
         };
     }
 

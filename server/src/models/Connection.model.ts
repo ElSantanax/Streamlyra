@@ -1,9 +1,8 @@
 /**
  * Modelo de Connection - Representa conexiones de usuarios con plataformas
  */
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo, Default, PrimaryKey, HasOne } from "sequelize-typescript";
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, Default, PrimaryKey } from "sequelize-typescript";
 import { User } from "./User.model";
-import { KickWebhook } from "./KickWebhook.model";
 
 @Table({
     tableName: "connections",
@@ -46,6 +45,12 @@ export class Connection extends Model {
     declare providerUsername: string;
 
     @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare chatroomId: string;
+
+    @Column({
         type: DataType.TEXT,
         allowNull: false
     })
@@ -69,10 +74,4 @@ export class Connection extends Model {
 
     @BelongsTo(() => User)
     declare user: User;
-
-    @HasOne(() => KickWebhook, {
-        foreignKey: 'broadcasterId',
-        sourceKey: 'providerId'
-    })
-    declare kickWebhook?: KickWebhook;
 }

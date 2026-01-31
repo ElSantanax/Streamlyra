@@ -100,7 +100,8 @@ export class ConnectionRepository implements IConnectionRepository {
         providerId: string,
         username: string,
         tokens: AuthTokens,
-        transaction?: Transaction
+        transaction?: Transaction,
+        chatroomId?: string
     ): Promise<Connection> {
         let connection = await Connection.findOne({ where: { provider, providerId }, transaction });
 
@@ -117,6 +118,9 @@ export class ConnectionRepository implements IConnectionRepository {
             }
             connection.expiryDate = calculateTokenExpiry(tokens.expires_in);
             connection.providerUsername = username;
+            if (chatroomId !== undefined) {
+                connection.chatroomId = chatroomId;
+            }
             await connection.save({ transaction });
         } else {
             connection = await Connection.create({
@@ -126,7 +130,8 @@ export class ConnectionRepository implements IConnectionRepository {
                 accessToken: encryptedAccessToken,
                 refreshToken: encryptedRefreshToken || '',
                 expiryDate: calculateTokenExpiry(tokens.expires_in),
-                userId
+                userId,
+                chatroomId: chatroomId || null
             }, { transaction });
         }
 

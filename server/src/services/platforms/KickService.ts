@@ -31,6 +31,20 @@ interface KickChannelResponse {
     data: KickChannel[];
 }
 
+interface KickChatroom {
+    id: number;
+    channel_id: number;
+    created_at: string;
+    updated_at: string;
+}
+
+interface KickChannelDetailResponse {
+    id: number;
+    user_id: number;
+    slug: string;
+    chatroom?: KickChatroom;
+}
+
 import { Platform } from '../../constants/platforms';
 
 export class KickService extends BasePlatformService {
@@ -77,6 +91,23 @@ export class KickService extends BasePlatformService {
             timeout: 10000
         });
         return response.data.data;
+    }
+
+    /**
+     * Obtiene los detalles completos del canal incluyendo el chatroom
+     */
+    static async getChannelDetails(channelSlug: string, accessToken: string): Promise<KickChannelDetailResponse> {
+        const response = await axios.get<KickChannelDetailResponse>(
+            `https://kick.com/api/v2/channels/${channelSlug}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json'
+                },
+                timeout: 10000
+            }
+        );
+        return response.data;
     }
 
     static async subscribeToChat(accessToken: string, broadcasterUserId: string, callbackUrl: string) {

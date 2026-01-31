@@ -4,6 +4,7 @@ import { ChatManager } from '../services/ChatManager';
 import { MessageSenderService } from '../services/message/MessageSenderService';
 import { ActivityService } from '../services/ActivityService';
 import { TwitchModerationService } from '../services/moderation/TwitchModerationService';
+import { KickModerationService } from '../services/moderation/KickModerationService';
 import { ConnectionService } from '../services/connection/ConnectionService';
 import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
 import { SocketConnectionManager } from './SocketConnectionManager';
@@ -30,12 +31,17 @@ export const setupSocketHandlers = (
     // Initialize dependencies
     const connectionManager = new SocketConnectionManager(chatManager);
     const twitchModerationService = new TwitchModerationService();
+    const kickModerationService = new KickModerationService();
     const connectionRepository = new ConnectionRepository();
     const connectionService = new ConnectionService(connectionRepository);
 
     // Initialize handlers
     const messageHandler = new MessageSocketHandler(messageSenderService);
-    const moderationHandler = new ModerationSocketHandler(twitchModerationService, connectionService);
+    const moderationHandler = new ModerationSocketHandler(
+        twitchModerationService,
+        kickModerationService,
+        connectionService
+    );
     const connectionHandler = new ConnectionSocketHandler(connectionManager, activityService);
     const activityHandler = new ActivitySocketHandler(activityService);
 
