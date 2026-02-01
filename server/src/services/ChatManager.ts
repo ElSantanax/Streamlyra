@@ -92,6 +92,17 @@ export class ChatManager {
         );
     }
 
+    async boostYouTubeDiscovery(userId: string): Promise<void> {
+        await withErrorHandling(
+            async () => {
+                logger.info({ userId }, 'Boosting YouTube discovery');
+                await this.youtubeProvider.boostDiscovery(userId, this.io);
+            },
+            { userId, action: 'boostYouTubeDiscovery' },
+            { rethrow: false }
+        );
+    }
+
     async disconnectProvider(userId: string, platform: Platform): Promise<void> {
         await withErrorHandling(
             async () => {

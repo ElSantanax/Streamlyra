@@ -24,7 +24,13 @@ const ChatInput = () => {
     useEffect(() => {
         const handleReplyToUser = (event: Event) => {
             const customEvent = event as CustomEvent<{ username: string }>;
-            const { username } = customEvent.detail;
+            let { username } = customEvent.detail;
+            
+            // Eliminar @ inicial si ya existe para evitar @@
+            if (username.startsWith('@')) {
+                username = username.substring(1);
+            }
+            
             setMessage(`@${username} `);
             inputRef.current?.focus();
         };

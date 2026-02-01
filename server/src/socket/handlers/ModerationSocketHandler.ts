@@ -2,7 +2,9 @@ import { Socket } from 'socket.io';
 import { logger } from '../../utils/logger';
 import { TwitchModerationService } from '../../services/moderation/TwitchModerationService';
 import { KickModerationService } from '../../services/moderation/KickModerationService';
+import { YouTubeModerationService } from '../../services/moderation/YouTubeModerationService';
 import { ConnectionService } from '../../services/connection/ConnectionService';
+import { YouTubeService } from '../../services/platforms/YouTubeService';
 import { Connection } from '../../models/Connection.model';
 import { isValidModerationPayload } from '../validators/SocketValidators';
 import { SocketErrorHandler } from '../utils/SocketErrorHandler';
@@ -11,7 +13,9 @@ export class ModerationSocketHandler {
     constructor(
         private twitchModerationService: TwitchModerationService,
         private kickModerationService: KickModerationService,
-        private connectionService: ConnectionService
+        private youtubeModerationService: YouTubeModerationService,
+        private connectionService: ConnectionService,
+        private youtubeService: YouTubeService
     ) { }
 
     setupHandler(socket: Socket, authenticatedUserId: string) {
@@ -36,10 +40,10 @@ export class ModerationSocketHandler {
                     return;
                 }
 
-                if (platform !== 'twitch' && platform !== 'kick') {
+                if (platform !== 'twitch' && platform !== 'kick' && platform !== 'youtube') {
                     socket.emit('moderation_error', {
                         code: 'UNSUPPORTED_PLATFORM',
-                        message: 'Moderación solo disponible para Twitch y Kick'
+                        message: 'Moderación solo disponible para Twitch, Kick y YouTube'
                     });
                     return;
                 }
@@ -91,6 +95,16 @@ export class ModerationSocketHandler {
                         messageId,
                         targetUserId,
                         reason,
+                        duration,
+                        authenticatedUserId
+                    );
+                } else if (platform === 'youtube') {
+                    await this.handleYouTubeModeration(
+                        socket,
+                        validToken,
+                        action,
+                        messageId,
+                        targetUserId,
                         duration,
                         authenticatedUserId
                     );
@@ -214,6 +228,68 @@ export class ModerationSocketHandler {
             });
 
             logger.info({ userId: authenticatedUserId, targetUserId, action, platform: 'kick' },
+                'User moderation action completed');
+        }
+    }
+
+    private async handleYouTubeModeration(
+        socket: Socket,
+        validToken: string,
+        action: string,
+        messageId: string | undefined,
+        targetUserId: string | undefined,
+        duration: number | undefined,
+        authenticatedUserId: string
+    ): Promise<void> {
+        if (action === 'delete' && messageId) {
+            await this.youtubeModerationService.deleteMessage({
+                messageId,
+                accessToken: validToken
+            });
+
+            socket.emit('moderation_success', {
+                action: 'delete',
+                platform: 'youtube',
+                messageId,
+                message: 'Mensaje eliminado'
+            });
+
+            logger.info({ userId: authenticatedUserId, messageId, platform: 'youtube' }, 'Message deleted successfully');
+
+        } else if ((action === 'ban' || action === 'timeout') && targetUserId) {
+            // Obtener el liveChatId activo
+            const liveChatId = await this.youtubeService.getActiveLiveChatId(validToken);
+            
+            if (!liveChatId) {
+                socket.emit('moderation_error', {
+                    code: 'NO_LIVE_CHAT',
+                    message: 'No hay un chat en vivo activo en YouTube'
+                });
+                return;
+            }
+
+            await this.youtubeModerationService.banUser({
+                liveChatId,
+                channelId: targetUserId,
+                accessToken: validToken,
+                duration: action === 'timeout' ? (duration || 300) : undefined // YouTube usa segundos
+            });
+
+            socket.emit('moderation_success', {
+                action,
+                platform: 'youtube',
+                targetUserId,
+                message: action === 'ban' ? 'Usuario baneado' : 'Usuario en timeout'
+            });
+
+            // Emitir evento para eliminar mensajes del usuario baneado
+            socket.emit('user_banned', {
+                platform: 'youtube',
+                targetUserId,
+                action
+            });
+
+            logger.info({ userId: authenticatedUserId, targetUserId, action, platform: 'youtube' },
                 'User moderation action completed');
         }
     }

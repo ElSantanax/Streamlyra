@@ -74,6 +74,15 @@ export const useConnections = (shouldFetch = true) => {
     }
   }, [updateConnection]);
 
+  const searchStream = useCallback((platform: PlatformKey) => {
+    if (platform === 'youtube') {
+      // Importar socket dinámicamente para evitar dependencia circular
+      import('../services/socket').then(({ socket }) => {
+        socket.emit('youtube_boost_discovery');
+      });
+    }
+  }, []);
+
   useEffect(() => {
     fetchConnections();
   }, [fetchConnections]);
@@ -85,5 +94,6 @@ export const useConnections = (shouldFetch = true) => {
     updateConnection,
     disconnectPlatform,
     refetch: fetchConnections,
+    searchStream,
   };
 };

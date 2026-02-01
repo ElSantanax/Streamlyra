@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService as apiAuthService } from '../api/services/auth.service';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../hooks/useAuth';
+import { toast } from '../lib/notifications';
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
@@ -50,13 +51,26 @@ const AuthCallback = () => {
                     console.error('Fallo al completar el login:', err);
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
 
+                    // Manejar caso de usuario no encontrado
                     if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {
                         localStorage.removeItem('user');
+                        toast.error('Usuario no encontrado. Por favor, intenta conectar nuevamente.');
                         navigate('/login');
                         return;
                     }
 
-                    alert(errorMessage);
+                    // Manejar caso de cuota de YouTube agotada (ya no debería ocurrir, pero por si acaso)
+                    if (errorMessage.includes('cuota') && errorMessage.includes('YouTube')) {
+                        toast.warning('La cuota de YouTube está temporalmente agotada, pero tu cuenta se conectó exitosamente. Algunas funciones estarán limitadas hasta mañana.');
+                        // Aún así redirigir al dashboard si el login fue exitoso
+                        const redirectUrl = localStorage.getItem('auth_redirect');
+                        localStorage.removeItem('auth_redirect');
+                        navigate(redirectUrl || '/dashboard');
+                        return;
+                    }
+
+                    // Error genérico
+                    toast.error(`Error al conectar: ${errorMessage}`);
                     navigate('/login');
                 }
             };

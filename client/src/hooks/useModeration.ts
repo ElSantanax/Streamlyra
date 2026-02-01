@@ -70,7 +70,7 @@ export const useModeration = (options?: UseModerationOptions) => {
       action: 'delete',
       messageId
     });
-  }, [user?.id, onMessageDeleted]);
+  }, [user, onMessageDeleted]);
 
   const banUser = useCallback((targetUserId: string, targetUsername: string, platform: string) => {
     if (!user?.id) {
@@ -90,7 +90,7 @@ export const useModeration = (options?: UseModerationOptions) => {
       targetUserId,
       reason: 'Baneado desde el dashboard'
     });
-  }, [user?.id]);
+  }, [user]);
 
   const replyToUser = useCallback((username: string) => {
     // Emitir evento personalizado para que ChatInput lo capture

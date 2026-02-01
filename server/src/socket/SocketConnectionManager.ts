@@ -145,4 +145,8 @@ export class SocketConnectionManager {
             this.userSocketCount.set(userId, newCount);
         }
     }
+
+    getChatManager(): ChatManager {
+        return this.chatManager;
+    }
 }

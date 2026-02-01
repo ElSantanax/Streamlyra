@@ -6,7 +6,7 @@ import { config } from '../config';
 const isDevelopment = config.nodeEnv === 'development';
 
 export const logger = pino({
-    level: isDevelopment ? 'debug' : 'info',
+    level: process.env.LOG_LEVEL || (isDevelopment ? 'info' : 'info'),
     redact: {
         paths: [
             'req.headers.authorization',

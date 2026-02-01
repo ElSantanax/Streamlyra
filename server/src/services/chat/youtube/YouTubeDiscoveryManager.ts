@@ -1,21 +1,19 @@
-/** Gestor de discovery de YouTube con protección automática de cuotas */
+/** Gestor de discovery de YouTube con búsqueda automática inicial y manual */
 
 import { Server } from 'socket.io';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
+import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
 interface DiscoveryState {
     cleanup: () => void;
-    startTime: number;
-    attempts: number;
+    autoAttempts: number;
+    isManualMode: boolean;
 }
 
 export class YouTubeDiscoveryManager {
     private discoveries: Map<string, DiscoveryState> = new Map();
     private connectingUsers: Set<string> = new Set();
-
-    private readonly MAX_DISCOVERY_TIME_MS = 2 * 60 * 60 * 1000;
-    private readonly MAX_DISCOVERY_ATTEMPTS = 60;
 
     isConnecting(userId: string): boolean {
         return this.connectingUsers.has(userId);
@@ -36,47 +34,54 @@ export class YouTubeDiscoveryManager {
     registerDiscovery(userId: string, cleanup: () => void): void {
         this.discoveries.set(userId, {
             cleanup,
-            startTime: Date.now(),
-            attempts: 0
+            autoAttempts: 0,
+            isManualMode: false
         });
     }
 
-    incrementAttempts(userId: string): number {
+    incrementAutoAttempts(userId: string): void {
         const state = this.discoveries.get(userId);
-        if (state) {
-            state.attempts++;
-            return state.attempts;
+        if (state && !state.isManualMode) {
+            state.autoAttempts++;
         }
-        return 0;
     }
 
-    shouldContinueDiscovery(userId: string, io: Server): boolean {
+    getAutoAttempts(userId: string): number {
+        return this.discoveries.get(userId)?.autoAttempts || 0;
+    }
+
+    shouldContinueAutoDiscovery(userId: string): boolean {
         const state = this.discoveries.get(userId);
         if (!state) return true;
 
-        const elapsedTime = Date.now() - state.startTime;
+        return state.autoAttempts < YouTubePollingConfig.AUTO_DISCOVERY_MAX_ATTEMPTS;
+    }
 
-        if (elapsedTime > this.MAX_DISCOVERY_TIME_MS) {
+    switchToManualMode(userId: string, io: Server): void {
+        const state = this.discoveries.get(userId);
+        if (state) {
+            state.isManualMode = true;
             logger.info(
-                { userId, elapsedHours: (elapsedTime / 1000 / 60 / 60).toFixed(1) },
-                'YouTube discovery timeout - stopping to save quota'
+                { userId, autoAttempts: state.autoAttempts },
+                'YouTube auto-discovery exhausted, switching to manual mode'
             );
-            this.stopDiscovery(userId);
-            this.notifyDiscoveryTimeout(io, userId);
-            return false;
-        }
-
-        if (state.attempts >= this.MAX_DISCOVERY_ATTEMPTS) {
-            logger.info(
-                { userId, attempts: state.attempts },
-                'YouTube discovery max attempts reached - stopping to save quota'
+            
+            SafeSocketEmitter.emitConnectionStatus(
+                io,
+                userId,
+                'youtube',
+                'waiting_manual',
+                'Haz click en 🔍 cuando inicies tu stream'
             );
-            this.stopDiscovery(userId);
-            this.notifyDiscoveryTimeout(io, userId);
-            return false;
         }
+    }
 
-        return true;
+    activateManualSearch(userId: string): void {
+        const state = this.discoveries.get(userId);
+        if (state) {
+            state.isManualMode = true;
+            logger.info({ userId }, 'Manual search activated by user');
+        }
     }
 
     stopDiscovery(userId: string): void {
@@ -85,16 +90,6 @@ export class YouTubeDiscoveryManager {
             state.cleanup();
             this.discoveries.delete(userId);
         }
-    }
-
-    private notifyDiscoveryTimeout(io: Server, userId: string): void {
-        SafeSocketEmitter.emitConnectionStatus(
-            io,
-            userId,
-            'youtube',
-            'error',
-            'No se detectó stream en vivo. Reconecta cuando vayas a iniciar stream.'
-        );
     }
 
     notifyQuotaExceeded(io: Server, userId: string): void {
@@ -108,7 +103,7 @@ export class YouTubeDiscoveryManager {
             userId,
             'youtube',
             'error',
-            'Cuota de YouTube agotada. Por favor, espera hasta mañana para que se renueve la cuota diaria.'
+            'Cuota de YouTube agotada. Intenta mañana.'
         );
     }
 }

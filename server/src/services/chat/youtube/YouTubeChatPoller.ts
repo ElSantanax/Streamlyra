@@ -66,7 +66,7 @@ export class YouTubeChatPoller {
             if (!this.polling.isRunning(userId)) return;
 
             const quotaManager = YouTubeQuotaManager.getInstance();
-            const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE;
+            const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_LIST;
 
             if (!quotaManager.hasQuota(cost)) {
                 logger.warn({ userId }, 'YouTube chat polling paused: Quota exhausted');

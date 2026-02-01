@@ -5,7 +5,9 @@ import { MessageSenderService } from '../services/message/MessageSenderService';
 import { ActivityService } from '../services/ActivityService';
 import { TwitchModerationService } from '../services/moderation/TwitchModerationService';
 import { KickModerationService } from '../services/moderation/KickModerationService';
+import { YouTubeModerationService } from '../services/moderation/YouTubeModerationService';
 import { ConnectionService } from '../services/connection/ConnectionService';
+import { YouTubeService } from '../services/platforms/YouTubeService';
 import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
 import { SocketConnectionManager } from './SocketConnectionManager';
 import { createAuthMiddleware } from './middleware/SocketAuthMiddleware';
@@ -32,15 +34,19 @@ export const setupSocketHandlers = (
     const connectionManager = new SocketConnectionManager(chatManager);
     const twitchModerationService = new TwitchModerationService();
     const kickModerationService = new KickModerationService();
+    const youtubeModerationService = new YouTubeModerationService();
     const connectionRepository = new ConnectionRepository();
     const connectionService = new ConnectionService(connectionRepository);
+    const youtubeService = new YouTubeService();
 
     // Initialize handlers
     const messageHandler = new MessageSocketHandler(messageSenderService);
     const moderationHandler = new ModerationSocketHandler(
         twitchModerationService,
         kickModerationService,
-        connectionService
+        youtubeModerationService,
+        connectionService,
+        youtubeService
     );
     const connectionHandler = new ConnectionSocketHandler(connectionManager, activityService);
     const activityHandler = new ActivitySocketHandler(activityService);

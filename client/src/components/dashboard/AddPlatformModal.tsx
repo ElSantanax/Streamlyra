@@ -15,7 +15,7 @@ interface AddPlatformModalProps {
     connections?: Record<string, {
         connected: boolean;
         username?: string;
-        status?: 'connecting' | 'connected' | 'error';
+        status?: 'connecting' | 'connected' | 'error' | 'waiting_manual';
         statusMessage?: string;
     }>;
     onConnectionSuccess?: () => void;

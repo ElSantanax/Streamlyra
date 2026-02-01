@@ -35,8 +35,10 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
 
         return {
             id: (item.id as string) || '',
+            messageId: (item.id as string) || '', // Agregar messageId explícitamente para moderación
             platform: 'youtube',
             user: (item.authorDetails?.displayName as string) || '',
+            userId: (item.authorDetails?.channelId as string) || '', // ID del canal del autor para moderación
             message: displayMessage,
             specialMessage,
             time: this.formatTime(new Date((item.snippet?.publishedAt as string) || Date.now())),

@@ -23,6 +23,6 @@ export interface ConnectionInfo {
   connected: boolean;
   username?: string;
   viewers?: number;
-  status?: 'connecting' | 'connected' | 'error';
+  status?: 'connecting' | 'connected' | 'error' | 'waiting_manual';
   statusMessage?: string;
 }

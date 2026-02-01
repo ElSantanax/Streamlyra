@@ -19,7 +19,7 @@ const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformM
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const { connections, updateConnection, disconnectPlatform, refetch } = useConnections(isAuthenticated);
+    const { connections, updateConnection, disconnectPlatform, refetch, searchStream } = useConnections(isAuthenticated);
     const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
     const { deleteMessage, banUser, replyToUser } = useModeration({ 
         onMessageDeleted: removeMessage,
@@ -115,6 +115,7 @@ const Dashboard = () => {
                                 }}
                                 connections={connections}
                                 onDisconnect={disconnectPlatform}
+                                onSearchStream={searchStream}
                             />
                         </div>
                     </LocalErrorBoundary>

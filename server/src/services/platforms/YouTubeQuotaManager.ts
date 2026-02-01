@@ -16,6 +16,8 @@ export class YouTubeQuotaManager {
         this.lastResetDate = new Date().toISOString().split('T')[0];
     }
 
+    private exhaustedUntil: number = 0;
+
     public static getInstance(): YouTubeQuotaManager {
         if (!YouTubeQuotaManager.instance) {
             YouTubeQuotaManager.instance = new YouTubeQuotaManager();
@@ -29,7 +31,16 @@ export class YouTubeQuotaManager {
     public hasQuota(requestedUnits: number = 1): boolean {
         this.checkAndResetDaily();
 
-        if (this.isExhausted) return false;
+        // En desarrollo, FORZAMOS que siempre intente la petición para ver el error real de Google
+        const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+        if (isDev) return true;
+
+        // Si estamos en periodo de bloqueo por error de cuota previo
+        if (this.isExhausted && Date.now() < this.exhaustedUntil) {
+            return false;
+        } else if (this.isExhausted) {
+            this.isExhausted = false;
+        }
 
         return (this.unitsUsed + requestedUnits) <= YouTubePollingConfig.DAILY_QUOTA_LIMIT;
     }
@@ -48,18 +59,23 @@ export class YouTubeQuotaManager {
         }, 'YouTube quota consumed');
 
         if (this.unitsUsed >= YouTubePollingConfig.DAILY_QUOTA_LIMIT) {
-            this.markAsExhausted();
+            this.markAsExhausted(true); // Bloqueo de 24h aproximado por límite diario
         }
     }
 
     /**
      * Marca la cuota como agotada (usualmente disparado por un error 403 de la API)
+     * @param isDailyLimit Si es true, el bloqueo es largo. Si es false (por defecto), es temporal (15 min)
      */
-    public markAsExhausted(): void {
-        if (!this.isExhausted) {
-            this.isExhausted = true;
-            logger.warn({ unitsUsed: this.unitsUsed }, 'CUOTA DE YOUTUBE AGOTADA PARA HOY');
-        }
+    public markAsExhausted(isDailyLimit: boolean = false): void {
+        const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000; // 1h o 15 min
+        this.isExhausted = true;
+        this.exhaustedUntil = Date.now() + blockDuration;
+
+        logger.warn({
+            unitsUsed: this.unitsUsed,
+            retryInMinutes: isDailyLimit ? 60 : 15
+        }, 'CUOTA DE YOUTUBE AGOTADA O LÍMITE DE TASA ALCANZADO');
     }
 
     /**

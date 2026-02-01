@@ -18,30 +18,52 @@ export class YouTubeBroadcastDiscovery {
 
         try {
             const response = await axios.get<YouTubeBroadcastResponse>('https://www.googleapis.com/youtube/v3/liveBroadcasts', {
-                params: { part: 'snippet,status,id', mine: true, broadcastType: 'all', maxResults: 1 },
+                params: {
+                    part: 'snippet',
+                    broadcastStatus: 'active',
+                    maxResults: 10
+                },
                 headers: { Authorization: `Bearer ${accessToken}` },
                 timeout: 10000
             });
 
             quotaManager.consumeQuota(cost);
 
-            const broadcast = response.data.items?.find((b: YouTubeBroadcast) =>
-                b.status.lifeCycleStatus === 'live'
-            ) || null;
+            const items = response.data.items || [];
+
+            // Diagnóstico para ver qué devuelve la API
+            logger.info({
+                count: items.length,
+                statuses: items.map(i => i.status?.lifeCycleStatus)
+            }, 'YouTube Discovery Diagnostic');
+
+            // Seleccionar el mejor directo: prioridad al que tiene chatId
+            const broadcast = items.find(b => b.snippet?.liveChatId) ||
+                items[0] || null;
 
             if (broadcast) {
-                logger.info({ broadcastId: broadcast.id }, 'Live broadcast found');
+                logger.info({
+                    id: broadcast.id,
+                    status: broadcast.status?.lifeCycleStatus,
+                    chatId: !!broadcast.snippet?.liveChatId
+                }, 'YouTube broadcast discovered');
             }
 
             return broadcast;
         } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.status === 403) {
-                const errorData = error.response.data as { error?: { errors?: Array<{ reason?: string }> } };
-                const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                const errorData = error.response?.data as any;
 
-                if (isQuotaError) {
+                logger.error({
+                    status,
+                    errorData,
+                    platform: 'youtube',
+                    context: 'YouTubeBroadcastDiscovery'
+                }, 'YouTube Discovery API Error');
+
+                if (status === 403 && errorData?.error?.errors?.some((e: any) => e.reason === 'quotaExceeded')) {
                     quotaManager.markAsExhausted();
-                    logger.warn('YouTube API quota exceeded during discovery');
                     throw new Error('YOUTUBE_QUOTA_EXCEEDED');
                 }
             }

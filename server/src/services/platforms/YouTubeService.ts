@@ -38,11 +38,10 @@ export class YouTubeService extends BasePlatformService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHANNEL_INFO;
 
+        // Si no hay cuota, usar perfil básico del token JWT
         if (!quotaManager.hasQuota(cost)) {
-            throw new AppError(
-                'La cuota de YouTube está agotada. No se puede obtener información del perfil en este momento.',
-                503
-            );
+            logger.warn({ platform: this.platformName }, 'YouTube quota exhausted, using basic profile from token');
+            return this.getBasicProfileFromToken(accessToken);
         }
 
         try {
@@ -69,7 +68,11 @@ export class YouTubeService extends BasePlatformService {
             logger.debug({ platform: this.platformName, channelId: items[0].id }, 'YouTube profile fetched successfully');
             return items[0];
         } catch (error: unknown) {
-            this.handleQuotaError(error);
+            // Si es error de cuota, usar perfil básico en lugar de fallar
+            if (this.isQuotaError(error)) {
+                logger.warn({ platform: this.platformName }, 'YouTube quota exceeded, falling back to basic profile');
+                return this.getBasicProfileFromToken(accessToken);
+            }
 
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             const axiosError = error && typeof error === 'object' && 'response' in error
@@ -86,18 +89,68 @@ export class YouTubeService extends BasePlatformService {
         }
     }
 
-    private handleQuotaError(error: unknown): void {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
-            const errorData = error.response.data as { error?: { message?: string; errors?: Array<{ reason?: string }> } };
-            const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
+    /**
+     * Obtiene información básica del perfil desde el token JWT de YouTube
+     * Se usa como fallback cuando la cuota está agotada
+     */
+    private getBasicProfileFromToken(accessToken: string): YouTubeChannel {
+        try {
+            // Decodificar el JWT para obtener información básica
+            const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
 
-            if (isQuotaError) {
-                YouTubeQuotaManager.getInstance().markAsExhausted();
-                throw new AppError(
-                    'La cuota de YouTube está agotada. Por favor, intenta de nuevo más tarde.',
-                    503
-                );
-            }
+            // YouTube incluye el channel ID en el token
+            const channelId = payload.sub || `yt_${Date.now()}`;
+
+            logger.info({ channelId }, 'Using basic YouTube profile from token due to quota limits');
+
+            return {
+                id: channelId,
+                snippet: {
+                    title: `YouTube User ${channelId.substring(0, 8)}`,
+                    thumbnails: {
+                        default: {
+                            url: ''
+                        }
+                    }
+                }
+            };
+        } catch (error) {
+            logger.error({ err: error }, 'Failed to decode YouTube token, using fallback profile');
+
+            // Fallback completo si no se puede decodificar el token
+            const fallbackId = `yt_${Date.now()}`;
+            return {
+                id: fallbackId,
+                snippet: {
+                    title: `YouTube User ${fallbackId.substring(0, 8)}`,
+                    thumbnails: {
+                        default: {
+                            url: ''
+                        }
+                    }
+                }
+            };
+        }
+    }
+
+    /**
+     * Verifica si un error es de cuota agotada
+     */
+    private isQuotaError(error: unknown): boolean {
+        if (axios.isAxiosError(error) && error.response?.status === 403) {
+            const errorData = error.response.data as { error?: { errors?: Array<{ reason?: string }> } };
+            return errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded') || false;
+        }
+        return false;
+    }
+
+    private handleQuotaError(error: unknown): void {
+        if (this.isQuotaError(error)) {
+            YouTubeQuotaManager.getInstance().markAsExhausted();
+            throw new AppError(
+                'Cuota de YouTube agotada. Intenta mañana.',
+                403
+            );
         }
     }
 
@@ -132,35 +185,46 @@ export class YouTubeService extends BasePlatformService {
                     params: {
                         part: 'snippet',
                         broadcastStatus: 'active',
-                        broadcastType: 'all'
+                        maxResults: 5
                     },
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    },
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
                     timeout: 10000
                 }
             );
 
             quotaManager.consumeQuota(cost);
 
-            const broadcasts = response.data.items;
-            if (!broadcasts || broadcasts.length === 0) {
-                logger.debug({ platform: this.platformName }, 'No active broadcasts found');
-                return null;
+            const items = response.data.items || [];
+            const liveChatId = items[0]?.snippet?.liveChatId || null;
+
+            if (!liveChatId && items.length > 0) {
+                logger.warn({ platform: this.platformName }, 'Broadcast found but liveChatId is missing. Check if chat is enabled.');
             }
 
-            const liveChatId = broadcasts[0].snippet.liveChatId || null;
-            logger.debug({ platform: this.platformName, liveChatId }, 'Active live chat ID retrieved');
             return liveChatId;
         } catch (error) {
-            try {
-                this.handleQuotaError(error);
-            } catch {
-                // Si es un error de cuota ya manejado, retornamos null silenciosamente ya que es polling
-                return null;
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                const errorData = error.response?.data as any;
+
+                logger.error({
+                    status,
+                    errorData,
+                    platform: this.platformName
+                }, 'YouTube API Error details');
+
+                if (status === 403 && errorData?.error?.errors?.some((e: any) => e.reason === 'quotaExceeded')) {
+                    quotaManager.markAsExhausted();
+                    throw new Error('Cuota de YouTube agotada. Intenta mañana.');
+                }
+
+                if (status === 400) {
+                    throw new Error(`Error de configuración de YouTube (400): ${errorData?.error?.message || 'Petición inválida'}`);
+                }
             }
+
             logger.error({ err: error, platform: this.platformName }, 'Failed to get active live chat ID');
-            return null;
+            throw error; // Rethrow para que MessageSenderService no diga "No hay directo"
         }
     }
 
@@ -170,10 +234,10 @@ export class YouTubeService extends BasePlatformService {
         message: string
     ): Promise<void> {
         const quotaManager = YouTubeQuotaManager.getInstance();
-        const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE;
+        const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_SEND;
 
         if (!quotaManager.hasQuota(cost)) {
-            throw new Error('La cuota de YouTube está agotada. No se pudo enviar el mensaje.');
+            throw new Error('Cuota de YouTube agotada. Intenta mañana.');
         }
 
         try {

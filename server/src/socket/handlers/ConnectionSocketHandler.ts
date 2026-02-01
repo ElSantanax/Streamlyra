@@ -17,6 +17,19 @@ export class ConnectionSocketHandler {
             socket.emit('identified', { userId: authenticatedUserId, message: 'Conectado de forma segura' });
         });
 
+        socket.on('youtube_boost_discovery', async () => {
+            logger.info({ socketId: socket.id, userId: authenticatedUserId }, 'YouTube boost discovery requested');
+            
+            try {
+                const chatManager = this.connectionManager.getChatManager();
+                await chatManager.boostYouTubeDiscovery(authenticatedUserId);
+                
+                logger.info({ userId: authenticatedUserId }, 'YouTube boost discovery triggered successfully');
+            } catch (error) {
+                logger.error({ err: error, userId: authenticatedUserId }, 'Error triggering YouTube boost discovery');
+            }
+        });
+
         socket.on('disconnect', async () => {
             logger.info({ socketId: socket.id }, 'Cliente desconectado de Socket.io');
             const userId = this.connectionManager.getUserIdBySocketId(socket.id);

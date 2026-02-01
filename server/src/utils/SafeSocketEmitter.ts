@@ -156,7 +156,7 @@ export class SafeSocketEmitter {
         io: Server,
         userId: string,
         platform: string,
-        status: 'connecting' | 'connected' | 'disconnected' | 'error',
+        status: 'connecting' | 'connected' | 'disconnected' | 'error' | 'waiting_manual',
         message?: string
     ): boolean {
         return this.emit(io, {

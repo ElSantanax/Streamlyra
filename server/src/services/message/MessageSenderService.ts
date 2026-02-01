@@ -35,14 +35,14 @@ export class MessageSenderService {
 
         // Si el array de plataformas está vacío, enviar a todas las plataformas conectadas
         let targetPlatforms: string[];
-        
+
         if (platforms.length === 0) {
             logger.info({ userId }, 'Empty platforms array - fetching all connected platforms');
             const connections = await this.connectionService.getAllConnections(userId);
             targetPlatforms = connections
                 .map(conn => conn.provider)
                 .filter(p => p !== 'tiktok');
-            
+
             logger.info(
                 { userId, connectedPlatforms: targetPlatforms },
                 'Sending to all connected platforms'
@@ -128,16 +128,33 @@ export class MessageSenderService {
         return this.helper.sendWithRetry(
             'youtube',
             userId,
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            async (accessToken, _connection) => {
-                const liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken);
+            async (accessToken, connection) => {
+                // Usar el liveChatId cacheado en chatroomId si está disponible
+                let liveChatId: string | null = connection.chatroomId || null;
 
+                // Si no hay liveChatId cacheado, intentar obtenerlo
                 if (!liveChatId) {
-                    logger.debug({ userId, platform: 'youtube' }, 'No active live broadcast found');
-                    throw Object.assign(
-                        new Error('No hay stream en vivo'),
-                        { code: 'NO_LIVE_BROADCAST' }
-                    );
+                    try {
+                        liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken);
+                    } catch (error) {
+                        if (error instanceof Error && error.message.includes('cuota')) {
+                            throw error;
+                        }
+                        throw new Error('No se pudo verificar el estado del directo en YouTube.');
+                    }
+
+                    if (!liveChatId) {
+                        logger.debug({ userId, platform: 'youtube' }, 'No active live broadcast found');
+                        throw Object.assign(
+                            new Error('No hay stream en vivo. Asegúrate de estar transmitiendo en YouTube.'),
+                            { code: 'NO_LIVE_BROADCAST' }
+                        );
+                    }
+
+                    // Cachear el liveChatId para futuros mensajes
+                    connection.chatroomId = liveChatId;
+                    await connection.save();
+                    logger.info({ userId, liveChatId }, 'Cached YouTube liveChatId for future messages');
                 }
 
                 await this.youtubeService.sendChatMessage(accessToken, liveChatId, message);

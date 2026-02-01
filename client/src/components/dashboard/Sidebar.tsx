@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
-import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep } from 'react-icons/md';
+import { MdDeleteOutline, MdOutlineVisibility, MdDeleteSweep, MdSearch } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
 import Spinner from '../common/Spinner';
@@ -8,10 +8,11 @@ import { formatViewers } from '../../lib/formatters';
 
 interface ConnectionItemProps {
     platformKey: PlatformKey;
-    status: 'connected' | 'disconnected' | 'connecting' | 'error';
+    status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'waiting_manual';
     viewers?: string;
     statusMessage?: string;
     onDisconnect?: () => void;
+    onSearchStream?: () => void;
 }
 
 const ConnectionItem = ({
@@ -19,15 +20,18 @@ const ConnectionItem = ({
     status,
     viewers,
     statusMessage,
-    onDisconnect
+    onDisconnect,
+    onSearchStream
 }: ConnectionItemProps) => {
     const { name, Icon, color, iconColor } = PLATFORMS[platformKey];
     const isConnected = status === 'connected';
     const isConnecting = status === 'connecting';
     const isError = status === 'error';
+    const isWaitingManual = status === 'waiting_manual';
+    const isYouTube = platformKey === 'youtube';
 
     return (
-        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting ? 'opacity-60' : ''}`}>
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting && !isWaitingManual ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center size-8 rounded-full ${color} ${iconColor}`}>
                     <Icon size={platformKey === 'tiktok' ? 14 : 16} />
@@ -39,7 +43,9 @@ const ConnectionItem = ({
                     </div>
                     <div className="flex items-center gap-1.5 mt-1">
                         {isConnecting ? (
-                            <span className="text-xs text-blue-400">Conectando...</span>
+                            <span className="text-xs text-blue-400">Buscando...</span>
+                        ) : isWaitingManual ? (
+                            <span className="text-xs text-yellow-400">Esperando stream</span>
                         ) : isError ? (
                             <span className="text-xs text-yellow-400">{statusMessage || 'Error'}</span>
                         ) : isConnected ? (
@@ -61,20 +67,35 @@ const ConnectionItem = ({
                     </div>
                 </div>
             </div>
-            {(isConnected || isConnecting || isError) ? (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const action = isConnecting ? 'cancelar' : 'desconectar';
-                        if (window.confirm(`¿Estás seguro de ${action} ${name}?`)) {
-                            onDisconnect?.();
-                        }
-                    }}
-                    className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
-                    title={isConnecting ? "Cancelar conexión" : "Desconectar"}
-                >
-                    <MdDeleteOutline size={18} />
-                </button>
+            {(isConnected || isConnecting || isError || isWaitingManual) ? (
+                <div className="flex items-center gap-1">
+                    {/* Botón de búsqueda manual para YouTube cuando está esperando */}
+                    {isYouTube && isWaitingManual && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSearchStream?.();
+                            }}
+                            className="flex items-center justify-center p-1.5 hover:bg-blue-500/10 text-gray-500 hover:text-blue-500 rounded-lg transition-all duration-200 cursor-pointer"
+                            title="Recargar"
+                        >
+                            <MdSearch size={18} />
+                        </button>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const action = isConnecting || isWaitingManual ? 'cancelar' : 'desconectar';
+                            if (window.confirm(`¿Estás seguro de ${action} ${name}?`)) {
+                                onDisconnect?.();
+                            }
+                        }}
+                        className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
+                        title={isConnecting || isWaitingManual ? "Cancelar conexión" : "Desconectar"}
+                    >
+                        <MdDeleteOutline size={18} />
+                    </button>
+                </div>
             ) : (
                 <div className="size-2 rounded-full bg-red-500"></div>
             )}
@@ -89,13 +110,14 @@ interface SidebarProps {
         connected: boolean;
         username?: string;
         viewers?: number;
-        status?: 'connecting' | 'connected' | 'error';
+        status?: 'connecting' | 'connected' | 'error' | 'waiting_manual';
         statusMessage?: string;
     }>;
     onDisconnect: (platform: PlatformKey) => void;
+    onSearchStream?: (platform: PlatformKey) => void;
 }
 
-const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: SidebarProps) => {
+const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream }: SidebarProps) => {
     const totalViewers = useMemo(
         () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
         [connections]
@@ -117,17 +139,19 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
             {/* Conexiones */}
             <div className="flex flex-col gap-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Conexiones</h3>
-                {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error').length > 0 ? (
+                {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_manual').length > 0 ? (
                     Object.entries(connections)
-                        .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error')
+                        .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_manual')
                         .map(([key, data]) => {
                             const status = data.status === 'connecting'
                                 ? 'connecting'
-                                : data.status === 'error'
-                                    ? 'error'
-                                    : data.connected
-                                        ? 'connected'
-                                        : 'disconnected';
+                                : data.status === 'waiting_manual'
+                                    ? 'waiting_manual'
+                                    : data.status === 'error'
+                                        ? 'error'
+                                        : data.connected
+                                            ? 'connected'
+                                            : 'disconnected';
 
                             return (
                                 <ConnectionItem
@@ -137,6 +161,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect }: Si
                                     viewers={data.viewers !== undefined ? formatViewers(data.viewers) : undefined}
                                     statusMessage={data.statusMessage}
                                     onDisconnect={() => onDisconnect(key as PlatformKey)}
+                                    onSearchStream={() => onSearchStream?.(key as PlatformKey)}
                                 />
                             );
                         })

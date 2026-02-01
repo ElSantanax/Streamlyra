@@ -5,52 +5,16 @@
 export const YouTubePollingConfig = {
     CHAT_POLLING_INTERVAL: 9000,
     VIEWER_POLLING_INTERVAL: 90000,
-    DISCOVERY_POLLING_INTERVAL: 120000,
-    MAX_DISCOVERY_TIME_MS: 2 * 60 * 60 * 1000,
-    MAX_DISCOVERY_ATTEMPTS: 60,
+    AUTO_DISCOVERY_INTERVAL: 20000,        // Intervalo para intentos automáticos iniciales
+    AUTO_DISCOVERY_MAX_ATTEMPTS: 3,        // Máximo 3 intentos automáticos
     DAILY_QUOTA_LIMIT: 10000,
     OPERATION_COSTS: {
-        CHAT_MESSAGE: 5,
-        VIDEO_DETAILS: 1,
-        BROADCAST_LIST: 1,
-        CHANNEL_INFO: 1
+        CHAT_MESSAGE_SEND: 50,    // liveChatMessages.insert
+        CHAT_MESSAGE_LIST: 1,     // liveChatMessages.list
+        CHAT_MESSAGE_DELETE: 50,  // liveChatMessages.delete
+        CHAT_BAN_USER: 50,        // liveChatBans.insert
+        VIDEO_DETAILS: 1,         // videos.list
+        BROADCAST_LIST: 1,        // liveBroadcasts.list
+        CHANNEL_INFO: 1           // channels.list
     }
 };
-
-export function calculateHourlyQuotaUsage(config: {
-    CHAT_POLLING_INTERVAL: number;
-    VIEWER_POLLING_INTERVAL: number;
-    DISCOVERY_POLLING_INTERVAL: number;
-    DAILY_QUOTA_LIMIT: number;
-    OPERATION_COSTS: {
-        CHAT_MESSAGE: number;
-        VIDEO_DETAILS: number;
-        BROADCAST_LIST: number;
-        CHANNEL_INFO: number;
-    };
-} = YouTubePollingConfig): {
-    chat: number;
-    viewers: number;
-    discovery: number;
-    total: number;
-    hoursPerDay: number;
-} {
-    const chatRequestsPerHour = (3600000 / config.CHAT_POLLING_INTERVAL);
-    const viewerRequestsPerHour = (3600000 / config.VIEWER_POLLING_INTERVAL);
-    const discoveryRequestsPerHour = (3600000 / config.DISCOVERY_POLLING_INTERVAL);
-
-    const chatUnits = chatRequestsPerHour * config.OPERATION_COSTS.CHAT_MESSAGE;
-    const viewerUnits = viewerRequestsPerHour * config.OPERATION_COSTS.VIDEO_DETAILS;
-    const discoveryUnits = discoveryRequestsPerHour * config.OPERATION_COSTS.BROADCAST_LIST;
-
-    const total = chatUnits + viewerUnits + discoveryUnits;
-    const hoursPerDay = config.DAILY_QUOTA_LIMIT / total;
-
-    return {
-        chat: Math.round(chatUnits),
-        viewers: Math.round(viewerUnits),
-        discovery: Math.round(discoveryUnits),
-        total: Math.round(total),
-        hoursPerDay: Math.round(hoursPerDay * 10) / 10
-    };
-}
