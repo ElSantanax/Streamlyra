@@ -12,6 +12,8 @@ interface PlatformInputProps {
     onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
     onConnect?: () => void;
     isConnected?: boolean;
+    error?: string;
+    helperText?: string;
 }
 
 const PlatformInput = ({
@@ -23,24 +25,33 @@ const PlatformInput = ({
     value,
     onChange,
     onConnect,
-    isConnected = false
+    isConnected = false,
+    error,
+    helperText
 }: PlatformInputProps) => {
+    const hasError = !!error && !!value;
+    const borderColor = hasError 
+        ? 'border-red-500/50' 
+        : isConnected 
+            ? 'border-green-500/50 bg-green-500/5' 
+            : 'border-gray-200 dark:border-gray-700/50';
+
     return (
         <div className="group relative">
             <label className="sr-only" htmlFor={id}>Usuario de {label}</label>
             <div
-                className={`flex items-center bg-gray-50/50 dark:bg-input-dark/50 border ${isConnected ? 'border-green-500/50 bg-green-500/5' : 'border-gray-200 dark:border-gray-700/50'} rounded-xl overflow-hidden transition-all duration-300 focus-within:ring-1 focus-within:ring-(--platform-color) focus-within:border-(--platform-color) focus-within:bg-white dark:focus-within:bg-input-dark group-hover:border-gray-300 dark:group-hover:border-gray-600`}
-                style={{ '--platform-color': iconColor } as CSSProperties}
+                className={`flex items-center bg-gray-50/50 dark:bg-input-dark/50 border ${borderColor} rounded-xl overflow-hidden transition-all duration-300 focus-within:ring-1 focus-within:ring-(--platform-color) focus-within:border-(--platform-color) focus-within:bg-white dark:focus-within:bg-input-dark group-hover:border-gray-300 dark:group-hover:border-gray-600`}
+                style={{ '--platform-color': hasError ? '#ef4444' : iconColor } as CSSProperties}
             >
-                <div className={`p-4 flex items-center justify-center border-r ${isConnected ? 'border-green-500/20 bg-green-500/10' : 'border-gray-200 dark:border-gray-700/50 bg-gray-100/50 dark:bg-white/5'} self-stretch`}>
+                <div className={`p-4 flex items-center justify-center border-r ${isConnected ? 'border-green-500/20 bg-green-500/10' : hasError ? 'border-red-500/20 bg-red-500/10' : 'border-gray-200 dark:border-gray-700/50 bg-gray-100/50 dark:bg-white/5'} self-stretch`}>
                     <Icon
-                        style={{ color: isConnected ? '#22c55e' : iconColor, fontSize: '24px' }}
+                        style={{ color: isConnected ? '#22c55e' : hasError ? '#ef4444' : iconColor, fontSize: '24px' }}
                     />
                 </div>
                 <div className="flex-1 flex flex-col items-start px-4 py-3 text-left min-w-0">
                     <span
-                        className={`text-xs font-bold uppercase tracking-widest mb-1 opacity-90 truncate w-full ${isConnected ? 'text-green-500' : ''}`}
-                        style={{ color: isConnected ? undefined : iconColor }}
+                        className={`text-xs font-bold uppercase tracking-widest mb-1 opacity-90 truncate w-full ${isConnected ? 'text-green-500' : hasError ? 'text-red-500' : ''}`}
+                        style={{ color: isConnected ? undefined : hasError ? undefined : iconColor }}
                     >
                         {isConnected ? `${label} Conectado` : label}
                     </span>
@@ -52,14 +63,14 @@ const PlatformInput = ({
                         value={value}
                         onChange={onChange}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && value && !isConnected && onConnect) {
+                            if (e.key === 'Enter' && value && !isConnected && !hasError && onConnect) {
                                 onConnect();
                             }
                         }}
                         disabled={isConnected}
                     />
                 </div>
-                {value && !isConnected && onConnect && (
+                {value && !isConnected && !hasError && onConnect && (
                     <button
                         onClick={onConnect}
                         className="mr-2 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer"
@@ -69,6 +80,16 @@ const PlatformInput = ({
                     </button>
                 )}
             </div>
+            {hasError && (
+                <p className="mt-1.5 text-xs text-red-500 dark:text-red-400 px-1">
+                    {error}
+                </p>
+            )}
+            {!hasError && helperText && (
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 px-1">
+                    {helperText}
+                </p>
+            )}
         </div>
     );
 };

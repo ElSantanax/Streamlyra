@@ -4,7 +4,7 @@ import PlatformButton from '../connection/PlatformButton';
 import PlatformInput from '../connection/PlatformInput';
 import { initiateOAuth } from '../../utils/oauth';
 import { authService } from '../../api/services';
-import { cleanUsername } from '../../lib/validators';
+import { validateTikTokUsername } from '../../lib/validators';
 import { Modal } from '../ui';
 import { toast } from '../../lib/notifications';
 import { getUserFriendlyMessage } from '../../lib/errors';
@@ -28,16 +28,39 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     onConnectionSuccess
 }) => {
     const [tiktokUsername, setTiktokUsername] = useState('');
+    const [tiktokError, setTiktokError] = useState<string | undefined>();
 
     const isTiktokConnected = connections.tiktok?.connected ?? false;
     const tiktokStatus = connections.tiktok?.status;
 
+    const handleTiktokUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setTiktokUsername(value);
+        
+        // Validar en tiempo real
+        if (value.trim()) {
+            const validation = validateTikTokUsername(value);
+            setTiktokError(validation.error);
+        } else {
+            setTiktokError(undefined);
+        }
+    };
+
     const handleTiktokConnect = async () => {
         if (!tiktokUsername) return;
 
+        // Validar antes de enviar
+        const validation = validateTikTokUsername(tiktokUsername);
+        
+        if (!validation.isValid) {
+            setTiktokError(validation.error);
+            toast.error(validation.error || 'Nombre de usuario inválido');
+            return;
+        }
+
         try {
-            const cleaned = cleanUsername(tiktokUsername);
-            await authService.connectTikTok(cleaned);
+            await authService.connectTikTok(validation.cleaned!);
+            setTiktokError(undefined);
             onConnectionSuccess?.();
             setTimeout(() => onClose(), 500);
         } catch (error) {
@@ -96,9 +119,11 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                     Icon={PLATFORMS.tiktok.Icon}
                     iconColor={PLATFORMS.tiktok.brandColor}
                     value={tiktokUsername}
-                    onChange={(e) => setTiktokUsername(e.target.value)}
+                    onChange={handleTiktokUsernameChange}
                     onConnect={handleTiktokConnect}
                     isConnected={isTiktokConnected || tiktokStatus === 'connecting'}
+                    error={tiktokError}
+                    helperText="Usa tu @usuario (no tu nombre visible)"
                 />
             </div>
         </Modal>
