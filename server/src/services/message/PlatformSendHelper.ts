@@ -8,7 +8,7 @@ import { logger } from '../../utils/logger';
 import axios from 'axios';
 
 export class PlatformSendHelper {
-    constructor(private connectionService: ConnectionService) {}
+    constructor(private connectionService: ConnectionService) { }
 
     async sendWithRetry(
         platform: Platform,

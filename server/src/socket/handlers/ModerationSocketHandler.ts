@@ -259,7 +259,7 @@ export class ModerationSocketHandler {
         } else if ((action === 'ban' || action === 'timeout') && targetUserId) {
             // Obtener el liveChatId activo
             const liveChatId = await this.youtubeService.getActiveLiveChatId(validToken);
-            
+
             if (!liveChatId) {
                 socket.emit('moderation_error', {
                     code: 'NO_LIVE_CHAT',

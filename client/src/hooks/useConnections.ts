@@ -28,18 +28,27 @@ export const useConnections = (shouldFetch = true) => {
 
     try {
       const data = await authService.getMe();
-      // NO usar el campo "connected" del servidor, solo verificar si existe la conexión
-      // El estado real vendrá del socket
+      // Usar el campo "connected" del servidor para saber si hay una conexión guardada
+      // El estado real de chat activo vendrá del socket, pero mostramos 'connecting' mientras sincroniza
       setConnections(prev => {
         const updated: Record<string, ConnectionInfo> = {};
         Object.keys(data.connections).forEach(platform => {
+          const serverConnected = data.connections[platform].connected;
+          const prevStatus = prev[platform]?.status;
+          const prevConnected = prev[platform]?.connected;
+
+          // Si el servidor indica que hay conexión guardada pero el socket aún no confirmó,
+          // establecer status 'connecting' para que la plataforma aparezca en el Sidebar
+          const shouldShowAsConnecting = serverConnected && !prevConnected && !prevStatus;
+
           updated[platform] = {
-            connected: false, // Siempre iniciar como false, el socket actualizará el estado real
+            // Mantener el estado connected del socket si ya existe
+            connected: prevConnected ?? false,
             username: data.connections[platform].username,
             // Mantener viewers si ya existían, de lo contrario usar 0
             viewers: prev[platform]?.viewers ?? 0,
-            // Mantener status y statusMessage si ya existían
-            status: prev[platform]?.status,
+            // Si hay conexión en servidor pero socket no ha confirmado, mostrar como 'connecting'
+            status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
             statusMessage: prev[platform]?.statusMessage
           };
         });

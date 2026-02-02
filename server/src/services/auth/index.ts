@@ -12,3 +12,12 @@ export { TikTokTokenGenerator } from './TikTokTokenGenerator';
 export { UserProfileBuilder } from './UserProfileBuilder';
 export { ProfileSyncDecider } from './ProfileSyncDecider';
 
+// Core services
+export { PlatformAuthHandler } from './core/PlatformAuthHandler';
+export { UserProfileService } from './core/UserProfileService';
+
+// Orchestrators
+export { OAuthFlowOrchestrator } from './orchestrators/OAuthFlowOrchestrator';
+export { TikTokFlowOrchestrator } from './orchestrators/TikTokFlowOrchestrator';
+export { DisconnectionOrchestrator } from './orchestrators/DisconnectionOrchestrator';
+

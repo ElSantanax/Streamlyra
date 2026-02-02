@@ -1,58 +1,89 @@
-import { PlatformServiceFactory } from './platforms/PlatformServiceFactory';
-import { KickService } from './platforms/KickService';
+import { OAuthFlowOrchestrator } from './auth/orchestrators/OAuthFlowOrchestrator';
+import { TikTokFlowOrchestrator } from './auth/orchestrators/TikTokFlowOrchestrator';
+import { DisconnectionOrchestrator } from './auth/orchestrators/DisconnectionOrchestrator';
+import { UserProfileService } from './auth/core/UserProfileService';
+import { PlatformAuthHandler } from './auth/core/PlatformAuthHandler';
 import { ProfileSyncService } from './auth/ProfileSyncService';
 import { ConnectionCreationService } from './auth/ConnectionCreationService';
 import { AuthInputValidator } from './auth/AuthInputValidator';
-import { ConnectionActivationDecider, ConnectionActivationContext } from './auth/ConnectionActivationDecider';
+import { ConnectionActivationDecider } from './auth/ConnectionActivationDecider';
 import { AuthChatOrchestrator } from './auth/AuthChatOrchestrator';
 import { AuthResponseBuilder } from './auth/AuthResponseBuilder';
 import { TikTokProfileFactory } from './auth/TikTokProfileFactory';
 import { TikTokTokenGenerator } from './auth/TikTokTokenGenerator';
 import { UserProfileBuilder } from './auth/UserProfileBuilder';
-import { ProfileSyncDecider, ProfileSyncContext } from './auth/ProfileSyncDecider';
+import { ProfileSyncDecider } from './auth/ProfileSyncDecider';
 import { UserService } from './user/UserService';
 import { ConnectionService } from './connection/ConnectionService';
 import { ChatManager } from './ChatManager';
 import { IUserRepository } from '../repositories/interfaces/IUserRepository';
 import { IConnectionRepository } from '../repositories/interfaces/IConnectionRepository';
-import { AuthTokens, PlatformProfile } from '../types/index';
 import { Platform } from '../constants/platforms';
-import { AppError } from '../utils/AppError';
-import { withErrorHandling } from '../utils/errorHandling';
-import { logger } from '../utils/logger';
-import db from '../config/db';
 
 export class AuthService {
-    private userService: UserService;
-    private connectionService: ConnectionService;
-    private profileSyncService: ProfileSyncService;
-    private connectionCreationService: ConnectionCreationService;
-    private inputValidator: AuthInputValidator;
-    private activationDecider: ConnectionActivationDecider;
-    private chatOrchestrator: AuthChatOrchestrator;
-    private responseBuilder: AuthResponseBuilder;
-    private tiktokProfileFactory: TikTokProfileFactory;
-    private tiktokTokenGenerator: TikTokTokenGenerator;
-    private userProfileBuilder: UserProfileBuilder;
-    private profileSyncDecider: ProfileSyncDecider;
+    private oauthFlowOrchestrator: OAuthFlowOrchestrator;
+    private tiktokFlowOrchestrator: TikTokFlowOrchestrator;
+    private disconnectionOrchestrator: DisconnectionOrchestrator;
+    private userProfileService: UserProfileService;
 
     constructor(
         userRepository: IUserRepository,
         connectionRepository: IConnectionRepository,
         chatManager: ChatManager
     ) {
-        this.userService = new UserService(userRepository, connectionRepository);
-        this.connectionService = new ConnectionService(connectionRepository);
-        this.profileSyncService = new ProfileSyncService();
-        this.connectionCreationService = new ConnectionCreationService(connectionRepository);
-        this.inputValidator = new AuthInputValidator();
-        this.activationDecider = new ConnectionActivationDecider();
-        this.chatOrchestrator = new AuthChatOrchestrator(chatManager);
-        this.responseBuilder = new AuthResponseBuilder();
-        this.tiktokProfileFactory = new TikTokProfileFactory();
-        this.tiktokTokenGenerator = new TikTokTokenGenerator();
-        this.userProfileBuilder = new UserProfileBuilder();
-        this.profileSyncDecider = new ProfileSyncDecider();
+        // Servicios base
+        const userService = new UserService(userRepository, connectionRepository);
+        const connectionService = new ConnectionService(connectionRepository);
+        
+        // Componentes de autenticación
+        const profileSyncService = new ProfileSyncService();
+        const connectionCreationService = new ConnectionCreationService(connectionRepository);
+        const inputValidator = new AuthInputValidator();
+        const activationDecider = new ConnectionActivationDecider();
+        const chatOrchestrator = new AuthChatOrchestrator(chatManager);
+        const responseBuilder = new AuthResponseBuilder();
+        const profileSyncDecider = new ProfileSyncDecider();
+        const userProfileBuilder = new UserProfileBuilder();
+        
+        // Componentes TikTok
+        const tiktokProfileFactory = new TikTokProfileFactory();
+        const tiktokTokenGenerator = new TikTokTokenGenerator();
+
+        // Handler central de autenticación de plataforma
+        const platformAuthHandler = new PlatformAuthHandler(
+            userService,
+            connectionService,
+            profileSyncService,
+            connectionCreationService,
+            activationDecider,
+            profileSyncDecider,
+            responseBuilder
+        );
+
+        // Orquestadores
+        this.oauthFlowOrchestrator = new OAuthFlowOrchestrator(
+            inputValidator,
+            platformAuthHandler,
+            chatOrchestrator
+        );
+
+        this.tiktokFlowOrchestrator = new TikTokFlowOrchestrator(
+            inputValidator,
+            tiktokProfileFactory,
+            tiktokTokenGenerator,
+            platformAuthHandler,
+            chatOrchestrator
+        );
+
+        this.disconnectionOrchestrator = new DisconnectionOrchestrator(
+            connectionService,
+            chatOrchestrator
+        );
+
+        this.userProfileService = new UserProfileService(
+            userService,
+            userProfileBuilder
+        );
     }
 
     async handleOAuthAuth(
@@ -61,192 +92,22 @@ export class AuthService {
         codeVerifier?: string,
         currentUserId?: string
     ) {
-        const result = await withErrorHandling(
-            async () => {
-                this.inputValidator.validateAuthorizationCode(code, platform);
-
-                const oauthService = PlatformServiceFactory.getService(platform);
-                const { profile, tokens } = await oauthService.getProfileAndTokens(code, codeVerifier);
-
-                this.inputValidator.validateOAuthTokens(tokens, platform);
-
-                const authResult = await this.handlePlatformAuth(profile, tokens, currentUserId);
-
-                await this.chatOrchestrator.connectIfNeeded({
-                    userId: authResult.user.id,
-                    platform,
-                    shouldConnect: authResult.connectionActive,
-                    reason: authResult.activationReason
-                });
-
-                return authResult;
-            },
-            { platform, action: 'handleOAuthAuth' },
-            { rethrow: true }
-        );
-
-        if (!result) {
-            throw new AppError('OAuth authentication failed', 500);
-        }
-
-        return result;
+        return this.oauthFlowOrchestrator.handleOAuthAuth(platform, code, codeVerifier, currentUserId);
     }
 
     async handleTikTokAuth(username: string, currentUserId?: string) {
-        if (!currentUserId) {
-            throw new AppError('TikTok authentication requires an authenticated user', 401);
-        }
-
-        const cleanUsername = this.inputValidator.validateTikTokUsername(username);
-        const profile = this.tiktokProfileFactory.createProfile(cleanUsername);
-        const tokens = this.tiktokTokenGenerator.generatePlaceholderTokens(cleanUsername);
-
-        const result = await this.handlePlatformAuth(profile, tokens, currentUserId);
-
-        await this.chatOrchestrator.connectIfNeeded({
-            userId: result.user.id,
-            platform: 'tiktok',
-            shouldConnect: result.connectionActive,
-            reason: result.activationReason
-        });
-
-        return result;
-    }
-
-    private async handlePlatformAuth(profile: PlatformProfile, tokens: AuthTokens, currentUserId?: string) {
-        const result = await withErrorHandling(
-            async () => {
-                logger.info(
-                    { provider: profile.provider, providerId: profile.providerId, currentUserId },
-                    'Starting platform authentication with transaction'
-                );
-
-                return await db.transaction(async (transaction) => {
-                    const { user, isNew } = await this.userService.findOrCreateFromPlatform(
-                        profile,
-                        currentUserId,
-                        transaction
-                    );
-                    logger.info({ userId: user.id, isNew }, 'User found or created');
-
-                    const existingConnection = await this.connectionService.getConnectionByProvider(
-                        profile.provider,
-                        profile.providerId
-                    );
-
-                    const activationContext: ConnectionActivationContext = {
-                        isNewUser: isNew,
-                        isLinkingAccount: !!currentUserId,
-                        hasExistingConnection: !!existingConnection,
-                        userId: user.id,
-                        platform: profile.provider
-                    };
-
-                    const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
-                    const activationReason = this.activationDecider.getActivationReason(activationContext);
-
-                    if (shouldActivate) {
-                        let chatroomId: string | undefined;
-
-                        // Obtener chatroomId para Kick
-                        if (profile.provider === 'kick') {
-                            try {
-                                const channelDetails = await KickService.getChannelDetails(
-                                    profile.providerUsername,
-                                    tokens.access_token
-                                );
-                                chatroomId = channelDetails.chatroom?.id?.toString();
-                                logger.info(
-                                    { userId: user.id, chatroomId },
-                                    'Kick chatroomId obtained'
-                                );
-                            } catch (error) {
-                                logger.warn(
-                                    { err: error, userId: user.id },
-                                    'Could not obtain Kick chatroomId, will continue without it'
-                                );
-                            }
-                        }
-
-                        await this.connectionCreationService.createOrUpdate(
-                            user.id,
-                            profile.provider,
-                            tokens,
-                            profile.providerId,
-                            profile.providerUsername,
-                            transaction,
-                            chatroomId
-                        );
-                        logger.info(
-                            { userId: user.id, platform: profile.provider, reason: activationReason },
-                            'Connection activated'
-                        );
-                    }
-
-                    const syncContext: ProfileSyncContext = {
-                        isNewUser: isNew,
-                        isLinkingAccount: !!currentUserId,
-                        provider: profile.provider,
-                        userId: user.id
-                    };
-
-                    const shouldSyncProfile = this.profileSyncDecider.shouldSyncProfile(syncContext);
-                    if (shouldSyncProfile) {
-                        await this.profileSyncService.syncProfile(user, profile, transaction);
-                    }
-
-                    logger.info({ userId: user.id, platform: profile.provider }, 'Platform authentication completed successfully');
-
-                    return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
-                });
-            },
-            { action: 'handlePlatformAuth', provider: profile.provider },
-            { rethrow: true }
-        );
-
-        if (!result) {
-            throw new AppError('Platform authentication failed', 500);
-        }
-
-        return result;
+        return this.tiktokFlowOrchestrator.handleTikTokAuth(username, currentUserId);
     }
 
     async getUserProfile(userId: string) {
-        const user = await this.userService.getById(userId);
-        if (!user) return null;
-
-        return this.userProfileBuilder.buildUserProfile(user);
+        return this.userProfileService.getUserProfile(userId);
     }
 
     async disconnectPlatform(userId: string, provider: Platform) {
-        logger.info({ userId, provider }, 'AuthService: Starting platform disconnection');
-
-        const deletedCount = await this.connectionService.removeConnection(userId, provider);
-
-        if (deletedCount === 0) {
-            logger.warn({ userId, provider }, 'AuthService: No connection found to disconnect');
-            throw new AppError('Connection not found', 404);
-        }
-
-        logger.info({ userId, provider, deletedCount }, 'AuthService: Connection removed from database');
-
-        await this.chatOrchestrator.disconnect(userId, provider);
-
-        logger.info({ userId, provider }, 'AuthService: Platform disconnection completed');
-
-        return true;
+        return this.disconnectionOrchestrator.disconnectPlatform(userId, provider);
     }
 
     async logout(userId: string | undefined): Promise<void> {
-        if (!userId) return;
-
-        logger.info({ userId }, 'AuthService: Starting global logout cleanup');
-
-        try {
-            await this.chatOrchestrator.disconnectAll(userId);
-            logger.info({ userId }, 'AuthService: Global logout cleanup completed');
-        } catch (error) {
-            logger.error({ err: error, userId }, 'AuthService: Error during logout cleanup');
-        }
+        return this.disconnectionOrchestrator.logout(userId);
     }
 }

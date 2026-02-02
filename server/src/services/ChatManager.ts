@@ -3,6 +3,7 @@
 import { Server } from 'socket.io';
 import { Platform } from '../constants/platforms';
 import { ConnectionService } from './connection/ConnectionService';
+import { ChatProvider } from './chat/ChatProvider';
 import { TwitchChatProvider } from './chat/TwitchChatProvider';
 import { YouTubeChatProvider } from './chat/YouTubeChatProvider';
 import { KickChatProvider } from './chat/KickChatProvider';
@@ -12,16 +13,18 @@ import { withErrorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 
 export class ChatManager {
-    private twitchProvider: TwitchChatProvider;
+    private providers: Map<Platform, ChatProvider>;
     private youtubeProvider: YouTubeChatProvider;
-    private kickProvider: KickChatProvider;
-    private tiktokProvider: TikTokChatProvider;
 
     constructor(private io: Server, private connectionService: ConnectionService) {
-        this.twitchProvider = new TwitchChatProvider(connectionService);
         this.youtubeProvider = new YouTubeChatProvider(connectionService);
-        this.kickProvider = new KickChatProvider(connectionService);
-        this.tiktokProvider = new TikTokChatProvider();
+        
+        this.providers = new Map<Platform, ChatProvider>([
+            ['twitch', new TwitchChatProvider(connectionService)],
+            ['youtube', this.youtubeProvider],
+            ['kick', new KickChatProvider(connectionService)],
+            ['tiktok', new TikTokChatProvider()]
+        ]);
     }
 
     async connectUser(userId: string): Promise<void> {
@@ -49,7 +52,8 @@ export class ChatManager {
             async () => {
                 logger.info({ userId }, 'Disconnecting all chat providers');
 
-                const platforms: Platform[] = ['twitch', 'youtube', 'kick', 'tiktok'];
+                // Obtener plataformas dinámicamente del Map para garantizar consistencia
+                const platforms = Array.from(this.providers.keys());
                 const promises = platforms.map(platform =>
                     this.disconnectProvider(userId, platform)
                 );
@@ -68,24 +72,13 @@ export class ChatManager {
             async () => {
                 logger.info({ userId, platform }, 'Connecting chat provider');
 
-                switch (platform) {
-                    case 'twitch':
-                        await this.twitchProvider.connect(userId, this.io);
-                        break;
-                    case 'youtube':
-                        await this.youtubeProvider.connect(userId, this.io);
-                        break;
-                    case 'kick':
-                        await this.kickProvider.connect(userId, this.io);
-                        break;
-                    case 'tiktok':
-                        await this.tiktokProvider.connect(userId, this.io);
-                        break;
-                    default:
-                        logger.warn({ platform }, 'Unknown platform for chat connection');
+                const provider = this.providers.get(platform);
+                if (provider) {
+                    await provider.connect(userId, this.io);
+                    logger.info({ userId, platform }, 'Chat provider connected');
+                } else {
+                    logger.warn({ platform }, 'Unknown platform for chat connection');
                 }
-
-                logger.info({ userId, platform }, 'Chat provider connected');
             },
             { userId, platform, action: 'connectProvider' },
             { rethrow: false }
@@ -110,26 +103,14 @@ export class ChatManager {
 
                 SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0);
 
-                switch (platform) {
-                    case 'twitch':
-                        logger.debug({ userId, platform }, 'ChatManager: Calling twitch disconnect');
-                        await this.twitchProvider.disconnect(userId);
-                        break;
-                    case 'youtube':
-                        logger.debug({ userId, platform }, 'ChatManager: Calling youtube disconnect');
-                        await this.youtubeProvider.disconnect(userId);
-                        break;
-                    case 'kick':
-                        logger.debug({ userId, platform }, 'ChatManager: Calling kick disconnect');
-                        await this.kickProvider.disconnect(userId);
-                        break;
-                    case 'tiktok':
-                        logger.debug({ userId, platform }, 'ChatManager: Calling tiktok disconnect');
-                        await this.tiktokProvider.disconnect(userId);
-                        break;
+                const provider = this.providers.get(platform);
+                if (provider) {
+                    logger.debug({ userId, platform }, `ChatManager: Calling ${platform} disconnect`);
+                    await provider.disconnect(userId);
+                    logger.info({ platform, userId }, 'ChatManager: Chat provider disconnected successfully');
+                } else {
+                    logger.warn({ platform }, 'Unknown platform for chat disconnection');
                 }
-
-                logger.info({ platform, userId }, 'ChatManager: Chat provider disconnected successfully');
             },
             { platform, userId, action: 'disconnectProvider' },
             { rethrow: false }

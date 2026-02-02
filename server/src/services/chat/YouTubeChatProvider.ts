@@ -61,10 +61,10 @@ export class YouTubeChatProvider implements ChatProvider {
 
     async boostDiscovery(userId: string, io: Server): Promise<void> {
         logger.info({ userId }, 'Manual search requested for YouTube');
-        
+
         this.discoveryManager.activateManualSearch(userId);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
-        
+
         // Intentar búsqueda inmediata
         try {
             await this.attemptDiscovery(userId, io);
@@ -118,7 +118,7 @@ export class YouTubeChatProvider implements ChatProvider {
 
     private async attemptDiscovery(userId: string, io: Server): Promise<void> {
         const autoAttempts = this.discoveryManager.getAutoAttempts(userId);
-        
+
         // Verificar si ya agotamos los intentos automáticos
         if (!this.discoveryManager.shouldContinueAutoDiscovery(userId)) {
             this.discoveryManager.stopDiscovery(userId);

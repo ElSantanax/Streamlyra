@@ -2,6 +2,9 @@
 
 import { Socket, Server } from 'socket.io';
 import { ChatManager } from '../services/ChatManager';
+import { ConnectionService } from '../services/connection/ConnectionService';
+import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
+import { SafeSocketEmitter } from '../utils/SafeSocketEmitter';
 import { logger } from '../utils/logger';
 
 const CONNECTION_TIMEOUT_MS = 30000;
@@ -24,15 +27,20 @@ export class SocketConnectionManager {
     private socketUserMap: Map<string, string> = new Map();
     private userSocketCount: Map<string, number> = new Map();
     private connectingLocks: Map<string, Promise<void>> = new Map();
+    private connectionService: ConnectionService;
 
-    constructor(private chatManager: ChatManager) { }
+    constructor(private chatManager: ChatManager) {
+        // Inicializar ConnectionService para obtener el estado de las conexiones
+        const connectionRepository = new ConnectionRepository();
+        this.connectionService = new ConnectionService(connectionRepository);
+    }
 
     getUserIdBySocketId(socketId: string): string | undefined {
         return this.socketUserMap.get(socketId);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async handleIdentify(userId: unknown, socket: Socket, _io: Server): Promise<void> {
+    async handleIdentify(userId: unknown, socket: Socket, io: Server): Promise<void> {
         if (!isValidUserId(userId)) {
             logger.warn({ userId, socketId: socket.id }, 'UserId inválido');
             socket.emit('error', {
@@ -76,6 +84,11 @@ export class SocketConnectionManager {
                 })();
 
                 this.connectingLocks.set(userId, connectionPromise);
+            } else if (!isFirstSocket) {
+                // Si no es el primer socket, re-emitir el estado actual de las conexiones
+                // para que el cliente tenga el estado actualizado inmediatamente
+                logger.debug({ userId, socketId: socket.id }, 'Socket adicional: Re-emitiendo estado de conexiones');
+                await this.emitCurrentConnectionStatus(userId, io);
             }
 
             if (connectionPromise) {
@@ -148,5 +161,36 @@ export class SocketConnectionManager {
 
     getChatManager(): ChatManager {
         return this.chatManager;
+    }
+
+    /**
+     * Emite el estado actual de todas las conexiones del usuario
+     * Útil cuando un socket se reconecta y necesita el estado actualizado
+     */
+    private async emitCurrentConnectionStatus(userId: string, io: Server): Promise<void> {
+        try {
+            const connections = await this.connectionService.getAllConnections(userId);
+            
+            // Emitir el estado 'connected' para cada plataforma que tiene conexión activa
+            connections.forEach(conn => {
+                SafeSocketEmitter.emitConnectionStatus(
+                    io,
+                    userId,
+                    conn.provider,
+                    'connected',
+                    'Reconectado'
+                );
+            });
+
+            logger.debug(
+                { userId, platformCount: connections.length },
+                'Estado de conexiones re-emitido exitosamente'
+            );
+        } catch (error) {
+            logger.error(
+                { err: error, userId },
+                'Error al re-emitir estado de conexiones'
+            );
+        }
     }
 }

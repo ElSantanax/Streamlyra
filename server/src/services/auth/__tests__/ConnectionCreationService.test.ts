@@ -59,7 +59,8 @@ describe('ConnectionCreationService', () => {
                 'provider-id-1',
                 'username-1',
                 mockTokens,
-                undefined // transaction parameter
+                undefined, // transaction parameter
+                undefined  // chatroomId parameter
             );
 
             expect(result).toBe(mockConnection);

@@ -15,7 +15,7 @@ interface AddPlatformModalProps {
     connections?: Record<string, {
         connected: boolean;
         username?: string;
-        status?: 'connecting' | 'waiting_stream' | 'connected' | 'error';
+        status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
         statusMessage?: string;
     }>;
     onConnectionSuccess?: () => void;
@@ -36,7 +36,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     const handleTiktokUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setTiktokUsername(value);
-        
+
         // Validar en tiempo real
         if (value.trim()) {
             const validation = validateTikTokUsername(value);
@@ -51,7 +51,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 
         // Validar antes de enviar
         const validation = validateTikTokUsername(tiktokUsername);
-        
+
         if (!validation.isValid) {
             setTiktokError(validation.error);
             toast.error(validation.error || 'Nombre de usuario inválido');

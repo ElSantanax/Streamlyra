@@ -7,7 +7,7 @@ import { ConnectionService } from '../../connection/ConnectionService';
 import { logger } from '../../../utils/logger';
 
 export class TwitchConnectionManager {
-    constructor(private connectionService: ConnectionService) {}
+    constructor(private connectionService: ConnectionService) { }
 
     async connect(userId: string): Promise<tmi.Client> {
         const connection = await Connection.findOne({
@@ -39,9 +39,9 @@ export class TwitchConnectionManager {
     async disconnect(client: tmi.Client): Promise<void> {
         try {
             await client.disconnect();
-            
+
             client.removeAllListeners();
-            
+
             logger.debug({}, 'Twitch client disconnected successfully');
         } catch (error) {
             logger.error({ err: error }, 'Error disconnecting Twitch client');
