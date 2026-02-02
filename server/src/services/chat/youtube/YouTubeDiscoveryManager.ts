@@ -32,6 +32,13 @@ export class YouTubeDiscoveryManager {
     }
 
     registerDiscovery(userId: string, cleanup: () => void): void {
+        // Limpiar cualquier discovery existente para evitar procesos zombies (peticiones fantasmas)
+        const existing = this.discoveries.get(userId);
+        if (existing) {
+            logger.warn({ userId }, 'Cleaning up orphaned YouTube discovery task to prevent quota leak');
+            existing.cleanup();
+        }
+
         this.discoveries.set(userId, {
             cleanup,
             autoAttempts: 0,
@@ -65,7 +72,7 @@ export class YouTubeDiscoveryManager {
                 { userId, autoAttempts: state.autoAttempts },
                 'YouTube auto-discovery exhausted, switching to waiting_stream mode'
             );
-            
+
             SafeSocketEmitter.emitConnectionStatus(
                 io,
                 userId,
