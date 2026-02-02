@@ -1,6 +1,8 @@
 import { memo, useCallback } from 'react';
 import { MdReply, MdBlock, MdDeleteOutline, MdError } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
+import { Button } from '../ui/Button';
+import { UserBadge } from '../common/UserBadge';
 import type { PlatformKey } from '../../constants/platforms';
 import type { MessageStatus } from '../../types/chat.types';
 
@@ -24,6 +26,17 @@ export interface ChatMessageProps {
     onDelete?: (messageId: string) => void;
     onBan?: (userId: string, username: string) => void;
 }
+
+// Sub-components para mejorar la legibilidad y separación de responsabilidades
+const StatusIndicator = ({ status, errorMessage }: { status?: MessageStatus; errorMessage?: string }) => {
+    if (status !== 'error') return null;
+    return (
+        <div className="flex items-center gap-1 text-red-500" title={errorMessage || 'Error al enviar'}>
+            <MdError size={14} />
+            <span className="text-xs">Error</span>
+        </div>
+    );
+};
 
 const ChatMessage = memo(({
     user,
@@ -49,72 +62,16 @@ const ChatMessage = memo(({
     const isYouTube = platform === 'youtube';
 
     const handleReply = useCallback(() => {
-        if (onReply) {
-            onReply(user);
-        }
+        if (onReply) onReply(user);
     }, [onReply, user]);
 
     const handleDelete = useCallback(() => {
-        if (onDelete && messageId) {
-            onDelete(messageId);
-        }
+        if (onDelete && messageId) onDelete(messageId);
     }, [onDelete, messageId]);
 
     const handleBan = useCallback(() => {
-        if (onBan && userId) {
-            onBan(userId, user);
-        }
+        if (onBan && userId) onBan(userId, user);
     }, [onBan, userId, user]);
-
-    const renderStatusIndicator = () => {
-        if (!status) return null;
-
-        switch (status) {
-            case 'sending':
-                return null;
-            case 'sent':
-                return null;
-            case 'error':
-                return (
-                    <div className="flex items-center gap-1 text-red-500" title={errorMessage || 'Error al enviar'}>
-                        <MdError size={14} />
-                        <span className="text-xs">Error</span>
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
-    const getBadge = (type: 'sub' | 'mod' | 'vip' | 'streamer') => {
-        const configs = {
-            sub: {
-                label: isYouTube ? 'Miembro' : 'Sub',
-                color: isYouTube
-                    ? 'bg-[#00E5FF]/10 text-[#00E5FF] dark:bg-[#00E5FF]/15 dark:text-[#00E5FF]'
-                    : 'bg-[#772CE8]/10 text-[#772CE8] dark:bg-[#A970FF]/15 dark:text-[#A970FF]'
-            },
-            mod: {
-                label: 'MOD',
-                color: 'bg-[#00AD03]/10 text-[#00AD03] dark:bg-[#00AD03]/15 dark:text-[#00AD03]'
-            },
-            vip: {
-                label: isYouTube ? 'Verificado' : 'VIP',
-                color: 'bg-[#FF4081]/10 text-[#FF4081] dark:bg-[#FF4081]/15 dark:text-[#FF4081]'
-            },
-            streamer: {
-                label: 'Streamer',
-                color: 'bg-[#FF0000]/10 text-[#FF0000] dark:bg-[#FF0000]/15 dark:text-[#FF0000]'
-            }
-        };
-
-        const { label, color } = configs[type];
-        return (
-            <span className={`${color} text-[10px] md:text-[11px] px-1.5 md:px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider`}>
-                {label}
-            </span>
-        );
-    };
 
     return (
         <div className={`
@@ -131,46 +88,57 @@ const ChatMessage = memo(({
                         >
                             {user}
                         </span>
+
                         <div className={`flex items-center justify-center size-5 md:size-6 rounded-full shrink-0 ${color} ${iconColor} shadow-sm ring-1 ring-white/10`}>
                             <Icon size={platform === 'tiktok' ? 10 : 12} className="md:hidden" />
                             <Icon size={platform === 'tiktok' ? 12 : 14} className="hidden md:block" />
                         </div>
-                        {isOwner && <div className="shrink-0 scale-90 md:scale-100">{getBadge('streamer')}</div>}
-                        {isMod && <div className="shrink-0 scale-90 md:scale-100">{getBadge('mod')}</div>}
-                        {isVIP && <div className="shrink-0 scale-90 md:scale-100">{getBadge('vip')}</div>}
-                        {isSub && <div className="shrink-0 scale-90 md:scale-100">{getBadge('sub')}</div>}
+
+                        {/* Mantenemos el wrapper para el escalado visual específico de este componente */}
+                        {isOwner && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="streamer" isYouTube={isYouTube} /></div>}
+                        {isMod && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="mod" isYouTube={isYouTube} /></div>}
+                        {isVIP && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="vip" isYouTube={isYouTube} /></div>}
+                        {isSub && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="sub" isYouTube={isYouTube} /></div>}
+
                         <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
-                        {renderStatusIndicator()}
+                        <StatusIndicator status={status} errorMessage={errorMessage} />
                     </div>
+
                     {platform !== 'system' && (
                         <div className="flex items-center gap-1 md:gap-1.5 ml-2 md:ml-4 transition-opacity shrink-0">
-                            <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-white hover:bg-white/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Responder"
+                            <Button
+                                variant="ghost"
+                                className="size-8! p-0! border border-surface-border text-gray-400 hover:text-white"
                                 onClick={handleReply}
                                 disabled={!onReply}
+                                title="Responder"
                             >
                                 <MdReply size={18} />
-                            </button>
-                            <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-400 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Banear"
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                className="size-8! p-0! border border-surface-border text-gray-400 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                                 onClick={handleBan}
                                 disabled={!onBan || !userId}
+                                title="Banear"
                             >
                                 <MdBlock size={18} />
-                            </button>
-                            <button
-                                className="flex items-center justify-center size-8 text-gray-400 hover:text-red-500 hover:bg-red-500/5 border border-surface-border rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Eliminar Mensaje"
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                className="size-8! p-0! border border-surface-border text-gray-400 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                                 onClick={handleDelete}
                                 disabled={!onDelete || !messageId}
+                                title="Eliminar Mensaje"
                             >
                                 <MdDeleteOutline size={18} />
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>
+
                 {specialMessage ? (
                     <p className={`text-sm font-black tracking-tight ${platform === 'tiktok' ? 'text-[#FF0050]' : textColor} ${platform !== 'system' ? 'md:pr-32' : ''}`}>
                         {specialMessage}
