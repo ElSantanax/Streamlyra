@@ -39,7 +39,6 @@ export class SocketConnectionManager {
         return this.socketUserMap.get(socketId);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async handleIdentify(userId: unknown, socket: Socket, io: Server): Promise<void> {
         if (!isValidUserId(userId)) {
             logger.warn({ userId, socketId: socket.id }, 'UserId inválido');
@@ -170,7 +169,7 @@ export class SocketConnectionManager {
     private async emitCurrentConnectionStatus(userId: string, io: Server): Promise<void> {
         try {
             const connections = await this.connectionService.getAllConnections(userId);
-            
+
             // Emitir el estado 'connected' para cada plataforma que tiene conexión activa
             connections.forEach(conn => {
                 SafeSocketEmitter.emitConnectionStatus(

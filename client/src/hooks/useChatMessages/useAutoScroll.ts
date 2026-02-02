@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 
-const SCROLL_THRESHOLD = 150;
+const SCROLL_THRESHOLD = 50;
+const REENABLE_THRESHOLD = 20;
 
 interface UseAutoScrollOptions {
   trigger?: unknown;
@@ -19,7 +20,9 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
   const isUserScrollingRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
 
   const scrollToBottomSmooth = useCallback(() => {
     const element = messagesEndRef.current;
@@ -40,7 +43,10 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      const isAtBottom = distanceFromBottom <= SCROLL_THRESHOLD;
+      const isAtBottom = distanceFromBottom <= REENABLE_THRESHOLD;
+
+      const isScrollingUp = scrollTop < lastScrollTopRef.current;
+      lastScrollTopRef.current = scrollTop;
 
       if (isAtBottom) {
         if (!isAutoScrollEnabled) {
@@ -48,9 +54,11 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
         }
         isUserScrollingRef.current = false;
       } else {
-        if (isAutoScrollEnabled && distanceFromBottom > SCROLL_THRESHOLD + 10) {
-          setIsAutoScrollEnabled(false);
-          isUserScrollingRef.current = true;
+        if (isAutoScrollEnabled) {
+          if (isScrollingUp || distanceFromBottom > SCROLL_THRESHOLD) {
+            setIsAutoScrollEnabled(false);
+            isUserScrollingRef.current = true;
+          }
         }
       }
     };
