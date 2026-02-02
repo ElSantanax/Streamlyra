@@ -64,7 +64,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -87,7 +88,7 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
             expect(result.results[0]).toEqual({
                 platform: 'youtube',
                 success: false,
-                error: 'No hay stream en vivo',
+                error: 'No hay stream en vivo. Asegúrate de estar transmitiendo en YouTube.',
                 errorCode: 'NO_LIVE_BROADCAST'
             });
         });
@@ -98,7 +99,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -132,7 +134,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -158,7 +161,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -185,7 +189,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -225,7 +230,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -263,7 +269,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -291,7 +298,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -320,7 +328,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -375,7 +384,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -411,7 +421,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -452,7 +463,8 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
                 userId: 'user123',
                 provider: 'youtube',
                 providerId: 'channel123',
-                providerUsername: 'testchannel'
+                providerUsername: 'testchannel',
+                save: jest.fn().mockResolvedValue(true)
             };
 
             const liveChatId = 'Cg0KCzEyMzQ1Njc4OTAw';

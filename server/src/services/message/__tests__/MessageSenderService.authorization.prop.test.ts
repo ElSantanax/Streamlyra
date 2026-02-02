@@ -74,12 +74,13 @@ describe('Feature: multi-platform-message-sending, Property 23: User authorizati
                         providerId: '12345',
                         providerUsername: 'testuser',
                         accessToken: 'token',
-                        refreshToken: 'refresh'
+                        refreshToken: 'refresh',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    
+
                     // Mock platform services
                     mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
@@ -125,7 +126,8 @@ describe('Feature: multi-platform-message-sending, Property 23: User authorizati
                             userId,
                             provider,
                             providerId: '12345',
-                            providerUsername: 'testuser'
+                            providerUsername: 'testuser',
+                            save: jest.fn().mockResolvedValue(true)
                         };
                     });
 
@@ -218,7 +220,8 @@ describe('Feature: multi-platform-message-sending, Property 23: User authorizati
                             userId: otherUserId, // Different user!
                             provider,
                             providerId: '12345',
-                            providerUsername: 'testuser'
+                            providerUsername: 'testuser',
+                            save: jest.fn().mockResolvedValue(true)
                         };
                     });
 
@@ -336,7 +339,8 @@ describe('Feature: multi-platform-message-sending, Property 24: Unauthorized pla
                             userId,
                             provider,
                             providerId: '12345',
-                            providerUsername: 'testuser'
+                            providerUsername: 'testuser',
+                            save: jest.fn().mockResolvedValue(true)
                         };
                     });
 
@@ -433,17 +437,18 @@ describe('Feature: multi-platform-message-sending, Property 24: Unauthorized pla
                     (Connection.findOne as jest.Mock).mockImplementation(async ({ where }: { where: { userId: string; provider: string } }) => {
                         const { provider } = where;
                         const isAuthorized = authorizedPlatforms.includes(provider as Platform);
-                        
+
                         if (!isAuthorized) {
                             return null;
                         }
-                        
+
                         return {
                             id: fc.sample(fc.uuid(), 1)[0],
                             userId,
                             provider,
                             providerId: '12345',
-                            providerUsername: 'testuser'
+                            providerUsername: 'testuser',
+                            save: jest.fn().mockResolvedValue(true)
                         };
                     });
 
@@ -512,7 +517,7 @@ describe('Feature: multi-platform-message-sending, Property 24: Unauthorized pla
                     expect(platformResult?.error).not.toContain(userId);
                     expect(platformResult?.error).not.toContain('database');
                     expect(platformResult?.error).not.toContain('query');
-                    
+
                     // Property: Error should be user-friendly
                     expect(platformResult?.error).toBe('No conectado');
                 }

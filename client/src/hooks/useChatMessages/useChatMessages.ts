@@ -6,28 +6,28 @@ import { useAutoScroll } from './useAutoScroll';
 const MAX_MESSAGES = 200;
 const FLUSH_INTERVAL_MS = 75; // 13 updates/sec max para evitar congelamiento de UI en raids
 
+const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
+  if (newMessages.length === 0) return currentMessages;
+
+  const uniqueNewMessages = newMessages.filter(
+    newMsg => !newMsg.id || !currentMessages.some(m => m.id === newMsg.id)
+  );
+
+  if (uniqueNewMessages.length === 0) return currentMessages;
+
+  const combined = [...currentMessages, ...uniqueNewMessages];
+
+  if (combined.length > MAX_MESSAGES) {
+    return combined.slice(combined.length - MAX_MESSAGES);
+  }
+  return combined;
+};
+
 export const useChatMessages = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const pendingMessagesRef = useRef<ChatMessage[]>([]);
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
-    if (newMessages.length === 0) return currentMessages;
-
-    const uniqueNewMessages = newMessages.filter(
-      newMsg => !newMsg.id || !currentMessages.some(m => m.id === newMsg.id)
-    );
-
-    if (uniqueNewMessages.length === 0) return currentMessages;
-
-    const combined = [...currentMessages, ...uniqueNewMessages];
-
-    if (combined.length > MAX_MESSAGES) {
-      return combined.slice(combined.length - MAX_MESSAGES);
-    }
-    return combined;
-  };
 
   const flushMessages = useCallback(() => {
     flushTimeoutRef.current = null;
@@ -58,7 +58,7 @@ export const useChatMessages = () => {
     };
   }, []);
 
-  const withFlush = (updater: (prevMessages: ChatMessage[]) => ChatMessage[]) => {
+  const withFlush = useCallback((updater: (prevMessages: ChatMessage[]) => ChatMessage[]) => {
     setMessages(prev => {
       const pending = pendingMessagesRef.current;
       pendingMessagesRef.current = [];
@@ -67,7 +67,7 @@ export const useChatMessages = () => {
 
       return updater(messagesWithPending);
     });
-  };
+  }, []);
 
   const updateMessageStatus = useCallback((
     messageId: string,
@@ -81,15 +81,15 @@ export const useChatMessages = () => {
           : msg
       )
     );
-  }, []);
+  }, [withFlush]);
 
   const removeMessage = useCallback((messageId: string) => {
     withFlush(prev => prev.filter(msg => msg.id !== messageId));
-  }, []);
+  }, [withFlush]);
 
   const removeMessagesByUserId = useCallback((userId: string) => {
     withFlush(prev => prev.filter(msg => msg.userId !== userId));
-  }, []);
+  }, [withFlush]);
 
   const clearMessages = useCallback(() => {
     pendingMessagesRef.current = [];

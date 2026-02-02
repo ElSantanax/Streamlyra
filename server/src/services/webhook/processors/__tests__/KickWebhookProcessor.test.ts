@@ -86,6 +86,7 @@ describe('KickWebhookProcessor', () => {
             mockIo.sockets.adapter.rooms.set('user-123', userRoom);
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnectionWithWebhook);
+            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
 
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)
@@ -97,16 +98,16 @@ describe('KickWebhookProcessor', () => {
                 where: {
                     provider: 'kick',
                     providerId: '123'
-                },
-                include: [{
-                    model: KickWebhook,
-                    as: 'kickWebhook',
-                    where: { isActive: true },
-                    required: false
-                }]
+                }
             });
 
-            // Ya no se llama a KickWebhook.findOne porque se incluye en la consulta de Connection
+            expect(KickWebhook.findOne).toHaveBeenCalledWith({
+                where: {
+                    broadcasterId: '123',
+                    isActive: true
+                }
+            });
+
             expect(mockWebhook.update).toHaveBeenCalledWith({
                 lastEventAt: expect.any(Date)
             });
@@ -179,6 +180,7 @@ describe('KickWebhookProcessor', () => {
             };
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnectionWithWebhook);
+            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
 
             // No hay sockets conectados
             mockIo.sockets.adapter.rooms.clear();
@@ -240,6 +242,7 @@ describe('KickWebhookProcessor', () => {
 
             const findOneMock = Connection.findOne as jest.Mock;
             findOneMock.mockResolvedValue(mockConnection as unknown as Connection);
+            (KickWebhook.findOne as jest.Mock).mockResolvedValue(mockWebhook);
 
             mockIo.in = jest.fn().mockReturnValue({
                 fetchSockets: jest.fn().mockResolvedValue(mockSockets)

@@ -11,10 +11,18 @@
 import { SocketConnectionManager } from '../SocketConnectionManager';
 import { ChatManager } from '../../services/ChatManager';
 import { Socket, Server } from 'socket.io';
+import { Connection } from '../../models/Connection.model';
+
+// Mock Connection model
+jest.mock('../../models/Connection.model');
 
 interface SocketConnectionManagerTestAccess {
-    connectingLocks: Map<string, Promise<void>>;
-    userSocketCount: Map<string, number>;
+    registry: {
+        userSocketCount: Map<string, number>;
+    };
+    lockManager: {
+        connectingLocks: Map<string, Promise<void>>;
+    };
 }
 
 describe('SocketConnectionManager - Race Condition Fix', () => {
@@ -27,8 +35,12 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
     let connectUserCallCount: number;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         jest.clearAllTimers();
         connectUserCallCount = 0;
+
+        // Mock Connection actions
+        (Connection.findAll as jest.Mock).mockResolvedValue([]);
 
         // Mock ChatManager
         mockChatManager = {
@@ -172,7 +184,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
         await promise1;
 
         // Verificar que el lock fue removido
-        const locks = (manager as unknown as SocketConnectionManagerTestAccess).connectingLocks;
+        const locks = (manager as unknown as SocketConnectionManagerTestAccess).lockManager.connectingLocks;
         expect(locks.has(userId)).toBe(false);
 
         // Desconectar el socket
@@ -202,7 +214,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
         await promise;
 
         // Verificar que el lock fue removido incluso con error
-        const locks = (manager as unknown as SocketConnectionManagerTestAccess).connectingLocks;
+        const locks = (manager as unknown as SocketConnectionManagerTestAccess).lockManager.connectingLocks;
         expect(locks.has(userId)).toBe(false);
 
         // Verificar que se emitió un error
@@ -230,7 +242,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
         await promise;
 
         // Verificar que el lock fue removido
-        const locks = (manager as unknown as SocketConnectionManagerTestAccess).connectingLocks;
+        const locks = (manager as unknown as SocketConnectionManagerTestAccess).lockManager.connectingLocks;
         expect(locks.has(userId)).toBe(false);
 
         // Verificar que se emitió un error de timeout
@@ -288,7 +300,7 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
         await manager.handleIdentify(invalidUserId, mockSocket1, mockIo);
 
         // Verificar que no se creó lock
-        const locks = (manager as unknown as SocketConnectionManagerTestAccess).connectingLocks;
+        const locks = (manager as unknown as SocketConnectionManagerTestAccess).lockManager.connectingLocks;
         expect(locks.size).toBe(0);
 
         // Verificar que no se intentó conectar
@@ -321,22 +333,22 @@ describe('SocketConnectionManager - Race Condition Fix', () => {
         await promise3;
 
         // Verificar contador
-        const socketCount = (manager as unknown as SocketConnectionManagerTestAccess).userSocketCount.get(userId);
+        const socketCount = (manager as unknown as SocketConnectionManagerTestAccess).registry.userSocketCount.get(userId);
         expect(socketCount).toBe(3);
 
         // Desconectar 1 socket
         await manager.handleDisconnect(mockSocket1.id);
-        const count1 = (manager as unknown as SocketConnectionManagerTestAccess).userSocketCount.get(userId);
+        const count1 = (manager as unknown as SocketConnectionManagerTestAccess).registry.userSocketCount.get(userId);
         expect(count1).toBe(2);
 
         // Desconectar otro socket
         await manager.handleDisconnect(mockSocket2.id);
-        const count2 = (manager as unknown as SocketConnectionManagerTestAccess).userSocketCount.get(userId);
+        const count2 = (manager as unknown as SocketConnectionManagerTestAccess).registry.userSocketCount.get(userId);
         expect(count2).toBe(1);
 
         // Desconectar último socket
         await manager.handleDisconnect(mockSocket3.id);
-        const hasCount = (manager as unknown as SocketConnectionManagerTestAccess).userSocketCount.has(userId);
+        const hasCount = (manager as unknown as SocketConnectionManagerTestAccess).registry.userSocketCount.has(userId);
         expect(hasCount).toBe(false);
 
         // Verificar que disconnectUser solo se llamó una vez (al último socket)

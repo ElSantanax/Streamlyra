@@ -35,12 +35,12 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
         } as unknown as jest.Mocked<ConnectionService>;
 
         mockTwitchService = {} as unknown as jest.Mocked<TwitchService>;
-        
+
         mockYouTubeService = {
             getActiveLiveChatId: jest.fn(),
             sendChatMessage: jest.fn()
         } as unknown as jest.Mocked<YouTubeService>;
-        
+
         mockKickService = {} as unknown as jest.Mocked<KickService>;
 
         messageSenderService = new MessageSenderService(
@@ -70,7 +70,8 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                         providerId,
                         providerUsername: 'testchannel',
                         accessToken: 'old_token',
-                        refreshToken: 'refresh_token'
+                        refreshToken: 'refresh_token',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -121,7 +122,8 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                         userId,
                         provider: 'youtube',
                         providerId: 'channel123',
-                        providerUsername: 'testchannel'
+                        providerUsername: 'testchannel',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -165,7 +167,8 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                         userId,
                         provider: 'youtube',
                         providerId: 'channel123',
-                        providerUsername: 'testchannel'
+                        providerUsername: 'testchannel',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -212,12 +215,12 @@ describe('Feature: multi-platform-message-sending, Property 17: Disconnected pla
         } as unknown as jest.Mocked<ConnectionService>;
 
         mockTwitchService = {} as unknown as jest.Mocked<TwitchService>;
-        
+
         mockYouTubeService = {
             getActiveLiveChatId: jest.fn(),
             sendChatMessage: jest.fn()
         } as unknown as jest.Mocked<YouTubeService>;
-        
+
         mockKickService = {} as unknown as jest.Mocked<KickService>;
 
         messageSenderService = new MessageSenderService(
@@ -269,7 +272,8 @@ describe('Feature: multi-platform-message-sending, Property 17: Disconnected pla
                         userId,
                         provider: 'youtube',
                         providerId: 'channel123',
-                        providerUsername: 'testchannel'
+                        providerUsername: 'testchannel',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -306,7 +310,8 @@ describe('Feature: multi-platform-message-sending, Property 17: Disconnected pla
                         userId,
                         provider: 'youtube',
                         providerId: 'channel123',
-                        providerUsername: 'testchannel'
+                        providerUsername: 'testchannel',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
@@ -381,7 +386,8 @@ describe('Feature: multi-platform-message-sending, Property 17: Disconnected pla
                         userId,
                         provider: 'youtube',
                         providerId: 'channel123',
-                        providerUsername: 'testchannel'
+                        providerUsername: 'testchannel',
+                        save: jest.fn().mockResolvedValue(true)
                     };
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);

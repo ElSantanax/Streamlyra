@@ -1,7 +1,4 @@
-/**
- * Tests para validadores de username
- */
-
+import { describe, it, expect } from 'vitest';
 import { validateTikTokUsername, cleanUsername } from '../username.validator';
 
 describe('cleanUsername', () => {
@@ -123,7 +120,7 @@ describe('validateTikTokUsername', () => {
 
     it('should reject username with special characters', () => {
       const specialChars = ['!', '#', '$', '%', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '?', '/'];
-      
+
       specialChars.forEach(char => {
         const result = validateTikTokUsername(`user${char}name`);
         expect(result.isValid).toBe(false);

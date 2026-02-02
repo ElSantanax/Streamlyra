@@ -61,9 +61,9 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
 
         // Mock user has 3 connections
         const mockConnections = [
-            { provider: 'twitch', providerId: 'twitch123', username: 'user1', userId },
-            { provider: 'youtube', providerId: 'youtube123', username: 'user1', userId },
-            { provider: 'kick', providerId: 'kick123', username: 'user1', userId }
+            { provider: 'twitch', providerId: 'twitch123', username: 'user1', userId, save: jest.fn().mockResolvedValue(true) },
+            { provider: 'youtube', providerId: 'youtube123', username: 'user1', userId, save: jest.fn().mockResolvedValue(true) },
+            { provider: 'kick', providerId: 'kick123', username: 'user1', userId, save: jest.fn().mockResolvedValue(true) }
         ];
 
         mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as unknown as Connection[]);
@@ -71,7 +71,7 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         // Mock Connection.findOne to return the appropriate connection based on where clause
         (Connection.findOne as jest.Mock).mockImplementation((options: { where?: { userId?: string; provider?: string } }) => {
             const { userId: queryUserId, provider } = options.where || {};
-            const connection = mockConnections.find(c => 
+            const connection = mockConnections.find(c =>
                 c.userId === queryUserId && c.provider === provider
             );
             return Promise.resolve(connection || null);
@@ -110,8 +110,8 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
 
         // Mock user has connections including tiktok
         const mockConnections = [
-            { provider: 'twitch', providerId: 'twitch123', username: 'user1', userId },
-            { provider: 'tiktok', providerId: 'tiktok123', username: 'user1', userId }
+            { provider: 'twitch', providerId: 'twitch123', username: 'user1', userId, save: jest.fn().mockResolvedValue(true) },
+            { provider: 'tiktok', providerId: 'tiktok123', username: 'user1', userId, save: jest.fn().mockResolvedValue(true) }
         ];
 
         mockConnectionService.getAllConnections.mockResolvedValue(mockConnections as unknown as Connection[]);
@@ -119,7 +119,7 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         // Mock Connection.findOne to return the appropriate connection based on where clause
         (Connection.findOne as jest.Mock).mockImplementation((options: { where?: { userId?: string; provider?: string } }) => {
             const { userId: queryUserId, provider } = options.where || {};
-            const connection = mockConnections.find(c => 
+            const connection = mockConnections.find(c =>
                 c.userId === queryUserId && c.provider === provider
             );
             return Promise.resolve(connection || null);
@@ -153,7 +153,8 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
                     provider: 'twitch',
                     providerId: 'twitch123',
                     username: 'user1',
-                    userId
+                    userId,
+                    save: jest.fn().mockResolvedValue(true)
                 });
             }
             return Promise.resolve(null);

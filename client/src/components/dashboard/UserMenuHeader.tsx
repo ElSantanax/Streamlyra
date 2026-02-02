@@ -1,7 +1,8 @@
+import type { User } from '../../types/user.types';
 import { Badge } from '../ui';
 
 interface UserMenuHeaderProps {
-    user: any;
+    user: User | null;
     isConnected: boolean;
 }
 

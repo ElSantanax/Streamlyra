@@ -6,27 +6,15 @@ import { ConnectionService } from '../services/connection/ConnectionService';
 import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
 import { SafeSocketEmitter } from '../utils/SafeSocketEmitter';
 import { logger } from '../utils/logger';
+import { isValidUserId } from './utils/SocketValidator';
+import { SocketRegistry } from './services/SocketRegistry';
+import { SocketLockManager } from './services/SocketLockManager';
 
 const CONNECTION_TIMEOUT_MS = 30000;
 
-const isValidUserId = (userId: unknown): userId is string => {
-    if (typeof userId !== 'string') {
-        return false;
-    }
-
-    if (userId.length === 0 || userId.length > 100) {
-        return false;
-    }
-
-    // Validar formato UUID (v4)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(userId);
-};
-
 export class SocketConnectionManager {
-    private socketUserMap: Map<string, string> = new Map();
-    private userSocketCount: Map<string, number> = new Map();
-    private connectingLocks: Map<string, Promise<void>> = new Map();
+    private registry = new SocketRegistry();
+    private lockManager = new SocketLockManager();
     private connectionService: ConnectionService;
 
     constructor(private chatManager: ChatManager) {
@@ -36,7 +24,7 @@ export class SocketConnectionManager {
     }
 
     getUserIdBySocketId(socketId: string): string | undefined {
-        return this.socketUserMap.get(socketId);
+        return this.registry.getUserId(socketId);
     }
 
     async handleIdentify(userId: unknown, socket: Socket, io: Server): Promise<void> {
@@ -53,15 +41,11 @@ export class SocketConnectionManager {
             logger.debug({ userId, socketId: socket.id }, 'Iniciando identificación de usuario');
 
             // 1. Registro del socket
-            this.socketUserMap.set(socket.id, userId);
-            const currentCount = this.userSocketCount.get(userId) || 0;
-            const isFirstSocket = currentCount === 0;
-            this.userSocketCount.set(userId, currentCount + 1);
-
+            const { isFirstSocket } = this.registry.register(socket.id, userId);
             socket.join(userId);
 
             // 2. Manejo de la conexión a plataformas con Lock
-            let connectionPromise = this.connectingLocks.get(userId);
+            let connectionPromise = this.lockManager.getLock(userId);
 
             if (isFirstSocket && !connectionPromise) {
                 logger.info({ userId }, 'Primer socket: Iniciando conexión a plataformas');
@@ -78,11 +62,11 @@ export class SocketConnectionManager {
                         logger.error({ err: error, userId }, 'Error durante la conexión inicial a plataformas');
                         throw error;
                     } finally {
-                        this.connectingLocks.delete(userId);
+                        this.lockManager.releaseLock(userId);
                     }
                 })();
 
-                this.connectingLocks.set(userId, connectionPromise);
+                this.lockManager.setLock(userId, connectionPromise);
             } else if (!isFirstSocket) {
                 // Si no es el primer socket, re-emitir el estado actual de las conexiones
                 // para que el cliente tenga el estado actualizado inmediatamente
@@ -103,16 +87,9 @@ export class SocketConnectionManager {
             logger.error({ err: error, userId, socketId: socket.id }, 'Error fatal en handleIdentify');
 
             // Limpieza en caso de error
-            this.socketUserMap.delete(socket.id);
-            const count = this.userSocketCount.get(userId) || 0;
-            if (count > 0) {
-                const newCount = count - 1;
-                if (newCount === 0) {
-                    this.userSocketCount.delete(userId);
-                    await this.chatManager.disconnectUser(userId).catch(() => { });
-                } else {
-                    this.userSocketCount.set(userId, newCount);
-                }
+            const { remainingCount } = this.registry.rollbackRegistration(socket.id, userId as string);
+            if (remainingCount === 0) {
+                await this.chatManager.disconnectUser(userId as string).catch(() => { });
             }
 
             socket.emit('error', {
@@ -123,38 +100,32 @@ export class SocketConnectionManager {
     }
 
     async handleDisconnect(socketId: string): Promise<void> {
-        const userId = this.socketUserMap.get(socketId);
+        const { userId, isLastSocket, remainingCount } = this.registry.remove(socketId);
 
         if (!userId) {
             logger.debug({ socketId }, 'Socket desconectado sin userId asociado');
             return;
         }
 
-        this.socketUserMap.delete(socketId);
-        const currentCount = this.userSocketCount.get(userId) || 0;
-        const newCount = Math.max(0, currentCount - 1);
-
-        if (newCount === 0) {
+        if (isLastSocket) {
             logger.info({ userId, socketId }, 'Último socket desconectado: Preparando limpieza');
-            this.userSocketCount.delete(userId);
 
             // IMPORTANTE: Esperar a cualquier conexión que esté en curso antes de desconectar
-            const existingLock = this.connectingLocks.get(userId);
+            const existingLock = this.lockManager.getLock(userId);
             if (existingLock) {
                 logger.debug({ userId }, 'Esperando cierre de conexión pendiente antes de desconectar');
                 await existingLock.catch(() => { });
             }
 
             // Doble verificación: ¿entró un socket nuevo mientras esperábamos el lock?
-            if (!this.userSocketCount.has(userId)) {
+            if (!this.registry.hasUser(userId)) {
                 await this.chatManager.disconnectUser(userId);
                 logger.info({ userId }, 'Plataformas desconectadas correctamente');
             } else {
                 logger.info({ userId }, 'Nueva conexión detectada durante la limpieza, abortando desconexión');
             }
         } else {
-            logger.debug({ userId, socketId, remainingSockets: newCount }, 'Socket removido, aún quedan sockets activos');
-            this.userSocketCount.set(userId, newCount);
+            logger.debug({ userId, socketId, remainingSockets: remainingCount }, 'Socket removido, aún quedan sockets activos');
         }
     }
 
