@@ -62,3 +62,33 @@ export interface KickApiResponse<T> {
     message?: string;
 }
 
+// OAuth and Profile types
+export interface KickOAuthUser {
+    user_id: number;
+    name: string;
+    email?: string;
+    profile_picture: string;
+}
+
+export interface KickOAuthUserResponse {
+    data: KickOAuthUser[];
+}
+
+export interface KickChannelResponse {
+    data: KickChannel[];
+}
+
+export interface KickChatroom {
+    id: number;
+    channel_id: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface KickChannelDetailResponse {
+    id: number;
+    user_id: number;
+    slug: string;
+    chatroom?: KickChatroom;
+}
+

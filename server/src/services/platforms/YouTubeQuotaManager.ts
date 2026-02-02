@@ -65,7 +65,7 @@ export class YouTubeQuotaManager {
 
     /**
      * Marca la cuota como agotada (usualmente disparado por un error 403 de la API)
-     * @param isDailyLimit Si es true, el bloqueo es largo. Si es false (por defecto), es temporal (15 min)
+     * isDailyLimit Si es true, el bloqueo es largo. Si es false (por defecto), es temporal (15 min)
      */
     public markAsExhausted(isDailyLimit: boolean = false): void {
         const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000; // 1h o 15 min

@@ -45,7 +45,7 @@ describe('KickManager', () => {
                 slug: 'test-slug',
                 stream: { viewer_count: 150 }
             }];
-            (KickService.getChannelByToken as jest.Mock).mockResolvedValue(mockChannels);
+            (KickService.getChannels as jest.Mock).mockResolvedValue(mockChannels);
 
             const info = await manager.getChannelInfo(accessToken, userId, mockIo);
 
@@ -62,7 +62,7 @@ describe('KickManager', () => {
         });
 
         it('debe manejar errores y retornar null', async () => {
-            (KickService.getChannelByToken as jest.Mock).mockRejectedValue(new Error('API Error'));
+            (KickService.getChannels as jest.Mock).mockRejectedValue(new Error('API Error'));
             const info = await manager.getChannelInfo(accessToken);
             expect(info).toBeNull();
         });
@@ -75,17 +75,17 @@ describe('KickManager', () => {
                 slug: 'test-slug',
                 stream: { viewer_count: 100 }
             }];
-            (KickService.getChannelByToken as jest.Mock).mockResolvedValue(mockChannels);
+            (KickService.getChannels as jest.Mock).mockResolvedValue(mockChannels);
 
             manager.startViewerPolling(userId, accessToken, mockIo);
 
             // Ejecutar el placeholder timeout y la primera ejecución inmediata
             await jest.advanceTimersByTimeAsync(0);
-            expect(KickService.getChannelByToken).toHaveBeenCalledTimes(1);
+            expect(KickService.getChannels).toHaveBeenCalledTimes(1);
 
             // Segundo poll tras 30s
             await jest.advanceTimersByTimeAsync(30000);
-            expect(KickService.getChannelByToken).toHaveBeenCalledTimes(2);
+            expect(KickService.getChannels).toHaveBeenCalledTimes(2);
         });
     });
 
@@ -93,7 +93,7 @@ describe('KickManager', () => {
         it('debe reutilizar webhook activo', async () => {
             (KickWebhook.findOne as jest.Mock).mockResolvedValue({ isActive: true });
             await manager.registerWebhook(userId, accessToken, broadcasterId);
-            expect(KickService.subscribeToChat).not.toHaveBeenCalled();
+            expect(KickService.subscribeToWebhook).not.toHaveBeenCalled();
         });
 
         it('debe reactivar webhook inactivo', async () => {
@@ -104,7 +104,7 @@ describe('KickManager', () => {
 
             expect(mockWebhook.isActive).toBe(true);
             expect(mockWebhook.save).toHaveBeenCalled();
-            expect(KickService.subscribeToChat).not.toHaveBeenCalled();
+            expect(KickService.subscribeToWebhook).not.toHaveBeenCalled();
         });
 
         it('debe crear nuevo webhook si no existe', async () => {
@@ -112,7 +112,7 @@ describe('KickManager', () => {
 
             await manager.registerWebhook(userId, accessToken, broadcasterId);
 
-            expect(KickService.subscribeToChat).toHaveBeenCalled();
+            expect(KickService.subscribeToWebhook).toHaveBeenCalled();
             expect(KickWebhook.create).toHaveBeenCalled();
         });
     });

@@ -13,7 +13,7 @@ export class KickManager {
 
     async getChannelInfo(accessToken: string, userId?: string, io?: Server): Promise<{ broadcasterId: string; slug: string; viewerCount: number } | null> {
         try {
-            const channels = await KickService.getChannelByToken(accessToken);
+            const channels = await KickService.getChannels(accessToken);
             if (!channels?.length) {
                 logger.error({}, 'No Kick channel found');
                 return null;
@@ -89,7 +89,7 @@ export class KickManager {
             }
 
             logger.info({ userId, broadcasterId }, 'Suscribiendo nuevo webhook de Kick');
-            await KickService.subscribeToChat(accessToken, broadcasterId, callbackUrl);
+            await KickService.subscribeToWebhook(accessToken, broadcasterId, callbackUrl);
 
             await KickWebhook.create({
                 userId,
