@@ -1,73 +1,183 @@
-# React + TypeScript + Vite
+# Streamlyra Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Una aplicación web moderna construida con React, TypeScript y Vite para la plataforma de streaming Streamlyra.
 
-Currently, two official plugins are available:
+## 🚀 Características
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Streaming en tiempo real** con Socket.IO
+- **Autenticación segura** con rutas protegidas
+- **Interfaz moderna** con Tailwind CSS
+- **Rendimiento optimizado** con lazy loading y virtualización
+- **Testing completo** con Vitest y Cypress
+- **Desarrollo tipo seguro** con TypeScript
 
-## React Compiler
+## 🛠️ Stack Tecnológico
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+### Core
+- **React 19** - UI library con las últimas características
+- **TypeScript** - Desarrollo tipo seguro
+- **Vite** - Build tool ultra rápido
+- **React Router** - Gestión de rutas
 
-## Expanding the ESLint configuration
+### Estilos
+- **Tailwind CSS 4** - Framework CSS utility-first
+- **React Icons** - Biblioteca de iconos
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Comunicación
+- **Socket.IO Client** - Conexión en tiempo real
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Testing
+- **Vitest** - Unit testing con UI
+- **Testing Library** - Testing de componentes
+- **Cypress** - E2E testing
+- **jsdom** - DOM testing environment
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Desarrollo
+- **ESLint** - Linting y calidad de código
+- **Why Did You Render** - Optimización de renders
+- **React Virtualized** - Virtualización de listas
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── components/          # Componentes React
+│   ├── common/         # Componentes reutilizables
+│   ├── connection/     # Componentes de conexión
+│   ├── dashboard/      # Componentes del dashboard
+│   ├── landing/        # Componentes de landing
+│   └── ui/             # Componentes UI base
+├── pages/              # Páginas principales
+├── hooks/              # Custom hooks React
+├── services/           # Servicios de API
+├── api/                # Configuración de API
+├── context/            # React Context
+├── lib/                # Utilidades y librerías
+├── utils/              # Funciones helper
+├── types/              # Definiciones TypeScript
+├── constants/          # Constantes de la aplicación
+├── config/             # Configuraciones
+└── test/               # Configuración de testing
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🚀 Comenzando
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Prerrequisitos
+- Node.js 18+
+- npm o yarn
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Instalación
+```bash
+npm install
 ```
+
+### Scripts Disponibles
+
+#### Desarrollo
+```bash
+npm run dev          # Iniciar servidor de desarrollo
+npm run preview      # Previsualizar producción
+```
+
+#### Build
+```bash
+npm run build        # Build para producción
+```
+
+#### Testing
+```bash
+npm run test         # Ejecutar tests unitarios
+npm run test:ui      # Interfaz visual de tests
+npm run test:coverage # Reporte de cobertura
+npm run e2e          # Ejecutar tests E2E
+npm run e2e:open     # Abrir interfaz Cypress
+```
+
+#### Calidad
+```bash
+npm run lint         # Ejecutar ESLint
+```
+
+## 🔧 Configuración
+
+### Variables de Entorno
+Crea un archivo `.env` en la raíz del proyecto:
+
+```env
+VITE_API_URL=http://localhost:3001
+VITE_SOCKET_URL=http://localhost:3001
+```
+
+### Configuración de ESLint
+El proyecto incluye configuración ESLint optimizada para React + TypeScript con reglas estrictas de tipo.
+
+## 🧪 Testing
+
+### Unit Tests
+Los tests unitarios utilizan Vitest con Testing Library:
+```bash
+npm run test
+```
+
+### E2E Tests
+Los tests end-to-end utilizan Cypress:
+```bash
+npm run e2e:open
+```
+
+### Cobertura
+Genera reportes de cobertura detallados:
+```bash
+npm run test:coverage
+```
+
+## 🏗️ Arquitectura
+
+### Componentes
+- **Common**: Componentes reutilizables (Spinner, ErrorBoundary, etc.)
+- **UI**: Componentes base de interfaz
+- **Feature-specific**: Componentes por dominio (Dashboard, Landing, etc.)
+
+### Estado Global
+- **Context API**: Para autenticación y estado global
+- **Custom Hooks**: Para lógica reutilizable
+
+### Rutas
+- **Públicas**: Landing, Login, Register
+- **Protegidas**: Dashboard, Conexiones
+- **Lazy Loading**: Para optimización de rendimiento
+
+### API
+- **Servicios centralizados**: Para comunicación con backend
+- **Type-safe**: Interfaces TypeScript para todas las respuestas
+
+## 🚀 Despliegue
+
+### Build de Producción
+```bash
+npm run build
+```
+
+### Preview Local
+```bash
+npm run preview
+```
+
+## 📈 Optimizaciones
+
+- **Code Splitting**: Lazy loading de componentes
+- **Virtualización**: Para listas grandes
+- **Memoization**: Optimización de renders con Why Did You Render
+- **Bundle Analysis**: Optimización del tamaño del bundle
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crear una feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit los cambios (`git commit -m 'Add amazing feature'`)
+4. Push a la branch (`git push origin feature/amazing-feature`)
+5. Abrir un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT.
