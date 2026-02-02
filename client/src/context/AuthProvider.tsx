@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { authService } from '../api/services/auth.service';
 import { sessionManager } from '../services/SessionManager';
+import { isProtectedRoute, isPublicAuthRoute } from '../config/routes';
 import type { User } from '../types';
 
 export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated';
@@ -20,11 +21,10 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const publicAuthRoutes = new Set(['/login', '/register', '/auth/callback']);
-const protectedPrefixes = ['/dashboard', '/connect'];
-
-const isProtectedRoutePath = (path: string) => {
-  return protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`));
+const getInitialAuthStatus = (user: User | null, currentPath: string): AuthStatus => {
+  if (user) return 'authenticated';
+  if (isProtectedRoute(currentPath)) return 'unknown';
+  return 'unauthenticated';
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -33,11 +33,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [user, setUser, removeUser] = useLocalStorage<User | null>('user', null);
 
-  const [status, setStatus] = useState<AuthStatus>(() => {
-    if (user) return 'authenticated';
-    if (isProtectedRoutePath(window.location.pathname)) return 'unknown';
-    return 'unauthenticated';
-  });
+  const [status, setStatus] = useState<AuthStatus>(() =>
+    getInitialAuthStatus(user, window.location.pathname)
+  );
 
   const [isChecking, setIsChecking] = useState(false);
   const inFlightAuthCheck = useRef<Promise<User | null> | null>(null);
@@ -115,16 +113,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const path = location.pathname;
-    if (publicAuthRoutes.has(path)) return;
 
-    const isProtectedRoute = isProtectedRoutePath(path);
+    if (isPublicAuthRoute(path)) return;
+
+    const isProtected = isProtectedRoute(path);
 
     if (user) {
       if (status === 'unauthenticated') setStatus('authenticated');
       return;
     }
 
-    if (!isProtectedRoute) {
+    if (!isProtected) {
       if (status !== 'unauthenticated') setStatus('unauthenticated');
       lastBootstrapPathRef.current = null;
       return;
@@ -132,9 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (status === 'authenticated') return;
 
-    if (lastBootstrapPathRef.current === path) {
-      return;
-    }
+    if (lastBootstrapPathRef.current === path) return;
     lastBootstrapPathRef.current = path;
 
     if (status !== 'unknown') setStatus('unknown');
