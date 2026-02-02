@@ -15,13 +15,11 @@ const Hero = () => {
                         Un chat.<span className="text-primary"> Múltiples plataformas.</span>
                     </h1>
                     <div className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-150 mx-auto lg:mx-0 font-body flex flex-wrap items-center justify-center lg:justify-start gap-x-2 gap-y-1">
-                        <span>Ve</span>
                         <span className="inline-flex items-center gap-1.5 text-[#772CE8] dark:text-[#A970FF] font-semibold"><FaTwitch className="size-5" /> Twitch,</span>
                         <span className="inline-flex items-center gap-1.5 text-[#CD201F] dark:text-[#FF4B4B] font-semibold"><FaYoutube className="size-5" /> YouTube,</span>
                         <span className="inline-flex items-center gap-1.5 text-[#1A7A08] dark:text-[#53FC18] font-semibold"><SiKick className="size-5" /> Kick</span>
                         <span>y</span>
                         <span className="inline-flex items-center gap-1.5 text-slate-900 dark:text-white font-semibold"><FaTiktok className="size-5" /> TikTok</span>
-                        <span>en tiempo real.</span>
                     </div>
                 </div>
 

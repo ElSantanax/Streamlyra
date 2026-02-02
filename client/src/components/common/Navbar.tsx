@@ -103,10 +103,7 @@ const Navbar = () => {
                 <div className="flex flex-col h-full">
                     {/* Drawer Header - Perfectly Balanced */}
                     <div className="flex items-center justify-between px-6 h-18 border-b border-surface-border/30">
-                        <div className="flex items-center gap-3">
-                            <Logo textSize="text-lg" showText={false} />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Menú</span>
-                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Menú</span>
                         <button
                             onClick={closeMenu}
                             className="size-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer -mr-2"
