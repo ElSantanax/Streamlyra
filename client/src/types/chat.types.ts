@@ -32,6 +32,6 @@ export interface ViewersUpdate {
 
 export interface ConnectionStatusUpdate {
   platform: string;
-  status: 'connecting' | 'connected' | 'error' | 'waiting_manual';
+  status: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   message?: string;
 }

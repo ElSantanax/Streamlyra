@@ -67,11 +67,4 @@ export class TikTokConnectionStateManager {
             this.retryCleanup.delete(userId);
         }
     }
-
-    cleanupUser(userId: string): void {
-        this.removeConnecting(userId);
-        this.removeActiveConnection(userId);
-        this.disableAutoReconnect(userId);
-        this.executeAndRemoveRetryCleanup(userId);
-    }
 }

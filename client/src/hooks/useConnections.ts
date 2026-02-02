@@ -28,14 +28,19 @@ export const useConnections = (shouldFetch = true) => {
 
     try {
       const data = await authService.getMe();
-      // Preservar viewers existentes al actualizar conexiones
+      // NO usar el campo "connected" del servidor, solo verificar si existe la conexión
+      // El estado real vendrá del socket
       setConnections(prev => {
         const updated: Record<string, ConnectionInfo> = {};
         Object.keys(data.connections).forEach(platform => {
           updated[platform] = {
-            ...data.connections[platform],
-            // Mantener viewers si ya existían, de lo contrario usar los del server o 0
-            viewers: prev[platform]?.viewers ?? data.connections[platform].viewers ?? 0
+            connected: false, // Siempre iniciar como false, el socket actualizará el estado real
+            username: data.connections[platform].username,
+            // Mantener viewers si ya existían, de lo contrario usar 0
+            viewers: prev[platform]?.viewers ?? 0,
+            // Mantener status y statusMessage si ya existían
+            status: prev[platform]?.status,
+            statusMessage: prev[platform]?.statusMessage
           };
         });
         return updated;

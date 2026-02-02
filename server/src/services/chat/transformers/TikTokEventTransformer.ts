@@ -11,10 +11,6 @@ interface TikTokUser {
     nickname: string;
     uniqueId: string;
     userId: string;
-    profilePicture?: {
-        url?: string[];
-    };
-    profilePictureUrl?: string;
 }
 
 interface TikTokInternalEvent {
@@ -22,10 +18,6 @@ interface TikTokInternalEvent {
     nickname?: string;
     uniqueId?: string;
     userId?: string;
-    profilePicture?: {
-        url?: string[];
-    };
-    profilePictureUrl?: string;
     common?: {
         msgId?: string;
     };
@@ -94,7 +86,6 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
 
         return {
             id: eventData.common?.msgId || data.msgId || `tk_chat_${Date.now()}_${userId}`,
@@ -103,7 +94,6 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             message: data.comment,
             time: this.formatTime(new Date()),
             color: '#FF0050', // Color de marca de TikTok
-            avatar: avatar,
             isMod: data.mod,
             isSub: data.subscriber,
             isOwner: data.isOwner
@@ -121,7 +111,6 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
 
         // Extraer información del regalo de diferentes estructuras posibles
         const giftInfo = eventData.gift || eventData;
@@ -137,7 +126,6 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             specialMessage: `🎁 REGALO: ${repeatCount}x ${giftName}`,
             time: this.formatTime(new Date()),
             color: '#FF0050', // Color de marca de TikTok
-            avatar: avatar,
             isSpecial: true
         };
     }
@@ -153,7 +141,6 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
-        const avatar = userObj.profilePicture?.url?.[0] || userObj.profilePictureUrl || '';
         const followId = `tk_follow_${userId}_${Date.now()}`;
 
         return {
@@ -163,8 +150,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             message: '¡Te ha seguido!',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date()),
-            color: '#FF0050', // Color de marca de TikTok
-            avatar: avatar
+            color: '#FF0050' // Color de marca de TikTok
         };
     }
 }

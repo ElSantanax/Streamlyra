@@ -8,7 +8,7 @@ import { formatViewers } from '../../lib/formatters';
 
 interface ConnectionItemProps {
     platformKey: PlatformKey;
-    status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'waiting_manual';
+    status: 'connected' | 'disconnected' | 'connecting' | 'waiting_stream' | 'error';
     viewers?: string;
     statusMessage?: string;
     onDisconnect?: () => void;
@@ -27,11 +27,11 @@ const ConnectionItem = ({
     const isConnected = status === 'connected';
     const isConnecting = status === 'connecting';
     const isError = status === 'error';
-    const isWaitingManual = status === 'waiting_manual';
+    const isWaitingStream = status === 'waiting_stream';
     const isYouTube = platformKey === 'youtube';
 
     return (
-        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting && !isWaitingManual ? 'opacity-60' : ''}`}>
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting && !isWaitingStream ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center size-8 rounded-full ${color} ${iconColor}`}>
                     <Icon size={platformKey === 'tiktok' ? 14 : 16} />
@@ -44,8 +44,8 @@ const ConnectionItem = ({
                     <div className="flex items-center gap-1.5 mt-1">
                         {isConnecting ? (
                             <span className="text-xs text-blue-400">Buscando...</span>
-                        ) : isWaitingManual ? (
-                            <span className="text-xs text-yellow-400">Esperando stream</span>
+                        ) : isWaitingStream ? (
+                            <span className="text-xs text-yellow-400">Esperando stream...</span>
                         ) : isError ? (
                             <span className="text-xs text-yellow-400">{statusMessage || 'Error'}</span>
                         ) : isConnected ? (
@@ -67,17 +67,17 @@ const ConnectionItem = ({
                     </div>
                 </div>
             </div>
-            {(isConnected || isConnecting || isError || isWaitingManual) ? (
+            {(isConnected || isConnecting || isError || isWaitingStream) ? (
                 <div className="flex items-center gap-1">
                     {/* Botón de búsqueda manual para YouTube cuando está esperando */}
-                    {isYouTube && isWaitingManual && (
+                    {isYouTube && isWaitingStream && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onSearchStream?.();
                             }}
                             className="flex items-center justify-center p-1.5 hover:bg-blue-500/10 text-gray-500 hover:text-blue-500 rounded-lg transition-all duration-200 cursor-pointer"
-                            title="Recargar"
+                            title="Buscar stream ahora"
                         >
                             <MdSearch size={18} />
                         </button>
@@ -85,13 +85,13 @@ const ConnectionItem = ({
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            const action = isConnecting || isWaitingManual ? 'cancelar' : 'desconectar';
+                            const action = isConnecting || isWaitingStream ? 'cancelar' : 'desconectar';
                             if (window.confirm(`¿Estás seguro de ${action} ${name}?`)) {
                                 onDisconnect?.();
                             }
                         }}
                         className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
-                        title={isConnecting || isWaitingManual ? "Cancelar conexión" : "Desconectar"}
+                        title={isConnecting || isWaitingStream ? "Cancelar conexión" : "Desconectar"}
                     >
                         <MdDeleteOutline size={18} />
                     </button>
@@ -110,7 +110,7 @@ interface SidebarProps {
         connected: boolean;
         username?: string;
         viewers?: number;
-        status?: 'connecting' | 'connected' | 'error' | 'waiting_manual';
+        status?: 'connecting' | 'waiting_stream' | 'connected' | 'error';
         statusMessage?: string;
     }>;
     onDisconnect: (platform: PlatformKey) => void;
@@ -139,14 +139,14 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
             {/* Conexiones */}
             <div className="flex flex-col gap-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Conexiones</h3>
-                {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_manual').length > 0 ? (
+                {Object.entries(connections).filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_stream').length > 0 ? (
                     Object.entries(connections)
-                        .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_manual')
+                        .filter(([, data]) => data.connected || data.status === 'connecting' || data.status === 'error' || data.status === 'waiting_stream')
                         .map(([key, data]) => {
                             const status = data.status === 'connecting'
                                 ? 'connecting'
-                                : data.status === 'waiting_manual'
-                                    ? 'waiting_manual'
+                                : data.status === 'waiting_stream'
+                                    ? 'waiting_stream'
                                     : data.status === 'error'
                                         ? 'error'
                                         : data.connected

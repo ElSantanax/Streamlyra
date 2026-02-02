@@ -6,8 +6,10 @@ export interface ExponentialBackoffOptions {
     initialIntervalMs?: number;
     multiplier?: number;
     maxIntervalMs?: number;
+    maxAttempts?: number;
     onError?: (error: unknown, attempt: number, nextRetryMs: number) => void;
     onRetry?: (attempt: number, delayMs: number) => void;
+    onMaxAttemptsReached?: () => void;
 }
 
 export function retryWithExponentialBackoff(
@@ -18,8 +20,10 @@ export function retryWithExponentialBackoff(
         initialIntervalMs = 60000,
         multiplier = 2,
         maxIntervalMs = 1800000,
+        maxAttempts,
         onError,
-        onRetry
+        onRetry,
+        onMaxAttemptsReached
     } = options;
 
     let timeoutId: NodeJS.Timeout | null = null;
@@ -43,6 +47,21 @@ export function retryWithExponentialBackoff(
         if (!isActive) return;
 
         currentAttempt++;
+
+        // Verificar si se alcanzó el límite de intentos
+        if (maxAttempts && currentAttempt > maxAttempts) {
+            logger.warn(
+                { currentAttempt, maxAttempts }, 
+                'Max retry attempts reached, stopping retries'
+            );
+            isActive = false;
+            
+            if (onMaxAttemptsReached) {
+                onMaxAttemptsReached();
+            }
+            
+            return;
+        }
 
         try {
             await task();

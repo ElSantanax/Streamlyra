@@ -51,7 +51,14 @@ export class TikTokChatProvider implements ChatProvider {
 
             if (this.stateManager.hasActiveConnection(userId)) {
                 logger.debug({ userId }, 'TikTok already active, refreshing state');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                
+                // Verificar si el stream está confirmado como activo
+                if (this.lifecycle.isStreamConfirmed(userId)) {
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                } else {
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'waiting_stream', 'Usuario encontrado, esperando stream...');
+                }
+                
                 this.stateManager.removeConnecting(userId);
                 return;
             }
@@ -59,6 +66,8 @@ export class TikTokChatProvider implements ChatProvider {
             this.stateManager.enableAutoReconnect(userId);
 
             this.stateManager.executeAndRemoveRetryCleanup(userId);
+
+            let isFirstAttempt = true;
 
             const startConnection = async () => {
                 try {
@@ -88,10 +97,14 @@ export class TikTokChatProvider implements ChatProvider {
                                     () => void this.connect(userId, io)
                                 );
                                 this.stateManager.setActiveConnection(userId, connection);
-                            }
+                            },
+                            !isFirstAttempt // isRetry = true después del primer intento
                         );
                     } catch (error) {
                         if (this.stateManager.hasRetryCleanup(userId)) return;
+
+                        // Marcar que ya no es el primer intento
+                        isFirstAttempt = false;
 
                         this.lifecycle.handleConnectionError(
                             error,

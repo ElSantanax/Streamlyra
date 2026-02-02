@@ -96,7 +96,13 @@ export class YouTubeService extends BasePlatformService {
     private getBasicProfileFromToken(accessToken: string): YouTubeChannel {
         try {
             // Decodificar el JWT para obtener información básica
-            const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
+            const payloadBase64 = accessToken.split('.')[1];
+            if (!payloadBase64) {
+                throw new Error('Invalid token format');
+            }
+
+            const payloadString = Buffer.from(payloadBase64, 'base64').toString();
+            const payload = JSON.parse(payloadString) as { sub?: string };
 
             // YouTube incluye el channel ID en el token
             const channelId = payload.sub || `yt_${Date.now()}`;
@@ -205,7 +211,12 @@ export class YouTubeService extends BasePlatformService {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
-                const errorData = error.response?.data as any;
+                const errorData = error.response?.data as {
+                    error?: {
+                        errors?: Array<{ reason?: string }>;
+                        message?: string;
+                    };
+                } | undefined;
 
                 logger.error({
                     status,
@@ -213,7 +224,7 @@ export class YouTubeService extends BasePlatformService {
                     platform: this.platformName
                 }, 'YouTube API Error details');
 
-                if (status === 403 && errorData?.error?.errors?.some((e: any) => e.reason === 'quotaExceeded')) {
+                if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
                     quotaManager.markAsExhausted();
                     throw new Error('Cuota de YouTube agotada. Intenta mañana.');
                 }

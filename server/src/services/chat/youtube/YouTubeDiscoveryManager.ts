@@ -63,15 +63,15 @@ export class YouTubeDiscoveryManager {
             state.isManualMode = true;
             logger.info(
                 { userId, autoAttempts: state.autoAttempts },
-                'YouTube auto-discovery exhausted, switching to manual mode'
+                'YouTube auto-discovery exhausted, switching to waiting_stream mode'
             );
             
             SafeSocketEmitter.emitConnectionStatus(
                 io,
                 userId,
                 'youtube',
-                'waiting_manual',
-                'Haz click en 🔍 cuando inicies tu stream'
+                'waiting_stream',
+                'Esperando que inicies tu stream...'
             );
         }
     }

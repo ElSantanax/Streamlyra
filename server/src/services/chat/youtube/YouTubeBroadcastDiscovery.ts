@@ -53,7 +53,11 @@ export class YouTubeBroadcastDiscovery {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
-                const errorData = error.response?.data as any;
+                const errorData = error.response?.data as {
+                    error?: {
+                        errors?: Array<{ reason?: string }>;
+                    };
+                } | undefined;
 
                 logger.error({
                     status,
@@ -62,7 +66,7 @@ export class YouTubeBroadcastDiscovery {
                     context: 'YouTubeBroadcastDiscovery'
                 }, 'YouTube Discovery API Error');
 
-                if (status === 403 && errorData?.error?.errors?.some((e: any) => e.reason === 'quotaExceeded')) {
+                if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
                     quotaManager.markAsExhausted();
                     throw new Error('YOUTUBE_QUOTA_EXCEEDED');
                 }
