@@ -67,7 +67,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
                 const [start, end] = pos.split('-').map(Number);
                 if (!isNaN(start) && !isNaN(end)) {
                     parsedPositions.push([start, end]);
-                    
+
                     // Extraer el nombre del emote del mensaje (solo una vez)
                     if (!emoteName && message) {
                         emoteName = message.substring(start, end + 1);
@@ -120,6 +120,32 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             message: message || '',
             specialMessage: `¡HA ENVIADO ${userstate.bits} BITS! 💎`,
             time: this.formatTime(new Date())
+        };
+    }
+
+    transformSubGift(username: string, recipientName: string, tags: Record<string, unknown>): NormalizedChatMessage {
+        return {
+            id: (tags?.['id'] as string) || Date.now().toString(),
+            platform: 'twitch',
+            user: username,
+            message: '',
+            specialMessage: `¡REGALÓ UNA SUB A ${recipientName}! 🎁`,
+            time: this.formatTime(new Date()),
+            color: '#9146FF',
+            isSub: true
+        };
+    }
+
+    transformSubMysteryGift(username: string, numbOfSubs: number, tags: Record<string, unknown>): NormalizedChatMessage {
+        return {
+            id: (tags?.['id'] as string) || Date.now().toString(),
+            platform: 'twitch',
+            user: username,
+            message: '',
+            specialMessage: `¡REGALÓ ${numbOfSubs} SUBS A LA COMUNIDAD! 🎁`,
+            time: this.formatTime(new Date()),
+            color: '#9146FF',
+            isSub: true
         };
     }
 }
