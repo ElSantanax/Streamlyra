@@ -1,70 +1,78 @@
 import { describe, it, expect } from '@jest/globals';
-import { replaceTikTokEmotes, TIKTOK_EMOTE_MAP } from '../tiktok-emotes';
+import { parseTikTokEmotes, TIKTOK_EMOTE_MAP } from '../tiktok-emotes';
 
-describe('replaceTikTokEmotes', () => {
-    it('should replace single TikTok emote with emoji', () => {
-        const result = replaceTikTokEmotes('[heart]');
-        expect(result).toBe('❤️');
+describe('parseTikTokEmotes', () => {
+    it('should parse single TikTok emote', () => {
+        const result = parseTikTokEmotes('[heart]');
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+            id: '[heart]',
+            name: '[heart]',
+            url: '/icons/tiktok/heart.png',
+            positions: [[0, 6]]
+        });
     });
 
-    it('should replace multiple same emotes', () => {
-        const result = replaceTikTokEmotes('[heart][heart][heart]');
-        expect(result).toBe('❤️❤️❤️');
+    it('should parse multiple same emotes', () => {
+        const result = parseTikTokEmotes('[heart][heart][heart]');
+        expect(result).toHaveLength(1);
+        expect(result[0].positions).toHaveLength(3);
+        expect(result[0].positions).toEqual([[0, 6], [7, 13], [14, 20]]);
     });
 
-    it('should replace multiple different emotes', () => {
-        const result = replaceTikTokEmotes('[heart][hi][thumb]');
-        expect(result).toBe('❤️👋👍');
+    it('should parse multiple different emotes', () => {
+        const result = parseTikTokEmotes('[heart][hi][thumb]');
+        expect(result).toHaveLength(3);
     });
 
-    it('should replace emotes mixed with text', () => {
-        const result = replaceTikTokEmotes('Hola [heart] mundo [hi]');
-        expect(result).toBe('Hola ❤️ mundo 👋');
+    it('should parse emotes mixed with text', () => {
+        const result = parseTikTokEmotes('Hola [heart] mundo [hi]');
+        expect(result).toHaveLength(2);
+        expect(result[0].name).toBe('[heart]');
+        expect(result[1].name).toBe('[hi]');
     });
 
     it('should handle complex message from screenshot', () => {
-        const result = replaceTikTokEmotes('[heart][heart][heart][heart][heart][rosiekisskiss][heart]');
-        expect(result).toBe('❤️❤️❤️❤️❤️💋❤️');
-    });
-
-    it('should not modify regular emojis', () => {
-        const result = replaceTikTokEmotes('Hola 😀😃😄');
-        expect(result).toBe('Hola 😀😃😄');
+        const result = parseTikTokEmotes('[heart][heart][heart][heart][heart][rosiekisskiss][heart]');
+        expect(result).toHaveLength(2); // heart y rosiekisskiss
+        expect(result[0].positions).toHaveLength(6); // 6 hearts
+        expect(result[1].positions).toHaveLength(1); // 1 rosiekisskiss
     });
 
     it('should handle empty message', () => {
-        const result = replaceTikTokEmotes('');
-        expect(result).toBe('');
+        const result = parseTikTokEmotes('');
+        expect(result).toHaveLength(0);
     });
 
     it('should handle message with no emotes', () => {
-        const result = replaceTikTokEmotes('Just a normal message');
-        expect(result).toBe('Just a normal message');
+        const result = parseTikTokEmotes('Just a normal message');
+        expect(result).toHaveLength(0);
     });
 
-    it('should handle unknown emote shortcodes', () => {
-        const result = replaceTikTokEmotes('[unknown][heart]');
-        expect(result).toBe('[unknown]❤️');
+    it('should ignore unknown emote shortcodes', () => {
+        const result = parseTikTokEmotes('[unknown][heart]');
+        expect(result).toHaveLength(1);
+        expect(result[0].name).toBe('[heart]');
     });
 
-    it('should replace all Rocky series emotes', () => {
-        const result = replaceTikTokEmotes('[rockyserious][rockyloveit][rockyproud][rockycool]');
-        expect(result).toBe('😐😍😎😎');
+    it('should parse all Rocky series emotes', () => {
+        const result = parseTikTokEmotes('[rockyserious][rockyloveit][rockyproud][rockycool]');
+        expect(result).toHaveLength(4);
     });
 
-    it('should replace all Rosie series emotes', () => {
-        const result = replaceTikTokEmotes('[rosiedislike][rosieawkward][rosiekisskiss][rosiecute]');
-        expect(result).toBe('👎😅💋🥰');
+    it('should parse all Rosie series emotes', () => {
+        const result = parseTikTokEmotes('[rosiedislike][rosieawkward][rosiekisskiss][rosiecute]');
+        expect(result).toHaveLength(4);
     });
 
-    it('should replace all Jollie series emotes', () => {
-        const result = replaceTikTokEmotes('[jolliekissingface][jolliewow][jolliespeechless][jolliesatisfied]');
-        expect(result).toBe('😘😲😶😌');
+    it('should parse all Jollie series emotes', () => {
+        const result = parseTikTokEmotes('[jolliekissingface][jolliewow][jolliespeechless][jolliesatisfied]');
+        expect(result).toHaveLength(4);
     });
 
-    it('should replace all Sage series emotes', () => {
-        const result = replaceTikTokEmotes('[sagethink][sagefulfilled][sageclever][sagemoney]');
-        expect(result).toBe('🤔😊🧠💰');
+    it('should parse all Sage series emotes', () => {
+        const result = parseTikTokEmotes('[sagethink][sagefulfilled][sageclever][sagemoney]');
+        expect(result).toHaveLength(4);
     });
 
     it('should have all 24 emotes defined', () => {

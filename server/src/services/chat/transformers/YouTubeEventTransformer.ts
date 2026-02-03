@@ -6,6 +6,7 @@
 import { YouTubeChatMessage } from '../../../types/youtube.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
+import { parseYouTubeEmotes } from '../../../constants/youtube-emotes';
 
 export class YouTubeEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'youtube';
@@ -33,6 +34,9 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             specialMessage = `¡HA REGALADO ${(item.snippet?.membershipGiftingDetails as Record<string, unknown>)?.giftMembershipsCount} MEMBRESÍAS! 🎁`;
         }
 
+        // Parsear emotes nativos de YouTube del mensaje
+        const parsedEmotes = parseYouTubeEmotes(displayMessage);
+
         return {
             id: (item.id as string) || '',
             messageId: (item.id as string) || '', // Agregar messageId explícitamente para moderación
@@ -47,7 +51,8 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             isMod: item.authorDetails?.isChatModerator as boolean,
             isOwner: item.authorDetails?.isChatOwner as boolean,
             isSub,
-            isVIP: item.authorDetails?.isVerified as boolean
+            isVIP: item.authorDetails?.isVerified as boolean,
+            emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
         };
     }
 

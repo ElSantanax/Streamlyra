@@ -6,7 +6,7 @@
 import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent } from '../../../types/tiktok.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
-import { replaceTikTokEmotes } from '../../../constants/tiktok-emotes';
+import { parseTikTokEmotes } from '../../../constants/tiktok-emotes';
 
 interface TikTokUser {
     nickname: string;
@@ -88,11 +88,17 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
 
-        // Reemplazar emotes nativos de TikTok con emojis Unicode
-        let message = replaceTikTokEmotes(data.comment || '');
+        // Obtener el mensaje original
+        let message = data.comment || '';
+
+        // Parsear emotes nativos de TikTok del mensaje
+        const parsedNativeEmotes = parseTikTokEmotes(message);
 
         // Parsear emotes personalizados de TikTok (stickers subidos por usuarios)
-        const parsedEmotes = this.parseEmotes(data.emotes, message);
+        const parsedCustomEmotes = this.parseEmotes(data.emotes, message);
+
+        // Combinar emotes nativos y personalizados
+        const allEmotes = [...parsedNativeEmotes, ...parsedCustomEmotes];
 
         // Si el comentario está vacío pero hay emotes/stickers personalizados, poner un emoji de fallback
         if (!message || message.trim() === '') {
@@ -111,7 +117,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             isMod: data.mod,
             isSub: data.subscriber,
             isOwner: data.isOwner,
-            emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
+            emotes: allEmotes.length > 0 ? allEmotes : undefined
         };
     }
 
