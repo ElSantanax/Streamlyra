@@ -21,6 +21,9 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router', 'react-router-dom'],
           'vendor-icons': ['react-icons'],
+          'vendor-socket': ['socket.io-client'],
+          'vendor-emoji': ['emoji-picker-react'],
+          'vendor-virtualized': ['react-window', 'react-virtualized-auto-sizer'],
         }
       }
     }

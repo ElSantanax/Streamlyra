@@ -1,4 +1,5 @@
-import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { lazy, Suspense } from 'react';
+import type { Theme } from 'emoji-picker-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useChatInput } from './hooks/useChatInput';
 import { useReplyToUser } from './hooks/useReplyToUser';
@@ -7,14 +8,17 @@ import { useMessageSender } from './hooks/useMessageSender';
 import EmojiPickerButton from './components/EmojiPickerButton';
 import SendButton from './components/SendButton';
 
+// Lazy load del EmojiPicker para reducir el bundle principal (~150-200 KB)
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
+
 const ChatInput = () => {
     const { user } = useAuth();
     const chatInput = useChatInput();
     const { message, setMessage, inputRef, clearMessage, focusInput } = chatInput;
-    
+
     const emojiPicker = useEmojiPicker(message, setMessage, inputRef);
     const { showEmojiPicker, emojiPickerRef, handleEmojiClick, toggleEmojiPicker } = emojiPicker;
-    
+
     const messageSender = useMessageSender(user, message, clearMessage, focusInput);
     const { isSending, handleSendMessage } = messageSender;
 
@@ -30,16 +34,25 @@ const ChatInput = () => {
                         ref={emojiPickerRef}
                         className="absolute left-0 bottom-full mb-2 z-50 emoji-picker-custom"
                     >
-                        <EmojiPicker
-                            onEmojiClick={handleEmojiClick}
-                            theme={Theme.DARK}
-                            width={350}
-                            height={450}
-                            searchPlaceHolder="Buscar emoji..."
-                            previewConfig={{
-                                showPreview: false
-                            }}
-                        />
+                        <Suspense fallback={
+                            <div className="w-[350px] h-[450px] bg-surface-dark border border-surface-border rounded-lg flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    <span className="text-sm text-gray-400">Cargando emojis...</span>
+                                </div>
+                            </div>
+                        }>
+                            <EmojiPicker
+                                onEmojiClick={handleEmojiClick}
+                                theme={'dark' as Theme}
+                                width={350}
+                                height={450}
+                                searchPlaceHolder="Buscar emoji..."
+                                previewConfig={{
+                                    showPreview: false
+                                }}
+                            />
+                        </Suspense>
                     </div>
                 )}
 
