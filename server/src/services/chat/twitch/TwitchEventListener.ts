@@ -13,6 +13,7 @@ export class TwitchEventListener {
         cheer: (channel: string, userstate: tmi.ChatUserstate, message: string) => void;
         subgift: (channel: string, username: string, streakMonths: number, recipient: Record<string, unknown>, methods: tmi.SubMethods, userstate: Record<string, unknown>) => void;
         submysterygift: (channel: string, username: string, numbOfSubs: number, methods: tmi.SubMethods, userstate: Record<string, unknown>) => void;
+        raided: (channel: string, username: string, viewers: number) => void;
     }> = new Map();
 
     constructor(private transformer: TwitchEventTransformer) { }
@@ -52,13 +53,19 @@ export class TwitchEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');
         };
 
+        const raidedListener = (_channel: string, username: string, viewers: number) => {
+            const normalizedMessage = this.transformer.transformRaid(username, viewers);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');
+        };
+
         this.listenerRefs.set(userId, {
             message: messageListener,
             subscription: subscriptionListener,
             resub: resubListener,
             cheer: cheerListener,
             subgift: subGiftListener,
-            submysterygift: subMysteryGiftListener
+            submysterygift: subMysteryGiftListener,
+            raided: raidedListener
         });
 
         client.on('message', messageListener);
@@ -69,6 +76,7 @@ export class TwitchEventListener {
         client.on('subgift', subGiftListener as any);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         client.on('submysterygift', subMysteryGiftListener as any);
+        client.on('raided', raidedListener);
     }
 
     removeListeners(userId: string, client: tmi.Client): void {
@@ -81,6 +89,7 @@ export class TwitchEventListener {
         client.removeListener('cheer', listeners.cheer);
         client.removeListener('subgift', listeners.subgift);
         client.removeListener('submysterygift', listeners.submysterygift);
+        client.removeListener('raided', listeners.raided);
 
         this.listenerRefs.delete(userId);
     }

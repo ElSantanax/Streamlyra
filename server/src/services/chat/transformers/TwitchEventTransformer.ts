@@ -148,4 +148,17 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             isSub: true
         };
     }
+
+    transformRaid(username: string, viewers: number): NormalizedChatMessage {
+        return {
+            id: `raid-${Date.now()}`,
+            platform: 'twitch',
+            user: username,
+            message: '',
+            specialMessage: `¡HIZO UNA RAID CON ${viewers} ESPECTADORES! 🚨`,
+            time: this.formatTime(new Date()),
+            color: '#9146FF',
+            isSpecial: true
+        };
+    }
 }

@@ -4,13 +4,14 @@ Streamlyra es una solución moderna para streamers y creadores de contenido que 
 
 ## Capacidades por Plataforma
 
-| Plataforma | Leer Chat | Enviar Mensajes | Moderación | Eventos en Vivo | OAuth2 |
-|------------|:---------:|:---------------:|:----------:|:---------------:|:------:|
-| **Twitch** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **YouTube** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Kick** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **TikTok** | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Plataforma | Leer Chat | Enviar Mensajes | Moderación | Subs & Gifts | Raids | OAuth2 |
+|------------|:---------:|:---------------:|:----------:|:------------:|:-----:|:------:|
+| **Twitch** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **YouTube** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **Kick** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **TikTok** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
+> **Nota sobre Kick**: La API de Kick aún no expone eventos de Raids/Hosting. Se implementará cuando esté disponible.
 > **Nota sobre TikTok**: Actualmente en modo solo lectura. La integración completa con la API oficial está en desarrollo. Ver [TIKTOK_VALIDATION_PLAN.md](./TIKTOK_VALIDATION_PLAN.md) para más detalles.
 
 ## Proyecto Open Source
