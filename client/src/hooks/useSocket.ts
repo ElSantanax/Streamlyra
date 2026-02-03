@@ -41,13 +41,17 @@ export const useSocket = ({
   }, []);
 
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
+    const hasActivePlatforms = Object.values(connections).some(
+      (conn) => conn.connected === true
+    );
 
-    return () => {
-    };
-  }, []);
+    if (hasActivePlatforms && !socket.connected) {
+      socket.connect();
+    } else if (!hasActivePlatforms && socket.connected) {
+      socket.disconnect();
+      hasIdentifiedRef.current = false;
+    }
+  }, [connections]);
 
   useEffect(() => {
     if (!userId) {
