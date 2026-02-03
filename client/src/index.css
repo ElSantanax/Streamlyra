@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @theme {
   --color-primary: #2b6cee;
   --color-background-light: #f6f6f8;
@@ -214,4 +215,34 @@ body {
 
 .duration-500 {
   animation-duration: 500ms;
+}
+
+
+/* Emoji Picker Custom Styles */
+.emoji-picker-custom aside.EmojiPickerReact {
+  --epr-bg-color: #1a202c;
+  --epr-category-label-bg-color: #1a202c;
+  --epr-picker-border-color: #282e39;
+  --epr-search-input-bg-color: #1c212c;
+  --epr-search-input-bg-color-active: #282e39;
+  --epr-hover-bg-color: #282e39;
+  --epr-focus-bg-color: #2b6cee;
+  --epr-text-color: #ffffff;
+  --epr-search-input-text-color: #ffffff;
+  --epr-search-border-color: #282e39;
+  --epr-category-icon-active-color: #2b6cee;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.emoji-picker-custom aside.EmojiPickerReact .epr-search-container input {
+  border-radius: 0.5rem;
+}
+
+.emoji-picker-custom aside.EmojiPickerReact button.epr-emoji:hover {
+  background-color: #282e39;
+}
+
+.emoji-picker-custom aside.EmojiPickerReact button.epr-emoji:focus {
+  background-color: #2b6cee;
 }

@@ -7,6 +7,7 @@ Una aplicación web moderna construida con React, TypeScript y Vite para la plat
 - **Streaming en tiempo real** con Socket.IO
 - **Autenticación segura** con rutas protegidas
 - **Interfaz moderna** con Tailwind CSS
+- **Selector de emojis** con soporte completo de Unicode para todas las plataformas
 - **Rendimiento optimizado** con lazy loading y virtualización
 - **Testing completo** con Vitest y Cypress
 - **Desarrollo tipo seguro** con TypeScript
@@ -25,6 +26,7 @@ Una aplicación web moderna construida con React, TypeScript y Vite para la plat
 
 ### Comunicación
 - **Socket.IO Client** - Conexión en tiempo real
+- **Emoji Picker React** - Selector de emojis Unicode
 
 ### Testing
 - **Vitest** - Unit testing con UI
