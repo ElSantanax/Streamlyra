@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { WebhookProcessor } from '../services/webhook/WebhookProcessor';
 import { AppError } from '../utils/AppError';
-import { KickChatMessagePayload } from '../types/kick.types';
+import { KickWebhookPayload } from '../types/kick.types';
 import { logger } from '../utils/logger';
 
 interface WebhookData {
@@ -37,7 +37,12 @@ export class WebhookController {
             throw new AppError(`Platform ${platform} is not supported for webhooks`, 400);
         }
 
-        await this.webhookProcessor.processKickEvent(webhookData.body as unknown as KickChatMessagePayload);
+        if (platform === 'kick') {
+            await this.webhookProcessor.processKickEvent(
+                webhookData.body as unknown as KickWebhookPayload,
+                webhookData.eventType
+            );
+        }
         res.status(200).send('OK');
     }
 

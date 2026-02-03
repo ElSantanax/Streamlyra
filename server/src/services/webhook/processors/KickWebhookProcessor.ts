@@ -3,7 +3,7 @@
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { KickWebhook } from '../../../models/KickWebhook.model';
-import { KickChatMessagePayload } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickWebhookPayload } from '../../../types/kick.types';
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
@@ -15,7 +15,7 @@ export class KickWebhookProcessor {
         this.transformer = new KickEventTransformer();
     }
 
-    async process(payload: KickChatMessagePayload): Promise<void> {
+    async process(payload: KickWebhookPayload, eventType: string = 'chat.message.sent'): Promise<void> {
         try {
             const { broadcaster } = payload;
             const broadcasterKickId = broadcaster?.user_id?.toString();
@@ -25,7 +25,14 @@ export class KickWebhookProcessor {
                 return;
             }
 
-            const chatMessage = this.transformer.transformMessage(payload);
+            let chatMessage;
+            if (eventType === 'channel.subscription.new' || eventType === 'channel.subscription.renewal') {
+                chatMessage = this.transformer.transformSubscription(payload as KickSubscriptionEvent);
+            } else if (eventType === 'channel.subscription.gifts') {
+                chatMessage = this.transformer.transformGift(payload as KickGiftEvent);
+            } else {
+                chatMessage = this.transformer.transformMessage(payload as KickChatMessagePayload);
+            }
 
             // Buscar la conexión del broadcaster
             const connection = await Connection.findOne({

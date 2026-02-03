@@ -11,8 +11,8 @@ export class TwitchEventListener {
         subscription: (channel: string, username: string, method: tmi.SubMethods, message: string, tags: tmi.SubUserstate) => void;
         resub: (channel: string, username: string, months: number, message: string, tags: tmi.SubUserstate, methods: tmi.SubMethods) => void;
         cheer: (channel: string, userstate: tmi.ChatUserstate, message: string) => void;
-        subgift: (channel: string, username: string, streakMonths: number, recipient: any, methods: tmi.SubMethods, userstate: any) => void;
-        submysterygift: (channel: string, username: string, numbOfSubs: number, methods: tmi.SubMethods, userstate: any) => void;
+        subgift: (channel: string, username: string, streakMonths: number, recipient: Record<string, unknown>, methods: tmi.SubMethods, userstate: Record<string, unknown>) => void;
+        submysterygift: (channel: string, username: string, numbOfSubs: number, methods: tmi.SubMethods, userstate: Record<string, unknown>) => void;
     }> = new Map();
 
     constructor(private transformer: TwitchEventTransformer) { }
@@ -41,13 +41,13 @@ export class TwitchEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');
         };
 
-        const subGiftListener = (_channel: string, username: string, _streakMonths: number, recipient: any, _methods: tmi.SubMethods, userstate: any) => {
-            const recipientName = recipient['display-name'] || recipient['username'] || 'Usuario';
+        const subGiftListener = (_channel: string, username: string, _streakMonths: number, recipient: Record<string, unknown>, _methods: tmi.SubMethods, userstate: Record<string, unknown>) => {
+            const recipientName = (recipient['display-name'] as string) || (recipient['username'] as string) || 'Usuario';
             const normalizedMessage = this.transformer.transformSubGift(username, recipientName, userstate || {});
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');
         };
 
-        const subMysteryGiftListener = (_channel: string, username: string, numbOfSubs: number, _methods: tmi.SubMethods, userstate: any) => {
+        const subMysteryGiftListener = (_channel: string, username: string, numbOfSubs: number, _methods: tmi.SubMethods, userstate: Record<string, unknown>) => {
             const normalizedMessage = this.transformer.transformSubMysteryGift(username, numbOfSubs, userstate || {});
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');
         };
@@ -65,8 +65,10 @@ export class TwitchEventListener {
         client.on('subscription', subscriptionListener);
         client.on('resub', resubListener);
         client.on('cheer', cheerListener);
-        client.on('subgift', subGiftListener);
-        client.on('submysterygift', subMysteryGiftListener);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        client.on('subgift', subGiftListener as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        client.on('submysterygift', subMysteryGiftListener as any);
     }
 
     removeListeners(userId: string, client: tmi.Client): void {

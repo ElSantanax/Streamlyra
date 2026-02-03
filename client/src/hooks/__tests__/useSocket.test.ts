@@ -238,6 +238,9 @@ describe('useSocket', () => {
       renderHook(() =>
         useSocket({
           userId: 'user-123',
+          connections: {
+            twitch: { connected: true, status: 'connected' },
+          },
         })
       );
 

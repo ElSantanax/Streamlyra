@@ -92,3 +92,19 @@ export interface KickChannelDetailResponse {
     chatroom?: KickChatroom;
 }
 
+// Webhook Events
+export interface KickSubscriptionEvent {
+    broadcaster: KickBroadcaster;
+    subscriber: KickUser;
+    duration: number;
+    created_at: string;
+}
+
+export interface KickGiftEvent {
+    broadcaster: KickBroadcaster;
+    gifter: KickUser;
+    giftees: KickUser[];
+    created_at: string;
+}
+
+export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent;

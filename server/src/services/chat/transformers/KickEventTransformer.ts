@@ -3,7 +3,7 @@
  * Responsabilidad: Transformar eventos específicos de Kick a formato normalizado
  */
 
-import { KickChatMessagePayload } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent } from '../../../types/kick.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -64,10 +64,10 @@ export class KickEventTransformer extends BaseEventTransformer {
             for (const pos of emote.positions) {
                 const start = pos.s;
                 const end = pos.e;
-                
+
                 if (start !== undefined && end !== undefined) {
                     parsedPositions.push([start, end]);
-                    
+
                     // Extraer el nombre del emote del mensaje (solo una vez)
                     if (!emoteName && message) {
                         emoteName = message.substring(start, end + 1);
@@ -86,6 +86,42 @@ export class KickEventTransformer extends BaseEventTransformer {
         }
 
         return emotes;
+    }
+
+    transformSubscription(event: KickSubscriptionEvent): NormalizedChatMessage {
+        const { subscriber, duration, created_at } = event;
+        const isRenewal = duration > 1;
+
+        return {
+            id: `kick-sub-${Date.now()}`,
+            platform: 'kick',
+            user: subscriber.username,
+            message: '',
+            specialMessage: isRenewal
+                ? `¡RENOVÓ SU SUSCRIPCIÓN POR ${duration} MESES! 🔥`
+                : '¡NUEVA SUSCRIPCIÓN! 🥳',
+            time: this.formatTime(new Date(created_at || Date.now())),
+            color: '#53fc18',
+            isSub: true,
+            isVIP: true
+        };
+    }
+
+    transformGift(event: KickGiftEvent): NormalizedChatMessage {
+        const { gifter, giftees, created_at } = event;
+        const count = giftees.length;
+
+        return {
+            id: `kick-gift-${Date.now()}`,
+            platform: 'kick',
+            user: gifter.username,
+            message: '',
+            specialMessage: `¡REGALÓ ${count} ${count === 1 ? 'SUSCRIPCIÓN' : 'SUSCRIPCIONES'} A LA COMUNIDAD! 🎁`,
+            time: this.formatTime(new Date(created_at || Date.now())),
+            color: '#53fc18',
+            isSub: true,
+            isVIP: true
+        };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
