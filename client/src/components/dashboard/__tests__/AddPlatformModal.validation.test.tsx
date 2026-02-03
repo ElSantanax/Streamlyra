@@ -186,7 +186,11 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     });
 
     it('should call connectTikTok with cleaned username when valid', async () => {
-      const connectTikTokSpy = vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(undefined);
+      const mockAuthResponse = {
+        token: 'mock-token',
+        user: { id: '1', username: 'usuario123', displayName: 'Usuario 123', avatar: '' }
+      };
+      const connectTikTokSpy = vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(mockAuthResponse);
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
       
@@ -204,7 +208,11 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     });
 
     it('should clear error after successful connection', async () => {
-      vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(undefined);
+      const mockAuthResponse = {
+        token: 'mock-token',
+        user: { id: '1', username: 'usuario123', displayName: 'Usuario 123', avatar: '' }
+      };
+      vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(mockAuthResponse);
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
       

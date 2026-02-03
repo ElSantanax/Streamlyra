@@ -1,8 +1,3 @@
-/**
- * Hook para manejar estados booleanos (modales, menús, etc.)
- * Simplifica el patrón [isOpen, setIsOpen]
- */
-
 import { useState, useCallback } from 'react';
 
 export function useToggle(initialValue = false): [boolean, () => void, () => void, () => void] {

@@ -146,7 +146,7 @@ export const validateKickWebhook = async (
             throw new AppError('Invalid signature', 401);
         }
 
-        logger.info('✅ Kick webhook validation passed');
+        logger.info('Kick webhook validation passed');
 
         // Adjuntar datos validados al request
         req.webhookData = {

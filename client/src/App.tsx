@@ -19,25 +19,25 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/login" element={<PlatformConnection />} />
             <Route path="/register" element={<PlatformConnection />} />
-            
+
             {/* Rutas protegidas */}
-            <Route 
-              path="/connect" 
+            <Route
+              path="/connect"
               element={
                 <ProtectedRoute>
                   <PlatformConnection />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

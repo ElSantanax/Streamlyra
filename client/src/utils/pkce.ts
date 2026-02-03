@@ -1,7 +1,3 @@
-/**
- * Utilidad mínima para generar desafíos PKCE (necesarios para Kick OAuth 2.1)
- */
-
 export async function generatePKCE() {
     const verifier = generateRandomString(128);
     const challenge = await deriveChallenge(verifier);
