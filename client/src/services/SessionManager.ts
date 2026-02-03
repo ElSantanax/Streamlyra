@@ -15,6 +15,7 @@ class SessionManager {
 
         this.isHandlingExpiry = true;
 
+        console.warn('Sesión expirada. Redirigiendo al login...');
         this.clearLocalSession();
 
         const currentPath = window.location.pathname;

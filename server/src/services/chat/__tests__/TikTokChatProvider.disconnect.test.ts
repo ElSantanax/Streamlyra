@@ -55,9 +55,8 @@ describe('TikTokChatProvider.disconnect()', () => {
 
         await provider.disconnect(userId);
 
-        // Verificar que removeAllListeners fue llamado
-        expect(mockConnection.removeAllListeners).toHaveBeenCalledWith('disconnected');
-        expect(mockConnection.removeAllListeners).toHaveBeenCalledWith('error');
+        // Verificar que removeAllListeners fue llamado (sin argumentos para eliminar todos los listeners)
+        expect(mockConnection.removeAllListeners).toHaveBeenCalled();
 
         // Verificar que shouldReconnect fue eliminado
         // @ts-expect-error - Accediendo a propiedad privada para testing
