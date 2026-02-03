@@ -120,7 +120,7 @@ APP_URL=https://tu-dominio.com
 KICK_WEBHOOK_SKIP_SIGNATURE=false
 
 # Encriptación
-ENCRYPTION_KEY=64cadf6d90a13d9675306660163359392e2726359e19d5c4114f8670150d603e
+ENCRYPTION_KEY=tu_clave_de_encriptacion_hexadecimal_de_64_caracteres
 ```
 
 ### Scripts Disponibles
