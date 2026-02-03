@@ -11,6 +11,7 @@ Streamlyra es una solución moderna para streamers y creadores de contenido que 
 | **Kick** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | **TikTok** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
+> [!IMPORTANT]
 > **Nota sobre Kick**: La API de Kick aún no expone eventos de Raids/Hosting. Se implementará cuando esté disponible.
 > **Nota sobre TikTok**: Actualmente en modo solo lectura. La integración completa con la API oficial está en desarrollo. Ver [TIKTOK_VALIDATION_PLAN.md](./TIKTOK_VALIDATION_PLAN.md) para más detalles.
 
@@ -23,7 +24,8 @@ Este es un proyecto de código abierto creado para resolver una necesidad real d
 - **Testers** pueden ayudar a garantizar la calidad del producto
 - **Creadores de contenido** pueden sugerir funcionalidades
 
-No importa tu nivel de experiencia. Este proyecto fue creado precisamente para que puedas ver cómo funciona una aplicación real que resuelve un problema concreto, aprender de su arquitectura, y contribuir con tus ideas y habilidades.
+> [!NOTE]
+> **No importa tu nivel de experiencia.** Este proyecto fue creado precisamente para que puedas ver cómo funciona una aplicación real que resuelve un problema concreto, aprender de su arquitectura, y contribuir con tus ideas y habilidades.
 
 ## Stack Tecnológico
 
