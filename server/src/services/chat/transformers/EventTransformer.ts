@@ -21,4 +21,11 @@ export interface NormalizedChatMessage {
     messageId?: string; // ID único del mensaje para eliminar (UUID en Twitch)
     userId?: string; // ID del usuario que envió el mensaje
     roomId?: string; // ID del canal/room (broadcaster_id en Twitch)
+    // Emotes para renderizado visual
+    emotes?: Array<{
+        id: string;
+        name: string;
+        url: string;
+        positions: Array<[number, number]>; // [inicio, fin] en el texto original
+    }>;
 }

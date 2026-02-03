@@ -59,7 +59,7 @@ export class TikTokConnectionLifecycle {
             logger.info({ username, userId }, 'TikTok WebSocket established, waiting for stream to start');
 
             this.stateManager.executeAndRemoveRetryCleanup(userId);
-            
+
             // Emitir waiting_stream en lugar de connected
             // Solo emitiremos connected cuando recibamos el primer evento de chat
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'waiting_stream', 'Usuario encontrado, esperando stream...');
@@ -69,12 +69,12 @@ export class TikTokConnectionLifecycle {
         } catch (error) {
             // Si el error es "not_live", emitir waiting_stream y luego lanzar el error para que se maneje el retry
             const errorInfo = this.errorHandler.categorizeError(error, username);
-            
+
             if (errorInfo.type === 'not_live') {
                 logger.debug({ username, userId }, 'User not live, entering waiting_stream state');
                 SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'waiting_stream', 'Usuario encontrado, esperando stream...');
             }
-            
+
             // Re-lanzar el error para que se maneje en el catch externo
             throw error;
         }
@@ -112,20 +112,20 @@ export class TikTokConnectionLifecycle {
 
         if (!errorInfo.isPermanent && this.stateManager.shouldAutoReconnect(userId)) {
             const cleanup = this.reconnectionStrategy.startRetry(
-                retryFn, 
+                retryFn,
                 username,
                 () => {
                     // Callback cuando se alcanza el máximo de intentos
                     logger.info({ userId, username }, 'TikTok max retry attempts reached, notifying user');
-                    
+
                     SafeSocketEmitter.emitConnectionStatus(
-                        io, 
-                        userId, 
-                        'tiktok', 
-                        'error', 
+                        io,
+                        userId,
+                        'tiktok',
+                        'error',
                         'No se pudo conectar después de múltiples intentos. Por favor, verifica el nombre de usuario e intenta de nuevo.'
                     );
-                    
+
                     // Limpiar estado
                     this.stateManager.removeConnecting(userId);
                     this.stateManager.disableAutoReconnect(userId);
@@ -175,13 +175,11 @@ export class TikTokConnectionLifecycle {
 
         const connection = this.stateManager.getActiveConnection(userId);
         if (connection) {
-            logger.debug({ userId }, 'TikTokChatProvider: Removing event listeners');
+            logger.debug({ userId }, 'TikTokChatProvider: Removing all event listeners');
             // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
             const conn = connection as any;
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            conn.removeAllListeners('disconnected');
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            conn.removeAllListeners('error');
+            conn.removeAllListeners();
         } else {
             logger.debug({ userId }, 'TikTokChatProvider: No active connection found');
         }
@@ -205,7 +203,7 @@ export class TikTokConnectionLifecycle {
         }
 
         this.stateManager.removeConnecting(userId);
-        
+
         // Limpiar la confirmación de stream
         this.eventListener.clearStreamConfirmation(userId);
 

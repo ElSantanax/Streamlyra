@@ -11,6 +11,12 @@ export interface TikTokChatEvent {
     isOwner: boolean;
     createTime: string;
     msgId?: string;
+    emotes?: Array<{
+        emoteId: string;
+        image: {
+            url_list: string[];
+        };
+    }>;
 }
 
 export interface TikTokGiftEvent {

@@ -87,11 +87,19 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
 
+        // Si el comentario está vacío pero hay emotes/stickers, poner un emoji de fallback
+        let message = data.comment;
+        if (!message || message.trim() === '') {
+            if (data.emotes && data.emotes.length > 0) {
+                message = '☺️'; // Emoji predeterminado para stickers/emotes
+            }
+        }
+
         return {
             id: eventData.common?.msgId || data.msgId || `tk_chat_${Date.now()}_${userId}`,
             platform: 'tiktok',
             user: username,
-            message: data.comment,
+            message: message || '',
             time: this.formatTime(new Date()),
             color: '#FF0050', // Color de marca de TikTok
             isMod: data.mod,

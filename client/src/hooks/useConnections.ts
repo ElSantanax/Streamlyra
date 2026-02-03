@@ -47,7 +47,7 @@ export const useConnections = (shouldFetch = true) => {
           const shouldShowAsConnecting = serverConnected && !prevConnected && !prevStatus;
 
           const newConnection: ConnectionInfo = {
-            connected: prevConnected ?? false,
+            connected: serverConnected,
             username: data.connections[platform].username,
             viewers: prevPlatform?.viewers ?? 0,
             status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),

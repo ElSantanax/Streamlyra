@@ -3,6 +3,7 @@ import { MdReply, MdBlock, MdDeleteOutline, MdError } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import { Button } from '../ui/Button';
 import { UserBadge } from '../common/UserBadge';
+import { parseMessageWithEmotes } from '../../lib/formatters';
 import type { PlatformKey } from '../../constants/platforms';
 import type { MessageStatus } from '../../types/chat.types';
 
@@ -25,6 +26,13 @@ export interface ChatMessageProps {
     onReply?: (username: string) => void;
     onDelete?: (messageId: string) => void;
     onBan?: (userId: string, username: string) => void;
+    // Emotes
+    emotes?: Array<{
+        id: string;
+        name: string;
+        url: string;
+        positions: Array<[number, number]>;
+    }>;
 }
 
 // Sub-components para mejorar la legibilidad y separación de responsabilidades
@@ -56,6 +64,7 @@ const ChatMessage = memo(({
     onReply,
     onDelete,
     onBan,
+    emotes,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP;
@@ -72,6 +81,9 @@ const ChatMessage = memo(({
     const handleBan = useCallback(() => {
         if (onBan && userId) onBan(userId, user);
     }, [onBan, userId, user]);
+
+    // Parsear mensaje con emotes
+    const messageParts = parseMessageWithEmotes(message, emotes);
 
     return (
         <div className={`
@@ -144,7 +156,23 @@ const ChatMessage = memo(({
                         {specialMessage}
                     </p>
                 ) : (
-                    <p className={`text-gray-200 text-sm leading-relaxed ${platform !== 'system' ? 'md:pr-32' : ''}`}>{message}</p>
+                    <p className={`text-gray-200 text-sm leading-relaxed ${platform !== 'system' ? 'md:pr-32' : ''}`}>
+                        {messageParts.map((part, index) => {
+                            if (part.type === 'emote') {
+                                return (
+                                    <img
+                                        key={`${part.name}-${index}`}
+                                        src={part.value}
+                                        alt={part.name}
+                                        title={part.name}
+                                        className="inline-block h-7 align-middle mx-0.5"
+                                        loading="lazy"
+                                    />
+                                );
+                            }
+                            return <span key={index}>{part.value}</span>;
+                        })}
+                    </p>
                 )}
             </div>
         </div>

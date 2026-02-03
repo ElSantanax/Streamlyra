@@ -3,14 +3,13 @@
 import { ConnectionService } from '../../connection/ConnectionService';
 import { AuthChatOrchestrator } from '../AuthChatOrchestrator';
 import { Platform } from '../../../constants/platforms';
-import { AppError } from '../../../utils/AppError';
 import { logger } from '../../../utils/logger';
 
 export class DisconnectionOrchestrator {
     constructor(
         private connectionService: ConnectionService,
         private chatOrchestrator: AuthChatOrchestrator
-    ) {}
+    ) { }
 
     async disconnectPlatform(userId: string, provider: Platform): Promise<boolean> {
         logger.info({ userId, provider }, 'DisconnectionOrchestrator: Starting platform disconnection');
@@ -18,8 +17,9 @@ export class DisconnectionOrchestrator {
         const deletedCount = await this.connectionService.removeConnection(userId, provider);
 
         if (deletedCount === 0) {
-            logger.warn({ userId, provider }, 'DisconnectionOrchestrator: No connection found to disconnect');
-            throw new AppError('Connection not found', 404);
+            logger.info({ userId, provider }, 'DisconnectionOrchestrator: Connection already removed or not found (Idempotent success)');
+            // El objetivo ya se cumplió o el registro no existía. Retornamos true para limpiar UI.
+            return true;
         }
 
         logger.info(
