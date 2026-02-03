@@ -6,6 +6,7 @@
 import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent } from '../../../types/tiktok.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
+import { replaceTikTokEmotes } from '../../../constants/tiktok-emotes';
 
 interface TikTokUser {
     nickname: string;
@@ -87,11 +88,16 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
 
-        // Si el comentario está vacío pero hay emotes/stickers, poner un emoji de fallback
-        let message = data.comment;
+        // Reemplazar emotes nativos de TikTok con emojis Unicode
+        let message = replaceTikTokEmotes(data.comment || '');
+
+        // Parsear emotes personalizados de TikTok (stickers subidos por usuarios)
+        const parsedEmotes = this.parseEmotes(data.emotes, message);
+
+        // Si el comentario está vacío pero hay emotes/stickers personalizados, poner un emoji de fallback
         if (!message || message.trim() === '') {
             if (data.emotes && data.emotes.length > 0) {
-                message = '☺️'; // Emoji predeterminado para stickers/emotes
+                message = '☺️'; // Emoji predeterminado para stickers personalizados
             }
         }
 
@@ -104,8 +110,51 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             color: '#FF0050', // Color de marca de TikTok
             isMod: data.mod,
             isSub: data.subscriber,
-            isOwner: data.isOwner
+            isOwner: data.isOwner,
+            emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
         };
+    }
+
+    /**
+     * Parsea los emotes de TikTok desde el evento
+     * Formato: [{ emoteId: string, image: { url_list: string[] } }]
+     */
+    private parseEmotes(emotesData: Array<{ emoteId: string; image: { url_list: string[] } }> | undefined, message: string): Array<{
+        id: string;
+        name: string;
+        url: string;
+        positions: Array<[number, number]>;
+    }> {
+        if (!emotesData || emotesData.length === 0) {
+            return [];
+        }
+
+        const emotes: Array<{
+            id: string;
+            name: string;
+            url: string;
+            positions: Array<[number, number]>;
+        }> = [];
+
+        // TikTok no proporciona posiciones exactas, así que usamos el mensaje completo
+        // Si el mensaje está vacío o es solo el emoji de fallback, el emote ocupa todo
+        const isEmoteOnly = !message || message.trim() === '' || message === '☺️';
+
+        for (const emote of emotesData) {
+            // Usar la primera URL disponible de la lista
+            const emoteUrl = emote.image?.url_list?.[0];
+            
+            if (emoteUrl) {
+                emotes.push({
+                    id: emote.emoteId,
+                    name: emote.emoteId, // TikTok no proporciona nombre, usamos el ID
+                    url: emoteUrl,
+                    positions: isEmoteOnly ? [[0, message.length - 1]] : [] // Posición completa si es solo emote
+                });
+            }
+        }
+
+        return emotes;
     }
 
     /**

@@ -13,7 +13,9 @@ export class KickEventTransformer extends BaseEventTransformer {
      * Transforma mensaje de chat de Kick
      */
     transformMessage(payload: KickChatMessagePayload): NormalizedChatMessage {
-        const { broadcaster, sender, content, message_id, created_at } = payload;
+        const { broadcaster, sender, content, message_id, created_at, emotes } = payload;
+
+        const parsedEmotes = this.parseEmotes(emotes, content);
 
         return {
             id: message_id || '',
@@ -29,8 +31,61 @@ export class KickEventTransformer extends BaseEventTransformer {
             // Campos para moderación
             messageId: message_id || '',
             userId: sender?.user_id?.toString() || '',
-            roomId: broadcaster?.user_id?.toString() || ''
+            roomId: broadcaster?.user_id?.toString() || '',
+            emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
         };
+    }
+
+    /**
+     * Parsea los emotes de Kick desde el payload
+     * Formato: [{ emote_id: string, positions: [{ s: number, e: number }] }]
+     */
+    private parseEmotes(emotesData: Array<{ emote_id: string; positions: Array<{ s: number; e: number }> }> | undefined, message: string): Array<{
+        id: string;
+        name: string;
+        url: string;
+        positions: Array<[number, number]>;
+    }> {
+        if (!emotesData || emotesData.length === 0) {
+            return [];
+        }
+
+        const emotes: Array<{
+            id: string;
+            name: string;
+            url: string;
+            positions: Array<[number, number]>;
+        }> = [];
+
+        for (const emote of emotesData) {
+            const parsedPositions: Array<[number, number]> = [];
+            let emoteName = '';
+
+            for (const pos of emote.positions) {
+                const start = pos.s;
+                const end = pos.e;
+                
+                if (start !== undefined && end !== undefined) {
+                    parsedPositions.push([start, end]);
+                    
+                    // Extraer el nombre del emote del mensaje (solo una vez)
+                    if (!emoteName && message) {
+                        emoteName = message.substring(start, end + 1);
+                    }
+                }
+            }
+
+            if (parsedPositions.length > 0) {
+                emotes.push({
+                    id: emote.emote_id,
+                    name: emoteName,
+                    url: `https://files.kick.com/emotes/${emote.emote_id}/fullsize`,
+                    positions: parsedPositions
+                });
+            }
+        }
+
+        return emotes;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
