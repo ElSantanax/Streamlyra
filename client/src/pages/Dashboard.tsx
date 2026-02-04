@@ -114,7 +114,6 @@ const Dashboard = () => {
 
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
                     {/* Messages Area */}
-                    {/* Messages Area */}
                     <ChatFeed
                         messages={messages}
                         isConnected={isConnected}

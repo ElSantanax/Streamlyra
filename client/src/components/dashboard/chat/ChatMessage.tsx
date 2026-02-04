@@ -152,11 +152,11 @@ const ChatMessage = memo(({
                 </div>
 
                 {specialMessage ? (
-                    <p className={`text-sm font-black tracking-tight ${platform === 'tiktok' ? 'text-[#FF0050]' : textColor} ${platform !== 'system' ? 'md:pr-32' : ''}`}>
+                    <p className={`text-sm font-black tracking-tight wrap-break-word ${platform === 'tiktok' ? 'text-[#FF0050]' : textColor} ${platform !== 'system' ? 'md:pr-32' : ''}`}>
                         {specialMessage}
                     </p>
                 ) : (
-                    <p className={`text-gray-200 text-sm leading-relaxed ${platform !== 'system' ? 'md:pr-32' : ''}`}>
+                    <p className={`text-gray-200 text-sm leading-relaxed wrap-break-word ${platform !== 'system' ? 'md:pr-32' : ''}`}>
                         {messageParts.map((part, index) => {
                             if (part.type === 'emote') {
                                 return (
