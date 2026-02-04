@@ -17,9 +17,10 @@ interface SidebarProps {
     }>;
     onDisconnect: (platform: PlatformKey) => void;
     onSearchStream?: (platform: PlatformKey) => void;
+    onClearChat?: () => void;
 }
 
-const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream }: SidebarProps) => {
+const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
     // Calcular espectadores totales
     const totalViewers = useMemo(
         () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
@@ -115,7 +116,10 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
             <div className="flex flex-col gap-3 mt-auto">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Acciones Rápidas</h3>
                 <div className="flex flex-col gap-2">
-                    <button className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                    <button 
+                        onClick={onClearChat}
+                        className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
                         <MdDeleteSweep size={20} /> Limpiar Chat
                     </button>
                 </div>
