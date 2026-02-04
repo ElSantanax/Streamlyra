@@ -1,14 +1,14 @@
 /** Gestor de conexión de socket con identificación de usuario y conexión a plataformas */
 
 import { Socket, Server } from 'socket.io';
-import { ChatManager } from '../services/ChatManager';
-import { ConnectionService } from '../services/connection/ConnectionService';
-import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
-import { SafeSocketEmitter } from '../utils/SafeSocketEmitter';
-import { logger } from '../utils/logger';
-import { isValidUserId } from './utils/SocketValidator';
-import { SocketRegistry } from './services/SocketRegistry';
-import { SocketLockManager } from './services/SocketLockManager';
+import { ChatManager } from '../../services/core/ChatManager';
+import { ConnectionService } from '../../services/connection/ConnectionService';
+import { ConnectionRepository } from '../../repositories/implementations/ConnectionRepository';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
+import { logger } from '../../utils/logger';
+import { isValidUserId } from '../utils/SocketValidator';
+import { SocketRegistry } from './SocketRegistry';
+import { SocketLockManager } from './SocketLockManager';
 
 const CONNECTION_TIMEOUT_MS = 30000;
 

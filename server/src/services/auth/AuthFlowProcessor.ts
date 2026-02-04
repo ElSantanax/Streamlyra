@@ -5,11 +5,11 @@ import { AuthTokens, PlatformProfile } from '../../types';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
 import { PlatformAuthHandler } from './core/PlatformAuthHandler';
-import { ChatManager } from '../ChatManager';
+import { ChatManager } from '../core/ChatManager';
 import { AuthResponse } from './AuthDTOBuilder';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 import { ConnectionService } from '../connection/ConnectionService';
-import { ActivityService } from '../ActivityService';
+import { ActivityService } from '../core/ActivityService';
 
 export class AuthFlowProcessor {
     constructor(

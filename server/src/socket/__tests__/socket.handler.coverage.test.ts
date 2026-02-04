@@ -1,9 +1,9 @@
 import { Server, Socket } from 'socket.io';
 import { setupSocketHandlers } from '../socket.handler';
-import { ChatManager } from '../../services/ChatManager';
-import { SocketConnectionManager } from '../SocketConnectionManager';
+import { ChatManager } from '../../services/core/ChatManager';
+import { SocketConnectionManager } from '../services/SocketConnectionManager';
 import { MessageSenderService } from '../../services/message/MessageSenderService';
-import { ActivityService } from '../../services/ActivityService';
+import { ActivityService } from '../../services/core/ActivityService';
 import { ConnectionService } from '../../services/connection/ConnectionService';
 import { YouTubeService } from '../../services/platforms/YouTubeService';
 import { logger } from '../../utils/logger';
@@ -11,9 +11,9 @@ import { logger } from '../../utils/logger';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 // Mock dependencies
-jest.mock('../SocketConnectionManager');
+jest.mock('../services/SocketConnectionManager');
 jest.mock('../../services/message/MessageSenderService');
-jest.mock('../../services/ActivityService');
+jest.mock('../../services/core/ActivityService');
 jest.mock('../../services/connection/ConnectionService');
 jest.mock('../../services/platforms/YouTubeService');
 jest.mock('../../utils/logger', () => ({

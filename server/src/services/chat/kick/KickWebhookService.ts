@@ -2,8 +2,8 @@
 
 import * as crypto from 'crypto';
 import axios from 'axios';
-import { KickApiResponse } from '../../types/kick.types';
-import { logger } from '../../utils/logger';
+import { KickApiResponse } from '../../../types/kick.types';
+import { logger } from '../../../utils/logger';
 
 export class KickWebhookService {
     private static publicKey: string | null = null;

@@ -1,4 +1,4 @@
-import { sessionManager } from '../SessionManager';
+import { sessionManager } from '../session';
 import { env } from '../../config/env';
 
 export class ApiError extends Error {

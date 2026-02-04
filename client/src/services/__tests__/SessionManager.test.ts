@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { sessionManager } from '../SessionManager';
+import { sessionManager } from '../session';
 
 describe('SessionManager (Client)', () => {
     const originalLocation = window.location;

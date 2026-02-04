@@ -2,15 +2,15 @@
 
 import tmi from 'tmi.js';
 import { Server } from 'socket.io';
-import { ChatProvider } from './ChatProvider';
-import { TwitchConnectionManager } from './twitch/TwitchConnectionManager';
-import { TwitchEventListener } from './twitch/TwitchEventListener';
-import { TwitchViewerPoller } from './twitch/TwitchViewerPoller';
-import { TwitchEventTransformer } from './transformers/TwitchEventTransformer';
-import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
-import { Connection } from '../../models/Connection.model';
-import { ConnectionService } from '../connection/ConnectionService';
-import { logger } from '../../utils/logger';
+import { ChatProvider } from '../shared/ChatProvider';
+import { TwitchConnectionManager } from './TwitchConnectionManager';
+import { TwitchEventListener } from './TwitchEventListener';
+import { TwitchViewerPoller } from './TwitchViewerPoller';
+import { TwitchEventTransformer } from '../transformers/TwitchEventTransformer';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { Connection } from '../../../models/Connection.model';
+import { ConnectionService } from '../../connection/ConnectionService';
+import { logger } from '../../../utils/logger';
 
 export class TwitchChatProvider implements ChatProvider {
     private activeClients: Map<string, tmi.Client> = new Map();

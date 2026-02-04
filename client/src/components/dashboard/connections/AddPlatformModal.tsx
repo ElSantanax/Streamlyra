@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PLATFORMS } from '../../../constants/platforms';
 import PlatformButton from '../../connection/PlatformButton';
 import PlatformInput from '../../connection/PlatformInput';
-import { initiateOAuth } from '../../../utils/oauth';
+import { initiateOAuth } from '../../../lib/auth';
 import { authService } from '../../../services/api/auth.service';
 import { validateTikTokUsername } from '../../../lib/validators';
 import { Modal } from '../../ui';

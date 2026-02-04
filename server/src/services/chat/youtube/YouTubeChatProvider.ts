@@ -1,13 +1,13 @@
 import { Server } from 'socket.io';
-import { ChatProvider } from './ChatProvider';
-import { YouTubeBroadcastDiscovery } from './youtube/YouTubeBroadcastDiscovery';
-import { YouTubeConnectionStateManager } from './youtube/YouTubeConnectionStateManager';
-import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
-import { Connection } from '../../models/Connection.model';
-import { ConnectionService } from '../connection/ConnectionService';
-import { retryWithInterval } from '../../utils/retryWithInterval';
-import { logger } from '../../utils/logger';
-import { YouTubePollingConfig } from '../../config/youtube.polling.config';
+import { ChatProvider } from '../shared/ChatProvider';
+import { YouTubeBroadcastDiscovery } from './YouTubeBroadcastDiscovery';
+import { YouTubeConnectionStateManager } from './YouTubeConnectionStateManager';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { Connection } from '../../../models/Connection.model';
+import { ConnectionService } from '../../connection/ConnectionService';
+import { retryWithInterval } from '../../../utils/retryWithInterval';
+import { logger } from '../../../utils/logger';
+import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 
 export class YouTubeChatProvider implements ChatProvider {
     private broadcastDiscovery: YouTubeBroadcastDiscovery;

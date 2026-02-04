@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { authService } from '../services/api/auth.service';
-import { sessionManager } from '../services/SessionManager';
+import { sessionManager } from '../services/session';
 import { isProtectedRoute, isPublicAuthRoute } from '../config/routes';
 import { useConnections } from '../hooks/useConnections';
 import type { User } from '../types';

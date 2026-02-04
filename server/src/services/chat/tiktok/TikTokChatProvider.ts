@@ -2,16 +2,16 @@
 
 import { Server } from 'socket.io';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
-import { ChatProvider } from './ChatProvider';
-import { TikTokConnectionManager } from './tiktok/TikTokConnectionManager';
-import { TikTokEventListener } from './tiktok/TikTokEventListener';
-import { TikTokEventTransformer } from './transformers/TikTokEventTransformer';
-import { TikTokConnectionStateManager } from './tiktok/TikTokConnectionStateManager';
-import { TikTokErrorHandler } from './tiktok/TikTokErrorHandler';
-import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
-import { Connection } from '../../models/Connection.model';
-import { retryWithIntervalAndLimit } from '../../utils/retryWithInterval';
-import { logger } from '../../utils/logger';
+import { ChatProvider } from '../shared/ChatProvider';
+import { TikTokConnectionManager } from './TikTokConnectionManager';
+import { TikTokEventListener } from './TikTokEventListener';
+import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
+import { TikTokConnectionStateManager } from './TikTokConnectionStateManager';
+import { TikTokErrorHandler } from './TikTokErrorHandler';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { Connection } from '../../../models/Connection.model';
+import { retryWithIntervalAndLimit } from '../../../utils/retryWithInterval';
+import { logger } from '../../../utils/logger';
 
 export class TikTokChatProvider implements ChatProvider {
     private readonly stateManager: TikTokConnectionStateManager;

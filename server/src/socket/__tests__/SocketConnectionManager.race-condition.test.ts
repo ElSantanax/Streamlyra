@@ -8,8 +8,8 @@
  * 4. El sistema maneja correctamente múltiples dispositivos/navegadores
  */
 
-import { SocketConnectionManager } from '../SocketConnectionManager';
-import { ChatManager } from '../../services/ChatManager';
+import { SocketConnectionManager } from '../services/SocketConnectionManager';
+import { ChatManager } from '../../services/core/ChatManager';
 import { Socket, Server } from 'socket.io';
 import { Connection } from '../../models/Connection.model';
 

@@ -1,15 +1,15 @@
 import { Server, Socket } from 'socket.io';
 import { logger } from '../utils/logger';
-import { ChatManager } from '../services/ChatManager';
+import { ChatManager } from '../services/core/ChatManager';
 import { MessageSenderService } from '../services/message/MessageSenderService';
-import { ActivityService } from '../services/ActivityService';
+import { ActivityService } from '../services/core/ActivityService';
 import { TwitchModerationService } from '../services/moderation/TwitchModerationService';
 import { KickModerationService } from '../services/moderation/KickModerationService';
 import { YouTubeModerationService } from '../services/moderation/YouTubeModerationService';
 import { ConnectionService } from '../services/connection/ConnectionService';
 import { YouTubeService } from '../services/platforms/YouTubeService';
 
-import { SocketConnectionManager } from './SocketConnectionManager';
+import { SocketConnectionManager } from './services/SocketConnectionManager';
 import { createAuthMiddleware } from './middleware/SocketAuthMiddleware';
 import { MessageSocketHandler } from './handlers/MessageSocketHandler';
 import { ModerationSocketHandler } from './handlers/ModerationSocketHandler';

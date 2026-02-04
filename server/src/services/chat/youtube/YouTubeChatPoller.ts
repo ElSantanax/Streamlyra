@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { Server } from 'socket.io';
 import { YouTubeChatMessage, YouTubeChatMessagesResponse } from '../../../types/youtube.types';
-import { PollingManager } from '../PollingManager';
+import { PollingManager } from '../shared/PollingManager';
 import { YouTubeEventTransformer } from '../transformers/YouTubeEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';

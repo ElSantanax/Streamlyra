@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { Socket } from 'socket.io';
 import { MessageSenderService } from '../../services/message/MessageSenderService';
-import { SocketConnectionManager } from '../SocketConnectionManager';
+import { SocketConnectionManager } from '../services/SocketConnectionManager';
 import { Platform } from '../../constants/platforms';
 
 /**
@@ -238,7 +238,7 @@ describe('Feature: multi-platform-message-sending, Property 13: Exceptions are h
                     // Property: Internal error details should not be exposed
                     const emitCall = mockSocket.emit.mock.calls[0] as [string, { code: string; message: string }];
                     const errorMessage = emitCall[1].message;
-                    
+
                     // Should be a generic message, not the internal error
                     expect(errorMessage).not.toContain(internalError);
                     expect(errorMessage).toBe('Error interno del servidor');
@@ -254,9 +254,9 @@ function isValidSendMessagePayload(payload: unknown): boolean {
     if (!payload || typeof payload !== 'object') {
         return false;
     }
-    
+
     const p = payload as Record<string, unknown>;
-    
+
     return (
         typeof p.userId === 'string' &&
         typeof p.message === 'string' &&

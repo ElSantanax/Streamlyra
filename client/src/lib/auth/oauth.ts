@@ -1,5 +1,5 @@
 import { generatePKCE } from './pkce';
-import { dialog } from '../lib/dialog';
+import { dialog } from '../dialog';
 
 export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', redirectParam?: string | null) => {
     const redirectUri = `${window.location.origin}/auth/callback`;

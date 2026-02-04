@@ -3,7 +3,7 @@
 import { Server } from 'socket.io';
 import { KickService } from '../../platforms/KickService';
 import { KickWebhook } from '../../../models/KickWebhook.model';
-import { PollingManager } from '../PollingManager';
+import { PollingManager } from '../shared/PollingManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { config } from '../../../config';

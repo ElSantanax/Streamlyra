@@ -1,13 +1,13 @@
 /** Gestor de chat con orquestación de proveedores por plataforma */
 
 import { Server } from 'socket.io';
-import { Platform } from '../constants/platforms';
-import { ConnectionService } from './connection/ConnectionService';
-import { ChatProvider } from './chat/ChatProvider';
+import { Platform } from '../../constants/platforms';
+import { ConnectionService } from '../connection/ConnectionService';
+import { ChatProvider } from '../chat';
 
-import { SafeSocketEmitter } from '../utils/SafeSocketEmitter';
-import { withErrorHandling } from '../utils/errorHandling';
-import { logger } from '../utils/logger';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
+import { withErrorHandling } from '../../utils/errorHandling';
+import { logger } from '../../utils/logger';
 
 export class ChatManager {
     private providers: Map<Platform, ChatProvider>;

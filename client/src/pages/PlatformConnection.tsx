@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import Navbar from '../components/common/Navbar';
-import { initiateOAuth } from '../utils/oauth';
+import { initiateOAuth } from '../lib/auth';
 import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 

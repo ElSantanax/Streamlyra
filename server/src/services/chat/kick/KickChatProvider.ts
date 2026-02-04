@@ -1,13 +1,13 @@
 /** Proveedor de chat de Kick con polling de espectadores y webhooks */
 
 import { Server } from 'socket.io';
-import { ChatProvider } from './ChatProvider';
-import { KickManager } from './kick/KickManager';
-import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
-import { Connection } from '../../models/Connection.model';
-import { User } from '../../models/User.model';
-import { ConnectionService } from '../connection/ConnectionService';
-import { logger } from '../../utils/logger';
+import { ChatProvider } from '../shared/ChatProvider';
+import { KickManager } from './KickManager';
+import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { Connection } from '../../../models/Connection.model';
+import { User } from '../../../models/User.model';
+import { ConnectionService } from '../../connection/ConnectionService';
+import { logger } from '../../../utils/logger';
 
 export class KickChatProvider implements ChatProvider {
     private manager: KickManager;

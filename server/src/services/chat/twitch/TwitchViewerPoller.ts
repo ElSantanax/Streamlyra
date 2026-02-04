@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { Server } from 'socket.io';
 import { TwitchStreamResponse } from '../../../types/twitch.types';
-import { PollingManager } from '../PollingManager';
+import { PollingManager } from '../shared/PollingManager';
 import { config } from '../../../config';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';

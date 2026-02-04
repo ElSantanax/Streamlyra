@@ -1,7 +1,7 @@
 /** 
  * Servicio de actividad - Gestiona la inactividad de los usuarios para ahorrar recursos 
  */
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 import { ChatManager } from './ChatManager';
 
 export class ActivityService {

@@ -1,10 +1,13 @@
 /** Exports centralizados de servicios de chat por plataforma */
 
-export { ChatProvider } from './ChatProvider';
-export { TwitchChatProvider } from './TwitchChatProvider';
-export { YouTubeChatProvider } from './YouTubeChatProvider';
-export { KickChatProvider } from './KickChatProvider';
-export { TikTokChatProvider } from './TikTokChatProvider';
-export { KickWebhookService } from './KickWebhookService';
-export { PollingManager } from './PollingManager';
+// Shared utilities
+export * from './shared';
+
+// Platform-specific providers
+export * from './twitch';
+export * from './youtube';
+export * from './kick';
+export * from './tiktok';
+
+// Transformers
 export * from './transformers';

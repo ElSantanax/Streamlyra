@@ -3,7 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { KickWebhookService } from '../services/chat/KickWebhookService';
+import { KickWebhookService } from '../services/chat/kick/KickWebhookService';
 import { AppError } from '../utils/AppError';
 import { logger } from '../utils/logger';
 import { config } from '../config';

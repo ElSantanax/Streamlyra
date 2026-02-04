@@ -1,6 +1,6 @@
 /** Gestor de polling genérico con manejo de errores y ejecución inmediata */
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../../utils/logger';
 
 export class PollingManager {
     private intervals: Map<string, NodeJS.Timeout> = new Map();

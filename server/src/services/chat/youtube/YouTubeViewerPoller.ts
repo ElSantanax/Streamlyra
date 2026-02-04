@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { Server } from 'socket.io';
 import { YouTubeVideoResponse } from '../../../types/youtube.types';
-import { PollingManager } from '../PollingManager';
+import { PollingManager } from '../shared/PollingManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';

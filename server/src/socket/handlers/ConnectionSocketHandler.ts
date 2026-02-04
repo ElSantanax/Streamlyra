@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { logger } from '../../utils/logger';
-import { SocketConnectionManager } from '../SocketConnectionManager';
-import { ActivityService } from '../../services/ActivityService';
+import { SocketConnectionManager } from '../services/SocketConnectionManager';
+import { ActivityService } from '../../services/core/ActivityService';
 
 export class ConnectionSocketHandler {
     constructor(

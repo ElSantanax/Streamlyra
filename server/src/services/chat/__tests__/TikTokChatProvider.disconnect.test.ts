@@ -8,7 +8,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-import { TikTokChatProvider } from '../TikTokChatProvider';
+import { TikTokChatProvider } from '../tiktok/TikTokChatProvider';
 
 // Mock de dependencias
 jest.mock('../../../models/Connection.model');

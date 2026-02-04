@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { authService } from '../../services/api/auth.service';
-import { sessionManager } from '../../services/SessionManager';
+import { sessionManager } from '../../services/session';
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthProvider';
 import { useAuth } from '../useAuth';
@@ -17,7 +17,7 @@ vi.mock('../../services/api/auth.service', () => ({
     },
 }));
 
-vi.mock('../../services/SessionManager', () => ({
+vi.mock('../../services/session', () => ({
     sessionManager: {
         clearLocalSession: vi.fn(),
         setSessionExpiredHandler: vi.fn(),
