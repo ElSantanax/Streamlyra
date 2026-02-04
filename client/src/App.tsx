@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Spinner from './components/common/Spinner';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { AuthProvider } from './context/AuthProvider';
+import { DialogProvider } from './lib/dialog';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const PlatformConnection = lazy(() => import('./pages/PlatformConnection'));
@@ -13,6 +14,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <DialogProvider />
         <Suspense fallback={<Spinner fullScreen text="Preparando tu experiencia..." size="lg" />}>
           <Routes>
             <Route path="/" element={<Landing />} />

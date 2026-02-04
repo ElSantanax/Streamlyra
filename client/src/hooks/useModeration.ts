@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { socket } from '../services/socket';
 import { toast } from '../lib/notifications';
+import { dialog } from '../lib/dialog';
 import { useAuth } from './useAuth';
 
 interface UseModerationOptions {
@@ -60,13 +61,22 @@ export const useModeration = (options?: UseModerationOptions) => {
     });
   }, [user, onMessageDeleted]);
 
-  const banUser = useCallback((targetUserId: string, targetUsername: string, platform: string) => {
+  const banUser = useCallback(async (targetUserId: string, targetUsername: string, platform: string) => {
     if (!user?.id) {
       toast.error('Debes estar autenticado');
       return;
     }
 
-    if (!window.confirm(`¿Estás seguro de banear a ${targetUsername}?`)) {
+    const confirmed = await dialog.danger(
+      `¿Estás seguro de banear a ${targetUsername}?`,
+      {
+        title: 'Confirmar baneo',
+        confirmText: 'Sí',
+        cancelText: 'No'
+      }
+    );
+
+    if (!confirmed) {
       return;
     }
 

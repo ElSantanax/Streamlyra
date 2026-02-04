@@ -1,4 +1,5 @@
 import { generatePKCE } from './pkce';
+import { dialog } from '../lib/dialog';
 
 export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', redirectParam?: string | null) => {
     const redirectUri = `${window.location.origin}/auth/callback`;
@@ -35,7 +36,13 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
     const config = configs[platform];
 
     if (!config.clientId) {
-        alert(`Falta VITE_${platform.toUpperCase()}_CLIENT_ID en .env`);
+        await dialog.alert(
+            `Falta VITE_${platform.toUpperCase()}_CLIENT_ID en .env`,
+            {
+                title: 'Error de configuración',
+                variant: 'danger'
+            }
+        );
         return;
     }
 

@@ -7,3 +7,5 @@ export { Button } from './Button';
 export { Modal } from './Modal';
 export { Badge } from './Badge';
 export { Dropdown, DropdownItem, DropdownDivider } from './Dropdown';
+export { Dialog } from './Dialog';
+export type { DialogType, DialogVariant } from './Dialog';

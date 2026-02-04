@@ -2,6 +2,7 @@ import { MdDeleteOutline, MdOutlineVisibility, MdSearch } from 'react-icons/md';
 import { PLATFORMS } from '../../constants/platforms';
 import type { PlatformKey } from '../../constants/platforms';
 import Spinner from '../common/Spinner';
+import { dialog } from '../../lib/dialog';
 
 export interface ConnectionItemProps {
     platformKey: PlatformKey;
@@ -80,10 +81,16 @@ export const ConnectionItem = ({
                         </button>
                     )}
                     <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                             e.stopPropagation();
                             const action = isConnecting || isWaitingStream ? 'cancelar' : 'desconectar';
-                            if (window.confirm(`¿Estás seguro de ${action} ${name}?`)) {
+                            const confirmed = await dialog.warning(
+                                `¿Estás seguro de ${action} ${name}?`,
+                                {
+                                    title: `Confirmar ${action}`
+                                }
+                            );
+                            if (confirmed) {
                                 onDisconnect?.();
                             }
                         }}
