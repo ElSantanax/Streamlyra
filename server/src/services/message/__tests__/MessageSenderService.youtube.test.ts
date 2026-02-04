@@ -88,7 +88,7 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
             expect(result.results[0]).toEqual({
                 platform: 'youtube',
                 success: false,
-                error: 'No hay stream en vivo. Asegúrate de estar transmitiendo en YouTube.',
+                error: 'Sin Live activo',
                 errorCode: 'NO_LIVE_BROADCAST'
             });
         });

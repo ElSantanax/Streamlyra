@@ -242,7 +242,7 @@ describe('socket.handler', () => {
 
             expect(mockSocket.emit).toHaveBeenCalledWith('message_send_error', {
                 code: 'INTERNAL_ERROR',
-                message: 'Error interno del servidor'
+                message: 'Error interno'
             });
             expect(logger.error).toHaveBeenCalledWith(
                 expect.objectContaining({ errorMessage: 'Logic error' }),
