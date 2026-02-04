@@ -8,7 +8,7 @@ export class SocketErrorHandler {
             code,
             ...context
         }, `Validation error: ${message}`);
-        
+
         socket.emit('message_send_error', { code, message });
     }
 
@@ -22,10 +22,10 @@ export class SocketErrorHandler {
             },
             `SECURITY: Blocked attempt to ${eventType} as another user`
         );
-        
+
         socket.emit('message_send_error', {
             code: 'UNAUTHORIZED',
-            message: 'No autorizado para enviar mensajes como este usuario'
+            message: 'No autorizado'
         });
     }
 
@@ -37,10 +37,10 @@ export class SocketErrorHandler {
             errorStack: error instanceof Error ? error.stack : undefined,
             context
         }, `Unhandled error in ${context}`);
-        
+
         socket.emit('message_send_error', {
             code: 'INTERNAL_ERROR',
-            message: 'Error interno del servidor'
+            message: 'Error interno'
         });
     }
 
@@ -50,17 +50,17 @@ export class SocketErrorHandler {
             code,
             ...context
         }, `Moderation error: ${message}`);
-        
+
         socket.emit('moderation_error', { code, message });
     }
 
     static emitModerationAuthError(socket: Socket, payloadUserId: string, authenticatedUserId: string) {
-        logger.warn({ 
-            socketId: socket.id, 
-            payloadUserId, 
-            authenticatedUserId 
+        logger.warn({
+            socketId: socket.id,
+            payloadUserId,
+            authenticatedUserId
         }, 'SECURITY: Blocked moderation attempt as another user');
-        
+
         socket.emit('moderation_error', {
             code: 'UNAUTHORIZED',
             message: 'No autorizado'
@@ -69,10 +69,10 @@ export class SocketErrorHandler {
 
     static emitModerationInternalError(socket: Socket, error: unknown) {
         logger.error({ err: error, socketId: socket.id }, 'Error in moderation_action handler');
-        
+
         socket.emit('moderation_error', {
             code: 'MODERATION_FAILED',
-            message: error instanceof Error ? error.message : 'Error al ejecutar acción de moderación'
+            message: 'Error de moderación'
         });
     }
 }

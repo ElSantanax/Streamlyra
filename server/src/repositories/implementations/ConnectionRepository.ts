@@ -25,7 +25,7 @@ export class ConnectionRepository implements IConnectionRepository {
      * Helper para desencriptar una conexión antes de retornarla
      * Si detecta datos legacy (planos), los encripta y guarda automáticamente
      */
-    private decryptConnection(connection: Connection | null): Connection | null {
+    private async decryptAndSyncConnection(connection: Connection | null, transaction?: Transaction): Promise<Connection | null> {
         if (!connection) return null;
 
         let needsUpdate = false;
@@ -36,10 +36,7 @@ export class ConnectionRepository implements IConnectionRepository {
                 needsUpdate = true;
                 const plain = connection.accessToken;
                 connection.accessToken = this.encryptionService.encrypt(plain);
-                // Mantenemos el valor plano para el uso inmediato pero el objeto ya tiene el valor cifrado para persistir
                 logger.info({ context }, 'Auto-migrating legacy accessToken to encrypted format');
-
-                // Realizamos la desencriptación (que en este caso es identidad) con el logger
                 this.encryptionService.decrypt(plain, context);
             } else {
                 connection.accessToken = this.encryptionService.decrypt(connection.accessToken, context);
@@ -52,7 +49,6 @@ export class ConnectionRepository implements IConnectionRepository {
                 const plain = connection.refreshToken;
                 connection.refreshToken = this.encryptionService.encrypt(plain);
                 logger.info({ context }, 'Auto-migrating legacy refreshToken to encrypted format');
-
                 this.encryptionService.decrypt(plain, context);
             } else {
                 connection.refreshToken = this.encryptionService.decrypt(connection.refreshToken, context);
@@ -60,10 +56,11 @@ export class ConnectionRepository implements IConnectionRepository {
         }
 
         if (needsUpdate) {
-            // Guardamos la versión encriptada en la base de datos de forma asíncrona
-            void connection.save().catch(err => {
+            try {
+                await connection.save({ transaction });
+            } catch (err) {
                 logger.error({ err, context }, 'Failed to persist auto-migrated encrypted tokens');
-            });
+            }
         }
 
         return connection;
@@ -75,7 +72,7 @@ export class ConnectionRepository implements IConnectionRepository {
             include: ['user'],
             transaction
         });
-        return this.decryptConnection(connection);
+        return this.decryptAndSyncConnection(connection, transaction);
     }
 
     async findByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<Connection | null> {
@@ -83,7 +80,7 @@ export class ConnectionRepository implements IConnectionRepository {
             where: { userId: String(userId), provider },
             transaction
         });
-        return this.decryptConnection(connection);
+        return this.decryptAndSyncConnection(connection, transaction);
     }
 
     async findAllByUserId(userId: string, transaction?: Transaction): Promise<Connection[]> {
@@ -91,7 +88,12 @@ export class ConnectionRepository implements IConnectionRepository {
             where: { userId: String(userId) },
             transaction
         });
-        return connections.map(conn => this.decryptConnection(conn)!);
+
+        const decryptedConnections = await Promise.all(
+            connections.map(conn => this.decryptAndSyncConnection(conn, transaction))
+        );
+
+        return decryptedConnections.filter((conn): conn is Connection => conn !== null);
     }
 
     async createOrUpdate(

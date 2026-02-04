@@ -8,7 +8,7 @@ import { createAuthRoutes } from './routes/auth.routes';
 import { createWebhookRoutes } from './routes/webhook.routes';
 import { setupSocketHandlers } from './socket/socket.handler';
 import { ChatManager } from './services/ChatManager';
-import { AuthService } from './services/AuthService';
+import { AuthService } from './services/auth/AuthService';
 import { AuthController } from './controllers/auth.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { WebhookProcessor } from './services/webhook/WebhookProcessor';
@@ -26,7 +26,19 @@ import { MessageSenderService } from './services/message/MessageSenderService';
 import { TwitchService, YouTubeService, KickService } from './services/platforms';
 import { apiLimiter, webhookLimiter } from './middleware/rateLimit.middleware';
 import { ActivityService } from './services/ActivityService';
+import { AuthFlowProcessor } from './services/auth/AuthFlowProcessor';
+import { UserProfileService } from './services/auth/core/UserProfileService';
+import { AuthDTOBuilder } from './services/auth/AuthDTOBuilder';
+import { PlatformAuthHandler } from './services/auth/core/PlatformAuthHandler';
+import { UserService } from './services/user/UserService';
 
+
+import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider } from './services/chat';
+import { Platform } from './constants/platforms';
+
+interface RequestWithRawBody extends Request {
+    rawBody?: string;
+}
 
 export async function connectToDatabase() {
     try {
@@ -38,9 +50,6 @@ export async function connectToDatabase() {
         process.exit(1); // Si la DB falla al arrancar, cerramos el proceso
     }
 }
-
-// Ya no llamamos a connectToDatabase() aquí para evitar condiciones de carrera.
-// Se exporta para que index.ts (punto de entrada) controle el orden de arranque.
 
 const userRepository = new UserRepository();
 const connectionRepository = new ConnectionRepository();
@@ -57,29 +66,56 @@ const messageSenderService = new MessageSenderService(
 );
 
 const app = express();
+app.set('trust proxy', 1); // Confía en el primer proxy (necesario para ngrok/rate-limit)
 const server = http.createServer(app);
 
-interface RequestWithRawBody extends Request {
-    rawBody?: string;
-}
-
 const io = new Server(server, {
-    cors: {
-        origin: config.frontendUrl,
-        methods: ["GET", "POST"],
-        credentials: true
-    }
+    cors: { origin: config.frontendUrl, methods: ["GET", "POST"], credentials: true }
 });
 
+// Providers Instantiation
+const twitchChatProvider = new TwitchChatProvider(connectionService);
+const youtubeChatProvider = new YouTubeChatProvider(connectionService);
+const kickChatProvider = new KickChatProvider(connectionService);
+const tiktokChatProvider = new TikTokChatProvider();
+
 const chatManager = new ChatManager(io, connectionService);
-const authService = new AuthService(userRepository, connectionRepository, chatManager);
+chatManager.setProviders(new Map<Platform, ChatProvider>([
+    ['twitch', twitchChatProvider],
+    ['youtube', youtubeChatProvider],
+    ['kick', kickChatProvider],
+    ['tiktok', tiktokChatProvider]
+]));
+
+// 1. Core Services with mutual dependencies
+const activityService = new ActivityService(chatManager);
+activityService.start();
+
+// 2. Auth Re-architecture
+const userServiceInst = new UserService(userRepository, connectionRepository);
+const authDTOBuilder = new AuthDTOBuilder();
+const platformAuthHandler = new PlatformAuthHandler(
+    userServiceInst,
+    connectionService,
+    connectionRepository,
+    authDTOBuilder
+);
+const authFlowProcessor = new AuthFlowProcessor(
+    platformAuthHandler,
+    chatManager,
+    connectionService,
+    activityService
+);
+const userProfileService = new UserProfileService(
+    userServiceInst,
+    authDTOBuilder
+);
+
+const authService = new AuthService(authFlowProcessor, userProfileService);
 const webhookProcessor = new WebhookProcessor(io);
 
 const authController = new AuthController(authService);
 const webhookController = new WebhookController(webhookProcessor);
-
-const activityService = new ActivityService(chatManager);
-activityService.start();
 
 app.use(cors({
     origin: config.frontendUrl,
@@ -130,7 +166,7 @@ app.use('/api/auth', createAuthRoutes(authController));
 app.use('/api/webhooks', webhookLimiter, createWebhookRoutes(webhookController));
 
 app.get('/api/status', (_req, res) => {
-    res.json({ status: 'ok', message: 'Streamlyra API esta funcionando' });
+    res.json({ status: 'ok', message: 'API Online' });
 });
 
 app.get('/', (_req, res) => {
@@ -139,7 +175,7 @@ app.get('/', (_req, res) => {
 
 app.use(errorHandler);
 
-setupSocketHandlers(io, chatManager, messageSenderService, activityService);
+setupSocketHandlers(io, chatManager, messageSenderService, activityService, connectionService, youtubeService);
 
 export { app, io, chatManager };
 export default server;

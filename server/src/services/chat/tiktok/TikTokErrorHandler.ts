@@ -20,7 +20,7 @@ export class TikTokErrorHandler {
             return {
                 type: 'user_not_found',
                 isPermanent: true,
-                userMessage: `Usuario @${username} no encontrado. Verifica el nombre de usuario.`,
+                userMessage: `@${username} no encontrado`,
                 logMessage: 'TikTok user not found'
             };
         }
@@ -29,7 +29,7 @@ export class TikTokErrorHandler {
             return {
                 type: 'private_account',
                 isPermanent: true,
-                userMessage: 'Cuenta privada u oculta. No se puede acceder.',
+                userMessage: 'Cuenta privada',
                 logMessage: 'TikTok account is private or hidden'
             };
         }
@@ -38,7 +38,7 @@ export class TikTokErrorHandler {
             return {
                 type: 'blocked',
                 isPermanent: false,
-                userMessage: 'Bloqueado temporalmente por TikTok. Reintentando...',
+                userMessage: 'Bloqueo temporal',
                 logMessage: 'Temporarily blocked by TikTok'
             };
         }
@@ -47,7 +47,7 @@ export class TikTokErrorHandler {
             return {
                 type: 'not_live',
                 isPermanent: false,
-                userMessage: 'Usuario no está en vivo. Esperando...',
+                userMessage: 'Sin Live',
                 logMessage: 'TikTok user is not live'
             };
         }
@@ -56,7 +56,7 @@ export class TikTokErrorHandler {
             return {
                 type: 'timeout',
                 isPermanent: false,
-                userMessage: 'Tiempo de espera agotado. Reintentando...',
+                userMessage: 'Error de tiempo',
                 logMessage: 'Connection timeout'
             };
         }
@@ -64,7 +64,7 @@ export class TikTokErrorHandler {
         return {
             type: 'unknown',
             isPermanent: false,
-            userMessage: 'Error al conectar. Reintentando...',
+            userMessage: 'Error de conexión',
             logMessage: 'Unknown TikTok connection error'
         };
     }

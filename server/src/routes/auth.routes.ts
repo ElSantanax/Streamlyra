@@ -23,7 +23,7 @@ export const createAuthRoutes = (authController: AuthController) => {
 
     router.post('/kick', authLimiter, optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.kickAuth);
 
-    router.post('/tiktok', authenticateToken, validateZodBody(tiktokSchema), authController.tiktokAuth);
+    router.post('/tiktok', authLimiter, authenticateToken, validateZodBody(tiktokSchema), authController.tiktokAuth);
 
     router.delete('/platform', authenticateToken, validateZodBody(disconnectPlatformSchema), authController.disconnectPlatform);
 

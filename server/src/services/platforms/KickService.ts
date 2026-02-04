@@ -61,23 +61,33 @@ export class KickService extends BasePlatformService {
             const status = axiosError.response?.status;
             const errorData = axiosError.response?.data;
 
-            logger.error({ err: error, platform: 'kick', context }, `Error in Kick API: ${context}`);
+            // Log de información esencial solamente
+            logger.warn(
+                {
+                    platform: 'kick',
+                    context,
+                    status,
+                    message: axiosError.message,
+                    kickMessage: errorData?.message
+                },
+                `Kick API Error: ${context}`
+            );
 
             switch (status) {
                 case KickService.HTTP_UNAUTHORIZED:
-                    throw new Error('Token de acceso inválido o expirado');
+                    throw new Error('Token de acceso inválido o expirado en Kick');
                 case KickService.HTTP_FORBIDDEN:
-                    throw new Error('No tienes permisos para realizar esta acción. Verifica que tu cuenta esté verificada y no tenga restricciones.');
+                    throw new Error('No tienes permisos en Kick (Forbidden)');
                 case KickService.HTTP_NOT_FOUND:
                     throw new Error('Recurso de Kick no encontrado');
                 case KickService.HTTP_TOO_MANY_REQUESTS:
-                    throw new Error('Límite de tasa excedido en Kick. Intenta de nuevo más tarde');
+                    throw new Error('Límite de tasa excedido en Kick');
                 default:
-                    throw new Error(`Error de API de Kick: ${errorData?.message || axiosError.message}`);
+                    throw new Error(errorData?.message || axiosError.message);
             }
         }
 
-        logger.error({ err: error, platform: 'kick', context }, `Unexpected error in Kick API: ${context}`);
+        logger.error({ platform: 'kick', context }, `Unexpected error in Kick API: ${context}`);
         throw error;
     }
 

@@ -1,11 +1,7 @@
-/** Proveedor de chat de YouTube con discovery automático inicial y manual */
-
 import { Server } from 'socket.io';
 import { ChatProvider } from './ChatProvider';
 import { YouTubeBroadcastDiscovery } from './youtube/YouTubeBroadcastDiscovery';
-import { YouTubeChatPoller } from './youtube/YouTubeChatPoller';
-import { YouTubeViewerPoller } from './youtube/YouTubeViewerPoller';
-import { YouTubeDiscoveryManager } from './youtube/YouTubeDiscoveryManager';
+import { YouTubeConnectionStateManager } from './youtube/YouTubeConnectionStateManager';
 import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { Connection } from '../../models/Connection.model';
 import { ConnectionService } from '../connection/ConnectionService';
@@ -15,91 +11,82 @@ import { YouTubePollingConfig } from '../../config/youtube.polling.config';
 
 export class YouTubeChatProvider implements ChatProvider {
     private broadcastDiscovery: YouTubeBroadcastDiscovery;
-    private chatPoller: YouTubeChatPoller;
-    private viewerPoller: YouTubeViewerPoller;
-    private discoveryManager: YouTubeDiscoveryManager;
+    private stateManager: YouTubeConnectionStateManager;
 
     constructor(private connectionService: ConnectionService) {
         this.broadcastDiscovery = new YouTubeBroadcastDiscovery();
-        this.chatPoller = new YouTubeChatPoller();
-        this.viewerPoller = new YouTubeViewerPoller();
-        this.discoveryManager = new YouTubeDiscoveryManager();
+        this.stateManager = new YouTubeConnectionStateManager();
     }
 
     async connect(userId: string, io: Server): Promise<void> {
-        if (this.discoveryManager.isConnecting(userId)) {
-            logger.debug({ userId }, 'Already connecting to YouTube, skipping...');
+        // 1. Evitar peticiones simultáneas
+        if (this.stateManager.isConnecting(userId)) {
+            logger.debug({ userId }, 'YouTube: Connection already in progress, skipping');
             return;
         }
 
-        if (this.discoveryManager.hasActiveDiscovery(userId)) {
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+        // 2. Si ya está conectado y activo, solo informar
+        if (this.stateManager.hasActiveConnection(userId)) {
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado');
             return;
         }
 
-        this.discoveryManager.markAsConnecting(userId);
+        this.stateManager.setConnecting(userId, true);
 
         try {
             const connection = await this.getConnection(userId);
             if (!connection) {
+                logger.warn({ userId }, 'YouTube: No account found in DB');
                 return;
             }
 
+            // 3. Limpiar rastro anterior
             await this.disconnect(userId);
 
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
+            // 4. Iniciar auto-discovery
             await this.setupAutoDiscovery(userId, io);
 
         } catch (error) {
-            logger.error({ err: error, userId }, 'Error setting up YouTube connection');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error de configuración');
+            logger.error({ err: error, userId }, 'YouTube: Failed to setup connection');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error');
         } finally {
-            this.discoveryManager.unmarkAsConnecting(userId);
+            this.stateManager.setConnecting(userId, false);
         }
     }
 
     async boostDiscovery(userId: string, io: Server): Promise<void> {
-        logger.info({ userId }, 'Manual search requested for YouTube');
+        logger.info({ userId }, 'YouTube: Manual boost requested');
 
-        this.discoveryManager.activateManualSearch(userId);
+        this.stateManager.setManualMode(userId, true);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
-        // Intentar búsqueda inmediata
         try {
             await this.attemptDiscovery(userId, io);
-        } catch (error) {
-            logger.debug({ userId, err: error }, 'First manual attempt failed');
+        } catch {
+            SafeSocketEmitter.emitConnectionStatus(
+                io,
+                userId,
+                'youtube',
+                'waiting_stream',
+                'Sin Live público'
+            );
         }
-
-        // Si no encontró, hacer segundo intento después de 20s
-        setTimeout(async () => {
-            if (this.discoveryManager.hasActiveDiscovery(userId)) {
-                try {
-                    await this.attemptDiscovery(userId, io);
-                } catch (error) {
-                    logger.debug({ userId, err: error }, 'Second manual attempt failed');
-                    // Volver a modo manual
-                    this.discoveryManager.switchToManualMode(userId, io);
-                }
-            }
-        }, YouTubePollingConfig.AUTO_DISCOVERY_INTERVAL);
     }
 
     private async getConnection(userId: string): Promise<Connection | null> {
-        const connection = await Connection.findOne({
+        return await Connection.findOne({
             where: { userId: String(userId), provider: 'youtube' }
         });
-
-        if (!connection) {
-            this.discoveryManager.unmarkAsConnecting(userId);
-        }
-
-        return connection;
     }
 
     private async setupAutoDiscovery(userId: string, io: Server): Promise<void> {
         const tryConnect = async () => {
+            if (this.stateManager.getAutoAttempts(userId) >= YouTubePollingConfig.AUTO_DISCOVERY_MAX_ATTEMPTS) {
+                this.handleAutoDiscoveryExhausted(userId, io);
+                return;
+            }
             await this.attemptDiscovery(userId, io);
         };
 
@@ -108,45 +95,20 @@ export class YouTubeChatProvider implements ChatProvider {
             onError: (err) => this.handleDiscoveryError(err, userId, io)
         });
 
-        this.discoveryManager.registerDiscovery(userId, cleanup);
+        this.stateManager.setDiscoveryCleanup(userId, cleanup);
 
         // Primer intento inmediato
-        await tryConnect().catch((err) => {
-            logger.debug({ userId, err }, 'Initial YouTube connection attempt failed - continuing');
-        });
+        await tryConnect().catch(() => { });
     }
 
     private async attemptDiscovery(userId: string, io: Server): Promise<void> {
-        const autoAttempts = this.discoveryManager.getAutoAttempts(userId);
-
-        // Verificar si ya agotamos los intentos automáticos
-        if (!this.discoveryManager.shouldContinueAutoDiscovery(userId)) {
-            this.discoveryManager.stopDiscovery(userId);
-            this.discoveryManager.switchToManualMode(userId, io);
-            return;
-        }
-
-        logger.debug({ userId, attempt: autoAttempts + 1 }, 'YouTube discovery attempt...');
-
-        const stillExists = await Connection.findOne({
-            where: { userId: String(userId), provider: 'youtube' }
-        });
-        if (!stillExists) {
-            this.discoveryManager.stopDiscovery(userId);
-            return;
-        }
+        this.stateManager.incrementAutoAttempts(userId);
 
         const accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
-        if (!accessToken) {
-            return;
-        }
-
-        this.discoveryManager.incrementAutoAttempts(userId);
+        if (!accessToken) throw new Error('Token inválido');
 
         const broadcast = await this.broadcastDiscovery.findLiveBroadcast(accessToken);
-        if (!broadcast) {
-            throw new Error('No broadcast found');
-        }
+        if (!broadcast) throw new Error('Broadcast not found');
 
         await this.handleBroadcastFound(userId, broadcast, accessToken, io);
     }
@@ -161,39 +123,55 @@ export class YouTubeChatProvider implements ChatProvider {
         const broadcastId = broadcast?.id;
 
         if (liveChatId) {
-            const attempts = this.discoveryManager.getAutoAttempts(userId);
-            logger.info({ liveChatId, userId, attempts }, 'YouTube live detected');
+            logger.info({ userId, liveChatId }, 'YouTube: Active broadcast discovered');
 
-            this.discoveryManager.stopDiscovery(userId);
+            // Parar discovery
+            this.stateManager.setDiscoveryCleanup(userId, () => { });
 
-            // Guardar liveChatId en la conexión para usarlo al enviar mensajes
+            // Persistir chatroomId
             await Connection.update(
                 { chatroomId: liveChatId },
                 { where: { userId: String(userId), provider: 'youtube' } }
             );
 
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected');
+            this.stateManager.markAsConnected(userId);
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado');
 
-            this.chatPoller.startPolling(userId, liveChatId, accessToken, io);
+            // Iniciar pollers
+            this.stateManager.getChatPoller(userId).startPolling(userId, liveChatId, accessToken, io);
             if (broadcastId) {
-                this.viewerPoller.startPolling(userId, broadcastId, accessToken, io);
+                this.stateManager.getViewerPoller(userId).startPolling(userId, broadcastId, accessToken, io);
             }
         }
     }
 
+    private handleAutoDiscoveryExhausted(userId: string, io: Server): void {
+        this.stateManager.setManualMode(userId, true);
+        SafeSocketEmitter.emitConnectionStatus(
+            io,
+            userId,
+            'youtube',
+            'waiting_stream',
+            'Sin Live detectado'
+        );
+    }
+
     private handleDiscoveryError(err: unknown, userId: string, io: Server): void {
         if (err instanceof Error && err.message === 'YOUTUBE_QUOTA_EXCEEDED') {
-            this.discoveryManager.notifyQuotaExceeded(io, userId);
-        } else {
-            logger.debug({ userId, err }, 'YouTube discovery retry failed');
+            logger.warn({ userId }, 'YouTube: Quota exceeded during discovery');
+            this.stateManager.clearState(userId);
+            SafeSocketEmitter.emitConnectionStatus(
+                io,
+                userId,
+                'youtube',
+                'error',
+                'Límite diario'
+            );
         }
     }
 
     async disconnect(userId: string): Promise<void> {
-        this.discoveryManager.stopDiscovery(userId);
-        this.chatPoller.stopPolling(userId);
-        this.viewerPoller.stopPolling(userId);
-
-        logger.debug({ userId }, 'YouTube chat provider disconnected (preserving chatroomId)');
+        logger.info({ userId }, 'YouTube: Disconnecting and cleaning state');
+        this.stateManager.clearState(userId);
     }
 }

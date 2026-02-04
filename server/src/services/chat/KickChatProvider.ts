@@ -41,25 +41,25 @@ export class KickChatProvider implements ChatProvider {
 
             if (!accessToken) {
                 logger.error({ userId }, 'No Kick access token');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Token inválido');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error sesión');
                 this.connectingUsers.delete(userId);
                 return;
             }
 
             if (this.manager.isPolling(userId)) {
                 logger.debug({ userId }, 'Kick already connected and polling');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado');
                 this.manager.startViewerPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;
             }
 
             logger.info({ userId }, 'Connecting to Kick');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connecting', 'Buscando...');
 
             const channelInfo = await this.manager.getChannelInfo(accessToken, userId, io);
             if (!channelInfo) {
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Canal no encontrado');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'No encontrado');
                 this.connectingUsers.delete(userId);
                 return;
             }
@@ -72,13 +72,13 @@ export class KickChatProvider implements ChatProvider {
             this.manager.startViewerPolling(userId, accessToken, io);
 
             logger.info({ slug, userId }, 'Connected to Kick chat');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado');
 
             void this.manager.registerWebhook(userId, accessToken, broadcasterId);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error connecting to Kick');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error de conexión');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error');
         } finally {
             this.connectingUsers.delete(userId);
         }

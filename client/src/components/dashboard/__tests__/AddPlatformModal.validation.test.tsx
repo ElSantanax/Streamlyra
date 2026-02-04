@@ -4,11 +4,11 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import AddPlatformModal from '../AddPlatformModal';
-import * as authService from '../../../api/services/auth.service';
+import AddPlatformModal from '../connections/AddPlatformModal';
+import * as authService from '../../../services/api/auth.service';
 
 // Mock del authService
-vi.mock('../../../api/services/auth.service', () => ({
+vi.mock('../../../services/api/auth.service', () => ({
   authService: {
     connectTikTok: vi.fn()
   }
@@ -45,9 +45,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should accept valid username without @', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'usuario123' } });
-      
+
       // No debería mostrar error
       await waitFor(() => {
         expect(screen.queryByText(/Solo se permiten/i)).not.toBeInTheDocument();
@@ -57,9 +57,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should accept valid username with @', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: '@usuario123' } });
-      
+
       // No debería mostrar error
       await waitFor(() => {
         expect(screen.queryByText(/Solo se permiten/i)).not.toBeInTheDocument();
@@ -69,9 +69,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should accept username with dots and underscores', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'user.name_123' } });
-      
+
       // No debería mostrar error
       await waitFor(() => {
         expect(screen.queryByText(/Solo se permiten/i)).not.toBeInTheDocument();
@@ -83,9 +83,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username too short', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'a' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/debe tener entre 2 y 24 caracteres/i)).toBeInTheDocument();
       });
@@ -94,9 +94,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username too long', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'a'.repeat(25) } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/debe tener entre 2 y 24 caracteres/i)).toBeInTheDocument();
       });
@@ -105,9 +105,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username with spaces', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'user name' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Solo se permiten letras, números, puntos y guiones bajos/i)).toBeInTheDocument();
       });
@@ -116,9 +116,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username with special characters', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'user@name!' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Solo se permiten letras, números, puntos y guiones bajos/i)).toBeInTheDocument();
       });
@@ -127,9 +127,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username with emojis', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'user😀name' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Solo se permiten letras, números, puntos y guiones bajos/i)).toBeInTheDocument();
       });
@@ -138,9 +138,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should show error for username with Unicode characters', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: '用户名' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Solo se permiten letras, números, puntos y guiones bajos/i)).toBeInTheDocument();
       });
@@ -150,7 +150,7 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
   describe('Helper text', () => {
     it('should show helper text when no error', async () => {
       renderModal();
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Usa tu @usuario \(no tu nombre visible\)/i)).toBeInTheDocument();
       });
@@ -159,9 +159,9 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
     it('should hide helper text when error is shown', async () => {
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'a' } });
-      
+
       await waitFor(() => {
         expect(screen.queryByText(/Usa tu @usuario \(no tu nombre visible\)/i)).not.toBeInTheDocument();
         expect(screen.getByText(/debe tener entre 2 y 24 caracteres/i)).toBeInTheDocument();
@@ -174,12 +174,12 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
       const connectTikTokSpy = vi.spyOn(authService.authService, 'connectTikTok');
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: 'a' } });
-      
+
       // Intentar conectar presionando Enter
       fireEvent.keyDown(input, { key: 'Enter' });
-      
+
       await waitFor(() => {
         expect(connectTikTokSpy).not.toHaveBeenCalled();
       });
@@ -193,15 +193,15 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
       const connectTikTokSpy = vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(mockAuthResponse);
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       fireEvent.change(input, { target: { value: '@usuario123' } });
-      
+
       // Buscar el botón de conectar y hacer click
       await waitFor(() => {
         const connectButton = screen.getByTitle('Conectar');
         fireEvent.click(connectButton);
       });
-      
+
       await waitFor(() => {
         expect(connectTikTokSpy).toHaveBeenCalledWith('usuario123');
       });
@@ -215,17 +215,17 @@ describe('AddPlatformModal - TikTok Username Validation', () => {
       vi.spyOn(authService.authService, 'connectTikTok').mockResolvedValue(mockAuthResponse);
       renderModal();
       const input = screen.getByPlaceholderText('@usuario');
-      
+
       // Primero crear un error
       fireEvent.change(input, { target: { value: 'a' } });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/debe tener entre 2 y 24 caracteres/i)).toBeInTheDocument();
       });
-      
+
       // Luego corregir el username
       fireEvent.change(input, { target: { value: 'usuario123' } });
-      
+
       await waitFor(() => {
         expect(screen.queryByText(/debe tener entre 2 y 24 caracteres/i)).not.toBeInTheDocument();
       });

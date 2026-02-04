@@ -1,30 +1,23 @@
-/** Manejador central de autenticación de plataforma con lógica transaccional */
-
 import { UserService } from '../../user/UserService';
 import { ConnectionService } from '../../connection/ConnectionService';
-import { ProfileSyncService } from '../ProfileSyncService';
-import { ConnectionCreationService } from '../ConnectionCreationService';
-import { ConnectionActivationDecider, ConnectionActivationContext } from '../ConnectionActivationDecider';
-import { ProfileSyncDecider, ProfileSyncContext } from '../ProfileSyncDecider';
-import { AuthResponseBuilder, AuthResponse } from '../AuthResponseBuilder';
-import { KickService } from '../../platforms/KickService';
+import { AuthDTOBuilder, AuthResponse } from '../AuthDTOBuilder';
+
 import { AuthTokens, PlatformProfile } from '../../../types/index';
-import { AppError } from '../../../utils/AppError';
+
 import { withErrorHandling } from '../../../utils/errorHandling';
 import { logger } from '../../../utils/logger';
 import db from '../../../config/db';
 import { Transaction } from 'sequelize';
+import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
+
 
 export class PlatformAuthHandler {
     constructor(
         private userService: UserService,
         private connectionService: ConnectionService,
-        private profileSyncService: ProfileSyncService,
-        private connectionCreationService: ConnectionCreationService,
-        private activationDecider: ConnectionActivationDecider,
-        private profileSyncDecider: ProfileSyncDecider,
-        private responseBuilder: AuthResponseBuilder
-    ) {}
+        private connectionRepository: IConnectionRepository,
+        private dtoBuilder: AuthDTOBuilder
+    ) { }
 
     async handlePlatformAuth(
         profile: PlatformProfile,
@@ -35,76 +28,59 @@ export class PlatformAuthHandler {
             async () => {
                 logger.info(
                     { provider: profile.provider, providerId: profile.providerId, currentUserId },
-                    'PlatformAuthHandler: Starting platform authentication with transaction'
+                    'PlatformAuthHandler: Starting platform authentication'
                 );
 
                 return await db.transaction(async (transaction) => {
+                    // 1. Encontrar o crear usuario
                     const { user, isNew } = await this.userService.findOrCreateFromPlatform(
                         profile,
                         currentUserId,
                         transaction
                     );
-                    logger.info({ userId: user.id, isNew }, 'PlatformAuthHandler: User found or created');
 
+                    // 2. Determinar si activar conexión
                     const existingConnection = await this.connectionService.getConnectionByProvider(
                         profile.provider,
                         profile.providerId
                     );
 
-                    const activationContext: ConnectionActivationContext = {
-                        isNewUser: isNew,
-                        isLinkingAccount: !!currentUserId,
-                        hasExistingConnection: !!existingConnection,
-                        userId: user.id,
-                        platform: profile.provider
-                    };
-
-                    const shouldActivate = this.activationDecider.shouldActivateConnection(activationContext);
-                    const activationReason = this.activationDecider.getActivationReason(activationContext);
+                    const shouldActivate = isNew || !!currentUserId || !!existingConnection;
+                    const activationReason = isNew ? 'new_user' : (currentUserId ? 'explicit_link' : 'existing_refresh');
 
                     if (shouldActivate) {
-                        await this.createOrUpdateConnection(
-                            user.id,
-                            profile,
-                            tokens,
-                            transaction
-                        );
-                        logger.info(
-                            { userId: user.id, platform: profile.provider, reason: activationReason },
-                            'PlatformAuthHandler: Connection activated'
-                        );
+                        await this.createOrUpdateConnection(user.id, profile, tokens, transaction);
                     }
 
-                    const syncContext: ProfileSyncContext = {
-                        isNewUser: isNew,
-                        isLinkingAccount: !!currentUserId,
-                        provider: profile.provider,
-                        userId: user.id
-                    };
+                    // 3. Sincronizar perfil con Blindaje de Twitch
+                    // Buscamos si el usuario ya tiene Twitch vinculado
+                    const hasTwitch = user.connections?.some(c => c.provider === 'twitch')
+                        || await this.connectionRepository.findByUserAndProvider(user.id, 'twitch', transaction);
 
-                    const shouldSyncProfile = this.profileSyncDecider.shouldSyncProfile(syncContext);
+                    // REGLA DE ORO: Solo sincronizamos si:
+                    // a) Es Twitch (siempre actualiza para ser la fuente de verdad)
+                    // b) Es un usuario nuevo y NO tiene Twitch (se registra con Kick/YT/etc)
+                    const shouldSyncProfile = profile.provider === 'twitch' || (isNew && !hasTwitch);
+
                     if (shouldSyncProfile) {
-                        await this.profileSyncService.syncProfile(user, profile, transaction);
+                        logger.info({ userId: user.id, provider: profile.provider }, 'PlatformAuthHandler: Syncing profile data');
+                        await this.userService.updateProfileData(user, profile, transaction);
+                    } else {
+                        logger.debug({ userId: user.id, provider: profile.provider }, 'PlatformAuthHandler: Skipping profile sync (Twitch protection)');
                     }
 
-                    logger.info(
-                        { userId: user.id, platform: profile.provider },
-                        'PlatformAuthHandler: Platform authentication completed successfully'
-                    );
+                    logger.info({ userId: user.id, provider: profile.provider }, 'PlatformAuthHandler: Auth completed');
 
-                    return this.responseBuilder.buildAuthResponse(user, shouldActivate, activationReason);
+                    return this.dtoBuilder.buildAuthResponse(user, shouldActivate, activationReason);
                 });
             },
             { action: 'handlePlatformAuth', provider: profile.provider },
             { rethrow: true }
         );
 
-        if (!result) {
-            throw new AppError('Platform authentication failed', 500);
-        }
-
-        return result;
+        return result as AuthResponse;
     }
+
 
     private async createOrUpdateConnection(
         userId: string,
@@ -114,32 +90,15 @@ export class PlatformAuthHandler {
     ): Promise<void> {
         let chatroomId: string | undefined;
 
-        // Obtener chatroomId para Kick
-        if (profile.provider === 'kick') {
-            try {
-                const channelDetails = await KickService.getChannelDetails(
-                    profile.providerUsername,
-                    tokens.access_token
-                );
-                chatroomId = channelDetails.chatroom?.id?.toString();
-                logger.info(
-                    { userId, chatroomId },
-                    'PlatformAuthHandler: Kick chatroomId obtained'
-                );
-            } catch (error) {
-                logger.warn(
-                    { err: error, userId },
-                    'PlatformAuthHandler: Could not obtain Kick chatroomId, will continue without it'
-                );
-            }
-        }
+        // Nota: Ya no buscamos chatroomId para Kick porque usamos broadcasterId (v1 API) 
+        // y el endpoint de v2 suele dar problemas de Cloudflare.
 
-        await this.connectionCreationService.createOrUpdate(
+        await this.connectionRepository.createOrUpdate(
             userId,
             profile.provider,
-            tokens,
             profile.providerId,
             profile.providerUsername,
+            tokens,
             transaction,
             chatroomId
         );

@@ -64,7 +64,7 @@ export class KickManager {
     async registerWebhook(userId: string, accessToken: string, broadcasterId: string): Promise<void> {
         try {
             if (!config.appUrl?.startsWith('https://')) {
-                logger.warn({}, 'APP_URL is not HTTPS, webhooks disabled');
+                logger.warn({ broadcasterId }, 'Kick Webhooks: APP_URL no es HTTPS, suscripción omitida');
                 return;
             }
 
@@ -74,32 +74,43 @@ export class KickManager {
                 where: { broadcasterId }
             });
 
-            if (existingWebhook?.isActive) {
-                logger.info({ userId, broadcasterId }, 'Reutilizando webhook activo existente de Kick');
+            // Si ya existe y tiene la misma URL y está activo, no hacemos nada
+            if (existingWebhook?.isActive && existingWebhook.callbackUrl === callbackUrl) {
+                logger.debug({ userId, broadcasterId }, 'Kick Webhooks: Webhook ya está activo y con la URL correcta');
                 return;
             }
 
-            if (existingWebhook) {
-                existingWebhook.isActive = true;
-                existingWebhook.deactivatedAt = null;
-                existingWebhook.registeredAt = new Date();
-                await existingWebhook.save();
-                logger.info({ userId, broadcasterId }, 'Reactivando webhook inactivo de Kick');
-                return;
-            }
+            // Si la URL cambió o no estaba activo, necesitamos (re)suscribir en Kick
+            logger.info(
+                { userId, broadcasterId, oldUrl: existingWebhook?.callbackUrl, newUrl: callbackUrl },
+                'Kick Webhooks: Suscribiendo/Actualizando webhook en la plataforma'
+            );
 
-            logger.info({ userId, broadcasterId }, 'Suscribiendo nuevo webhook de Kick');
             await KickService.subscribeToWebhook(accessToken, broadcasterId, callbackUrl);
 
-            await KickWebhook.create({
-                userId,
-                broadcasterId,
-                callbackUrl,
-                isActive: true,
-                registeredAt: new Date()
-            });
+            if (existingWebhook) {
+                // Actualizar el existente
+                await existingWebhook.update({
+                    callbackUrl,
+                    isActive: true,
+                    deactivatedAt: null,
+                    registeredAt: new Date(),
+                    userId // Asegurar que sea el userId actual
+                });
+                logger.info({ userId, broadcasterId }, 'Kick Webhooks: Webhook existente actualizado y reactivado');
+            } else {
+                // Crear uno nuevo
+                await KickWebhook.create({
+                    userId,
+                    broadcasterId,
+                    callbackUrl,
+                    isActive: true,
+                    registeredAt: new Date()
+                });
+                logger.info({ userId, broadcasterId }, 'Kick Webhooks: Nuevo webhook creado y suscrito');
+            }
         } catch (error) {
-            logger.error({ err: error, userId, broadcasterId }, 'Error registrando webhook de Kick');
+            logger.error({ err: error, userId, broadcasterId }, 'Kick Webhooks: Error crítico durante el registro');
         }
     }
 

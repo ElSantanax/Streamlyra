@@ -4,14 +4,14 @@ import { IConnectionRepository } from '../../repositories/interfaces/IConnection
 import { TokenRefreshService } from './TokenRefreshService';
 import { Platform } from '../../constants/platforms';
 import { AuthTokens } from '../../types/index';
-import { ConnectionRepository } from '../../repositories/implementations/ConnectionRepository';
+
 
 export class ConnectionService {
     private tokenRefreshService: TokenRefreshService;
 
     constructor(private connectionRepository: IConnectionRepository) {
         this.tokenRefreshService = new TokenRefreshService(
-            connectionRepository as ConnectionRepository
+            connectionRepository
         );
     }
 

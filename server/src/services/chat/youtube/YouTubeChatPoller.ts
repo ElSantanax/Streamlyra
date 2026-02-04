@@ -12,9 +12,9 @@ import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
-    private nextPageTokens: Map<string, string> = new Map();
+    private nextPageToken?: string;
     private transformer: YouTubeEventTransformer;
-    private activeTimeouts: Map<string, Set<NodeJS.Timeout>> = new Map();
+    private activeTimeouts: Set<NodeJS.Timeout> = new Set();
 
     constructor() {
         this.transformer = new YouTubeEventTransformer();
@@ -39,24 +39,19 @@ export class YouTubeChatPoller {
         const distributionWindow = intervalMs * 0.8;
         const delayBetweenMessages = distributionWindow / messages.length;
 
-        if (!this.activeTimeouts.has(userId)) {
-            this.activeTimeouts.set(userId, new Set());
-        }
-        const userTimeouts = this.activeTimeouts.get(userId)!;
-
         messages.forEach((item, index) => {
             const timeoutId = setTimeout(() => {
                 const normalizedMessage = this.transformer.transformMessage(item);
                 SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'youtube');
 
-                userTimeouts.delete(timeoutId);
+                this.activeTimeouts.delete(timeoutId);
             }, delayBetweenMessages * index);
 
-            userTimeouts.add(timeoutId);
+            this.activeTimeouts.add(timeoutId);
         });
 
         logger.debug(
-            { userId, messageCount: messages.length, delayBetweenMessages, activeTimeouts: userTimeouts.size },
+            { userId, messageCount: messages.length, delayBetweenMessages, activeTimeouts: this.activeTimeouts.size },
             'Distributing YouTube messages gradually'
         );
     }
@@ -83,7 +78,7 @@ export class YouTubeChatPoller {
 
             try {
                 const response = await axios.get<YouTubeChatMessagesResponse>('https://www.googleapis.com/youtube/v3/liveChat/messages', {
-                    params: { liveChatId, part: 'snippet,authorDetails', pageToken: this.nextPageTokens.get(userId) },
+                    params: { liveChatId, part: 'snippet,authorDetails', pageToken: this.nextPageToken },
                     headers: { Authorization: `Bearer ${accessToken}` },
                     timeout: 10000
                 });
@@ -93,7 +88,7 @@ export class YouTubeChatPoller {
                 if (!this.polling.isRunning(userId)) return;
 
                 const { items, nextPageToken, pollingIntervalMillis } = response.data;
-                if (nextPageToken) this.nextPageTokens.set(userId, nextPageToken);
+                if (nextPageToken) this.nextPageToken = nextPageToken;
 
                 const newMessages = items || [];
 
@@ -102,8 +97,6 @@ export class YouTubeChatPoller {
 
                 this.distributeMessages(newMessages, userId, io, adaptiveInterval);
 
-                // Si detectamos que el intervalo debería cambiar (ya sea por YouTube o por nuestra cuota), 
-                // reiniciamos el polling con el nuevo valor.
                 if (this.polling.isRunning(userId)) {
                     this.polling.start(userId, pollTask, adaptiveInterval);
                 }
@@ -142,18 +135,16 @@ export class YouTubeChatPoller {
 
     stopPolling(userId: string): void {
         this.polling.stop(userId);
-        this.nextPageTokens.delete(userId);
+        this.nextPageToken = undefined;
 
-        const userTimeouts = this.activeTimeouts.get(userId);
-        if (userTimeouts && userTimeouts.size > 0) {
+        if (this.activeTimeouts.size > 0) {
             logger.debug(
-                { userId, cancelledTimeouts: userTimeouts.size },
-                'Cancelling active timeouts for disconnected user'
+                { userId, cancelledTimeouts: this.activeTimeouts.size },
+                'Cancelling active timeouts for YouTube poller'
             );
 
-            userTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-            userTimeouts.clear();
-            this.activeTimeouts.delete(userId);
+            this.activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            this.activeTimeouts.clear();
         }
     }
 }

@@ -35,7 +35,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         if (this.activeClients.has(userId)) {
             logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
 
             const connection = await Connection.findOne({
                 where: { userId: String(userId), provider: 'twitch' }
@@ -50,13 +50,13 @@ export class TwitchChatProvider implements ChatProvider {
         this.connectingUsers.add(userId);
 
         try {
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connecting', 'Buscando...');
             logger.info({ userId }, 'Connecting to Twitch chat');
 
             const client = await this.connectionManager.connect(userId);
             this.activeClients.set(userId, client);
 
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
 
             this.eventListener.setupListeners(userId, client, io);
 
@@ -72,7 +72,7 @@ export class TwitchChatProvider implements ChatProvider {
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error connecting to Twitch');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'error');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'error', 'Error sesión');
             this.activeClients.delete(userId);
         } finally {
             this.connectingUsers.delete(userId);

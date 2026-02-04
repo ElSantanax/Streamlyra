@@ -7,7 +7,7 @@ export class ConnectionSocketHandler {
     constructor(
         private connectionManager: SocketConnectionManager,
         private activityService: ActivityService
-    ) {}
+    ) { }
 
     setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
         // Handle initial connection identification
@@ -22,14 +22,19 @@ export class ConnectionSocketHandler {
 
         socket.on('youtube_boost_discovery', async () => {
             logger.info({ socketId: socket.id, userId: authenticatedUserId }, 'YouTube boost discovery requested');
-            
             try {
-                const chatManager = this.connectionManager.getChatManager();
-                await chatManager.boostYouTubeDiscovery(authenticatedUserId);
-                
-                logger.info({ userId: authenticatedUserId }, 'YouTube boost discovery triggered successfully');
+                await this.connectionManager.getChatManager().boostProviderDiscovery(authenticatedUserId, 'youtube');
             } catch (error) {
                 logger.error({ err: error, userId: authenticatedUserId }, 'Error triggering YouTube boost discovery');
+            }
+        });
+
+        socket.on('tiktok_boost_discovery', async () => {
+            logger.info({ socketId: socket.id, userId: authenticatedUserId }, 'TikTok boost discovery requested');
+            try {
+                await this.connectionManager.getChatManager().boostProviderDiscovery(authenticatedUserId, 'tiktok');
+            } catch (error) {
+                logger.error({ err: error, userId: authenticatedUserId }, 'Error triggering TikTok boost discovery');
             }
         });
 

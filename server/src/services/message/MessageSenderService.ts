@@ -146,7 +146,7 @@ export class MessageSenderService {
                     if (!liveChatId) {
                         logger.debug({ userId, platform: 'youtube' }, 'No active live broadcast found');
                         throw Object.assign(
-                            new Error('No hay stream en vivo. Asegúrate de estar transmitiendo en YouTube.'),
+                            new Error('Sin Live activo'),
                             { code: 'NO_LIVE_BROADCAST' }
                         );
                     }

@@ -37,9 +37,8 @@ export class YouTubeBroadcastDiscovery {
                 statuses: items.map(i => i.status?.lifeCycleStatus)
             }, 'YouTube Discovery Diagnostic');
 
-            // Seleccionar el mejor directo: prioridad al que tiene chatId
-            const broadcast = items.find(b => b.snippet?.liveChatId) ||
-                items[0] || null;
+            // Seleccionar solo broadcasts con chat activo
+            const broadcast = items.find(b => b.snippet?.liveChatId) || null;
 
             if (broadcast) {
                 logger.info({

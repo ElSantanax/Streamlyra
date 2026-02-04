@@ -122,9 +122,9 @@ export class SafeSocketEmitter {
         // Prevenir eco: Si es mensaje del streamer Y fue enviado desde el dashboard
         if (msg && typeof msg === 'object' && msg.isOwner && typeof msg.message === 'string') {
             if (sentMessageCache.wasSentFromDashboard(userId, msg.message)) {
-                logger.debug(
-                    { userId, platform, message: msg.message },
-                    'SafeSocketEmitter: Omitiendo eco de mensaje enviado desde dashboard'
+                logger.info(
+                    { userId, platform, message: msg.message.substring(0, 30) },
+                    'SafeSocketEmitter: Eco detectado y bloqueado (mensaje proveniente del Dashboard)'
                 );
                 return false;
             }

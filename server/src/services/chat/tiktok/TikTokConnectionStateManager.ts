@@ -2,69 +2,84 @@
 
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 
+interface ConnectionState {
+    connection?: TikTokLiveConnection;
+    autoAttempts: number;
+    isManualMode: boolean;
+    cleanup?: () => void;
+}
+
 export class TikTokConnectionStateManager {
+    private states: Map<string, ConnectionState> = new Map();
     private connectingUsers: Set<string> = new Set();
-    private activeConnections: Map<string, TikTokLiveConnection> = new Map();
-    private retryCleanup: Map<string, () => void> = new Map();
-    private shouldReconnect: Map<string, boolean> = new Map();
+
+    private getOrCreateState(userId: string): ConnectionState {
+        let state = this.states.get(userId);
+        if (!state) {
+            state = { autoAttempts: 0, isManualMode: false };
+            this.states.set(userId, state);
+        }
+        return state;
+    }
 
     isConnecting(userId: string): boolean {
         return this.connectingUsers.has(userId);
     }
 
-    setConnecting(userId: string): void {
-        this.connectingUsers.add(userId);
-    }
-
-    removeConnecting(userId: string): void {
-        this.connectingUsers.delete(userId);
+    setConnecting(userId: string, isConnecting: boolean): void {
+        if (isConnecting) this.connectingUsers.add(userId);
+        else this.connectingUsers.delete(userId);
     }
 
     hasActiveConnection(userId: string): boolean {
-        return this.activeConnections.has(userId);
+        return !!this.states.get(userId)?.connection;
     }
 
     getActiveConnection(userId: string): TikTokLiveConnection | undefined {
-        return this.activeConnections.get(userId);
+        return this.states.get(userId)?.connection;
     }
 
     setActiveConnection(userId: string, connection: TikTokLiveConnection): void {
-        this.activeConnections.set(userId, connection);
+        const state = this.getOrCreateState(userId);
+        state.connection = connection;
     }
 
     removeActiveConnection(userId: string): void {
-        this.activeConnections.delete(userId);
-    }
-
-    shouldAutoReconnect(userId: string): boolean {
-        return this.shouldReconnect.get(userId) ?? false;
-    }
-
-    enableAutoReconnect(userId: string): void {
-        this.shouldReconnect.set(userId, true);
-    }
-
-    disableAutoReconnect(userId: string): void {
-        this.shouldReconnect.delete(userId);
-    }
-
-    getRetryCleanup(userId: string): (() => void) | undefined {
-        return this.retryCleanup.get(userId);
-    }
-
-    setRetryCleanup(userId: string, cleanup: () => void): void {
-        this.retryCleanup.set(userId, cleanup);
-    }
-
-    hasRetryCleanup(userId: string): boolean {
-        return this.retryCleanup.has(userId);
-    }
-
-    executeAndRemoveRetryCleanup(userId: string): void {
-        const cleanup = this.retryCleanup.get(userId);
-        if (cleanup) {
-            cleanup();
-            this.retryCleanup.delete(userId);
+        const state = this.states.get(userId);
+        if (state) {
+            state.connection = undefined;
         }
+    }
+
+    // Discovery tracking
+    getAutoAttempts(userId: string): number {
+        return this.states.get(userId)?.autoAttempts || 0;
+    }
+
+    incrementAutoAttempts(userId: string): void {
+        const state = this.getOrCreateState(userId);
+        state.autoAttempts++;
+    }
+
+    isManualMode(userId: string): boolean {
+        return this.states.get(userId)?.isManualMode || false;
+    }
+
+    setManualMode(userId: string, isManual: boolean): void {
+        const state = this.getOrCreateState(userId);
+        state.isManualMode = isManual;
+    }
+
+    setDiscoveryCleanup(userId: string, cleanup: () => void): void {
+        const state = this.getOrCreateState(userId);
+        if (state.cleanup) state.cleanup();
+        state.cleanup = cleanup;
+    }
+
+    clearState(userId: string): void {
+        const state = this.states.get(userId);
+        if (state?.cleanup) state.cleanup();
+        this.states.delete(userId);
+        this.connectingUsers.delete(userId);
     }
 }

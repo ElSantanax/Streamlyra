@@ -66,6 +66,7 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
+            maxAge: config.cookie.maxAge
         });
     }
 

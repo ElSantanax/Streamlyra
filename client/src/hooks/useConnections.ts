@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { authService } from '../api/services';
+import { authService } from '../services/api/auth.service';
 import type { ConnectionInfo } from '../types';
 import type { PlatformKey } from '../constants/platforms';
+
+import { socket } from '../services/socket';
 
 const initialConnections: Record<string, ConnectionInfo> = {
   twitch: { connected: false, viewers: 0 },
@@ -109,15 +111,41 @@ export const useConnections = (shouldFetch = true) => {
 
   const searchStream = useCallback((platform: PlatformKey) => {
     if (platform === 'youtube') {
-      import('../services/socket').then(({ socket }) => {
-        socket.emit('youtube_boost_discovery');
-      });
+      socket.emit('youtube_boost_discovery');
+    } else if (platform === 'tiktok') {
+      socket.emit('tiktok_boost_discovery');
     }
   }, []);
 
   useEffect(() => {
     fetchConnections();
   }, [fetchConnections]);
+
+  useEffect(() => {
+    const onConnectionStatus = (data: { platform: string; status: string; message?: string }) => {
+      console.log('Socket Connection Status Update:', data);
+
+      const isConnected = data.status === 'connected';
+
+      updateConnection(data.platform, {
+        status: data.status as 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected',
+        statusMessage: data.message,
+        connected: isConnected || data.status === 'waiting_stream' || data.status === 'connecting'
+      });
+    };
+
+    const onViewersUpdate = (data: { platform: string; count: number }) => {
+      updateConnection(data.platform, { viewers: data.count });
+    };
+
+    socket.on('connection_status', onConnectionStatus);
+    socket.on('viewers_update', onViewersUpdate);
+
+    return () => {
+      socket.off('connection_status', onConnectionStatus);
+      socket.off('viewers_update', onViewersUpdate);
+    };
+  }, [updateConnection]);
 
   return {
     connections,

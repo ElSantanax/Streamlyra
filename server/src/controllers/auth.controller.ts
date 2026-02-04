@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Response } from 'express';
-import { AuthService } from '../services/AuthService';
+import { AuthService } from '../services/auth/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../utils/AppError';
 import { Platform } from '../constants/platforms';
@@ -19,7 +19,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: config.cookie.maxAge,
         });
     }
 
@@ -33,7 +33,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matches JWT expiry)
+            maxAge: config.cookie.maxAge
         });
 
         this.setCsrfCookie(res);
@@ -96,7 +96,7 @@ export class AuthController {
             sameSite: config.cookie.sameSite,
             domain: config.cookie.domain,
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            maxAge: config.cookie.maxAge
         });
 
         this.setCsrfCookie(res);

@@ -4,6 +4,8 @@ import { ChatManager } from '../../services/ChatManager';
 import { SocketConnectionManager } from '../SocketConnectionManager';
 import { MessageSenderService } from '../../services/message/MessageSenderService';
 import { ActivityService } from '../../services/ActivityService';
+import { ConnectionService } from '../../services/connection/ConnectionService';
+import { YouTubeService } from '../../services/platforms/YouTubeService';
 import { logger } from '../../utils/logger';
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -12,6 +14,8 @@ import { logger } from '../../utils/logger';
 jest.mock('../SocketConnectionManager');
 jest.mock('../../services/message/MessageSenderService');
 jest.mock('../../services/ActivityService');
+jest.mock('../../services/connection/ConnectionService');
+jest.mock('../../services/platforms/YouTubeService');
 jest.mock('../../utils/logger', () => ({
     logger: {
         info: jest.fn(),
@@ -27,6 +31,8 @@ describe('socket.handler', () => {
     let mockChatManager: jest.Mocked<ChatManager>;
     let mockMessageSenderService: jest.Mocked<MessageSenderService>;
     let mockActivityService: jest.Mocked<ActivityService>;
+    let mockConnectionService: jest.Mocked<ConnectionService>;
+    let mockYouTubeService: jest.Mocked<YouTubeService>;
     let mockSocketConnectionManager: jest.Mocked<SocketConnectionManager>;
 
     // Helpers to capture event handlers
@@ -72,6 +78,8 @@ describe('socket.handler', () => {
         } as unknown as jest.Mocked<MessageSenderService>;
 
         mockActivityService = {} as jest.Mocked<ActivityService>;
+        mockConnectionService = {} as jest.Mocked<ConnectionService>;
+        mockYouTubeService = {} as jest.Mocked<YouTubeService>;
 
         // Setup SocketConnectionManager mock instance
         mockSocketConnectionManager = {
@@ -84,7 +92,14 @@ describe('socket.handler', () => {
     });
 
     const triggerConnection = (userId: string = '550e8400-e29b-41d4-a716-446655440021') => {
-        setupSocketHandlers(mockIo, mockChatManager, mockMessageSenderService, mockActivityService);
+        setupSocketHandlers(
+            mockIo,
+            mockChatManager,
+            mockMessageSenderService,
+            mockActivityService,
+            mockConnectionService,
+            mockYouTubeService
+        );
         // Simulate middleware setting userId
         (mockSocket.data as { userId?: string }).userId = userId;
         connectionHandler(mockSocket);
@@ -189,7 +204,7 @@ describe('socket.handler', () => {
 
             // Verificar que se emitió el resultado
             expect(mockSocket.emit).toHaveBeenCalledWith('message_sent_result', expectedResult);
-            
+
             expect(logger.info).toHaveBeenCalledWith(
                 expect.objectContaining({ userId: userId, success: true }),
                 'Message send completed'

@@ -1,9 +1,4 @@
-/**
- * Dialog Component - Modales personalizados para reemplazar alert/confirm/prompt
- * Tipos: alert, confirm, prompt
- */
-
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 
 export type DialogType = 'alert' | 'confirm' | 'prompt';
@@ -38,11 +33,28 @@ export const Dialog = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handleConfirm = useCallback(() => {
+    if (type === 'prompt') {
+      onClose(inputValue);
+    } else {
+      onClose(true);
+    }
+  }, [type, onClose, inputValue]);
+
+  const handleCancel = useCallback(() => {
+    if (type === 'alert') {
+      onClose(true);
+    } else {
+      onClose(type === 'prompt' ? null : false);
+    }
+  }, [type, onClose]);
+
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(defaultValue);
       document.body.style.overflow = 'hidden';
-      
+
       // Focus en el input si es prompt
       if (type === 'prompt' && inputRef.current) {
         setTimeout(() => inputRef.current?.focus(), 100);
@@ -52,7 +64,7 @@ export const Dialog = ({
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, defaultValue, type]);
+  }, [isOpen, defaultValue, type]); // Restaurado defaultValue para consistencia de dependencias
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -68,23 +80,7 @@ export const Dialog = ({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
-
-  const handleConfirm = () => {
-    if (type === 'prompt') {
-      onClose(inputValue);
-    } else {
-      onClose(true);
-    }
-  };
-
-  const handleCancel = () => {
-    if (type === 'alert') {
-      onClose(true);
-    } else {
-      onClose(type === 'prompt' ? null : false);
-    }
-  };
+  }, [isOpen, handleCancel]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -143,7 +139,7 @@ export const Dialog = ({
               variant="ghost"
               size="md"
               onClick={handleCancel}
-              className="min-w-[100px]"
+              className="min-w-25"
             >
               {cancelText}
             </Button>
@@ -152,7 +148,7 @@ export const Dialog = ({
             variant={variant === 'danger' ? 'danger' : 'primary'}
             size="md"
             onClick={handleConfirm}
-            className="min-w-[100px]"
+            className="min-w-25"
           >
             {confirmText}
           </Button>

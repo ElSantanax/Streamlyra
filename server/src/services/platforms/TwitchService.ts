@@ -35,7 +35,13 @@ export class TwitchService extends BasePlatformService {
             timeout: 10000
         });
 
-        return userResponse.data.data[0];
+        const users = userResponse.data.data;
+
+        if (!users || users.length === 0) {
+            throw new Error('No se encontró información del usuario en Twitch.');
+        }
+
+        return users[0];
     }
 
     protected normalizePlatformProfile(twitchUser: TwitchUser): PlatformProfile {

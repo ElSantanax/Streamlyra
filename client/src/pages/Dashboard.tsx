@@ -5,22 +5,21 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardHeader from '../components/dashboard/DashboardHeader';
-import ChatFeed from '../components/dashboard/ChatFeed';
+import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
+import ChatFeed from '../components/dashboard/chat/ChatFeed';
 
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
-import { useAuth, useConnections, useChatMessages, useSocket, useModeration } from '../hooks';
+import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
 
-const Sidebar = lazy(() => import('../components/dashboard/Sidebar'));
+const Sidebar = lazy(() => import('../components/dashboard/layout/Sidebar'));
 
-const ChatInput = lazy(() => import('../components/dashboard/ChatInput/index'));
-const AddPlatformModal = lazy(() => import('../components/dashboard/AddPlatformModal'));
+const ChatInput = lazy(() => import('../components/dashboard/chat/ChatInput/index'));
+const AddPlatformModal = lazy(() => import('../components/dashboard/connections/AddPlatformModal'));
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useAuth();
-    const { connections, updateConnection, disconnectPlatform, refetch, searchStream } = useConnections(isAuthenticated);
+    const { user, isAuthenticated, connections, disconnectPlatform, refetchConnections, searchStream } = useAuth();
     const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
     const { deleteMessage, banUser, replyToUser } = useModeration({
         onMessageDeleted: removeMessage,
@@ -47,21 +46,11 @@ const Dashboard = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // Socket connection con callbacks
+    // Socket connection con callbacks para mensajes
     const { isConnected } = useSocket({
         userId: user?.id,
         onChatMessage: addMessage,
         onMessageStatusUpdate: updateMessageStatus,
-        onViewersUpdate: (data) => {
-            updateConnection(data.platform, { viewers: data.count });
-        },
-        onConnectionStatus: (data) => {
-            updateConnection(data.platform, {
-                status: data.status,
-                statusMessage: data.message,
-                connected: data.status === 'connected',
-            });
-        },
         connections,
     });
 
@@ -152,7 +141,7 @@ const Dashboard = () => {
                             isOpen={isAddPlatformOpen}
                             onClose={() => setIsAddPlatformOpen(false)}
                             connections={connections}
-                            onConnectionSuccess={refetch}
+                            onConnectionSuccess={refetchConnections}
                         />
                     </Suspense>
                 </LocalErrorBoundary>

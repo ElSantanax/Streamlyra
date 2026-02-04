@@ -94,7 +94,7 @@ export class SocketConnectionManager {
 
             socket.emit('error', {
                 code: errorMessage === 'Connection timeout' ? 'CONNECTION_TIMEOUT' : 'CONNECTION_ERROR',
-                message: 'Error al conectar a plataformas. Intenta de nuevo.'
+                message: 'Error conexión'
             });
         }
     }

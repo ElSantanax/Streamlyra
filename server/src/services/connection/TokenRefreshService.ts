@@ -1,29 +1,11 @@
 /** Servicio de renovación de tokens OAuth con verificación de expiración */
 
+import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { Connection } from '../../models/Connection.model';
-import { ConnectionRepository } from '../../repositories/implementations/ConnectionRepository';
-import { TwitchService } from '../platforms/TwitchService';
-import { YouTubeService } from '../platforms/YouTubeService';
-import { KickService } from '../platforms/KickService';
 import { Platform } from '../../constants/platforms';
 import { logger } from '../../utils/logger';
 import { calculateTokenExpiry } from '../../utils/tokenUtils';
-
-type OAuthPlatform = 'twitch' | 'youtube' | 'kick';
-
-interface PlatformService {
-    refreshAccessToken(refreshToken: string): Promise<{
-        access_token: string;
-        refresh_token?: string;
-        expires_in: number;
-    }>;
-}
-
-const PLATFORM_SERVICES: Record<OAuthPlatform, PlatformService> = {
-    twitch: new TwitchService(),
-    youtube: new YouTubeService(),
-    kick: new KickService()
-};
+import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 
 export class TokenRefreshService {
     private static readonly BUFFER_TIME_MS = 5 * 60 * 1000;
@@ -34,9 +16,9 @@ export class TokenRefreshService {
      * en lugar de hacer múltiples llamadas HTTP a la API de OAuth.
      * Key format: "userId:platform"
      */
-    private refreshPromises: Map<string, Promise<string>> = new Map();
+    private refreshPromises: Map<string, Promise<string | null>> = new Map();
 
-    constructor(private connectionRepository: ConnectionRepository) { }
+    constructor(private connectionRepository: IConnectionRepository) { }
 
     async getValidAccessToken(userId: string, platform: Platform): Promise<string | null> {
         const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
@@ -63,7 +45,7 @@ export class TokenRefreshService {
             return existingRefresh;
         }
 
-        const refreshPromise = this.refreshToken(connection, platform as OAuthPlatform)
+        const refreshPromise = this.refreshToken(connection, platform)
             .finally(() => {
                 // Limpiar el cache cuando termine (éxito o error)
                 this.refreshPromises.delete(cacheKey);
@@ -105,7 +87,7 @@ export class TokenRefreshService {
             return existingRefresh;
         }
 
-        const refreshPromise = this.refreshToken(connection, platform as OAuthPlatform)
+        const refreshPromise = this.refreshToken(connection, platform)
             .finally(() => {
                 this.refreshPromises.delete(cacheKey);
             });
@@ -121,16 +103,16 @@ export class TokenRefreshService {
         return timeUntilExpiry > TokenRefreshService.BUFFER_TIME_MS;
     }
 
-    private async refreshToken(connection: Connection, platform: OAuthPlatform): Promise<string> {
+    private async refreshToken(connection: Connection, platform: Platform): Promise<string | null> {
         if (!connection.refreshToken) {
             logger.warn({ platform, connectionId: connection.id }, 'No refresh token available');
-            return connection.accessToken;
+            return null; // Si no hay refresh token y el access está expirado, no podemos hacer nada
         }
 
         try {
             logger.debug({ platform, connectionId: connection.id }, 'Refreshing access token');
 
-            const platformService = PLATFORM_SERVICES[platform];
+            const platformService = PlatformServiceFactory.getService(platform);
             const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
 
             connection.accessToken = newTokens.access_token;
@@ -149,7 +131,7 @@ export class TokenRefreshService {
                 { err: error, platform, connectionId: connection.id },
                 'Failed to refresh token'
             );
-            return connection.accessToken;
+            return null; // Es mejor devolver null que un token que sabemos que no funciona
         }
     }
 }

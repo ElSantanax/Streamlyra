@@ -100,7 +100,7 @@ export const validateKickWebhook = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        logger.info({
+        logger.debug({
             method: req.method,
             url: req.url,
             headers: Object.keys(req.headers),
@@ -113,7 +113,7 @@ export const validateKickWebhook = async (
         const messageId = extractHeader(req, KICK_HEADERS.MESSAGE_ID);
         const eventType = extractHeader(req, KICK_HEADERS.EVENT_TYPE);
 
-        logger.info({
+        logger.debug({
             eventType,
             messageIdPrefix: messageId?.substring(0, 20),
             timestamp,
@@ -146,7 +146,7 @@ export const validateKickWebhook = async (
             throw new AppError('Invalid signature', 401);
         }
 
-        logger.info('Kick webhook validation passed');
+        logger.debug('Kick webhook validation passed');
 
         // Adjuntar datos validados al request
         req.webhookData = {

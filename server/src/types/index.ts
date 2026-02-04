@@ -54,3 +54,11 @@ export interface ViewersUpdate {
     platform: Platform;
     count: number;
 }
+
+export interface ConnectionInfo {
+    connected: boolean;
+    username?: string;
+    viewers?: number;
+    status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
+    statusMessage?: string;
+}

@@ -162,12 +162,12 @@ describe('UserService', () => {
         });
     });
 
-    describe('updateAvatarAndDisplayName', () => {
+    describe('updateProfileData', () => {
         it('should update user if avatar or display name changed', async () => {
             const user = { id: 'user-1', avatarUrl: 'old-url', displayName: 'Old Name' } as User;
             const newProfile = { avatarUrl: 'new-url', displayName: 'New Name' };
 
-            await service.updateAvatarAndDisplayName(user, newProfile);
+            await service.updateProfileData(user, newProfile);
 
             expect(mockUserRepository.update).toHaveBeenCalledWith('user-1', {
                 avatarUrl: 'new-url',
@@ -179,7 +179,7 @@ describe('UserService', () => {
             const user = { id: 'user-1', avatarUrl: 'same-url', displayName: 'Same Name' } as User;
             const sameProfile = { avatarUrl: 'same-url', displayName: 'Same Name' };
 
-            await service.updateAvatarAndDisplayName(user, sameProfile);
+            await service.updateProfileData(user, sameProfile);
 
             expect(mockUserRepository.update).not.toHaveBeenCalled();
         });

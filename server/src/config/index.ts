@@ -25,6 +25,7 @@ export const config = {
             if (raw === 'lax' || raw === 'none' || raw === 'strict') return raw;
             return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
         })(),
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días por defecto
     },
 
     // OAuth configuration

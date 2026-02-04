@@ -1,5 +1,5 @@
 /** Exports centralizados de todos los servicios */
-export { AuthService } from './AuthService';
+export { AuthService } from './auth/AuthService';
 export { ChatManager } from './ChatManager';
 
 export * from './auth/index';

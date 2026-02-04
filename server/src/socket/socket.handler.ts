@@ -8,7 +8,7 @@ import { KickModerationService } from '../services/moderation/KickModerationServ
 import { YouTubeModerationService } from '../services/moderation/YouTubeModerationService';
 import { ConnectionService } from '../services/connection/ConnectionService';
 import { YouTubeService } from '../services/platforms/YouTubeService';
-import { ConnectionRepository } from '../repositories/implementations/ConnectionRepository';
+
 import { SocketConnectionManager } from './SocketConnectionManager';
 import { createAuthMiddleware } from './middleware/SocketAuthMiddleware';
 import { MessageSocketHandler } from './handlers/MessageSocketHandler';
@@ -26,7 +26,9 @@ export const setupSocketHandlers = (
     io: Server,
     chatManager: ChatManager,
     messageSenderService: MessageSenderService,
-    activityService: ActivityService
+    activityService: ActivityService,
+    connectionService: ConnectionService,
+    youtubeService: YouTubeService
 ) => {
     logger.info({}, 'Configurando manejadores de Socket.io');
 
@@ -35,9 +37,6 @@ export const setupSocketHandlers = (
     const twitchModerationService = new TwitchModerationService();
     const kickModerationService = new KickModerationService();
     const youtubeModerationService = new YouTubeModerationService();
-    const connectionRepository = new ConnectionRepository();
-    const connectionService = new ConnectionService(connectionRepository);
-    const youtubeService = new YouTubeService();
 
     // Initialize handlers
     const messageHandler = new MessageSocketHandler(messageSenderService);

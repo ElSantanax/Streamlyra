@@ -3,7 +3,7 @@
  * Evita try-catch repetitivos y mensajes inconsistentes
  */
 
-import { ApiError } from '../../api/client';
+import { ApiError } from '../../services/api/client';
 
 export interface ErrorInfo {
   message: string;

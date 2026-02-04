@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { authService } from '../../api/services/auth.service';
+import { authService } from '../../services/api/auth.service';
 import { sessionManager } from '../../services/SessionManager';
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthProvider';
@@ -10,7 +10,7 @@ import { useAuth } from '../useAuth';
 import type { User, ConnectionInfo } from '../../types/user.types';
 
 // Mock dependencies
-vi.mock('../../api/services/auth.service', () => ({
+vi.mock('../../services/api/auth.service', () => ({
     authService: {
         getMe: vi.fn(),
         logout: vi.fn(),
@@ -62,7 +62,7 @@ describe('useAuth', () => {
 
     describe('checkAuth', () => {
         it('debe llamar a /auth/me automáticamente al montar', async () => {
-            vi.mocked(authService.getMe).mockResolvedValue({ 
+            vi.mocked(authService.getMe).mockResolvedValue({
                 user: { id: '1', username: 'testuser', displayName: 'Test User', avatar: '' },
                 connections: {}
             });
@@ -125,7 +125,7 @@ describe('useAuth', () => {
 
             // Resolver
             await act(async () => {
-                resolveGetMe!({ 
+                resolveGetMe!({
                     user: { id: '1', username: 'testuser', displayName: 'Test User', avatar: '' },
                     connections: {}
                 });

@@ -47,13 +47,10 @@ export class WebhookController {
     }
 
     handleKickWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
-        logger.info({
-            webhookData: req.webhookData,
-            bodyKeys: Object.keys(req.body || {})
-        }, 'KICK WEBHOOK CONTROLLER: Procesando evento');
+        logger.debug('KICK WEBHOOK CONTROLLER: Procesando evento');
 
         await this.handleWebhook('kick', req, res);
 
-        logger.info({}, 'KICK WEBHOOK CONTROLLER: Evento procesado exitosamente');
+        logger.debug('KICK WEBHOOK CONTROLLER: Evento procesado exitosamente');
     };
 }

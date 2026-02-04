@@ -5,6 +5,7 @@ import { PlatformProfile } from '../../types/index';
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { Transaction } from 'sequelize';
+import { logger } from '../../utils/logger';
 
 export class UserService {
     constructor(
@@ -54,6 +55,11 @@ export class UserService {
         let suffix = 1;
 
         while (await this.userRepository.usernameExists(username, transaction)) {
+            if (suffix > 10) {
+                // Si después de 10 intentos no hay suerte, usar un fragmento aleatorio para romper el bucle
+                username = `${baseUsername}${Math.random().toString(36).substring(2, 7)}`;
+                break;
+            }
             username = `${baseUsername}${suffix++}`;
         }
 
@@ -65,12 +71,20 @@ export class UserService {
         }, transaction);
     }
 
-    async updateAvatarAndDisplayName(user: User, profile: { avatarUrl: string, displayName: string }, transaction?: Transaction) {
-        if (user.avatarUrl !== profile.avatarUrl || user.displayName !== profile.displayName) {
-            await this.userRepository.update(user.id, {
-                avatarUrl: profile.avatarUrl,
-                displayName: profile.displayName
-            }, transaction);
+    async updateProfileData(user: User, profile: Partial<PlatformProfile>, transaction?: Transaction) {
+        const updates: Partial<{
+            displayName: string;
+            avatarUrl: string;
+            email: string;
+        }> = {};
+
+        if (profile.displayName && user.displayName !== profile.displayName) updates.displayName = profile.displayName;
+        if (profile.avatarUrl && user.avatarUrl !== profile.avatarUrl) updates.avatarUrl = profile.avatarUrl;
+        if (profile.email && user.email !== profile.email) updates.email = profile.email;
+
+        if (Object.keys(updates).length > 0) {
+            await this.userRepository.update(user.id, updates, transaction);
+            logger.debug({ userId: user.id }, 'Profile data updated');
         }
     }
 }

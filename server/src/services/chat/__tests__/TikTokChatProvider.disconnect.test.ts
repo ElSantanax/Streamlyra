@@ -7,6 +7,7 @@
  * de remover los listeners, causando reconexiones no deseadas.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { TikTokChatProvider } from '../TikTokChatProvider';
 
 // Mock de dependencias
@@ -63,8 +64,9 @@ describe('TikTokChatProvider.disconnect()', () => {
         expect(provider.stateManager.shouldAutoReconnect(userId)).toBe(false);
 
         // Verificar que la conexión fue desconectada
-        // @ts-expect-error - Accediendo a propiedad privada para testing
-        const mockDisconnect = provider.lifecycle.connectionManager.disconnect;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mockDisconnect = (provider as any).connectionManager.disconnect;
         expect(mockDisconnect).toHaveBeenCalledWith(mockConnection);
     });
 
