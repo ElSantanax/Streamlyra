@@ -16,12 +16,6 @@ export interface MessagePart {
   name?: string; // nombre del emote (para alt/title)
 }
 
-/**
- * Parsea un mensaje con emotes y lo divide en partes de texto y emotes
- * @param message - El mensaje original
- * @param emotes - Array de emotes con sus posiciones
- * @returns Array de partes del mensaje (texto o emote)
- */
 export function parseMessageWithEmotes(
   message: string,
   emotes?: EmoteData[]
