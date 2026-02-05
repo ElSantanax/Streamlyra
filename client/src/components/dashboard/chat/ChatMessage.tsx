@@ -21,7 +21,7 @@ export interface ChatMessageProps {
     status?: MessageStatus;
     errorMessage?: string;
     // Campos para moderación
-    messageId?: string;
+    id?: string;
     userId?: string;
     onReply?: (username: string) => void;
     onDelete?: (messageId: string) => void;
@@ -35,7 +35,6 @@ export interface ChatMessageProps {
     }>;
 }
 
-// Sub-components para mejorar la legibilidad y separación de responsabilidades
 const StatusIndicator = ({ status, errorMessage }: { status?: MessageStatus; errorMessage?: string }) => {
     if (status !== 'error') return null;
     return (
@@ -59,7 +58,7 @@ const ChatMessage = memo(({
     specialMessage,
     status,
     errorMessage,
-    messageId,
+    id,
     userId,
     onReply,
     onDelete,
@@ -75,15 +74,16 @@ const ChatMessage = memo(({
     }, [onReply, user]);
 
     const handleDelete = useCallback(() => {
-        if (onDelete && messageId) onDelete(messageId);
-    }, [onDelete, messageId]);
+        if (onDelete && id) onDelete(id);
+    }, [onDelete, id]);
 
     const handleBan = useCallback(() => {
         if (onBan && userId) onBan(userId, user);
     }, [onBan, userId, user]);
 
-    // Parsear mensaje con emotes
     const messageParts = parseMessageWithEmotes(message, emotes);
+    const isOwnMessage = user === 'Tú' || isOwner;
+    const isTikTok = platform === 'tiktok';
 
     return (
         <div className={`
@@ -106,11 +106,11 @@ const ChatMessage = memo(({
                             <Icon size={platform === 'tiktok' ? 12 : 14} className="hidden md:block" />
                         </div>
 
-                        {/* Mantenemos el wrapper para el escalado visual específico de este componente */}
-                        {isOwner && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="streamer" isYouTube={isYouTube} /></div>}
-                        {isMod && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="mod" isYouTube={isYouTube} /></div>}
-                        {isVIP && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="vip" isYouTube={isYouTube} /></div>}
-                        {isSub && <div className="shrink-0 scale-90 md:scale-100"><UserBadge type="sub" isYouTube={isYouTube} /></div>}
+                        {/* Badges alineados verticalmente - No mostrar badge si el usuario es "Tú" */}
+                        {isOwner && user !== 'Tú' && <UserBadge type="streamer" isYouTube={isYouTube} />}
+                        {isMod && <UserBadge type="mod" isYouTube={isYouTube} />}
+                        {isVIP && <UserBadge type="vip" isYouTube={isYouTube} />}
+                        {isSub && <UserBadge type="sub" isYouTube={isYouTube} />}
 
                         <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
                         <StatusIndicator status={status} errorMessage={errorMessage} />
@@ -122,8 +122,8 @@ const ChatMessage = memo(({
                                 variant="ghost"
                                 className="size-8! p-0! border border-surface-border text-gray-400 hover:text-white"
                                 onClick={handleReply}
-                                disabled={!onReply}
-                                title="Responder"
+                                disabled={!onReply || isOwnMessage || isTikTok}
+                                title={isTikTok ? "TikTok es solo lectura" : (isOwnMessage ? "No puedes responderte a ti mismo" : "Responder")}
                             >
                                 <MdReply size={18} />
                             </Button>
@@ -132,8 +132,8 @@ const ChatMessage = memo(({
                                 variant="ghost"
                                 className="size-8! p-0! border border-surface-border text-gray-400 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                                 onClick={handleBan}
-                                disabled={!onBan || !userId}
-                                title="Banear"
+                                disabled={!onBan || !userId || isOwnMessage || isTikTok}
+                                title={isTikTok ? "TikTok es solo lectura" : (isOwnMessage ? "No puedes banearte a ti mismo" : "Banear")}
                             >
                                 <MdBlock size={18} />
                             </Button>
@@ -142,8 +142,8 @@ const ChatMessage = memo(({
                                 variant="ghost"
                                 className="size-8! p-0! border border-surface-border text-gray-400 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                                 onClick={handleDelete}
-                                disabled={!onDelete || !messageId}
-                                title="Eliminar Mensaje"
+                                disabled={!onDelete || !id || isTikTok}
+                                title={isTikTok ? "TikTok es solo lectura" : "Eliminar Mensaje"}
                             >
                                 <MdDeleteOutline size={18} />
                             </Button>

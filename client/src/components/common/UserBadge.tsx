@@ -33,13 +33,15 @@ export const UserBadge: FC<UserBadgeProps> = ({ type, isYouTube = false, classNa
     return (
         <span
             className={`
+                inline-flex items-center
                 ${color} 
                 text-[10px] md:text-[11px] 
-                px-1.5 md:px-2 py-0.5 
+                px-1.5 md:px-2 py-[3px]
                 rounded-md 
                 font-extrabold 
                 uppercase 
                 tracking-wider
+                leading-none
                 ${className}
             `}
         >
