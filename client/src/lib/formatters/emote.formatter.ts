@@ -1,7 +1,63 @@
-/**
- * Formateador de emotes para mensajes de chat
- * Convierte texto con emotes en elementos renderizables
- */
+const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
+
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Solo permitir protocolos seguros para prevenir ataques XSS (javascript:, data:, etc.)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function parseTextWithUrls(text: string): MessagePart[] {
+  const parts: MessagePart[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  // Reset regex para evitar estados residuales en ejecuciones consecutivas
+  URL_REGEX.lastIndex = 0;
+
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    const url = match[0];
+    const startIndex = match.index;
+
+    if (startIndex > lastIndex) {
+      parts.push({
+        type: 'text',
+        value: text.substring(lastIndex, startIndex),
+      });
+    }
+
+    if (isValidUrl(url)) {
+      parts.push({
+        type: 'link',
+        value: url,
+        url: url,
+      });
+    } else {
+      parts.push({
+        type: 'text',
+        value: url,
+      });
+    }
+
+    lastIndex = startIndex + url.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({
+      type: 'text',
+      value: text.substring(lastIndex),
+    });
+  }
+
+  if (parts.length === 0) {
+    parts.push({ type: 'text', value: text });
+  }
+
+  return parts;
+}
 
 export interface EmoteData {
   id: string;
@@ -11,9 +67,10 @@ export interface EmoteData {
 }
 
 export interface MessagePart {
-  type: 'text' | 'emote';
-  value: string; // texto o URL del emote
-  name?: string; // nombre del emote (para alt/title)
+  type: 'text' | 'emote' | 'link';
+  value: string;
+  name?: string;
+  url?: string;
 }
 
 export function parseMessageWithEmotes(
@@ -21,10 +78,9 @@ export function parseMessageWithEmotes(
   emotes?: EmoteData[]
 ): MessagePart[] {
   if (!emotes || emotes.length === 0) {
-    return [{ type: 'text', value: message }];
+    return parseTextWithUrls(message);
   }
 
-  // Crear un array de todas las posiciones de emotes
   const emotePositions: Array<{
     start: number;
     end: number;
@@ -43,22 +99,21 @@ export function parseMessageWithEmotes(
     });
   });
 
-  // Ordenar por posición de inicio
+  // Ordenar por posición es crítico para el recorrido secuencial del string
   emotePositions.sort((a, b) => a.start - b.start);
 
   const parts: MessagePart[] = [];
   let currentIndex = 0;
 
   emotePositions.forEach(({ start, end, url, name }) => {
-    // Agregar texto antes del emote
     if (currentIndex < start) {
       const textPart = message.substring(currentIndex, start);
       if (textPart) {
-        parts.push({ type: 'text', value: textPart });
+        const textParts = parseTextWithUrls(textPart);
+        parts.push(...textParts);
       }
     }
 
-    // Agregar el emote
     parts.push({
       type: 'emote',
       value: url,
@@ -68,11 +123,11 @@ export function parseMessageWithEmotes(
     currentIndex = end + 1;
   });
 
-  // Agregar texto restante después del último emote
   if (currentIndex < message.length) {
     const textPart = message.substring(currentIndex);
     if (textPart) {
-      parts.push({ type: 'text', value: textPart });
+      const textParts = parseTextWithUrls(textPart);
+      parts.push(...textParts);
     }
   }
 

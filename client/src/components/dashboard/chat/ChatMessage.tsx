@@ -170,6 +170,20 @@ const ChatMessage = memo(({
                                     />
                                 );
                             }
+                            if (part.type === 'link') {
+                                return (
+                                    <a
+                                        key={`link-${index}`}
+                                        href={part.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline hover:text-primary/80 transition-colors break-all"
+                                        title={part.url}
+                                    >
+                                        {part.value}
+                                    </a>
+                                );
+                            }
                             return <span key={index}>{part.value}</span>;
                         })}
                     </p>
