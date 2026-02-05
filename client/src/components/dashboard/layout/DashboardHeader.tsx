@@ -24,21 +24,25 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
     };
 
     return (
-        <header className="shrink-0 border-b border-surface-border bg-background-dark/95 backdrop-blur-sm px-4 lg:px-6 py-4 flex items-center justify-between z-40">
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={onMenuClick}
-                    className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                    aria-label="Toggle Sidebar"
-                >
-                    <MdMenu size={24} />
-                </button>
+        <header className="shrink-0 border-b border-surface-border bg-background-dark/95 backdrop-blur-sm px-4 lg:px-6 py-4 relative z-40">
+            {/* Botón menú - solo visible en móviles */}
+            <button
+                onClick={onMenuClick}
+                className="lg:hidden absolute left-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                aria-label="Toggle Sidebar"
+            >
+                <MdMenu size={24} />
+            </button>
+
+            {/* Logo centrado en móviles, alineado a la izquierda en desktop */}
+            <div className="flex justify-center lg:justify-start">
                 <Link to="/" className="transition-opacity hover:opacity-80">
                     <Logo textSize="text-xl" />
                 </Link>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Menú de usuario - siempre a la derecha */}
+            <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2">
                 <Dropdown
                     isOpen={isMenuOpen}
                     onClose={closeMenu}
