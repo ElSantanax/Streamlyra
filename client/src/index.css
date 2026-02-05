@@ -246,3 +246,8 @@ body {
 .emoji-picker-custom aside.EmojiPickerReact button.epr-emoji:focus {
   background-color: #2b6cee;
 }
+
+/* Ocultar barra de navegación de categorías */
+.emoji-picker-custom .epr-category-nav {
+  display: none !important;
+}

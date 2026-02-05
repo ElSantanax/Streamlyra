@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import type { Theme } from 'emoji-picker-react';
+import { Categories } from 'emoji-picker-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useChatInput } from './hooks/useChatInput';
 import { useReplyToUser } from './hooks/useReplyToUser';
@@ -8,7 +9,7 @@ import { useMessageSender } from './hooks/useMessageSender';
 import EmojiPickerButton from './components/EmojiPickerButton';
 import SendButton from './components/SendButton';
 
-// Lazy load del EmojiPicker para reducir el bundle principal (~150-200 KB)
+// Lazy load del EmojiPicker para reducir el bundle principal
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 const ChatInput = () => {
@@ -48,6 +49,10 @@ const ChatInput = () => {
                                 width={350}
                                 height={450}
                                 searchPlaceHolder="Buscar emoji..."
+                                categories={[
+                                    { category: Categories.SMILEYS_PEOPLE, name: 'Rostros' }
+                                ]}
+                                skinTonesDisabled
                                 previewConfig={{
                                     showPreview: false
                                 }}
