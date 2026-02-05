@@ -25,7 +25,6 @@ import { setCsrfCookie, verifyCsrf } from './middleware/csrf.middleware';
 import { MessageSenderService } from './services/message/MessageSenderService';
 import { TwitchService, YouTubeService, KickService } from './services/platforms';
 import { apiLimiter, webhookLimiter } from './middleware/rateLimit.middleware';
-import { ActivityService } from './services/core/ActivityService';
 import { AuthFlowProcessor } from './services/auth/AuthFlowProcessor';
 import { UserProfileService } from './services/auth/core/UserProfileService';
 import { AuthDTOBuilder } from './services/auth/AuthDTOBuilder';
@@ -87,11 +86,7 @@ chatManager.setProviders(new Map<Platform, ChatProvider>([
     ['tiktok', tiktokChatProvider]
 ]));
 
-// 1. Core Services with mutual dependencies
-const activityService = new ActivityService(chatManager);
-activityService.start();
-
-// 2. Auth Re-architecture
+// Auth Re-architecture
 const userServiceInst = new UserService(userRepository, connectionRepository);
 const authDTOBuilder = new AuthDTOBuilder();
 const platformAuthHandler = new PlatformAuthHandler(
@@ -103,8 +98,7 @@ const platformAuthHandler = new PlatformAuthHandler(
 const authFlowProcessor = new AuthFlowProcessor(
     platformAuthHandler,
     chatManager,
-    connectionService,
-    activityService
+    connectionService
 );
 const userProfileService = new UserProfileService(
     userServiceInst,
@@ -175,7 +169,7 @@ app.get('/', (_req, res) => {
 
 app.use(errorHandler);
 
-setupSocketHandlers(io, chatManager, messageSenderService, activityService, connectionService, youtubeService);
+setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService);
 
 export { app, io, chatManager };
 export default server;

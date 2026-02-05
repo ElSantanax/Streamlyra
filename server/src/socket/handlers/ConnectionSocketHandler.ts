@@ -1,12 +1,10 @@
 import { Server, Socket } from 'socket.io';
 import { logger } from '../../utils/logger';
 import { SocketConnectionManager } from '../services/SocketConnectionManager';
-import { ActivityService } from '../../services/core/ActivityService';
 
 export class ConnectionSocketHandler {
     constructor(
-        private connectionManager: SocketConnectionManager,
-        private activityService: ActivityService
+        private connectionManager: SocketConnectionManager
     ) { }
 
     setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
@@ -40,12 +38,7 @@ export class ConnectionSocketHandler {
 
         socket.on('disconnect', async () => {
             logger.info({ socketId: socket.id }, 'Cliente desconectado de Socket.io');
-            const userId = this.connectionManager.getUserIdBySocketId(socket.id);
             await this.connectionManager.handleDisconnect(socket.id);
-
-            if (userId && !io.sockets.adapter.rooms.get(userId)) {
-                this.activityService.cleanupUser(userId);
-            }
         });
 
         socket.on('error', (error: unknown) => {

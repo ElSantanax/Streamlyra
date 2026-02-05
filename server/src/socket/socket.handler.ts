@@ -2,7 +2,6 @@ import { Server, Socket } from 'socket.io';
 import { logger } from '../utils/logger';
 import { ChatManager } from '../services/core/ChatManager';
 import { MessageSenderService } from '../services/message/MessageSenderService';
-import { ActivityService } from '../services/core/ActivityService';
 import { TwitchModerationService } from '../services/moderation/TwitchModerationService';
 import { KickModerationService } from '../services/moderation/KickModerationService';
 import { YouTubeModerationService } from '../services/moderation/YouTubeModerationService';
@@ -14,7 +13,6 @@ import { createAuthMiddleware } from './middleware/SocketAuthMiddleware';
 import { MessageSocketHandler } from './handlers/MessageSocketHandler';
 import { ModerationSocketHandler } from './handlers/ModerationSocketHandler';
 import { ConnectionSocketHandler } from './handlers/ConnectionSocketHandler';
-import { ActivitySocketHandler } from './handlers/ActivitySocketHandler';
 
 declare module 'socket.io' {
     interface SocketData {
@@ -26,7 +24,6 @@ export const setupSocketHandlers = (
     io: Server,
     chatManager: ChatManager,
     messageSenderService: MessageSenderService,
-    activityService: ActivityService,
     connectionService: ConnectionService,
     youtubeService: YouTubeService
 ) => {
@@ -47,8 +44,7 @@ export const setupSocketHandlers = (
         connectionService,
         youtubeService
     );
-    const connectionHandler = new ConnectionSocketHandler(connectionManager, activityService);
-    const activityHandler = new ActivitySocketHandler(activityService);
+    const connectionHandler = new ConnectionSocketHandler(connectionManager);
 
     // Setup authentication middleware
     io.use(createAuthMiddleware());
@@ -67,7 +63,6 @@ export const setupSocketHandlers = (
         messageHandler.setupHandler(socket, io, authenticatedUserId);
         moderationHandler.setupHandler(socket, authenticatedUserId);
         connectionHandler.setupHandler(socket, io, authenticatedUserId);
-        activityHandler.setupHandler(socket, authenticatedUserId);
     });
 
     logger.info({}, 'Manejadores de Socket.io configurados');

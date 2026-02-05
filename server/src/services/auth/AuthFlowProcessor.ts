@@ -9,14 +9,12 @@ import { ChatManager } from '../core/ChatManager';
 import { AuthResponse } from './AuthDTOBuilder';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 import { ConnectionService } from '../connection/ConnectionService';
-import { ActivityService } from '../core/ActivityService';
 
 export class AuthFlowProcessor {
     constructor(
         private platformAuthHandler: PlatformAuthHandler,
         private chatManager: ChatManager,
-        private connectionService: ConnectionService,
-        private activityService?: ActivityService
+        private connectionService: ConnectionService
     ) { }
 
     async handleOAuthFlow(
@@ -90,8 +88,7 @@ export class AuthFlowProcessor {
 
     async handleLogout(userId: string | undefined): Promise<void> {
         if (!userId) return;
-        logger.info({ userId }, 'Processing user logout (cleanup activity and chats)');
+        logger.info({ userId }, 'Processing user logout (cleanup chats)');
         await this.chatManager.disconnectUser(userId);
-        this.activityService?.cleanupUser(userId);
     }
 }

@@ -165,7 +165,7 @@ export class YouTubeChatProvider implements ChatProvider {
                 userId,
                 'youtube',
                 'error',
-                'Límite diario'
+                'Cuotas agotadas'
             );
         }
     }

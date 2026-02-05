@@ -22,6 +22,13 @@ export class YouTubeViewerPoller {
             if (!quotaManager.hasQuota(cost)) {
                 logger.warn({ userId }, 'YouTube viewer polling paused: Quota exhausted');
                 this.stopPolling(userId);
+                SafeSocketEmitter.emitConnectionStatus(
+                    io,
+                    userId,
+                    'youtube',
+                    'error',
+                    'Cuotas agotadas'
+                );
                 return;
             }
 

@@ -66,6 +66,13 @@ export class YouTubeChatPoller {
             if (!quotaManager.hasQuota(cost)) {
                 logger.warn({ userId }, 'YouTube chat polling paused: Quota exhausted');
                 this.stopPolling(userId);
+                SafeSocketEmitter.emitConnectionStatus(
+                    io,
+                    userId,
+                    'youtube',
+                    'error',
+                    'Cuotas agotadas'
+                );
                 SafeSocketEmitter.emitError(
                     io,
                     userId,
