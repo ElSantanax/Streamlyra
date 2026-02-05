@@ -9,6 +9,7 @@ export interface ConnectionItemProps {
     status: 'connected' | 'disconnected' | 'connecting' | 'waiting_stream' | 'error';
     viewers?: string;
     statusMessage?: string;
+    isLive?: boolean;
     onDisconnect?: () => void;
     onSearchStream?: () => void;
 }
@@ -18,6 +19,7 @@ export const ConnectionItem = ({
     status,
     viewers,
     statusMessage,
+    isLive,
     onDisconnect,
     onSearchStream
 }: ConnectionItemProps) => {
@@ -50,7 +52,14 @@ export const ConnectionItem = ({
                             <span className="text-xs text-yellow-400">{statusMessage || 'Error'}</span>
                         ) : isConnected ? (
                             <>
-                                <span className="text-xs text-green-400">Conectado</span>
+                                {isLive ? (
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="size-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                                        <span className="text-xs text-green-400">En Vivo</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-green-400">Conectado</span>
+                                )}
                                 {viewers && (
                                     <>
                                         <span className="text-[10px] text-gray-600">•</span>

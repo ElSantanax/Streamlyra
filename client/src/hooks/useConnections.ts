@@ -19,7 +19,10 @@ const isConnectionEqual = (a: ConnectionInfo | undefined, b: ConnectionInfo): bo
     a.username === b.username &&
     a.viewers === b.viewers &&
     a.status === b.status &&
-    a.statusMessage === b.statusMessage
+    a.statusMessage === b.statusMessage &&
+    a.isLive === b.isLive &&
+    a.sessionStartTime === b.sessionStartTime &&
+    a.serverTime === b.serverTime
   );
 };
 
@@ -53,7 +56,10 @@ export const useConnections = (shouldFetch = true) => {
             username: data.connections[platform].username,
             viewers: prevPlatform?.viewers ?? 0,
             status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
-            statusMessage: prevPlatform?.statusMessage
+            statusMessage: prevPlatform?.statusMessage,
+            isLive: prevPlatform?.isLive,
+            sessionStartTime: prevPlatform?.sessionStartTime,
+            serverTime: prevPlatform?.serverTime
           };
 
           if (!isConnectionEqual(prevPlatform, newConnection)) {
@@ -78,9 +84,14 @@ export const useConnections = (shouldFetch = true) => {
     setConnections(prev => {
       const prevPlatform = prev[platform];
 
+      // Clean updates: only apply keys that are NOT undefined
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([, v]) => v !== undefined)
+      );
+
       const newConnection: ConnectionInfo = {
         ...prevPlatform,
-        ...updates,
+        ...cleanUpdates,
       };
 
       if (isConnectionEqual(prevPlatform, newConnection)) {
@@ -101,7 +112,9 @@ export const useConnections = (shouldFetch = true) => {
         connected: false,
         viewers: 0,
         status: undefined,
-        statusMessage: undefined
+        statusMessage: undefined,
+        isLive: false,
+        sessionStartTime: undefined
       });
     } catch (err) {
       console.error('Error disconnecting platform:', err);
@@ -122,7 +135,14 @@ export const useConnections = (shouldFetch = true) => {
   }, [fetchConnections]);
 
   useEffect(() => {
-    const onConnectionStatus = (data: { platform: string; status: string; message?: string }) => {
+    const onConnectionStatus = (data: {
+      platform: string;
+      status: string;
+      message?: string;
+      isLive?: boolean;
+      sessionStartTime?: string;
+      serverTime?: string;
+    }) => {
       console.log('Socket Connection Status Update:', data);
 
       const isConnected = data.status === 'connected';
@@ -130,12 +150,26 @@ export const useConnections = (shouldFetch = true) => {
       updateConnection(data.platform, {
         status: data.status as 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected',
         statusMessage: data.message,
-        connected: isConnected || data.status === 'waiting_stream' || data.status === 'connecting'
+        connected: isConnected || data.status === 'waiting_stream' || data.status === 'connecting',
+        isLive: data.isLive,
+        sessionStartTime: data.sessionStartTime,
+        serverTime: data.serverTime
       });
     };
 
-    const onViewersUpdate = (data: { platform: string; count: number }) => {
-      updateConnection(data.platform, { viewers: data.count });
+    const onViewersUpdate = (data: {
+      platform: string;
+      count: number;
+      isLive?: boolean;
+      sessionStartTime?: string;
+      serverTime?: string;
+    }) => {
+      updateConnection(data.platform, {
+        viewers: data.count,
+        isLive: data.isLive,
+        sessionStartTime: data.sessionStartTime,
+        serverTime: data.serverTime
+      });
     };
 
     socket.on('connection_status', onConnectionStatus);

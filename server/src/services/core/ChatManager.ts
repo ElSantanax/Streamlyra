@@ -96,7 +96,7 @@ export class ChatManager {
     async disconnectProvider(userId: string, platform: Platform): Promise<void> {
         await withErrorHandling(
             async () => {
-                SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0);
+                SafeSocketEmitter.emitViewersUpdate(this.io, userId, platform, 0, false);
                 const provider = this.getProvider(platform);
                 if (provider) {
                     await provider.disconnect(userId);

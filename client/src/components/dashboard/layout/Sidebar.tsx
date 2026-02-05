@@ -4,6 +4,7 @@ import { MdDeleteSweep } from 'react-icons/md';
 import type { PlatformKey } from '../../../constants/platforms';
 import { formatViewers } from '../../../lib/formatters';
 import { ConnectionItem } from '../connections/ConnectionItem';
+import { SimpleTimer } from '../../common/SimpleTimer';
 
 interface SidebarProps {
     onMobileClose?: () => void;
@@ -14,6 +15,9 @@ interface SidebarProps {
         viewers?: number;
         status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
         statusMessage?: string;
+        isLive?: boolean;
+        sessionStartTime?: string;
+        serverTime?: string;
     }>;
     onDisconnect: (platform: PlatformKey) => void;
     onSearchStream?: (platform: PlatformKey) => void;
@@ -26,6 +30,24 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
         () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
         [connections]
     );
+
+    // Calcular tiempo al aire total (el del stream más antiguo o el enviado por el servidor)
+    const sessionStartTime = useMemo(() => {
+        const starts = Object.values(connections)
+            .map(c => c.sessionStartTime)
+            .filter((s): s is string => !!s);
+
+        return starts.length > 0 ? starts[0] : undefined;
+    }, [connections]);
+
+    const latestServerTime = useMemo(() => {
+        const times = Object.values(connections)
+            .map(c => c.serverTime)
+            .filter((s): s is string => !!s)
+            .map(s => new Date(s).getTime());
+
+        return times.length > 0 ? new Date(Math.max(...times)).toISOString() : undefined;
+    }, [connections]);
 
     // Filtrar conexiones activas o en proceso para mostrar
     // Esto optimiza el renderizado evitando hacer filter dos veces en el JSX
@@ -75,6 +97,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
                                 status={status}
                                 viewers={data.viewers !== undefined ? formatViewers(data.viewers) : undefined}
                                 statusMessage={data.statusMessage}
+                                isLive={data.isLive}
                                 onDisconnect={() => onDisconnect(key as PlatformKey)}
                                 onSearchStream={() => onSearchStream?.(key as PlatformKey)}
                             />
@@ -107,7 +130,13 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
                     </div>
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tiempo al Aire</span>
-                        <span className="text-base font-black text-white">00h 00m 00s</span>
+                        <span className="text-base font-black text-white">
+                            {sessionStartTime ? (
+                                <SimpleTimer startTime={sessionStartTime} serverTime={latestServerTime} />
+                            ) : (
+                                "00:00:00"
+                            )}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -116,7 +145,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
             <div className="flex flex-col gap-3 mt-auto">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Acciones Rápidas</h3>
                 <div className="flex flex-col gap-2">
-                    <button 
+                    <button
                         onClick={onClearChat}
                         className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >

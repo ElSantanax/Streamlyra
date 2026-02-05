@@ -25,4 +25,7 @@ export interface ConnectionInfo {
   viewers?: number;
   status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   statusMessage?: string;
+  isLive?: boolean;
+  sessionStartTime?: string;
+  serverTime?: string;
 }

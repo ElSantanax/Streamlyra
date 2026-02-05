@@ -36,12 +36,14 @@ export class YouTubeViewerPoller {
 
                 const video = response.data.items?.[0];
                 const viewerCount = video?.liveStreamingDetails?.concurrentViewers || '0';
+                const isStillLive = !!video;
 
                 SafeSocketEmitter.emitViewersUpdate(
                     io,
                     userId,
                     'youtube',
-                    parseInt(viewerCount)
+                    parseInt(viewerCount),
+                    isStillLive
                 );
 
                 const adaptiveInterval = quotaManager.getAdaptiveInterval(YouTubePollingConfig.VIEWER_POLLING_INTERVAL);

@@ -48,7 +48,7 @@ export class KickChatProvider implements ChatProvider {
 
             if (this.manager.isPolling(userId)) {
                 logger.debug({ userId }, 'Kick already connected and polling');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', this.manager.isPolling(userId));
                 this.manager.startViewerPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;
@@ -72,7 +72,7 @@ export class KickChatProvider implements ChatProvider {
             this.manager.startViewerPolling(userId, accessToken, io);
 
             logger.info({ slug, userId }, 'Connected to Kick chat');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', channelInfo.isLive);
 
             void this.manager.registerWebhook(userId, accessToken, broadcasterId);
 

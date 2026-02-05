@@ -39,7 +39,7 @@ export class TikTokChatProvider implements ChatProvider {
         if (this.stateManager.hasActiveConnection(userId)) {
             const status = this.eventListener.isStreamConfirmed(userId) ? 'connected' : 'waiting_stream';
             const msg = status === 'waiting_stream' ? 'Sin Live' : undefined;
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, msg);
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, msg, this.eventListener.isStreamConfirmed(userId));
             return;
         }
 
@@ -133,7 +133,7 @@ export class TikTokChatProvider implements ChatProvider {
         this.stateManager.setDiscoveryCleanup(userId, () => { }); // Eliminar reintentos
         this.stateManager.setActiveConnection(userId, tiktokConnection);
 
-        SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', 'Conectado');
+        SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', 'Conectado', true);
         this.eventListener.setupListeners(userId, tiktokConnection, io);
 
         this.setupDisconnectionHandler(userId, tiktokConnection, io);

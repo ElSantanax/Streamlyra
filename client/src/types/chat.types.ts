@@ -41,4 +41,7 @@ export interface ConnectionStatusUpdate {
   platform: string;
   status: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   message?: string;
+  isLive?: boolean;
+  sessionStartTime?: string;
+  serverTime?: string;
 }

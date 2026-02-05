@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import { logger } from './logger';
 import { sentMessageCache } from './SentMessageCache';
 import { config } from '../config';
+import { StreamSessionManager } from '../services/core/StreamSessionManager';
 
 interface EmitOptions {
     userId: string;
@@ -65,12 +66,6 @@ export class SafeSocketEmitter {
                 }
             }
 
-            /**
-             * OPTIMIZACIÓN: Validación de serialización solo en desarrollo.
-             * En producción, Socket.IO ya maneja errores de serialización internamente.
-             * Esto evita doble serialización (validación + Socket.IO) en cada emisión.
-             * Ahorro: ~8-10ms/segundo en producción con 100 usuarios activos.
-             */
             if (config.nodeEnv === 'development' || process.env.NODE_ENV === 'development') {
                 try {
                     JSON.stringify(data);
@@ -142,12 +137,26 @@ export class SafeSocketEmitter {
         io: Server,
         userId: string,
         platform: string,
-        count: number
+        count: number,
+        isLive?: boolean
     ): boolean {
+        const sessionManager = StreamSessionManager.getInstance();
+
+        // Si no se pasa isLive, mantenemos el estado actual de la plataforma en la sesión
+        const currentlyLive = sessionManager.isPlatformLive(userId, platform);
+        const finalIsLive = isLive !== undefined ? isLive : currentlyLive;
+        const session = sessionManager.updateLiveStatus(userId, platform, finalIsLive);
+
         return this.emit(io, {
             userId,
             event: 'viewers_update',
-            data: { platform, count },
+            data: {
+                platform,
+                count,
+                isLive: finalIsLive,
+                sessionStartTime: session.startTime,
+                serverTime: new Date().toISOString()
+            },
             platform
         });
     }
@@ -157,12 +166,26 @@ export class SafeSocketEmitter {
         userId: string,
         platform: string,
         status: 'connecting' | 'waiting_stream' | 'connected' | 'disconnected' | 'error',
-        message?: string
+        message?: string,
+        isLive?: boolean
     ): boolean {
+        const sessionManager = StreamSessionManager.getInstance();
+
+        // Si no se pasa isLive, intentamos inferirlo (connected -> posiblemente live, pero mejor explícito)
+        const finalIsLive = isLive !== undefined ? isLive : (status === 'connected' && sessionManager.isPlatformLive(userId, platform));
+        const session = sessionManager.updateLiveStatus(userId, platform, finalIsLive);
+
         return this.emit(io, {
             userId,
             event: 'connection_status',
-            data: { platform, status, message },
+            data: {
+                platform,
+                status,
+                message,
+                isLive: finalIsLive,
+                sessionStartTime: session.startTime,
+                serverTime: new Date().toISOString()
+            },
             platform
         });
     }

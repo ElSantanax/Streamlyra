@@ -11,7 +11,7 @@ import { config } from '../../../config';
 export class KickManager {
     private poller: PollingManager = new PollingManager();
 
-    async getChannelInfo(accessToken: string, userId?: string, io?: Server): Promise<{ broadcasterId: string; slug: string; viewerCount: number } | null> {
+    async getChannelInfo(accessToken: string, userId?: string, io?: Server): Promise<{ broadcasterId: string; slug: string; viewerCount: number; isLive: boolean } | null> {
         try {
             const channels = await KickService.getChannels(accessToken);
             if (!channels?.length) {
@@ -30,10 +30,10 @@ export class KickManager {
             }
 
             if (io && userId) {
-                SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount);
+                SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount, !!channel.stream);
             }
 
-            return { broadcasterId, slug, viewerCount };
+            return { broadcasterId, slug, viewerCount, isLive: !!channel.stream };
         } catch (error) {
             logger.error({ err: error }, 'Error getting Kick channel info');
             return null;

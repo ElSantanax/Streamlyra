@@ -135,7 +135,7 @@ export class YouTubeChatProvider implements ChatProvider {
             );
 
             this.stateManager.markAsConnected(userId);
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado', true);
 
             // Iniciar pollers
             this.stateManager.getChatPoller(userId).startPolling(userId, liveChatId, accessToken, io);

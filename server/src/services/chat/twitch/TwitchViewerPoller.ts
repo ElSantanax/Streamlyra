@@ -28,7 +28,8 @@ export class TwitchViewerPoller {
                     io,
                     userId,
                     'twitch',
-                    stream ? stream.viewer_count : 0
+                    stream ? stream.viewer_count : 0,
+                    !!stream
                 );
 
             } catch (error) {
