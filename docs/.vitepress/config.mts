@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "Documentación de Streamlyra",
+  title: "Streamlyra.dev",
   description: "Sitio de documentación de Streamlyra",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
