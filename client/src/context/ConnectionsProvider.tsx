@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useConnections } from '../hooks/useConnections';
 import { useAuth } from '../hooks/useAuth';
+import { ConnectionsContext } from '../hooks/useConnectionsContext';
 import type { ConnectionInfo } from '../types';
 import type { PlatformKey } from '../constants/platforms';
 
@@ -13,8 +14,6 @@ export interface ConnectionsContextValue {
     isLoadingConnections: boolean;
     connectionsError: string | null;
 }
-
-const ConnectionsContext = createContext<ConnectionsContextValue | undefined>(undefined);
 
 export const ConnectionsProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
@@ -54,10 +53,3 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
     );
 };
 
-export const useConnectionsContext = () => {
-    const ctx = useContext(ConnectionsContext);
-    if (!ctx) {
-        throw new Error('useConnections debe usarse dentro de <ConnectionsProvider>.');
-    }
-    return ctx;
-};

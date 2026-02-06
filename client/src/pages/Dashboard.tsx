@@ -10,7 +10,8 @@ import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
-import { ConnectionsProvider, useConnectionsContext } from '../context/ConnectionsProvider';
+import { ConnectionsProvider } from '../context/ConnectionsProvider';
+import { useConnectionsContext } from '../hooks/useConnectionsContext';
 
 const Sidebar = lazy(() => import('../components/dashboard/layout/Sidebar'));
 const ChatInput = lazy(() => import('../components/dashboard/chat/ChatInput/index'));

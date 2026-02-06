@@ -102,4 +102,4 @@ const ChatMessage = memo(({
 ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;
-export * from './types';
+export type { ChatMessageProps } from './types';

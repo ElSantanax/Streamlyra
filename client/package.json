@@ -1,7 +1,9 @@
 {
-  "name": "client",
+  "name": "streamlyra-client",
   "private": true,
   "version": "0.0.0",
+  "description": "Unifica Twitch, YouTube, Kick y TikTok en una interfaz limpia. Optimiza tu streaming y mejora el engagement con tu comunidad.",
+  "author": "José Santana",
   "type": "module",
   "scripts": {
     "dev": "vite",

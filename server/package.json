@@ -1,7 +1,7 @@
 {
   "name": "streamlyra",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend para Streamlyra - Centraliza chats de múltiples plataformas (Twitch, YouTube, Kick, TikTok) y provee herramientas de moderación y análisis.",
   "license": "ISC",
   "author": "José Santana",
   "main": "index.js",
