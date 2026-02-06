@@ -28,3 +28,5 @@ dist-ssr
 # Testing
 /coverage
 screenshots
+.vercel
+.env*.local
