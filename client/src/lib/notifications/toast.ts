@@ -1,11 +1,3 @@
-/**
- * Sistema de notificaciones Toast centralizado
- * Reemplaza alert() y console.log() dispersos
- * 
- * NOTA: Esta es una implementación simple.
- * Para producción, considera usar una librería como react-hot-toast o sonner
- */
-
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface ToastOptions {
@@ -19,10 +11,8 @@ class ToastManager {
   private activeToasts: Set<string> = new Set();
   private maxToasts: number = 3;
 
-  // Permite configurar un elemento específico donde mostrar los toasts
   setTargetElement(element: HTMLElement | null) {
     this.targetElement = element;
-    // Limpiar contenedor anterior si existe
     if (this.container) {
       const parent = this.container.parentElement;
       if (parent && parent.contains(this.container)) {
@@ -30,9 +20,7 @@ class ToastManager {
       }
       this.container = null;
     }
-    
-    // Limpiar Set de toasts activos cuando se desmonta el componente
-    // Esto previene memory leaks si el usuario navega antes de que expiren los toasts
+
     if (element === null) {
       this.activeToasts.clear();
     }
@@ -42,16 +30,13 @@ class ToastManager {
     if (!this.container) {
       this.container = document.createElement('div');
       this.container.id = 'toast-container';
-      // Posicionamiento: centrado en el área de mensajes
-      this.container.className = 'absolute top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none';
+      this.container.className = 'absolute top-4 inset-x-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4';
 
-      // Si hay un elemento target específico, usar ese; sino usar body
       const parent = this.targetElement || document.body;
       parent.appendChild(this.container);
 
-      // Si se usa body, cambiar a fixed
       if (!this.targetElement) {
-        this.container.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 lg:top-20 lg:bottom-auto z-[9999] flex flex-col gap-2 pointer-events-none w-full max-w-md px-4';
+        this.container.className = 'fixed top-20 inset-x-0 z-[9999] flex flex-col items-center gap-2 pointer-events-none px-4';
       }
     }
     return this.container;
@@ -59,27 +44,20 @@ class ToastManager {
 
   private show(message: string, type: ToastType, options: ToastOptions = {}) {
     const { duration = 3000 } = options;
-
-    // Crear un identificador único para este toast
     const toastId = `${type}:${message}`;
 
-    // Si ya existe un toast con el mismo mensaje, no mostrar otro
     if (this.activeToasts.has(toastId)) {
       return;
     }
 
-    // Limitar el número máximo de toasts visibles
     if (this.activeToasts.size >= this.maxToasts) {
       return;
     }
 
-    // Marcar este toast como activo
     this.activeToasts.add(toastId);
 
     const container = this.ensureContainer();
-
     const toast = document.createElement('div');
-    // Siempre deslizar desde arriba cuando está en el área de mensajes
     const slideAnimation = this.targetElement ? 'slide-in-from-top' :
       (window.innerWidth < 1024 ? 'slide-in-from-bottom' : 'slide-in-from-top');
 
@@ -103,18 +81,14 @@ class ToastManager {
     toast.appendChild(messageEl);
     container.appendChild(toast);
 
-    // Auto-remove
     setTimeout(() => {
       toast.classList.remove('fade-in', slideAnimation);
       toast.classList.add('fade-out');
       setTimeout(() => {
-        // Verificar que el toast y el contenedor aún existen antes de remover
         if (toast.parentElement && container.contains(toast)) {
           container.removeChild(toast);
         }
-        // Remover de la lista de toasts activos
         this.activeToasts.delete(toastId);
-        // Solo limpiar el contenedor si está vacío y aún existe en el DOM
         if (container.children.length === 0) {
           const parent = container.parentElement;
           if (parent && parent.contains(container)) {
@@ -163,5 +137,4 @@ class ToastManager {
   }
 }
 
-// Singleton instance
 export const toast = new ToastManager();

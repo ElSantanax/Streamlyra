@@ -3,7 +3,7 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 
@@ -22,6 +22,7 @@ const DashboardContent = () => {
     const { user, isAuthenticated } = useAuth();
     const { connections, disconnectPlatform, refetchConnections, searchStream } = useConnectionsContext();
     const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
+    const chatAreaRef = useRef<HTMLElement>(null);
     const { deleteMessage, banUser, replyToUser } = useModeration({
         onMessageDeleted: removeMessage,
         onUserBanned: removeMessagesByUserId
@@ -30,15 +31,14 @@ const DashboardContent = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
 
-    // Configurar el área de toasts dentro del contenedor de mensajes
     useEffect(() => {
-        if (containerRef.current) {
-            toast.setTargetElement(containerRef.current);
+        if (chatAreaRef.current) {
+            toast.setTargetElement(chatAreaRef.current);
         }
         return () => {
             toast.setTargetElement(null);
         };
-    }, [containerRef]);
+    }, []);
 
     // Proteger ruta - usar useEffect para navegación
     useEffect(() => {
@@ -113,7 +113,10 @@ const DashboardContent = () => {
                     </LocalErrorBoundary>
                 </Suspense>
 
-                <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
+                <main
+                    ref={chatAreaRef}
+                    className="flex-1 flex flex-col min-w-0 bg-background-dark relative"
+                >
                     {/* Messages Area */}
                     <Suspense fallback={
                         <div className="flex-1 flex items-center justify-center bg-background-dark">
