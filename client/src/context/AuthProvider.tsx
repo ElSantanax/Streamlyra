@@ -4,10 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { authService } from '../services/api/auth.service';
 import { sessionManager } from '../services/session';
 import { isProtectedRoute, isPublicAuthRoute } from '../config/routes';
-import { useConnections } from '../hooks/useConnections';
 import type { User } from '../types';
-import type { ConnectionInfo } from '../types';
-import type { PlatformKey } from '../constants/platforms';
 
 export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated';
 
@@ -20,14 +17,6 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   checkAuth: () => Promise<User | null>;
   requireAuth: () => boolean;
-  // Connections
-  connections: Record<string, ConnectionInfo>;
-  updateConnection: (platform: string, updates: Partial<ConnectionInfo>) => void;
-  disconnectPlatform: (platform: PlatformKey) => Promise<void>;
-  refetchConnections: () => Promise<void>;
-  searchStream: (platform: PlatformKey) => void;
-  isLoadingConnections: boolean;
-  connectionsError: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -54,37 +43,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isAuthenticated = status === 'authenticated';
 
-  // Mover useConnections aquí para que persista entre navegaciones
-  const {
-    connections,
-    updateConnection,
-    disconnectPlatform,
-    refetch: refetchConnections,
-    searchStream,
-    isLoading: isLoadingConnections,
-    error: connectionsError
-  } = useConnections(isAuthenticated);
-
   const login = useCallback(
     (userData: User) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { token: _token, ...safeUser } = userData as unknown as Record<string, unknown>;
       setUser(safeUser as unknown as User);
       setStatus('authenticated');
-      // Refetch connections después de login para obtener las nuevas conexiones
-      setTimeout(() => {
-        void refetchConnections();
-      }, 100);
     },
-    [setUser, refetchConnections]
+    [setUser]
   );
-
-  // Refetch connections cuando el user cambia (nueva conexión agregada)
-  useEffect(() => {
-    if (user && isAuthenticated) {
-      refetchConnections();
-    }
-  }, [user, isAuthenticated, refetchConnections]); // Solo cuando cambia el ID del usuario u otras dependencias vitales
 
   const checkAuth = useCallback(async () => {
     if (inFlightAuthCheck.current) return inFlightAuthCheck.current;
@@ -181,14 +148,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       logout,
       requireAuth,
       checkAuth,
-      // Connections
-      connections,
-      updateConnection,
-      disconnectPlatform,
-      refetchConnections,
-      searchStream,
-      isLoadingConnections,
-      connectionsError,
     };
   }, [
     checkAuth,
@@ -199,13 +158,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     requireAuth,
     status,
     user,
-    connections,
-    updateConnection,
-    disconnectPlatform,
-    refetchConnections,
-    searchStream,
-    isLoadingConnections,
-    connectionsError,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -36,7 +36,7 @@ export const UserBadge: FC<UserBadgeProps> = ({ type, isYouTube = false, classNa
                 inline-flex items-center
                 ${color} 
                 text-[10px] md:text-[11px] 
-                px-1.5 md:px-2 py-[3px]
+                px-1.5 md:px-2 py-0.75
                 rounded-md 
                 font-extrabold 
                 uppercase 

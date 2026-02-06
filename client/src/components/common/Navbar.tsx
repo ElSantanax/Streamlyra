@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaGlobe, FaBars, FaTimes, FaGithub } from 'react-icons/fa';
 import Logo from './Logo';
 import { Button } from '../ui';
 import { useToggle } from '../../hooks';
 import { useAuth } from '../../hooks/useAuth';
+
+const MobileMenu = lazy(() => import('./MobileMenu'));
 
 const Navbar = () => {
     const { pathname } = useLocation();
@@ -30,7 +32,13 @@ const Navbar = () => {
 
     const navLinks = (
         <>
-            <a href="https://github.com/ElSantanax/Streamlyra" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white hover:text-primary text-sm font-medium transition-colors">
+            <a
+                href="https://github.com/ElSantanax/Streamlyra"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Repositorio de GitHub"
+                className="flex items-center gap-2 text-white hover:text-primary text-sm font-medium transition-colors"
+            >
                 <FaGithub className="size-4" />
             </a>
         </>
@@ -89,72 +97,19 @@ const Navbar = () => {
                 </div>
             </header>
 
-            {/* Overlay */}
-            {isMenuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 md:hidden z-40"
-                    onClick={closeMenu}
+            {/* Mobile Menu - Lazy Loaded */}
+            <Suspense fallback={null}>
+                <MobileMenu
+                    isOpen={isMenuOpen}
+                    onClose={closeMenu}
+                    isAuthenticated={isAuthenticated}
+                    isAuthPage={isAuthPage}
+                    lang={lang}
+                    onLanguageToggle={() => setLang(prev => prev === 'es' ? 'en' : 'es')}
                 />
-            )}
-
-            {/* Mobile Menu Drawer */}
-            <div
-                className={`fixed top-0 right-0 h-full w-70 bg-background-dark border-l border-surface-border/50 shadow-2xl transition-transform duration-300 ease-out md:hidden z-50 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-                    }`}
-            >
-                <div className="flex flex-col h-full">
-                    {/* Drawer Header - Perfectly Balanced */}
-                    <div className="flex items-center justify-between px-6 h-18 border-b border-surface-border/30">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Menú</span>
-                        <button
-                            onClick={closeMenu}
-                            className="size-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer -mr-2"
-                        >
-                            <FaTimes size={18} />
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col p-6 gap-8 overflow-y-auto">
-                        <nav className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Explorar</span>
-                            <div className="flex flex-col gap-1.5">
-                                <a href="https://github.com/ElSantanax/Streamlyra" target="_blank" rel="noopener noreferrer" onClick={closeMenu} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-white/5 text-white hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">
-                                    <FaGithub className="size-5" />
-                                </a>
-                            </div>
-                        </nav>
-
-                        <div className="h-px bg-surface-border/40 mx-2" />
-
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Personalización</span>
-                            <button
-                                onClick={() => {
-                                    setLang(prev => prev === 'es' ? 'en' : 'es');
-                                }}
-                                className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-white/5 text-white hover:text-white transition-all font-semibold text-[15px] cursor-pointer group"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-colors">
-                                        <FaGlobe size={14} />
-                                    </div>
-                                    <span>Idioma</span>
-                                </div>
-                                <div className="flex items-center gap-2 bg-surface-border/30 px-2.5 py-1 rounded-lg border border-surface-border/50">
-                                    <span className="text-[10px] font-bold text-white uppercase tracking-tighter">{lang === 'es' ? 'ES' : 'EN'}</span>
-                                </div>
-                            </button>
-                        </div>
-
-                        <div className="mt-auto pt-8" onClick={closeMenu}>
-                            {actionButton}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </Suspense>
         </>
     );
 };
 
 export default Navbar;
-

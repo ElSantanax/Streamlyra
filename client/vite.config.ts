@@ -17,13 +17,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-router': ['react-router', 'react-router-dom'],
-          'vendor-icons': ['react-icons'],
-          'vendor-socket': ['socket.io-client'],
-          'vendor-emoji': ['emoji-picker-react'],
-          'vendor-virtualized': ['react-window', 'react-virtualized-auto-sizer'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom')) return 'vendor-react';
+            if (id.includes('react-router')) return 'vendor-router';
+            if (id.includes('socket.io-client')) return 'vendor-socket';
+            if (id.includes('emoji-picker-react')) return 'vendor-emoji';
+            if (id.includes('react-icons')) return 'vendor-icons';
+            return 'vendor-others';
+          }
         }
       }
     }

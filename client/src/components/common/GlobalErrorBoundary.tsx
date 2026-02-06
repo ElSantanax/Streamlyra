@@ -59,10 +59,6 @@ export class GlobalErrorBoundary extends React.Component<
       });
     }
 
-    // TODO: Integrar con servicio de logging externo en producción
-    // Ejemplo: Sentry, LogRocket, etc.
-    // logErrorToService(error, errorInfo);
-
     this.setState({ errorInfo });
   }
 

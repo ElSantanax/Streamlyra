@@ -6,20 +6,21 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
-import ChatFeed from '../components/dashboard/chat/ChatFeed';
 
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
+import { ConnectionsProvider, useConnectionsContext } from '../context/ConnectionsProvider';
 
 const Sidebar = lazy(() => import('../components/dashboard/layout/Sidebar'));
-
 const ChatInput = lazy(() => import('../components/dashboard/chat/ChatInput/index'));
 const AddPlatformModal = lazy(() => import('../components/dashboard/connections/AddPlatformModal'));
+const ChatFeed = lazy(() => import('../components/dashboard/chat/ChatFeed'));
 
-const Dashboard = () => {
+const DashboardContent = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated, connections, disconnectPlatform, refetchConnections, searchStream } = useAuth();
+    const { user, isAuthenticated } = useAuth();
+    const { connections, disconnectPlatform, refetchConnections, searchStream } = useConnectionsContext();
     const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
     const { deleteMessage, banUser, replyToUser } = useModeration({
         onMessageDeleted: removeMessage,
@@ -114,17 +115,23 @@ const Dashboard = () => {
 
                 <main className="flex-1 flex flex-col min-w-0 bg-background-dark relative">
                     {/* Messages Area */}
-                    <ChatFeed
-                        messages={messages}
-                        isConnected={isConnected}
-                        containerRef={containerRef}
-                        messagesEndRef={messagesEndRef}
-                        scrollToBottom={scrollToBottom}
-                        isAutoScrollEnabled={isAutoScrollEnabled}
-                        onReply={replyToUser}
-                        onDelete={deleteMessage}
-                        onBan={banUser}
-                    />
+                    <Suspense fallback={
+                        <div className="flex-1 flex items-center justify-center bg-background-dark">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        </div>
+                    }>
+                        <ChatFeed
+                            messages={messages}
+                            isConnected={isConnected}
+                            containerRef={containerRef}
+                            messagesEndRef={messagesEndRef}
+                            scrollToBottom={scrollToBottom}
+                            isAutoScrollEnabled={isAutoScrollEnabled}
+                            onReply={replyToUser}
+                            onDelete={deleteMessage}
+                            onBan={banUser}
+                        />
+                    </Suspense>
 
                     <LocalErrorBoundary section="Chat Input">
                         <Suspense fallback={<div className="h-24 bg-background-dark border-t border-surface-border"></div>}>
@@ -147,6 +154,14 @@ const Dashboard = () => {
                 </LocalErrorBoundary>
             )}
         </div>
+    );
+};
+
+const Dashboard = () => {
+    return (
+        <ConnectionsProvider>
+            <DashboardContent />
+        </ConnectionsProvider>
     );
 };
 

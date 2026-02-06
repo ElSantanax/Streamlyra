@@ -71,8 +71,6 @@ const ChatFeed = memo(({
                     </div>
                 </div>
 
-                {/* Botón flotante estilo Twitch/Kick para volver al final */}
-                {/* ESTÁ FUERA del scroll container para quedarse fijo */}
                 {!isAutoScrollEnabled && messages.length > 0 && (
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
                         <button
