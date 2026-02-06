@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaGlobe, FaBars, FaTimes } from 'react-icons/fa';
+import { FaGlobe, FaBars, FaTimes, FaGithub } from 'react-icons/fa';
 import Logo from './Logo';
 import { Button } from '../ui';
 import { useToggle } from '../../hooks';
@@ -30,7 +30,9 @@ const Navbar = () => {
 
     const navLinks = (
         <>
-            <a href="#" className="text-slate-600 dark:text-white/80 hover:text-primary text-sm font-medium transition-colors">Comunidad</a>
+            <a href="https://github.com/ElSantanax/Streamlyra" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white hover:text-primary text-sm font-medium transition-colors">
+                <FaGithub className="size-4" />
+            </a>
         </>
     );
 
@@ -76,7 +78,7 @@ const Navbar = () => {
                         <div className="flex items-center gap-6">
                             <button
                                 onClick={() => setLang(prev => prev === 'es' ? 'en' : 'es')}
-                                className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-white/80 hover:text-primary transition-colors cursor-pointer"
+                                className="flex items-center gap-2 text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer"
                             >
                                 <span className="font-bold">{lang === 'es' ? 'EN' : 'ES'}</span>
                                 <FaGlobe className="size-4" />
@@ -116,7 +118,9 @@ const Navbar = () => {
                         <nav className="flex flex-col gap-1">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Explorar</span>
                             <div className="flex flex-col gap-1.5">
-                                <a href="#" onClick={closeMenu} className="flex items-center px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">Comunidad</a>
+                                <a href="https://github.com/ElSantanax/Streamlyra" target="_blank" rel="noopener noreferrer" onClick={closeMenu} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-white/5 text-white hover:text-white hover:translate-x-1 transition-all font-semibold text-[15px]">
+                                    <FaGithub className="size-5" />
+                                </a>
                             </div>
                         </nav>
 
@@ -128,10 +132,10 @@ const Navbar = () => {
                                 onClick={() => {
                                     setLang(prev => prev === 'es' ? 'en' : 'es');
                                 }}
-                                className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-white/5 text-gray-300 hover:text-white transition-all font-semibold text-[15px] cursor-pointer group"
+                                className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-white/5 text-white hover:text-white transition-all font-semibold text-[15px] cursor-pointer group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-colors">
                                         <FaGlobe size={14} />
                                     </div>
                                     <span>Idioma</span>

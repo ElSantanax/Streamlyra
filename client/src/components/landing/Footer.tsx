@@ -11,10 +11,9 @@ const Footer = () => {
                 <div className="flex gap-8">
                     <a className="hover:text-primary transition-colors" href="#">Términos</a>
                     <a className="hover:text-primary transition-colors" href="#">Privacidad</a>
-                    <a className="hover:text-primary transition-colors" href="#">Contacto</a>
                 </div>
                 <div className="text-sm">
-                    © {new Date().getFullYear()} Streamlyra. Todos los derechos reservados.
+                    © {new Date().getFullYear()} Streamlyra. Código abierto bajo licencia MIT.
                 </div>
             </div>
         </footer>

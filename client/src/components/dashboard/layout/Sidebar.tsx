@@ -64,7 +64,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
             {/* Mobile Header */}
             <div className="flex items-center justify-between lg:hidden mb-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-primary">Menú de Control</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-white">Menú de Control</span>
                 <button
                     onClick={onMobileClose}
                     className="p-2 text-gray-500 hover:text-white transition-colors cursor-pointer"
