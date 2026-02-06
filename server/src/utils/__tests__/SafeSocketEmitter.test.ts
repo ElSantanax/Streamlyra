@@ -15,7 +15,7 @@ describe('SafeSocketEmitter', () => {
         // Mock de Socket.IO
         mockEmit = jest.fn();
         mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
-        
+
         mockIo = {
             to: mockTo,
             sockets: {
@@ -243,7 +243,10 @@ describe('SafeSocketEmitter', () => {
             expect(mockTo).toHaveBeenCalledWith('user-123');
             expect(mockEmit).toHaveBeenCalledWith('viewers_update', {
                 platform: 'youtube',
-                count: 1500
+                count: 1500,
+                isLive: false,
+                serverTime: expect.any(String) as unknown as string,
+                sessionStartTime: null
             });
         });
 
@@ -258,7 +261,10 @@ describe('SafeSocketEmitter', () => {
             expect(result).toBe(true);
             expect(mockEmit).toHaveBeenCalledWith('viewers_update', {
                 platform: 'twitch',
-                count: 0
+                count: 0,
+                isLive: false,
+                serverTime: expect.any(String) as unknown as string,
+                sessionStartTime: null
             });
         });
     });
@@ -277,7 +283,10 @@ describe('SafeSocketEmitter', () => {
             expect(mockEmit).toHaveBeenCalledWith('connection_status', {
                 platform: 'kick',
                 status: 'connected',
-                message: undefined
+                message: undefined,
+                isLive: false,
+                serverTime: expect.any(String) as unknown as string,
+                sessionStartTime: null
             });
         });
 
@@ -294,7 +303,10 @@ describe('SafeSocketEmitter', () => {
             expect(mockEmit).toHaveBeenCalledWith('connection_status', {
                 platform: 'kick',
                 status: 'error',
-                message: 'Token inválido'
+                message: 'Token inválido',
+                isLive: false,
+                serverTime: expect.any(String) as unknown as string,
+                sessionStartTime: null
             });
         });
 

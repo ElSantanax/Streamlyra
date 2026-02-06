@@ -1,10 +1,9 @@
 /** Procesador de webhooks de Kick con validación de estado y sockets activos */
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { KickWebhook } from '../../../models/KickWebhook.model';
-import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickWebhookPayload } from '../../../types/kick.types';
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
@@ -16,19 +15,24 @@ export class KickWebhookProcessor {
         this.transformer = new KickEventTransformer();
     }
 
-
-    async process(payload: any, eventType: string = 'chat.message.sent'): Promise<void> {
+    async process(payload: KickWebhookPayload | { data: KickWebhookPayload }, eventType: string = 'chat.message.sent'): Promise<void> {
         try {
             // Kick a veces envuelve el payload en un objeto 'data'
-            const data = payload.data || payload;
-            const { broadcaster } = data;
-            const broadcasterKickId = broadcaster?.user_id?.toString();
+            const data = 'data' in payload ? payload.data : payload;
+            let broadcasterKickId: string | undefined;
+
+            if (eventType === 'channel.follow') {
+                broadcasterKickId = (data as KickFollowEvent).broadcaster_user_id?.toString();
+            } else {
+                const broadcaster = (data as KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent).broadcaster;
+                broadcasterKickId = broadcaster?.user_id?.toString();
+            }
 
             if (!broadcasterKickId) {
                 logger.warn({
                     hasPayload: !!payload,
-                    hasData: !!payload.data,
-                    keys: Object.keys(payload)
+                    hasData: 'data' in payload,
+                    eventType
                 }, 'Kick webhook: No se pudo encontrar broadcaster.user_id en el payload');
                 return;
             }
@@ -38,6 +42,8 @@ export class KickWebhookProcessor {
                 chatMessage = this.transformer.transformSubscription(data as KickSubscriptionEvent);
             } else if (eventType === 'channel.subscription.gifts') {
                 chatMessage = this.transformer.transformGift(data as KickGiftEvent);
+            } else if (eventType === 'channel.follow') {
+                chatMessage = this.transformer.transformFollow(data as KickFollowEvent);
             } else {
                 chatMessage = this.transformer.transformMessage(data as KickChatMessagePayload);
             }
@@ -70,10 +76,6 @@ export class KickWebhookProcessor {
                 );
                 return;
             }
-
-            // OPTIMIZACIÓN 2: Eliminamos fetchSockets(). 
-            // SafeSocketEmitter ya verifica rooms internamente de forma eficiente.
-            // Esto ahorra una costosa operación asíncrona por cada mensaje de chat.
 
             logger.info(
                 { userId: connection.userId, platform: 'kick', user: chatMessage.user, eventType },

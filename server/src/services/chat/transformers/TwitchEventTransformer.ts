@@ -1,3 +1,4 @@
+import { TwitchFollower } from '../../../types/twitch.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -159,6 +160,18 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             time: this.formatTime(new Date()),
             color: '#9146FF',
             isSpecial: true
+        };
+    }
+
+    transformFollow(follower: TwitchFollower): NormalizedChatMessage {
+        return {
+            id: `twitch-follow-${follower.user_id}-${Date.now()}`,
+            platform: 'twitch',
+            user: follower.user_name,
+            message: '¡Te ha seguido!',
+            specialMessage: '👤 NUEVO SEGUIDOR',
+            time: this.formatTime(new Date(follower.followed_at || Date.now())),
+            color: '#9146FF'
         };
     }
 }

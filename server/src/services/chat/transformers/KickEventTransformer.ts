@@ -3,7 +3,7 @@
  * Responsabilidad: Transformar eventos específicos de Kick a formato normalizado
  */
 
-import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent } from '../../../types/kick.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -121,6 +121,20 @@ export class KickEventTransformer extends BaseEventTransformer {
             color: '#53fc18',
             isSub: true,
             isVIP: true
+        };
+    }
+
+    transformFollow(event: KickFollowEvent): NormalizedChatMessage {
+        const { username, created_at } = event;
+
+        return {
+            id: `kick-follow-${Date.now()}`,
+            platform: 'kick',
+            user: username,
+            message: '¡Te ha seguido!',
+            specialMessage: '👤 NUEVO SEGUIDOR',
+            time: this.formatTime(new Date(created_at || Date.now())),
+            color: '#53fc18'
         };
     }
 

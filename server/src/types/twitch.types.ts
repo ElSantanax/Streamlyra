@@ -47,3 +47,18 @@ export interface TwitchStreamResponse {
         cursor?: string;
     };
 }
+
+export interface TwitchFollower {
+    user_id: string;
+    user_name: string;
+    user_login: string;
+    followed_at: string;
+}
+
+export interface TwitchFollowerResponse {
+    total: number;
+    data: TwitchFollower[];
+    pagination?: {
+        cursor?: string;
+    };
+}

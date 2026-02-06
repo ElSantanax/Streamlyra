@@ -107,4 +107,12 @@ export interface KickGiftEvent {
     created_at: string;
 }
 
-export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent;
+export interface KickFollowEvent {
+    broadcaster_user_id: number;
+    username: string;
+    follower_user_id: number;
+    channel_id: number;
+    created_at: string;
+}
+
+export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent | KickFollowEvent;

@@ -15,7 +15,7 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
         twitch: {
             clientId: import.meta.env.VITE_TWITCH_CLIENT_ID as string,
             authUrl: 'https://id.twitch.tv/oauth2/authorize',
-            scope: 'user:read:email chat:read user:write:chat moderator:manage:chat_messages moderator:manage:banned_users',
+            scope: 'user:read:email chat:read user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:read:followers',
             state: 'twitch'
         },
         youtube: {

@@ -6,6 +6,7 @@ import { ChatProvider } from '../shared/ChatProvider';
 import { TwitchConnectionManager } from './TwitchConnectionManager';
 import { TwitchEventListener } from './TwitchEventListener';
 import { TwitchViewerPoller } from './TwitchViewerPoller';
+import { TwitchFollowerPoller } from './TwitchFollowerPoller';
 import { TwitchEventTransformer } from '../transformers/TwitchEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { Connection } from '../../../models/Connection.model';
@@ -19,12 +20,14 @@ export class TwitchChatProvider implements ChatProvider {
     private connectionManager: TwitchConnectionManager;
     private eventListener: TwitchEventListener;
     private viewerPoller: TwitchViewerPoller;
+    private followerPoller: TwitchFollowerPoller;
 
     constructor(private connectionService: ConnectionService) {
         this.transformer = new TwitchEventTransformer();
         this.connectionManager = new TwitchConnectionManager(connectionService);
         this.eventListener = new TwitchEventListener(this.transformer);
         this.viewerPoller = new TwitchViewerPoller();
+        this.followerPoller = new TwitchFollowerPoller();
     }
 
     async connect(userId: string, io: Server): Promise<void> {
@@ -41,8 +44,17 @@ export class TwitchChatProvider implements ChatProvider {
                 where: { userId: String(userId), provider: 'twitch' }
             });
             if (connection?.providerUsername) {
-                const validToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
-                this.viewerPoller.startPolling(userId, connection.providerUsername, validToken || connection.accessToken, io);
+                // Función auxiliar para obtener token actualizado
+                const getAccessToken = async () => this.connectionService.getValidAccessToken(userId, 'twitch');
+
+                // Inicializar polling con token actual
+                const validToken = await getAccessToken();
+                const accessToken = validToken || connection.accessToken;
+
+                this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
+                if (connection.providerId) {
+                    this.followerPoller.startPolling(userId, connection.providerId, getAccessToken, io);
+                }
             }
             return;
         }
@@ -65,9 +77,17 @@ export class TwitchChatProvider implements ChatProvider {
             });
 
             if (connection?.providerUsername) {
-                const validToken = await this.connectionService.getValidAccessToken(userId, 'twitch');
+                // Función auxiliar para obtener token actualizado
+                const getAccessToken = async () => this.connectionService.getValidAccessToken(userId, 'twitch');
+
+                // Inicializar polling con token actual
+                const validToken = await getAccessToken();
                 const accessToken = validToken || connection.accessToken;
+
                 this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
+                if (connection.providerId) {
+                    this.followerPoller.startPolling(userId, connection.providerId, getAccessToken, io);
+                }
             }
 
         } catch (error) {
@@ -94,8 +114,9 @@ export class TwitchChatProvider implements ChatProvider {
             logger.debug({ userId }, 'TwitchChatProvider: No active client found');
         }
 
-        logger.debug({ userId }, 'TwitchChatProvider: Stopping viewer polling');
+        logger.debug({ userId }, 'TwitchChatProvider: Stopping polls');
         this.viewerPoller.stopPolling(userId);
+        this.followerPoller.stopPolling(userId);
 
         this.connectingUsers.delete(userId);
 

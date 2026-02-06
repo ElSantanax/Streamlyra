@@ -4,16 +4,39 @@ Streamlyra es una solución moderna para streamers y creadores de contenido que 
 
 ## Capacidades por Plataforma
 
-| Plataforma | Leer Chat | Enviar Mensajes | Moderación | Subs & Gifts | Raids | OAuth2 |
-|------------|:---------:|:---------------:|:----------:|:------------:|:-----:|:------:|
-| **Twitch** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **YouTube** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| **Kick** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| **TikTok** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Plataforma  | Leer Chat | Enviar Mensajes | Moderación | Subs & Gifts | Seguidores | Raids | OAuth2 |
+| ----------- | :-------: | :-------------: | :--------: | :----------: | :--------: | :---: | :----: |
+| **Twitch**  |    ✅     |       ✅        |     ✅     |      ✅      |     ✅     |  ✅   |   ✅   |
+| **YouTube** |    ✅     |       ✅        |     ✅     |      ✅      |     ❌     |  ❌   |   ✅   |
+| **Kick**    |    ✅     |       ✅        |     ✅     |      ✅      |     ✅     |  ❌   |   ✅   |
+| **TikTok**  |    ✅     |       ❌        |     ❌     |      ✅      |     ✅     |  ❌   |   ❌   |
 
 > [!IMPORTANT]
 > **Nota sobre Kick**: La API de Kick aún no expone eventos de Raids/Hosting. Se implementará cuando esté disponible.
-> **Nota sobre TikTok**: Actualmente en modo solo lectura. La integración completa con la API oficial está en desarrollo. Ver [TIKTOK_VALIDATION_PLAN.md](./TIKTOK_VALIDATION_PLAN.md) para más detalles.
+> **Nota sobre TikTok**: Actualmente en modo solo lectura (listener). Soporta lectura de chat, regalos y follows.
+> **Nota sobre YouTube**: La API de YouTube no permite monitorear nuevos suscriptores en tiempo real de manera eficiente sin consumir cuotas excesivas. Solo se notifican "Nuevos Miembros" (Pago).
+
+### ⚡ Twitch Real-Time Followers (Smart Polling)
+
+Como la API de Chat (IRC) de Twitch no envía eventos de "Nuevo Seguidor", Streamlyra implementa un sistema inteligente de **Smart Polling** con las siguientes características:
+
+- **Frecuencia**: 1 Segundo (Ultra Baja Latencia).
+- **Seguridad**: Consume solo ~7.5% de la cuota de API permitida por usuario (60 pts/min vs 800 pts/min disponibles).
+- **Robustez**: Sistema de **Auto-Refresh** de tokens integrado. Permite sesiones de streaming de duración infinita (24/7) sin cortes por expiración de credenciales.
+
+## 🎨 Sistema de Eventos Unificado
+
+Streamlyra implementa un sistema visual unificado para eventos especiales (alertas) directamente en el chat, eliminando la necesidad de overlays externos complejos para la moderación básica.
+
+| Tipo de Evento        | Indicador Visual        | Color                  | Mensaje en Chat            |
+| --------------------- | ----------------------- | ---------------------- | -------------------------- |
+| **Follow**            | Borde Lateral Izquierdo | Marca de la Plataforma | **👤 NUEVO SEGUIDOR**      |
+| **Suscripción**       | Borde Lateral Izquierdo | Marca de la Plataforma | **🥳 NUEVA SUSCRIPCIÓN**   |
+| **Regalo / Sub Gift** | Borde Lateral Izquierdo | Marca de la Plataforma | **🎁 REGALO [Cantidad]**   |
+| **Raid / Host**       | Borde Lateral Izquierdo | Marca de la Plataforma | **🚨 RAID [Viewers]**      |
+| **Donación / Bits**   | Borde Lateral Izquierdo | Marca de la Plataforma | **💎 DONACIÓN [Cantidad]** |
+
+> **Nota**: Los colores se adaptan automáticamente: Twitch (Violeta), YouTube (Rojo), Kick (Verde Neón), TikTok (Rosa/Rojo).
 
 ## Proyecto Open Source
 
@@ -40,6 +63,7 @@ Este es un proyecto de código abierto creado para resolver una necesidad real d
 ## Inicio Rápido
 
 ### Prerrequisitos
+
 - Node.js 18+
 - PostgreSQL 13+
 - npm o yarn
@@ -79,6 +103,7 @@ Accede a la aplicación en `http://localhost:5173`
 Todas las contribuciones son bienvenidas, sin importar tu nivel de experiencia. Aquí hay algunas formas de participar:
 
 ### Para Programadores
+
 - Revisa los [issues abiertos](../../issues) y elige uno que te interese
 - Mejora la documentación del código
 - Optimiza el rendimiento
@@ -86,12 +111,14 @@ Todas las contribuciones son bienvenidas, sin importar tu nivel de experiencia. 
 - Implementa nuevas funcionalidades
 
 ### Para Diseñadores
+
 - Mejora la interfaz de usuario
 - Crea mockups para nuevas funcionalidades
 - Optimiza la experiencia móvil
 - Diseña iconos y recursos visuales
 
 ### Para Testers
+
 - Reporta bugs con pasos detallados para reproducirlos
 - Prueba la aplicación en diferentes navegadores
 - Valida el comportamiento en casos extremos
