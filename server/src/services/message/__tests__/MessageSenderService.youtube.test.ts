@@ -428,7 +428,7 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
             mockYouTubeService.getActiveLiveChatId.mockResolvedValue('livechat123');
-            mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+            mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
             const result = await messageSenderService.sendMessage({
                 userId: 'user123',
@@ -472,7 +472,7 @@ describe('MessageSenderService - YouTube Edge Cases', () => {
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
             mockYouTubeService.getActiveLiveChatId.mockResolvedValue(liveChatId);
-            mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+            mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
             const result = await messageSenderService.sendMessage({
                 userId: 'user123',

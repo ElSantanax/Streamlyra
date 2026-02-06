@@ -91,12 +91,13 @@ export const useChatMessages = () => {
   const updateMessageStatus = useCallback((
     messageId: string,
     status: MessageStatus,
-    errorMessage?: string
+    errorMessage?: string,
+    platformIds?: Record<string, string>
   ) => {
     withFlush(prev =>
       prev.map(msg =>
         msg.id === messageId
-          ? { ...msg, status, errorMessage }
+          ? { ...msg, status, errorMessage, platformIds }
           : msg
       )
     );

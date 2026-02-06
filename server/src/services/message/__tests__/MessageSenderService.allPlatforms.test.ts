@@ -78,10 +78,10 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         });
 
         mockConnectionService.getValidAccessToken.mockResolvedValue('valid-token');
-        mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+        mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
         mockYouTubeService.getActiveLiveChatId.mockResolvedValue('live-chat-123');
-        mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-        mockKickService.sendChatMessage.mockResolvedValue(undefined);
+        mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+        mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
         // Send with empty platforms array
         const result = await messageSenderService.sendMessage({
@@ -126,7 +126,7 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         });
 
         mockConnectionService.getValidAccessToken.mockResolvedValue('valid-token');
-        mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+        mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
         // Send with empty platforms array
         const result = await messageSenderService.sendMessage({
@@ -161,7 +161,7 @@ describe('MessageSenderService - Send to All Connected Platforms', () => {
         });
 
         mockConnectionService.getValidAccessToken.mockResolvedValue('valid-token');
-        mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+        mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
         // Send with explicit platforms array (old behavior)
         const result = await messageSenderService.sendMessage({

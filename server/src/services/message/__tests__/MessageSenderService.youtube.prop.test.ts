@@ -77,7 +77,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue(liveChatId);
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     // Send message
                     await messageSenderService.sendMessage({
@@ -129,7 +129,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue(liveChatId);
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -174,7 +174,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue(liveChatId);
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -393,7 +393,7 @@ describe('Feature: multi-platform-message-sending, Property 17: Disconnected pla
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue(liveChatId);
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,

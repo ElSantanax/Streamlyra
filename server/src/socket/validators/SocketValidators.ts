@@ -26,6 +26,11 @@ export function isValidModerationPayload(payload: unknown): payload is Moderatio
         return false;
     }
 
+    const validPlatforms = ['twitch', 'kick', 'youtube', 'dashboard'];
+    if (!validPlatforms.includes(p.platform as string)) {
+        return false;
+    }
+
     const validActions = ['delete', 'ban', 'timeout'];
     if (!validActions.includes(p.action as string)) {
         return false;
@@ -36,6 +41,10 @@ export function isValidModerationPayload(payload: unknown): payload is Moderatio
     }
 
     if ((p.action === 'ban' || p.action === 'timeout') && typeof p.targetUserId !== 'string') {
+        return false;
+    }
+
+    if (p.platformIds !== undefined && typeof p.platformIds !== 'object') {
         return false;
     }
 

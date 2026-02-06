@@ -29,11 +29,26 @@ export class KickManager {
                 return null;
             }
 
+            const isLive = !!channel.stream?.is_live;
+
+            logger.info(
+                {
+                    userId,
+                    slug,
+                    broadcasterId,
+                    hasStream: !!channel.stream,
+                    isLiveProp: channel.stream?.is_live,
+                    finalIsLive: isLive,
+                    viewerCount
+                },
+                'Kick Channel API Result'
+            );
+
             if (io && userId) {
-                SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount, !!channel.stream);
+                SafeSocketEmitter.emitViewersUpdate(io, userId, 'kick', viewerCount, isLive);
             }
 
-            return { broadcasterId, slug, viewerCount, isLive: !!channel.stream };
+            return { broadcasterId, slug, viewerCount, isLive };
         } catch (error) {
             logger.error({ err: error }, 'Error getting Kick channel info');
             return null;

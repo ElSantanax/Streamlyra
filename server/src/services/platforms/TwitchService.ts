@@ -60,7 +60,7 @@ export class TwitchService extends BasePlatformService {
         broadcasterId: string,
         senderId: string,
         message: string
-    ): Promise<void> {
+    ): Promise<string> {
         try {
             const response = await axios.post(
                 'https://api.twitch.tv/helix/chat/messages',
@@ -82,6 +82,13 @@ export class TwitchService extends BasePlatformService {
             if (response.status !== 200) {
                 throw new Error(`Twitch API error: ${response.statusText}`);
             }
+
+            const data = response.data?.data?.[0];
+            if (!data?.is_sent) {
+                throw new Error('Twitch reportó que el mensaje no fue enviado');
+            }
+
+            return data.message_id;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;

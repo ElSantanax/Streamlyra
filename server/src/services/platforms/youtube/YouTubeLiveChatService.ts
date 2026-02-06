@@ -79,7 +79,7 @@ export class YouTubeLiveChatService {
         accessToken: string,
         liveChatId: string,
         message: string
-    ): Promise<void> {
+    ): Promise<string> {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_SEND;
 
@@ -103,7 +103,7 @@ export class YouTubeLiveChatService {
                 },
                 {
                     params: {
-                        part: 'snippet'
+                        part: 'id,snippet'
                     },
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -119,7 +119,13 @@ export class YouTubeLiveChatService {
                 throw new Error(`YouTube API error: ${response.statusText}`);
             }
 
-            logger.info({ platform: this.platformName, liveChatId }, 'Chat message sent successfully');
+            const messageId = response.data?.id;
+            if (!messageId) {
+                throw new Error('YouTube no devolvió un ID de mensaje');
+            }
+
+            logger.info({ platform: this.platformName, liveChatId, messageId }, 'Chat message sent successfully');
+            return messageId;
         } catch (error: unknown) {
             YouTubeQuotaErrorHandler.handleQuotaError(error);
 

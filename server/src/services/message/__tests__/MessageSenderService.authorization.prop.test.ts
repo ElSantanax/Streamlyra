@@ -82,10 +82,10 @@ describe('Feature: multi-platform-message-sending, Property 23: User authorizati
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
 
                     // Mock platform services
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -132,10 +132,10 @@ describe('Feature: multi-platform-message-sending, Property 23: User authorizati
                     });
 
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -345,8 +345,8 @@ describe('Feature: multi-platform-message-sending, Property 24: Unauthorized pla
                     });
 
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -453,10 +453,10 @@ describe('Feature: multi-platform-message-sending, Property 24: Unauthorized pla
                     });
 
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,

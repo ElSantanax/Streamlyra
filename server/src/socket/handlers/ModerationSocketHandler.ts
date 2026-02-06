@@ -40,11 +40,23 @@ export class ModerationSocketHandler {
                     return;
                 }
 
-                if (platform !== 'twitch' && platform !== 'kick' && platform !== 'youtube') {
+                if (platform !== 'twitch' && platform !== 'kick' && platform !== 'youtube' && platform !== 'dashboard') {
                     socket.emit('moderation_error', {
                         code: 'UNSUPPORTED_PLATFORM',
                         message: 'Moderación solo disponible para Twitch, Kick y YouTube'
                     });
+                    return;
+                }
+
+                // Si es dashboard, manejar por separado ya que afecta a múltiples plataformas
+                if (platform === 'dashboard') {
+                    await this.handleDashboardModeration(
+                        socket,
+                        action,
+                        messageId,
+                        (payload as any).platformIds,
+                        authenticatedUserId
+                    );
                     return;
                 }
 
@@ -114,6 +126,95 @@ export class ModerationSocketHandler {
                 SocketErrorHandler.emitModerationInternalError(socket, error);
             }
         });
+    }
+
+    private async handleDashboardModeration(
+        socket: Socket,
+        action: string,
+        messageId: string | undefined,
+        platformIds: Record<string, string> | undefined,
+        authenticatedUserId: string
+    ): Promise<void> {
+        if (action !== 'delete') {
+            socket.emit('moderation_error', {
+                code: 'UNSUPPORTED_ACTION',
+                message: 'Solo se permite eliminar mensajes del dashboard'
+            });
+            return;
+        }
+
+        if (!platformIds || Object.keys(platformIds).length === 0) {
+            // Si no hay platformIds, el mensaje solo se elimina del dashboard (ya ocurrió optimisticamente)
+            socket.emit('moderation_success', {
+                action: 'delete',
+                platform: 'dashboard',
+                messageId,
+                message: 'Mensaje eliminado localmente'
+            });
+            return;
+        }
+
+        logger.info({ userId: authenticatedUserId, messageId, platformIds }, 'Processing dashboard message deletion');
+
+        const deletionPromises = Object.entries(platformIds).map(async ([platform, pid]) => {
+            try {
+                const validToken = await this.connectionService.getValidAccessToken(
+                    authenticatedUserId,
+                    platform as any
+                );
+
+                if (!validToken) return { platform, success: false, error: 'Token inválido' };
+
+                if (platform === 'twitch') {
+                    const connection = await Connection.findOne({
+                        where: { userId: authenticatedUserId, provider: 'twitch' }
+                    });
+                    if (!connection) return { platform, success: false, error: 'No conectado' };
+
+                    await this.twitchModerationService.deleteMessage({
+                        broadcasterId: connection.providerId,
+                        moderatorId: connection.providerId,
+                        messageId: pid,
+                        accessToken: validToken
+                    });
+                } else if (platform === 'kick') {
+                    await this.kickModerationService.deleteMessage({
+                        messageId: pid,
+                        accessToken: validToken
+                    });
+                } else if (platform === 'youtube') {
+                    await this.youtubeModerationService.deleteMessage({
+                        messageId: pid,
+                        accessToken: validToken
+                    });
+                }
+
+                return { platform, success: true };
+            } catch (error) {
+                logger.error({ err: error, platform, messageId: pid }, 'Failed to delete dashboard message from platform');
+                return { platform, success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+            }
+        });
+
+        const results = await Promise.all(deletionPromises);
+        const allSuccessful = results.every(r => r.success);
+
+        if (allSuccessful) {
+            socket.emit('moderation_success', {
+                action: 'delete',
+                platform: 'dashboard',
+                messageId,
+                message: 'Mensaje eliminado de todas las plataformas'
+            });
+        } else {
+            const failed = results.filter(r => !r.success).map(r => r.platform).join(', ');
+            socket.emit('moderation_warning', {
+                action: 'delete',
+                platform: 'dashboard',
+                messageId,
+                message: `Mensaje eliminado del dashboard, pero falló en: ${failed}`
+            });
+        }
     }
 
     private async handleTwitchModeration(

@@ -114,12 +114,13 @@ export class MessageSenderService {
             'twitch',
             userId,
             async (accessToken, connection) => {
-                await this.twitchService.sendChatMessage(
+                const messageId = await this.twitchService.sendChatMessage(
                     accessToken,
                     connection.providerId,
                     connection.providerId,
                     message
                 );
+                return { messageId };
             }
         );
     }
@@ -157,7 +158,8 @@ export class MessageSenderService {
                     logger.info({ userId, liveChatId }, 'Cached YouTube liveChatId for future messages');
                 }
 
-                await this.youtubeService.sendChatMessage(accessToken, liveChatId, message);
+                const messageId = await this.youtubeService.sendChatMessage(accessToken, liveChatId, message);
+                return { messageId };
             }
         );
     }
@@ -167,11 +169,12 @@ export class MessageSenderService {
             'kick',
             userId,
             async (accessToken, connection) => {
-                await this.kickService.sendChatMessage(
+                const messageId = await this.kickService.sendChatMessage(
                     accessToken,
                     connection.providerId,
                     message
                 );
+                return { messageId };
             }
         );
     }

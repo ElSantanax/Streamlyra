@@ -179,11 +179,11 @@ export class KickService extends BasePlatformService {
     /**
      * Envía un mensaje al chat de Kick
      */
-    async sendChatMessage(accessToken: string, channelId: string, message: string): Promise<void> {
+    async sendChatMessage(accessToken: string, channelId: string, message: string): Promise<string> {
         try {
             logger.debug({ platform: 'kick', channelId, messageLength: message.length }, 'Sending message to Kick official API');
 
-            await axios.post(
+            const response = await axios.post(
                 KickService.CHAT_URL,
                 {
                     content: message,
@@ -196,7 +196,10 @@ export class KickService extends BasePlatformService {
                 }
             );
 
-            logger.info({ platform: 'kick', channelId }, 'Message sent successfully to Kick');
+            // Kick API retorna el message ID en data.data.message_id
+            const messageId = response.data?.data?.message_id || `kick-${Date.now()}`;
+            logger.info({ platform: 'kick', channelId, messageId }, 'Message sent successfully to Kick');
+            return messageId.toString();
         } catch (error) {
             this.handleKickApiError(error, 'sendChatMessage');
         }

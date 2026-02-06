@@ -309,7 +309,7 @@ describe('MessageSenderService - Kick Edge Cases', () => {
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-            mockKickService.sendChatMessage.mockResolvedValue(undefined);
+            mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
             const result = await messageSenderService.sendMessage({
                 userId: 'user123',
@@ -348,7 +348,7 @@ describe('MessageSenderService - Kick Edge Cases', () => {
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-            mockKickService.sendChatMessage.mockResolvedValue(undefined);
+            mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
             await messageSenderService.sendMessage({
                 userId: 'user123',

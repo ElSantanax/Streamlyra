@@ -10,6 +10,7 @@ import { Platform } from '../constants/platforms';
 export interface PlatformResult {
     platform: Platform;
     success: boolean;
+    messageId?: string;
     error?: string;
     errorCode?: string;
 }
@@ -37,11 +38,12 @@ export interface SendMessageResponse {
  */
 export interface ModerationActionRequest {
     userId: string; // ID del usuario autenticado que realiza la acción
-    platform: Platform;
+    platform: Platform | 'dashboard';
     action: 'delete' | 'ban' | 'timeout';
     messageId?: string; // Requerido para 'delete'
     targetUserId?: string; // Requerido para 'ban' y 'timeout' (Twitch y Kick usan IDs numéricos)
     targetUsername?: string; // Opcional, solo para referencia en respuestas
     reason?: string; // Opcional para ban/timeout (máximo 100 caracteres en Kick)
     duration?: number; // Opcional para timeout (segundos en Twitch, minutos en Kick: 1-10080)
+    platformIds?: Record<string, string>; // IDs específicos de cada plataforma para mensajes dashboard
 }

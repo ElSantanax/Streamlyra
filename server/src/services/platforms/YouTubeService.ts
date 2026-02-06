@@ -50,7 +50,7 @@ export class YouTubeService extends BasePlatformService {
         accessToken: string,
         liveChatId: string,
         message: string
-    ): Promise<void> {
+    ): Promise<string> {
         return this.liveChatService.sendChatMessage(accessToken, liveChatId, message);
     }
 }

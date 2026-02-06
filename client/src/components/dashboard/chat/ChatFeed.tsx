@@ -14,7 +14,7 @@ interface ChatFeedProps {
     scrollToBottom: () => void;
     isAutoScrollEnabled: boolean;
     onReply: (username: string) => void;
-    onDelete: (messageId: string, platform: PlatformKey) => void;
+    onDelete: (messageId: string, platform: PlatformKey, platformIds?: Record<string, string>) => void;
     onBan: (userId: string, username: string, platform: PlatformKey) => void;
 }
 
@@ -46,7 +46,7 @@ const ChatFeed = memo(({
                                             key={msg.id}
                                             {...msg}
                                             onReply={onReply}
-                                            onDelete={(messageId) => onDelete(messageId, msg.platform)}
+                                            onDelete={(messageId) => onDelete(messageId, msg.platform, msg.platformIds)}
                                             onBan={(userId, username) => onBan(userId, username, msg.platform)}
                                         />
                                     ))}

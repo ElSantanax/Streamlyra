@@ -71,7 +71,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     // Send message
                     await messageSenderService.sendMessage({
@@ -116,7 +116,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -158,7 +158,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,

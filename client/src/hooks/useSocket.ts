@@ -5,7 +5,7 @@ import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionInfo
 interface UseSocketOptions {
   userId?: string;
   onChatMessage?: (message: ChatMessage) => void;
-  onMessageStatusUpdate?: (messageId: string, status: 'sending' | 'sent' | 'error', errorMessage?: string) => void;
+  onMessageStatusUpdate?: (messageId: string, status: 'sending' | 'sent' | 'error', errorMessage?: string, platformIds?: Record<string, string>) => void;
   onViewersUpdate?: (data: ViewersUpdate) => void;
   onConnectionStatus?: (data: ConnectionStatusUpdate) => void;
   connections?: Record<string, ConnectionInfo>;
@@ -161,8 +161,13 @@ export const useSocket = ({
       onChatMessageRef.current?.(msg);
     };
 
-    const handleMessageStatusUpdate = (data: { messageId: string; status: 'sending' | 'sent' | 'error'; errorMessage?: string }) => {
-      onMessageStatusUpdateRef.current?.(data.messageId, data.status, data.errorMessage);
+    const handleMessageStatusUpdate = (data: {
+      messageId: string;
+      status: 'sending' | 'sent' | 'error';
+      errorMessage?: string;
+      platformIds?: Record<string, string>;
+    }) => {
+      onMessageStatusUpdateRef.current?.(data.messageId, data.status, data.errorMessage, data.platformIds);
     };
 
     const handleViewersUpdate = (data: ViewersUpdate) => {

@@ -311,7 +311,7 @@ describe('MessageSenderService - Twitch Edge Cases', () => {
 
             (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
             mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-            mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+            mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
             const result = await messageSenderService.sendMessage({
                 userId: 'user123',

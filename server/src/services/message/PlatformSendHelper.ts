@@ -10,10 +10,10 @@ import axios from 'axios';
 export class PlatformSendHelper {
     constructor(private connectionService: ConnectionService) { }
 
-    async sendWithRetry(
+    async sendWithRetry<T extends Partial<PlatformResult>>(
         platform: Platform,
         userId: string,
-        sendFn: (token: string, connection: Connection) => Promise<void>
+        sendFn: (token: string, connection: Connection) => Promise<T | void>
     ): Promise<PlatformResult> {
         try {
             const connection = await this.validateConnection(userId, platform);
@@ -38,9 +38,9 @@ export class PlatformSendHelper {
             }
 
             try {
-                await sendFn(accessToken, connection);
+                const result = await sendFn(accessToken, connection);
                 logger.info({ userId, platform }, 'Message sent successfully');
-                return { platform, success: true };
+                return { platform, success: true, ...(result || {} as T) };
 
             } catch (firstAttemptError: unknown) {
                 if (axios.isAxiosError(firstAttemptError) && firstAttemptError.response?.status === 401) {
@@ -74,11 +74,11 @@ export class PlatformSendHelper {
         return connection;
     }
 
-    private async retryWithRefreshedToken(
+    private async retryWithRefreshedToken<T extends Partial<PlatformResult>>(
         platform: Platform,
         userId: string,
         connection: Connection,
-        sendFn: (token: string, connection: Connection) => Promise<void>
+        sendFn: (token: string, connection: Connection) => Promise<T | void>
     ): Promise<PlatformResult> {
         logger.warn(
             { userId, platform },
@@ -101,7 +101,7 @@ export class PlatformSendHelper {
         }
 
         try {
-            await sendFn(newAccessToken, connection);
+            const result = await sendFn(newAccessToken, connection);
 
             logger.info(
                 { userId, platform },
@@ -110,7 +110,8 @@ export class PlatformSendHelper {
 
             return {
                 platform,
-                success: true
+                success: true,
+                ...(result || {} as T)
             };
 
         } catch (retryError: unknown) {

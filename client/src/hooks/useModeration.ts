@@ -43,7 +43,7 @@ export const useModeration = (options?: UseModerationOptions) => {
     };
   }, [onMessageDeleted, onUserBanned]);
 
-  const deleteMessage = useCallback((messageId: string, platform: string) => {
+  const deleteMessage = useCallback((messageId: string, platform: string, platformIds?: Record<string, string>) => {
     if (!user?.id) {
       toast.error('Debes estar autenticado');
       return;
@@ -57,7 +57,8 @@ export const useModeration = (options?: UseModerationOptions) => {
       userId: user.id,
       platform,
       action: 'delete',
-      messageId
+      messageId,
+      platformIds
     });
   }, [user, onMessageDeleted]);
 

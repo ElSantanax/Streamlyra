@@ -73,7 +73,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     // Send message
                     await messageSenderService.sendMessage({
@@ -119,7 +119,7 @@ describe('Feature: multi-platform-message-sending, Property 14: Platform-specifi
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -192,7 +192,7 @@ describe('Feature: multi-platform-message-sending, Property 15: Successful API r
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -235,7 +235,7 @@ describe('Feature: multi-platform-message-sending, Property 15: Successful API r
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     // Request multiple platforms (Twitch will succeed, others will fail)
                     const result = await messageSenderService.sendMessage({

@@ -7,7 +7,7 @@ import { SocketErrorHandler } from '../utils/SocketErrorHandler';
 export class MessageSocketHandler {
     constructor(
         private messageSenderService: MessageSenderService
-    ) {}
+    ) { }
 
     setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
         socket.on('send_message', async (payload: unknown) => {
@@ -96,10 +96,16 @@ export class MessageSocketHandler {
                     errorMessage = 'No se pudo enviar a ninguna plataforma';
                 }
 
+                const platformIds: Record<string, string> = {};
+                successfulPlatforms.forEach(r => {
+                    if (r.messageId) platformIds[r.platform] = r.messageId;
+                });
+
                 io.to(sessionUserId).emit('message_status_update', {
                     messageId,
                     status: finalStatus,
-                    errorMessage
+                    errorMessage,
+                    platformIds
                 });
 
                 socket.emit('message_sent_result', result);

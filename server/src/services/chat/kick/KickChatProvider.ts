@@ -47,8 +47,12 @@ export class KickChatProvider implements ChatProvider {
             }
 
             if (this.manager.isPolling(userId)) {
-                logger.debug({ userId }, 'Kick already connected and polling');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', this.manager.isPolling(userId));
+                logger.debug({ userId }, 'Kick already connected and polling, refreshing UI with fresh info');
+
+                // Obtenemos info fresca para asegurar el estado real en la UI
+                const freshInfo = await this.manager.getChannelInfo(accessToken, userId, io);
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', freshInfo?.isLive);
+
                 this.manager.startViewerPolling(userId, accessToken, io);
                 this.connectingUsers.delete(userId);
                 return;

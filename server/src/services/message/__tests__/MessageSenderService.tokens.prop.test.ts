@@ -80,10 +80,10 @@ describe('Feature: multi-platform-message-sending, Property 25: Access tokens ar
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
                     
                     // Mock platform services
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -132,10 +132,10 @@ describe('Feature: multi-platform-message-sending, Property 25: Access tokens ar
                     mockConnectionService.getValidAccessToken.mockResolvedValue(validToken);
                     
                     // Mock platform services to capture the token used
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -243,10 +243,10 @@ describe('Feature: multi-platform-message-sending, Property 25: Access tokens ar
                         async (uid: string, platform: Platform) => `valid_token_${platform}`
                     );
 
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     await messageSenderService.sendMessage({
                         userId,
@@ -297,8 +297,8 @@ describe('Feature: multi-platform-message-sending, Property 25: Access tokens ar
                         }
                     );
 
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -394,10 +394,10 @@ describe('Feature: multi-platform-message-sending, Property 26: Credentials neve
                     });
 
                     mockConnectionService.getValidAccessToken.mockResolvedValue(accessToken);
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -443,10 +443,10 @@ describe('Feature: multi-platform-message-sending, Property 26: Credentials neve
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -532,10 +532,10 @@ describe('Feature: multi-platform-message-sending, Property 26: Credentials neve
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -574,10 +574,10 @@ describe('Feature: multi-platform-message-sending, Property 26: Credentials neve
 
                     (Connection.findOne as jest.Mock).mockResolvedValue(mockConnection);
                     mockConnectionService.getValidAccessToken.mockResolvedValue('valid_token');
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
@@ -709,10 +709,10 @@ describe('Feature: multi-platform-message-sending, Property 26: Credentials neve
                         }
                     );
 
-                    mockTwitchService.sendChatMessage.mockResolvedValue(undefined);
+                    mockTwitchService.sendChatMessage.mockResolvedValue('mock-msg-id');
                     mockYouTubeService.getActiveLiveChatId.mockResolvedValue('liveChatId123');
-                    mockYouTubeService.sendChatMessage.mockResolvedValue(undefined);
-                    mockKickService.sendChatMessage.mockResolvedValue(undefined);
+                    mockYouTubeService.sendChatMessage.mockResolvedValue('mock-msg-id');
+                    mockKickService.sendChatMessage.mockResolvedValue('mock-msg-id');
 
                     const result = await messageSenderService.sendMessage({
                         userId,
