@@ -149,7 +149,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         for (const emote of emotesData) {
             // Usar la primera URL disponible de la lista
             const emoteUrl = emote.image?.url_list?.[0];
-            
+
             if (emoteUrl) {
                 emotes.push({
                     id: emote.emoteId,
@@ -204,13 +204,14 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         // Seleccionar el mejor nombre (nickname si es legible, sino uniqueId)
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
-        const followId = `tk_follow_${userId}_${Date.now()}`;
+        const followKey = userId !== 'unknown' ? userId : (userObj.uniqueId || data.uniqueId || 'unknown');
+        const followId = `tk_follow_${followKey}`;
 
         return {
             id: followId,
             platform: 'tiktok',
             user: username,
-            message: '¡Te ha seguido!',
+            message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date()),
             color: '#FF0050' // Color de marca de TikTok

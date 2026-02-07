@@ -22,7 +22,13 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isUserScrollingRef = useRef(false);
+  const isAutoScrollEnabledRef = useRef(true);
   const lastScrollTopRef = useRef(0);
+
+  const setAutoScrollEnabled = useCallback((enabled: boolean) => {
+    isAutoScrollEnabledRef.current = enabled;
+    setIsAutoScrollEnabled(prev => (prev === enabled ? prev : enabled));
+  }, []);
 
   const scrollToBottomSmooth = useCallback(() => {
     const element = messagesEndRef.current;
@@ -31,16 +37,18 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
   }, []);
 
   const enableAutoScroll = useCallback(() => {
-    setIsAutoScrollEnabled(true);
+    setAutoScrollEnabled(true);
     isUserScrollingRef.current = false;
     scrollToBottomSmooth();
-  }, [scrollToBottomSmooth]);
+  }, [scrollToBottomSmooth, setAutoScrollEnabled]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    let rafId: number | null = null;
+    let container: HTMLDivElement | null = null;
 
     const handleScroll = () => {
+      if (!container) return;
+
       const { scrollTop, scrollHeight, clientHeight } = container;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
       const isAtBottom = distanceFromBottom <= REENABLE_THRESHOLD;
@@ -49,42 +57,61 @@ export const useAutoScroll = (options: UseAutoScrollOptions = {}): UseAutoScroll
       lastScrollTopRef.current = scrollTop;
 
       if (isAtBottom) {
-        if (!isAutoScrollEnabled) {
-          setIsAutoScrollEnabled(true);
-        }
+        setAutoScrollEnabled(true);
         isUserScrollingRef.current = false;
-      } else {
-        if (isAutoScrollEnabled) {
-          if (isScrollingUp || distanceFromBottom > SCROLL_THRESHOLD) {
-            setIsAutoScrollEnabled(false);
-            isUserScrollingRef.current = true;
-          }
-        }
+        return;
+      }
+
+      if (isAutoScrollEnabledRef.current) {
+        setAutoScrollEnabled(false);
+      }
+
+      // Marcamos intención de usuario si sube o se aleja suficientemente.
+      if (isScrollingUp || distanceFromBottom > SCROLL_THRESHOLD) {
+        isUserScrollingRef.current = true;
       }
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [isAutoScrollEnabled]);
+    const tryAttach = () => {
+      container = containerRef.current;
+      if (!container) {
+        rafId = requestAnimationFrame(tryAttach);
+        return;
+      }
+
+      container.addEventListener('scroll', handleScroll, { passive: true });
+    };
+
+    tryAttach();
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [setAutoScrollEnabled]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container || !trigger) return;
 
-    if (isAutoScrollEnabled && !isUserScrollingRef.current) {
+    if (isAutoScrollEnabledRef.current && !isUserScrollingRef.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [trigger, isAutoScrollEnabled]);
+  }, [trigger]);
 
   useEffect(() => {
     const handleResize = () => {
-      if (isAutoScrollEnabled && containerRef.current) {
+      if (isAutoScrollEnabledRef.current && containerRef.current && !isUserScrollingRef.current) {
         containerRef.current.scrollTop = containerRef.current.scrollHeight;
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isAutoScrollEnabled]);
+  }, []);
 
   return {
     messagesEndRef,

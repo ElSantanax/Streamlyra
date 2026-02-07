@@ -168,7 +168,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             id: `twitch-follow-${follower.user_id}-${Date.now()}`,
             platform: 'twitch',
             user: follower.user_name,
-            message: '¡Te ha seguido!',
+            message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date(follower.followed_at || Date.now())),
             color: '#9146FF'

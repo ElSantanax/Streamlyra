@@ -131,7 +131,7 @@ export class KickEventTransformer extends BaseEventTransformer {
             id: `kick-follow-${Date.now()}`,
             platform: 'kick',
             user: username,
-            message: '¡Te ha seguido!',
+            message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date(created_at || Date.now())),
             color: '#53fc18'
