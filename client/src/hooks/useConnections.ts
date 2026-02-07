@@ -57,9 +57,11 @@ export const useConnections = (shouldFetch = true) => {
             viewers: prevPlatform?.viewers ?? 0,
             status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
             statusMessage: prevPlatform?.statusMessage,
-            isLive: prevPlatform?.isLive,
-            sessionStartTime: prevPlatform?.sessionStartTime,
-            serverTime: prevPlatform?.serverTime
+            isLive: data.connections[platform].isLive ?? prevPlatform?.isLive,
+            sessionStartTime: data.connections[platform].sessionStartTime !== undefined
+              ? data.connections[platform].sessionStartTime
+              : prevPlatform?.sessionStartTime,
+            serverTime: data.connections[platform].serverTime ?? prevPlatform?.serverTime
           };
 
           if (!isConnectionEqual(prevPlatform, newConnection)) {
@@ -111,10 +113,10 @@ export const useConnections = (shouldFetch = true) => {
       updateConnection(platform, {
         connected: false,
         viewers: 0,
-        status: undefined,
-        statusMessage: undefined,
+        status: null as any,
+        statusMessage: null as any,
         isLive: false,
-        sessionStartTime: undefined
+        sessionStartTime: null as any
       });
     } catch (err) {
       console.error('Error disconnecting platform:', err);
@@ -164,11 +166,22 @@ export const useConnections = (shouldFetch = true) => {
       sessionStartTime?: string;
       serverTime?: string;
     }) => {
-      updateConnection(data.platform, {
-        viewers: data.count,
-        isLive: data.isLive,
-        sessionStartTime: data.sessionStartTime,
-        serverTime: data.serverTime
+      // Solo actualizar si la plataforma está marcada como conectada en el estado local
+      setConnections(prev => {
+        if (!prev[data.platform]?.connected) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [data.platform]: {
+            ...prev[data.platform],
+            viewers: data.count,
+            isLive: data.isLive,
+            sessionStartTime: data.sessionStartTime,
+            serverTime: data.serverTime
+          }
+        };
       });
     };
 

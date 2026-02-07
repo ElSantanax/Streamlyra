@@ -68,4 +68,15 @@ export class StreamSessionManager {
     isPlatformLive(userId: string, platform: string): boolean {
         return this.sessions.get(userId)?.livePlatforms.has(platform) || false;
     }
+
+    /**
+     * Limpia la sesión de un usuario para evitar fugas de memoria
+     */
+    clearSession(userId: string): void {
+        const session = this.sessions.get(userId);
+        if (session) {
+            logger.info({ userId }, 'Clearing stream session from memory');
+            this.sessions.delete(userId);
+        }
+    }
 }

@@ -4,6 +4,7 @@ import type { SendMessagePayload, MessageSentResult } from '../../../../../types
 import { socket } from '../../../../../services/socket';
 import { toast } from '../../../../../lib/notifications/toast';
 import { validateMessage } from '../utils/messageValidation';
+import { useConnectionsContext } from '../../../../../hooks/useConnectionsContext';
 
 export const useMessageSender = (
     user: User | null,
@@ -12,6 +13,7 @@ export const useMessageSender = (
     focusInput: () => void
 ) => {
     const [isSending, setIsSending] = useState(false);
+    const { getConnectedPlatforms } = useConnectionsContext();
 
     useEffect(() => {
         const handleMessageSentResult = (result: MessageSentResult) => {
@@ -72,13 +74,21 @@ export const useMessageSender = (
             return;
         }
 
+        // Obtener plataformas conectadas usando la función estable
+        const connectedPlatforms = getConnectedPlatforms();
+
+        if (connectedPlatforms.length === 0) {
+            toast.error('No hay plataformas conectadas para enviar el mensaje');
+            return;
+        }
+
         setIsSending(true);
         const messageToSend = message.trim();
 
         const payload: SendMessagePayload = {
             userId: user.id,
             message: messageToSend,
-            platforms: []
+            platforms: connectedPlatforms
         };
 
         socket.emit('send_message', payload);

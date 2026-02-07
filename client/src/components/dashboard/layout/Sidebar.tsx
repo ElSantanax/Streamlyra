@@ -34,6 +34,7 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
     // Calcular tiempo al aire total (el del stream más antiguo o el enviado por el servidor)
     const sessionStartTime = useMemo(() => {
         const starts = Object.values(connections)
+            .filter(c => c.isLive)
             .map(c => c.sessionStartTime)
             .filter((s): s is string => !!s);
 

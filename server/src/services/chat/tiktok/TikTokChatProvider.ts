@@ -57,9 +57,9 @@ export class TikTokChatProvider implements ChatProvider {
             // 3. Limpiar cualquier rastro anterior antes de empezar de cero
             await this.clearInternalState(userId);
 
-            // 4. Iniciar flujo de búsqueda automática
+            // 4. Iniciar flujo de búsqueda automática (no bloqueante)
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
-            await this.setupAutoDiscovery(userId, username, io);
+            void this.setupAutoDiscovery(userId, username, io);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'TikTok: Failed to setup connection flow');
@@ -70,6 +70,11 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     async boostDiscovery(userId: string, io: Server): Promise<void> {
+        if (this.stateManager.isConnecting(userId)) {
+            logger.debug({ userId }, 'TikTok: Boost requested but already connecting/discovering');
+            return;
+        }
+
         logger.info({ userId }, 'TikTok: Manual boost requested');
 
         const connection = await this.getConnection(userId);
@@ -78,6 +83,7 @@ export class TikTokChatProvider implements ChatProvider {
         const username = connection.providerUsername.replace(/^@+/, '');
 
         this.stateManager.setManualMode(userId, true);
+        this.stateManager.setConnecting(userId, true);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
 
         try {
@@ -90,6 +96,8 @@ export class TikTokChatProvider implements ChatProvider {
                 'waiting_stream',
                 'Live no detectado'
             );
+        } finally {
+            this.stateManager.setConnecting(userId, false);
         }
     }
 
@@ -120,6 +128,9 @@ export class TikTokChatProvider implements ChatProvider {
         });
 
         this.stateManager.setDiscoveryCleanup(userId, cleanup);
+
+        // Primer intento inmediato (lo esperamos para mantener el flag isConnecting activo)
+        await tryConnect().catch(() => { });
     }
 
     private async attemptDiscovery(userId: string, username: string, io: Server): Promise<void> {
@@ -128,6 +139,14 @@ export class TikTokChatProvider implements ChatProvider {
         this.stateManager.incrementAutoAttempts(userId);
 
         const tiktokConnection = await this.connectionManager.connect(username);
+
+        // Verificación de cancelación: ¿El usuario se desconectó mientras esperábamos?
+        // Si el estado fue limpiado (hasState es false), abortamos inmediatamente.
+        if (!this.stateManager.hasState(userId)) {
+            logger.info({ userId, username }, 'TikTok: Connection established but no longer needed (state cleared), disconnecting...');
+            await this.connectionManager.disconnect(tiktokConnection);
+            return;
+        }
 
         // Exito: Limpiar discovery y configurar chat
         this.stateManager.setDiscoveryCleanup(userId, () => { }); // Eliminar reintentos
@@ -180,12 +199,17 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     private async clearInternalState(userId: string): Promise<void> {
-        const active = this.stateManager.getActiveConnection(userId);
-        if (active) {
-            active.removeAllListeners();
-            await this.connectionManager.disconnect(active);
+        try {
+            const active = this.stateManager.getActiveConnection(userId);
+            if (active) {
+                active.removeAllListeners();
+                await this.connectionManager.disconnect(active);
+            }
+        } catch (error) {
+            logger.error({ err: error, userId }, 'TikTok: Error during client disconnection');
+        } finally {
+            this.stateManager.clearState(userId);
+            this.eventListener.clearStreamConfirmation(userId);
         }
-        this.stateManager.clearState(userId);
-        this.eventListener.clearStreamConfirmation(userId);
     }
 }

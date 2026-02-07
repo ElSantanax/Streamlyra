@@ -26,6 +26,10 @@ export class TikTokConnectionStateManager {
         return this.connectingUsers.has(userId);
     }
 
+    hasState(userId: string): boolean {
+        return this.states.has(userId);
+    }
+
     setConnecting(userId: string, isConnecting: boolean): void {
         if (isConnecting) this.connectingUsers.add(userId);
         else this.connectingUsers.delete(userId);

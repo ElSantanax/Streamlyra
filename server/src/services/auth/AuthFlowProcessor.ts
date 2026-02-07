@@ -9,6 +9,7 @@ import { ChatManager } from '../core/ChatManager';
 import { AuthResponse } from './AuthDTOBuilder';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 import { ConnectionService } from '../connection/ConnectionService';
+import { StreamSessionManager } from '../core/StreamSessionManager';
 
 export class AuthFlowProcessor {
     constructor(
@@ -33,7 +34,8 @@ export class AuthFlowProcessor {
         const result = await this.platformAuthHandler.handlePlatformAuth(profile, tokens, currentUserId);
 
         if (result.connectionActive) {
-            await this.chatManager.connectProvider(result.user.id, platform);
+            // Iniciamos la conexión en segundo plano para no bloquear la respuesta HTTP
+            void this.chatManager.connectProvider(result.user.id, platform);
         }
 
         return result;
@@ -71,7 +73,8 @@ export class AuthFlowProcessor {
         const result = await this.platformAuthHandler.handlePlatformAuth(profile, tokens, currentUserId);
 
         if (result.connectionActive) {
-            await this.chatManager.connectProvider(result.user.id, 'tiktok');
+            // Iniciamos la conexión en segundo plano para no bloquear la respuesta HTTP
+            void this.chatManager.connectProvider(result.user.id, 'tiktok');
         }
 
         return result;
@@ -90,5 +93,8 @@ export class AuthFlowProcessor {
         if (!userId) return;
         logger.info({ userId }, 'Processing user logout (cleanup chats)');
         await this.chatManager.disconnectUser(userId);
+
+        // Limpiar la sesión de stream para que el contador no persista
+        StreamSessionManager.getInstance().clearSession(userId);
     }
 }

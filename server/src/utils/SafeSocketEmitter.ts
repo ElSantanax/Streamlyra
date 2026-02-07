@@ -172,7 +172,10 @@ export class SafeSocketEmitter {
         const sessionManager = StreamSessionManager.getInstance();
 
         // Si no se pasa isLive, intentamos inferirlo (connected -> posiblemente live, pero mejor explícito)
-        const finalIsLive = isLive !== undefined ? isLive : (status === 'connected' && sessionManager.isPlatformLive(userId, platform));
+        // Pero si el estado es 'disconnected', forzamos isLive a false.
+        let finalIsLive = isLive !== undefined ? isLive : (status === 'connected' && sessionManager.isPlatformLive(userId, platform));
+        if (status === 'disconnected') finalIsLive = false;
+
         const session = sessionManager.updateLiveStatus(userId, platform, finalIsLive);
 
         return this.emit(io, {

@@ -4,6 +4,7 @@ import { User } from '../../models/User.model';
 import { buildUserDTO, UserDTO } from '../../utils/userUtils';
 import { TokenService } from './TokenService';
 import { ConnectionInfo } from '../../types';
+import { StreamSessionManager } from '../core/StreamSessionManager';
 
 export interface AuthResponse {
     token: string;
@@ -40,11 +41,18 @@ export class AuthDTOBuilder {
         };
 
         if (user.connections) {
+            const sessionManager = StreamSessionManager.getInstance();
+
             user.connections.forEach(conn => {
+                const isLive = sessionManager.isPlatformLive(user.id, conn.provider);
+                const session = sessionManager.getSession(user.id);
+
                 connections_map[conn.provider] = {
                     connected: true,
                     username: conn.providerUsername,
-                    viewers: 0
+                    viewers: 0,
+                    isLive,
+                    sessionStartTime: isLive ? session.startTime : null
                 };
             });
         }

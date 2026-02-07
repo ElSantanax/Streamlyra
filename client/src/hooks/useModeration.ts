@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { socket } from '../services/socket';
 import { toast } from '../lib/notifications';
 import { dialog } from '../lib/dialog';
@@ -11,14 +11,20 @@ interface UseModerationOptions {
 
 export const useModeration = (options?: UseModerationOptions) => {
   const { user } = useAuth();
-  const { onMessageDeleted, onUserBanned } = options || {};
+  const onMessageDeletedRef = useRef(options?.onMessageDeleted);
+  const onUserBannedRef = useRef(options?.onUserBanned);
+
+  useEffect(() => {
+    onMessageDeletedRef.current = options?.onMessageDeleted;
+    onUserBannedRef.current = options?.onUserBanned;
+  }, [options?.onMessageDeleted, options?.onUserBanned]);
 
   useEffect(() => {
     const handleModerationSuccess = (data: { action: string; message: string; messageId?: string }) => {
       toast.success(data.message);
 
-      if (data.action === 'delete' && data.messageId && onMessageDeleted) {
-        onMessageDeleted(data.messageId);
+      if (data.action === 'delete' && data.messageId && onMessageDeletedRef.current) {
+        onMessageDeletedRef.current(data.messageId);
       }
     };
 
@@ -27,8 +33,8 @@ export const useModeration = (options?: UseModerationOptions) => {
     };
 
     const handleUserBanned = (data: { platform: string; targetUserId: string; action: string }) => {
-      if (data.targetUserId && onUserBanned) {
-        onUserBanned(data.targetUserId);
+      if (data.targetUserId && onUserBannedRef.current) {
+        onUserBannedRef.current(data.targetUserId);
       }
     };
 
@@ -41,7 +47,7 @@ export const useModeration = (options?: UseModerationOptions) => {
       socket.off('moderation_error', handleModerationError);
       socket.off('user_banned', handleUserBanned);
     };
-  }, [onMessageDeleted, onUserBanned]);
+  }, []);
 
   const deleteMessage = useCallback((messageId: string, platform: string, platformIds?: Record<string, string>) => {
     if (!user?.id) {
@@ -49,8 +55,8 @@ export const useModeration = (options?: UseModerationOptions) => {
       return;
     }
 
-    if (onMessageDeleted) {
-      onMessageDeleted(messageId);
+    if (onMessageDeletedRef.current) {
+      onMessageDeletedRef.current(messageId);
     }
 
     socket.emit('moderation_action', {
@@ -60,7 +66,7 @@ export const useModeration = (options?: UseModerationOptions) => {
       messageId,
       platformIds
     });
-  }, [user, onMessageDeleted]);
+  }, [user]);
 
   const banUser = useCallback(async (targetUserId: string, targetUsername: string, platform: string) => {
     if (!user?.id) {

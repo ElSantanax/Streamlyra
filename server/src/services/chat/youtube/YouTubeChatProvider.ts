@@ -45,8 +45,8 @@ export class YouTubeChatProvider implements ChatProvider {
 
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
-            // 4. Iniciar auto-discovery
-            await this.setupAutoDiscovery(userId, io);
+            // 4. Iniciar auto-discovery (no bloqueante)
+            void this.setupAutoDiscovery(userId, io);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'YouTube: Failed to setup connection');
@@ -57,8 +57,14 @@ export class YouTubeChatProvider implements ChatProvider {
     }
 
     async boostDiscovery(userId: string, io: Server): Promise<void> {
+        if (this.stateManager.isConnecting(userId)) {
+            logger.debug({ userId }, 'YouTube: Boost requested but already connecting/discovering');
+            return;
+        }
+
         logger.info({ userId }, 'YouTube: Manual boost requested');
 
+        this.stateManager.setConnecting(userId, true);
         this.stateManager.setManualMode(userId, true);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
@@ -72,6 +78,8 @@ export class YouTubeChatProvider implements ChatProvider {
                 'waiting_stream',
                 'Sin Live público'
             );
+        } finally {
+            this.stateManager.setConnecting(userId, false);
         }
     }
 
@@ -108,6 +116,13 @@ export class YouTubeChatProvider implements ChatProvider {
         if (!accessToken) throw new Error('Token inválido');
 
         const broadcast = await this.broadcastDiscovery.findLiveBroadcast(accessToken);
+
+        // Verificación de cancelación: ¿El usuario se desconectó mientras buscábamos?
+        if (!this.stateManager.isConnecting(userId) && !this.stateManager.isManualMode(userId)) {
+            logger.info({ userId }, 'YouTube: Broadcast found but user already disconnected, aborting');
+            return;
+        }
+
         if (!broadcast) throw new Error('Broadcast not found');
 
         await this.handleBroadcastFound(userId, broadcast, accessToken, io);
@@ -172,6 +187,13 @@ export class YouTubeChatProvider implements ChatProvider {
 
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'YouTube: Disconnecting and cleaning state');
-        this.stateManager.clearState(userId);
+        try {
+            this.stateManager.clearState(userId);
+        } catch (error) {
+            logger.error({ err: error, userId }, 'YouTube: Error during disconnection');
+        } finally {
+            // Ensure connection status is updated if possible
+            this.stateManager.setConnecting(userId, false);
+        }
     }
 }

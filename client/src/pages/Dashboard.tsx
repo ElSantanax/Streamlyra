@@ -3,7 +3,7 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 
@@ -21,13 +21,15 @@ const ChatFeed = lazy(() => import('../components/dashboard/chat/ChatFeed'));
 const DashboardContent = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const { connections, disconnectPlatform, refetchConnections, searchStream } = useConnectionsContext();
-    const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages, messagesEndRef, containerRef, scrollToBottom, isAutoScrollEnabled } = useChatMessages();
+    const { connections, connectionHash, disconnectPlatform, refetchConnections, searchStream } = useConnectionsContext();
+    const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages } = useChatMessages();
     const chatAreaRef = useRef<HTMLElement>(null);
-    const { deleteMessage, banUser, replyToUser } = useModeration({
+    const moderationOptions = useMemo(() => ({
         onMessageDeleted: removeMessage,
         onUserBanned: removeMessagesByUserId
-    });
+    }), [removeMessage, removeMessagesByUserId]);
+
+    const { deleteMessage, banUser, replyToUser } = useModeration(moderationOptions);
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
@@ -54,6 +56,7 @@ const DashboardContent = () => {
         onChatMessage: addMessage,
         onMessageStatusUpdate: updateMessageStatus,
         connections,
+        connectionHash,
     });
 
     // No renderizar hasta que se verifique autenticación
@@ -127,10 +130,6 @@ const DashboardContent = () => {
                         <ChatFeed
                             messages={messages}
                             isConnected={isConnected}
-                            containerRef={containerRef}
-                            messagesEndRef={messagesEndRef}
-                            scrollToBottom={scrollToBottom}
-                            isAutoScrollEnabled={isAutoScrollEnabled}
                             onReply={replyToUser}
                             onDelete={deleteMessage}
                             onBan={banUser}

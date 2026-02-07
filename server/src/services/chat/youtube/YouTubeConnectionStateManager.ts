@@ -87,9 +87,24 @@ export class YouTubeConnectionStateManager {
     clearState(userId: string): void {
         const state = this.states.get(userId);
         if (state) {
-            if (state.cleanup) state.cleanup();
-            state.chatPoller.stopPolling(userId);
-            state.viewerPoller.stopPolling(userId);
+            // Executing cleanup steps safely
+            try {
+                if (state.cleanup) state.cleanup();
+            } catch (e) {
+                // Silently continue to ensure other cleanups run
+            }
+
+            try {
+                state.chatPoller.stopPolling(userId);
+            } catch (e) {
+                // Silently continue
+            }
+
+            try {
+                state.viewerPoller.stopPolling(userId);
+            } catch (e) {
+                // Silently continue
+            }
             state.isActive = false;
         }
         this.states.delete(userId);

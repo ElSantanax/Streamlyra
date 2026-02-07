@@ -21,7 +21,7 @@ export class TikTokEventListener {
             // Confirmar que el stream está activo al recibir el primer mensaje
             if (!this.streamConfirmed.has(userId)) {
                 logger.info({ userId }, 'TikTok stream confirmed active (first chat message received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
                 this.streamConfirmed.add(userId);
             }
 
@@ -36,7 +36,7 @@ export class TikTokEventListener {
             // Confirmar que el stream está activo al recibir el primer regalo
             if (!this.streamConfirmed.has(userId)) {
                 logger.info({ userId }, 'TikTok stream confirmed active (first gift received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
                 this.streamConfirmed.add(userId);
             }
 
@@ -53,7 +53,7 @@ export class TikTokEventListener {
             // Confirmar que el stream está activo al recibir el primer follow
             if (!this.streamConfirmed.has(userId)) {
                 logger.info({ userId }, 'TikTok stream confirmed active (first follow received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
                 this.streamConfirmed.add(userId);
             }
 
@@ -66,11 +66,11 @@ export class TikTokEventListener {
             // Confirmar que el stream está activo al recibir información de viewers
             if (!this.streamConfirmed.has(userId)) {
                 logger.info({ userId }, 'TikTok stream confirmed active (viewer count received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
                 this.streamConfirmed.add(userId);
             }
 
-            SafeSocketEmitter.emitViewersUpdate(io, userId, 'tiktok', info.viewerCount);
+            SafeSocketEmitter.emitViewersUpdate(io, userId, 'tiktok', info.viewerCount, true);
         });
     }
 

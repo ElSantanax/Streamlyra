@@ -101,6 +101,9 @@ export class ChatManager {
                 if (provider) {
                     await provider.disconnect(userId);
                 }
+
+                // Notificar a todos los sockets que la plataforma se ha desconectado realmente
+                SafeSocketEmitter.emitConnectionStatus(this.io, userId, platform, 'disconnected', 'Plataforma detenida');
             },
             { platform, userId, action: 'disconnectProvider' },
             { rethrow: false }

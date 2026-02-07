@@ -8,6 +8,19 @@ export class SocketRegistry {
      * Registra un nuevo socket para un usuario
      */
     register(socketId: string, userId: string): { isFirstSocket: boolean; currentCount: number } {
+        const existingUserId = this.socketUserMap.get(socketId);
+
+        // Si el socket ya está registrado para este usuario, no incrementamos el contador
+        if (existingUserId === userId) {
+            const currentCount = this.userSocketCount.get(userId) || 1;
+            return { isFirstSocket: currentCount === 1, currentCount };
+        }
+
+        // Si el socket estaba registrado para OTRO usuario (raro), lo limpiamos primero
+        if (existingUserId && existingUserId !== userId) {
+            this.remove(socketId);
+        }
+
         this.socketUserMap.set(socketId, userId);
         const currentCount = this.userSocketCount.get(userId) || 0;
         const isFirstSocket = currentCount === 0;

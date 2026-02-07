@@ -61,7 +61,7 @@ export function retryWithIntervalAndLimit(
 
         try {
             await fn();
-            
+
             // Éxito: limpiar y notificar
             if (isActive) {
                 cleanup();
@@ -89,10 +89,7 @@ export function retryWithIntervalAndLimit(
         }
     };
 
-    // Primer intento inmediato
-    void executeAttempt();
-
-    // Configurar intentos subsecuentes
+    // Configurar intentos
     intervalId = setInterval(() => {
         void executeAttempt();
     }, intervalMs);

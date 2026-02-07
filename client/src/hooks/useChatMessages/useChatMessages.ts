@@ -1,37 +1,45 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, MessageStatus } from '../../types';
 import { ensureMessageId } from './helpers';
-import { useAutoScroll } from './useAutoScroll';
 
-const MAX_MESSAGES = 500;
+const MAX_MESSAGES = 200;
 const FLUSH_INTERVAL_MS = 75; // 13 updates/sec max para evitar congelamiento de UI en raids
 
 const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
   if (newMessages.length === 0) return currentMessages;
 
-  // Filtrar duplicados: comparamos ID y Plataforma
-  // porque el mismo ID puede existir en diferentes plataformas
-  const uniqueNewMessages = newMessages.filter((newMsg, index) => {
-    if (!newMsg.id) return true;
+  // Creamos un set de IDs existentes para búsqueda O(1)
+  // El ID compuesto "id:platform" asegura unicidad real
+  const existingIds = new Set(currentMessages.map(m => `${m.id}:${m.platform}`));
 
-    // Verificar si ya existe en el estado actual
-    const existsInState = currentMessages.some(
-      m => m.id === newMsg.id && m.platform === newMsg.platform
-    );
-    if (existsInState) return false;
+  const uniqueNewMessages: ChatMessage[] = [];
+  const batchIds = new Set<string>();
 
-    // Verificar si es un duplicado dentro del mismo lote (batch)
-    const existsInBatch = newMessages.findIndex(
-      m => m.id === newMsg.id && m.platform === newMsg.platform
-    ) < index;
-    if (existsInBatch) return false;
+  for (const newMsg of newMessages) {
+    if (!newMsg.id) {
+      uniqueNewMessages.push(newMsg);
+      continue;
+    }
 
-    return true;
-  });
+    const compositeId = `${newMsg.id}:${newMsg.platform}`;
+
+    // Si ya existe en el estado o en el lote actual, omitir
+    if (existingIds.has(compositeId) || batchIds.has(compositeId)) {
+      continue;
+    }
+
+    uniqueNewMessages.push(newMsg);
+    batchIds.add(compositeId);
+  }
 
   if (uniqueNewMessages.length === 0) return currentMessages;
 
-  const combined = [...currentMessages, ...uniqueNewMessages];
+  let combined: ChatMessage[];
+  if (currentMessages.length === 0) {
+    combined = uniqueNewMessages;
+  } else {
+    combined = [...currentMessages, ...uniqueNewMessages];
+  }
 
   if (combined.length > MAX_MESSAGES) {
     return combined.slice(combined.length - MAX_MESSAGES);
@@ -120,15 +128,6 @@ export const useChatMessages = () => {
     setMessages([]);
   }, []);
 
-  const {
-    messagesEndRef,
-    containerRef,
-    scrollToBottom,
-    isAutoScrollEnabled
-  } = useAutoScroll({
-    trigger: messages
-  });
-
   return {
     messages,
     addMessage,
@@ -136,9 +135,5 @@ export const useChatMessages = () => {
     removeMessage,
     removeMessagesByUserId,
     clearMessages,
-    messagesEndRef,
-    containerRef,
-    scrollToBottom,
-    isAutoScrollEnabled,
   };
 };

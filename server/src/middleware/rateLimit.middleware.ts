@@ -18,7 +18,11 @@ export const apiLimiter = rateLimit({
         logger.warn({ ip: req.ip, path: req.path }, 'Rate limit exceeded for API');
         res.status(options.statusCode).json(options.message);
     },
-    skip: () => config.nodeEnv === 'test' // Deshabilitar en tests
+    skip: (req) => {
+        return config.nodeEnv === 'test' ||
+            req.originalUrl.startsWith('/api/auth') ||
+            req.originalUrl.startsWith('/api/webhooks');
+    }
 });
 
 /**

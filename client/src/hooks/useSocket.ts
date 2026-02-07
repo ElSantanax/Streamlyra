@@ -9,6 +9,7 @@ interface UseSocketOptions {
   onViewersUpdate?: (data: ViewersUpdate) => void;
   onConnectionStatus?: (data: ConnectionStatusUpdate) => void;
   connections?: Record<string, ConnectionInfo>;
+  connectionHash?: string;
 }
 
 export const useSocket = ({
@@ -18,6 +19,7 @@ export const useSocket = ({
   onViewersUpdate,
   onConnectionStatus,
   connections = {},
+  connectionHash = '',
 }: UseSocketOptions) => {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const hasIdentifiedRef = useRef(false);
@@ -41,7 +43,7 @@ export const useSocket = ({
   }, []);
 
   useEffect(() => {
-    const hasActivePlatforms = Object.values(connections).some(
+    const hasActivePlatforms = Object.values(connectionsRef.current).some(
       (conn) => conn.connected === true
     );
 
@@ -51,7 +53,7 @@ export const useSocket = ({
       socket.disconnect();
       hasIdentifiedRef.current = false;
     }
-  }, [connections]);
+  }, [connectionHash]); // Depender del Hash, no del objeto completo
 
   useEffect(() => {
     if (!userId) {
@@ -181,10 +183,18 @@ export const useSocket = ({
       onConnectionStatusRef.current?.(data);
     };
 
-    socket.on('chat_message', handleChatMessage);
-    socket.on('message_status_update', handleMessageStatusUpdate);
-    socket.on('viewers_update', handleViewersUpdate);
-    socket.on('connection_status', handleConnectionStatus);
+    if (onChatMessageRef.current) {
+      socket.on('chat_message', handleChatMessage);
+    }
+    if (onMessageStatusUpdateRef.current) {
+      socket.on('message_status_update', handleMessageStatusUpdate);
+    }
+    if (onViewersUpdateRef.current) {
+      socket.on('viewers_update', handleViewersUpdate);
+    }
+    if (onConnectionStatusRef.current) {
+      socket.on('connection_status', handleConnectionStatus);
+    }
 
     return () => {
       socket.off('chat_message', handleChatMessage);

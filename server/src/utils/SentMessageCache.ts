@@ -20,7 +20,7 @@ export class SentMessageCache {
         }
 
         const userCache = this.cache.get(userId)!;
-        
+
         // Si ya existe un timeout para este mensaje, cancelarlo
         const existingTimeout = userCache.get(message);
         if (existingTimeout) {
@@ -30,7 +30,7 @@ export class SentMessageCache {
         // Crear nuevo timeout para auto-limpiar
         const timeout = setTimeout(() => {
             userCache.delete(message);
-            
+
             // Si el usuario no tiene más mensajes en caché, eliminar su entrada
             if (userCache.size === 0) {
                 this.cache.delete(userId);
@@ -50,12 +50,28 @@ export class SentMessageCache {
 
     /**
      * Elimina la entrada más antigua cuando se alcanza el límite
-     * Estrategia: eliminar el primer usuario del Map (FIFO)
+     * Estrategia: eliminar solo el primer mensaje del primer usuario (FIFO real por entrada)
      */
     private evictOldest(): void {
         const firstUserId = this.cache.keys().next().value;
         if (firstUserId) {
-            this.clearUser(firstUserId);
+            const userCache = this.cache.get(firstUserId);
+            if (userCache && userCache.size > 0) {
+                const firstMessage = userCache.keys().next().value;
+                if (firstMessage) {
+                    const timeout = userCache.get(firstMessage);
+                    if (timeout) clearTimeout(timeout);
+                    userCache.delete(firstMessage);
+                }
+
+                // Si tras borrar el mensaje el usuario queda vacío, limpiar su entrada
+                if (userCache.size === 0) {
+                    this.cache.delete(firstUserId);
+                }
+            } else {
+                // Caso borde: usuario existe en mapa principal pero su mapa interno está vacío
+                this.cache.delete(firstUserId);
+            }
         }
     }
 
