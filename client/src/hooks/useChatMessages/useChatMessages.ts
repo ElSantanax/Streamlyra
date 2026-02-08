@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, MessageStatus } from '../../types';
 import { ensureMessageId } from './helpers';
 
-const MAX_MESSAGES = 200;
+const MAX_MESSAGES = 100;
 const FLUSH_INTERVAL_MS = 75; // 13 updates/sec max para evitar congelamiento de UI en raids
 
 const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
