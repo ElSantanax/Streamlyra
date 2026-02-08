@@ -18,10 +18,6 @@ export class ChatManager {
 
     ) {
         this.providers = new Map();
-        // Mapear proveedores por nombre si tienen esa propiedad, 
-        // o usar una lógica simple de detección de tipo (o simplemente pasarlos pre-mapeados).
-        // Por ahora, asumimos que se pasan en un orden específico o usamos una interfaz mejorada.
-        // Pero para KISS, los mapearemos manualmente en server.ts y los pasaremos.
     }
 
     // Método setter para inyectar proveedores post-construcción si es necesario, 
@@ -83,9 +79,8 @@ export class ChatManager {
         await withErrorHandling(
             async () => {
                 const provider = this.getProvider(platform);
-                if (provider && 'boostDiscovery' in provider) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-                    await (provider as any).boostDiscovery(userId, this.io);
+                if (provider?.boostDiscovery) {
+                    await provider.boostDiscovery(userId, this.io);
                 }
             },
             { userId, platform, action: 'boostDiscovery' },

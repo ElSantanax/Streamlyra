@@ -57,9 +57,9 @@ export class TikTokChatProvider implements ChatProvider {
             // 3. Limpiar cualquier rastro anterior antes de empezar de cero
             await this.clearInternalState(userId);
 
-            // 4. Iniciar flujo de búsqueda automática (no bloqueante)
+            // 4. Iniciar flujo de búsqueda automática y esperar el primer intento
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
-            void this.setupAutoDiscovery(userId, username, io);
+            await this.setupAutoDiscovery(userId, username, io);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'TikTok: Failed to setup connection flow');
@@ -109,10 +109,6 @@ export class TikTokChatProvider implements ChatProvider {
 
     private async setupAutoDiscovery(userId: string, username: string, io: Server): Promise<void> {
         const tryConnect = async () => {
-            if (this.stateManager.getAutoAttempts(userId) >= TikTokChatProvider.MAX_AUTO_ATTEMPTS) {
-                this.handleAutoDiscoveryExhausted(userId, io);
-                return;
-            }
             await this.attemptDiscovery(userId, username, io);
         };
 
@@ -129,7 +125,7 @@ export class TikTokChatProvider implements ChatProvider {
 
         this.stateManager.setDiscoveryCleanup(userId, cleanup);
 
-        // Primer intento inmediato (lo esperamos para mantener el flag isConnecting activo)
+        // Primer intento inmediato (esperamos para mantener el flag isConnecting activo)
         await tryConnect().catch(() => { });
     }
 
