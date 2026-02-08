@@ -29,7 +29,13 @@ export class YouTubeQuotaManager {
     private loadPersistedData(): void {
         try {
             if (fs.existsSync(this.PERSISTENCE_PATH)) {
-                const data = JSON.parse(fs.readFileSync(this.PERSISTENCE_PATH, 'utf-8'));
+                const rawData = fs.readFileSync(this.PERSISTENCE_PATH, 'utf-8');
+                const data = JSON.parse(rawData) as {
+                    unitsUsed?: number;
+                    lastResetDate?: string;
+                    isExhausted?: boolean;
+                    exhaustedUntil?: number;
+                };
                 this.unitsUsed = data.unitsUsed || 0;
                 this.lastResetDate = data.lastResetDate || new Date().toISOString().split('T')[0];
                 this.isExhausted = data.isExhausted || false;

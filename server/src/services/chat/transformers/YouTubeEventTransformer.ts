@@ -56,7 +56,7 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
         };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
     }

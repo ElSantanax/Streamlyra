@@ -119,7 +119,8 @@ export class YouTubeLiveChatService {
                 throw new Error(`YouTube API error: ${response.statusText}`);
             }
 
-            const messageId = response.data?.id;
+            const responseData = response.data as { id?: string };
+            const messageId = responseData.id;
             if (!messageId) {
                 throw new Error('YouTube no devolvió un ID de mensaje');
             }

@@ -62,7 +62,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      * Transforma mensaje de chat de TikTok
      * Implementación de la interfaz base
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     transformMessage(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformChatMessage, transformGift, or transformFollow instead');
     }
@@ -71,7 +71,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      * Transforma evento especial de TikTok
      * Implementación de la interfaz base
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformGift or transformFollow instead');
     }

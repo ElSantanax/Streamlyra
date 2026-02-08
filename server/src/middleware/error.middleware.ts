@@ -16,7 +16,7 @@ interface ErrorResponse {
  * Middleware global de manejo de errores
  * Debe ser el último middleware registrado en la aplicación
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
     const isAppError = err instanceof AppError;
     const isError = err instanceof Error;

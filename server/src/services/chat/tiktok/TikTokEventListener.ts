@@ -44,7 +44,7 @@ export class TikTokEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('like', (_data: TikTokLikeEvent) => {
         });
 

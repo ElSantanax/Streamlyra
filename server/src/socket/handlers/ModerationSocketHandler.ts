@@ -7,6 +7,8 @@ import { ConnectionService } from '../../services/connection/ConnectionService';
 import { YouTubeService } from '../../services/platforms/YouTubeService';
 import { Connection } from '../../models/Connection.model';
 import { isValidModerationPayload } from '../validators/SocketValidators';
+import type { ModerationActionRequest } from '../../types/message.types';
+import { Platform } from '../../constants/platforms';
 import { SocketErrorHandler } from '../utils/SocketErrorHandler';
 
 export class ModerationSocketHandler {
@@ -33,7 +35,8 @@ export class ModerationSocketHandler {
                     return;
                 }
 
-                const { userId, platform, action, messageId, targetUserId, reason, duration } = payload;
+                const p = payload as ModerationActionRequest;
+                const { userId, platform, action, messageId, targetUserId, reason, duration } = p;
 
                 if (authenticatedUserId !== userId) {
                     SocketErrorHandler.emitModerationAuthError(socket, userId, authenticatedUserId);
@@ -54,7 +57,7 @@ export class ModerationSocketHandler {
                         socket,
                         action,
                         messageId,
-                        (payload as any).platformIds,
+                        p.platformIds,
                         authenticatedUserId
                     );
                     return;
@@ -160,7 +163,7 @@ export class ModerationSocketHandler {
             try {
                 const validToken = await this.connectionService.getValidAccessToken(
                     authenticatedUserId,
-                    platform as any
+                    platform as Platform
                 );
 
                 if (!validToken) return { platform, success: false, error: 'Token inválido' };

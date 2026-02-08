@@ -38,7 +38,7 @@ export class AuthController {
 
         this.setCsrfCookie(res);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const { token: _token, ...responseData } = result;
         res.json(responseData);
     }
@@ -101,7 +101,7 @@ export class AuthController {
 
         this.setCsrfCookie(res);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const { token: _token, ...responseData } = result;
         res.json(responseData);
     };

@@ -113,10 +113,7 @@ export const useConnections = (shouldFetch = true) => {
       updateConnection(platform, {
         connected: false,
         viewers: 0,
-        status: null as any,
-        statusMessage: null as any,
-        isLive: false,
-        sessionStartTime: null as any
+        isLive: false
       });
     } catch (err) {
       console.error('Error disconnecting platform:', err);

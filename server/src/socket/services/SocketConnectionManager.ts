@@ -4,7 +4,6 @@ import { Socket, Server } from 'socket.io';
 import { ChatManager } from '../../services/core/ChatManager';
 import { ConnectionService } from '../../services/connection/ConnectionService';
 import { ConnectionRepository } from '../../repositories/implementations/ConnectionRepository';
-import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 import { logger } from '../../utils/logger';
 import { isValidUserId } from '../utils/SocketValidator';
 import { SocketRegistry } from './SocketRegistry';
@@ -28,7 +27,7 @@ export class SocketConnectionManager {
         return this.registry.getUserId(socketId);
     }
 
-    async handleIdentify(userId: unknown, socket: Socket, io: Server): Promise<void> {
+    async handleIdentify(userId: unknown, socket: Socket, _io: Server): Promise<void> {
         if (!isValidUserId(userId)) {
             logger.warn({ userId, socketId: socket.id }, 'UserId inválido');
             socket.emit('error', {

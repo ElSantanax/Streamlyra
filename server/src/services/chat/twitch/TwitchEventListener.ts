@@ -21,7 +21,7 @@ export class TwitchEventListener {
     setupListeners(userId: string, client: tmi.Client, io: Server): void {
         this.removeListeners(userId, client);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const messageListener = (_channel: string, tags: tmi.ChatUserstate, message: string, _self: boolean) => {
             const normalizedMessage = this.transformer.transformChatMessage(tags, message);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'twitch');

@@ -5,12 +5,12 @@ import { BaseEventTransformer } from './BaseEventTransformer';
 export class TwitchEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'twitch';
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     transformMessage(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformChatMessage(tags, message) instead');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformSubscription, transformResub, or transformCheer instead');
     }
@@ -38,8 +38,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
 
     /**
      * Parsea los emotes de Twitch desde tags.emotes
-     * Formato: { "emoteId": ["start-end", "start-end"] }
-     * Ejemplo: { "425618": ["27-29", "31-33"] }
      */
     private parseEmotes(emotesData: unknown, message: string): Array<{
         id: string;

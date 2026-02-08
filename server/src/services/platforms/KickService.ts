@@ -197,7 +197,8 @@ export class KickService extends BasePlatformService {
             );
 
             // Kick API retorna el message ID en data.data.message_id
-            const messageId = response.data?.data?.message_id || `kick-${Date.now()}`;
+            const responseData = response.data as { data?: { message_id?: string | number } };
+            const messageId = responseData.data?.message_id || `kick-${Date.now()}`;
             logger.info({ platform: 'kick', channelId, messageId }, 'Message sent successfully to Kick');
             return messageId.toString();
         } catch (error) {

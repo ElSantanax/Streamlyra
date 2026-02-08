@@ -83,7 +83,13 @@ export class TwitchService extends BasePlatformService {
                 throw new Error(`Twitch API error: ${response.statusText}`);
             }
 
-            const data = response.data?.data?.[0];
+            const responseData = response.data as { 
+                data?: Array<{ 
+                    is_sent?: boolean; 
+                    message_id: string;
+                }> 
+            };
+            const data = responseData.data?.[0];
             if (!data?.is_sent) {
                 throw new Error('Twitch reportó que el mensaje no fue enviado');
             }

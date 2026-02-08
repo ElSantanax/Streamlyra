@@ -60,7 +60,7 @@ describe('Feature: multi-platform-message-sending, Property 21: Multiple platfor
                     // Spy on sendToPlatform to track concurrent execution
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                         
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             const callTime = Date.now() - startTime;
                             executionLog.push({ platform, timestamp: callTime });
@@ -128,7 +128,7 @@ describe('Feature: multi-platform-message-sending, Property 21: Multiple platfor
                     // Mock with different delays per platform
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                         
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             executionOrder.push(platform);
                             
@@ -185,7 +185,7 @@ describe('Feature: multi-platform-message-sending, Property 21: Multiple platfor
 
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                         
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             executionLog.push(platform);
                             

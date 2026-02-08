@@ -59,10 +59,10 @@ describe('Feature: multi-platform-message-sending, Property 18: TikTok is never 
                         messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> },
                         'sendToPlatform'
                     ).mockImplementation(async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
                         const [_uid, _msg, platform] = args as [string, string, Platform];
                         processedPlatforms.push(platform);
-                        
+
                         return {
                             platform,
                             success: true
@@ -106,17 +106,17 @@ describe('Feature: multi-platform-message-sending, Property 18: TikTok is never 
                 async (tiktokArray, otherPlatforms, message, userId) => {
                     // Interleave tiktok entries with other platforms
                     const platforms = [...tiktokArray, ...otherPlatforms];
-                    
+
                     const processedPlatforms: Platform[] = [];
 
                     jest.spyOn(
                         messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> },
                         'sendToPlatform'
                     ).mockImplementation(async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
                         const [_uid, _msg, platform] = args as [string, string, Platform];
                         processedPlatforms.push(platform);
-                        
+
                         return {
                             platform,
                             success: true
@@ -155,10 +155,10 @@ describe('Feature: multi-platform-message-sending, Property 18: TikTok is never 
                         messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> },
                         'sendToPlatform'
                     ).mockImplementation(async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
                         const [_uid, _msg, platform] = args as [string, string, Platform];
                         processedPlatforms.push(platform);
-                        
+
                         return {
                             platform,
                             success: true
@@ -200,10 +200,10 @@ describe('Feature: multi-platform-message-sending, Property 18: TikTok is never 
                         messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> },
                         'sendToPlatform'
                     ).mockImplementation(async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
                         const [_uid, _msg, platform] = args as [string, string, Platform];
                         platformCalls.push(platform);
-                        
+
                         return {
                             platform,
                             success: true
@@ -255,10 +255,10 @@ describe('Feature: multi-platform-message-sending, Property 18: TikTok is never 
                         messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> },
                         'sendToPlatform'
                     ).mockImplementation(async (...args: unknown[]) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
                         const [_uid, _msg, platform] = args as [string, string, Platform];
                         processedPlatforms.push(platform);
-                        
+
                         return {
                             platform,
                             success: true

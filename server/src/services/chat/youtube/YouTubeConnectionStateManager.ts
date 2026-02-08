@@ -90,19 +90,19 @@ export class YouTubeConnectionStateManager {
             // Executing cleanup steps safely
             try {
                 if (state.cleanup) state.cleanup();
-            } catch (e) {
+            } catch {
                 // Silently continue to ensure other cleanups run
             }
 
             try {
                 state.chatPoller.stopPolling(userId);
-            } catch (e) {
+            } catch {
                 // Silently continue
             }
 
             try {
                 state.viewerPoller.stopPolling(userId);
-            } catch (e) {
+            } catch {
                 // Silently continue
             }
             state.isActive = false;

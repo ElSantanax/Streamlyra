@@ -119,7 +119,7 @@ describe('Feature: multi-platform-message-sending, Property 22: Results are aggr
                     // Mock sendToPlatform with mixed success/failure
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                             
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             const index = platforms.indexOf(platform);
                             const shouldSucceed = flags[index];
@@ -169,7 +169,7 @@ describe('Feature: multi-platform-message-sending, Property 22: Results are aggr
                     // Mock sendToPlatform to always fail
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                             
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             return {
                                 platform,
@@ -224,7 +224,7 @@ describe('Feature: multi-platform-message-sending, Property 22: Results are aggr
                     // Mock sendToPlatform to return expected results
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                             
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             return expectedResults.get(platform)!;
                         }
@@ -265,7 +265,7 @@ describe('Feature: multi-platform-message-sending, Property 22: Results are aggr
                 async (platforms, message, userId) => {
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                             
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             return { platform, success: true };
                         }
@@ -304,7 +304,7 @@ describe('Feature: multi-platform-message-sending, Property 22: Results are aggr
                     // Mock with different delays to vary completion order
                     jest.spyOn(messageSenderService as unknown as { sendToPlatform: (...args: unknown[]) => Promise<PlatformResult> }, 'sendToPlatform').mockImplementation(
                         async (...args: unknown[]) => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                             
                             const [_uid, _msg, platform] = args as [string, string, Platform];
                             
                             // Random delay to vary completion order
