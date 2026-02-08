@@ -7,16 +7,22 @@ import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent } 
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 
+type TikTokConnection = TikTokLiveConnection & {
+    on(event: 'chat', listener: (data: TikTokChatEvent) => void): void;
+    on(event: 'gift', listener: (data: TikTokGiftEvent) => void): void;
+    on(event: 'like', listener: (data: TikTokLikeEvent) => void): void;
+    on(event: 'follow', listener: (data: TikTokFollowEvent) => void): void;
+    on(event: 'roomUser', listener: (info: { viewerCount: number }) => void): void;
+};
+
 export class TikTokEventListener {
     private streamConfirmed: Set<string> = new Set();
 
     constructor(private transformer: TikTokEventTransformer) { }
 
     setupListeners(userId: string, connection: TikTokLiveConnection, io: Server): void {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-        const conn = connection as any;
+        const conn = connection as TikTokConnection;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('chat', (data: TikTokChatEvent) => {
             // Confirmar que el stream está activo al recibir el primer mensaje
             if (!this.streamConfirmed.has(userId)) {
@@ -29,7 +35,6 @@ export class TikTokEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('gift', (data: TikTokGiftEvent) => {
             if (!data.repeatEnd) return;
 
@@ -44,11 +49,9 @@ export class TikTokEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('like', (_data: TikTokLikeEvent) => {
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('follow', (data: TikTokFollowEvent) => {
             // Confirmar que el stream está activo al recibir el primer follow
             if (!this.streamConfirmed.has(userId)) {
@@ -61,7 +64,6 @@ export class TikTokEventListener {
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         conn.on('roomUser', (info: { viewerCount: number }) => {
             // Confirmar que el stream está activo al recibir información de viewers
             if (!this.streamConfirmed.has(userId)) {
