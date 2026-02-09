@@ -10,6 +10,7 @@ export interface ConnectionsContextValue {
     updateConnection: (platform: string, updates: Partial<ConnectionInfo>) => void;
     disconnectPlatform: (platform: PlatformKey) => Promise<void>;
     refetchConnections: () => Promise<void>;
+    refetchSilent: () => Promise<void>;
     searchStream: (platform: PlatformKey) => void;
     getConnectedPlatforms: () => string[];
     isLoadingConnections: boolean;
@@ -27,6 +28,7 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         updateConnection,
         disconnectPlatform,
         refetch: refetchConnections,
+        refetchSilent,
         searchStream,
         isLoading: isLoadingConnections,
         error: connectionsError
@@ -55,6 +57,7 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         updateConnection,
         disconnectPlatform,
         refetchConnections,
+        refetchSilent,
         searchStream,
         getConnectedPlatforms,
         isLoadingConnections,
@@ -65,6 +68,7 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         updateConnection,
         disconnectPlatform,
         refetchConnections,
+        refetchSilent,
         searchStream,
         getConnectedPlatforms,
         isLoadingConnections,

@@ -21,7 +21,7 @@ const ChatFeed = lazy(() => import('../components/dashboard/chat/ChatFeed'));
 const DashboardContent = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const { connections, connectionHash, disconnectPlatform, refetchConnections, searchStream } = useConnectionsContext();
+    const { connections, connectionHash, disconnectPlatform, refetchSilent, searchStream } = useConnectionsContext();
     const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages } = useChatMessages();
     const chatAreaRef = useRef<HTMLElement>(null);
     const moderationOptions = useMemo(() => ({
@@ -151,7 +151,7 @@ const DashboardContent = () => {
                             isOpen={isAddPlatformOpen}
                             onClose={() => setIsAddPlatformOpen(false)}
                             connections={connections}
-                            onConnectionSuccess={refetchConnections}
+                            onConnectionSuccess={refetchSilent}
                         />
                     </Suspense>
                 </LocalErrorBoundary>

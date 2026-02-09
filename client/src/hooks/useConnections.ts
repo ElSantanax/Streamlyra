@@ -121,6 +121,54 @@ export const useConnections = (shouldFetch = true) => {
     }
   }, [updateConnection]);
 
+  const refetchSilent = useCallback(async () => {
+    // Refetch sin activar isLoading para evitar sensación de recarga
+    if (!shouldFetch) return;
+
+    try {
+      const data = await authService.getMe();
+      setConnections(prev => {
+        const updated: Record<string, ConnectionInfo> = {};
+        let hasChanges = false;
+
+        Object.keys(data.connections).forEach(platform => {
+          const serverConnected = data.connections[platform].connected;
+          const prevPlatform = prev[platform];
+          const prevStatus = prevPlatform?.status;
+          const prevConnected = prevPlatform?.connected;
+
+          const shouldShowAsConnecting = serverConnected && !prevConnected && !prevStatus;
+
+          const newConnection: ConnectionInfo = {
+            connected: serverConnected,
+            username: data.connections[platform].username,
+            viewers: prevPlatform?.viewers ?? 0,
+            status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
+            statusMessage: prevPlatform?.statusMessage,
+            isLive: data.connections[platform].isLive ?? prevPlatform?.isLive,
+            sessionStartTime: data.connections[platform].sessionStartTime !== undefined
+              ? data.connections[platform].sessionStartTime
+              : prevPlatform?.sessionStartTime,
+            serverTime: data.connections[platform].serverTime ?? prevPlatform?.serverTime
+          };
+
+          if (!isConnectionEqual(prevPlatform, newConnection)) {
+            hasChanges = true;
+          }
+
+          updated[platform] = newConnection;
+        });
+
+        return hasChanges ? updated : prev;
+      });
+    } catch (err) {
+      console.error('Silent refetch failed:', err);
+      if (err instanceof Error && err.message.includes('401')) {
+        setError('Sesión expirada');
+      }
+    }
+  }, [shouldFetch]);
+
   const searchStream = useCallback((platform: PlatformKey) => {
     if (platform === 'youtube') {
       socket.emit('youtube_boost_discovery');
@@ -198,6 +246,7 @@ export const useConnections = (shouldFetch = true) => {
     updateConnection,
     disconnectPlatform,
     refetch: fetchConnections,
+    refetchSilent,
     searchStream,
   };
 };
