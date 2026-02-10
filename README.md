@@ -1,12 +1,12 @@
 <pre style="font-family: monospace; line-height: 1; letter-spacing: 0;">
-       _____ _                            _                     
-      / ____| |                          | |                    
-     | (___ | |_ _ __ ___  __ _ _ __ ___ | |    _   _ _ __ __ _ 
-      \___ \| __| '__/ _ \/ _` | '_ ` _ \| |   | | | | '__/ _` |
-      ____) | |_| | |  __/ (_| | | | | | | |___| |_| | | | (_| |
-     |_____/ \__|_|  \___|\__,_|_| |_| |_|______\__, |_|  \__,_|
-                                                 __/ |          
-                                                |___/           
+                               _____ _                            _                     
+                              / ____| |                          | |                    
+                             | (___ | |_ _ __ ___  __ _ _ __ ___ | |    _   _ _ __ __ _ 
+                              \___ \| __| '__/ _ \/ _` | '_ ` _ \| |   | | | | '__/ _` |
+                              ____) | |_| | |  __/ (_| | | | | | | |___| |_| | | | (_| |
+                             |_____/ \__|_|  \___|\__,_|_| |_| |_|______\__, |_|  \__,_|
+                                                                         __/ |          
+                                                                        |___/           
 </pre>
 
 Es una solución moderna para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
