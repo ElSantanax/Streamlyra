@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { MdLink, MdHelpOutline, MdLogout, MdMenu } from 'react-icons/md';
 import Logo from '../../common/Logo';
@@ -13,8 +13,7 @@ interface DashboardHeaderProps {
     isConnected?: boolean;
 }
 
-
-const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
+const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
     const [isMenuOpen, , openMenu, closeMenu] = useToggle(false);
     const { user, logout } = useAuth();
     const [currentLanguage, setCurrentLanguage] = useState('es');
@@ -96,6 +95,8 @@ const DashboardHeader = ({ onMenuClick, onAddPlatform, isConnected = false }: Da
             </div>
         </header>
     );
-};
+});
+
+DashboardHeader.displayName = 'DashboardHeader';
 
 export default DashboardHeader;

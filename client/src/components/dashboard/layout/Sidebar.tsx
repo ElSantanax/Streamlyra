@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 import { MdDeleteSweep } from 'react-icons/md';
 import type { PlatformKey } from '../../../constants/platforms';
@@ -24,7 +24,7 @@ interface SidebarProps {
     onClearChat?: () => void;
 }
 
-const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
+const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
     // Calcular espectadores totales
     const totalViewers = useMemo(
         () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
@@ -156,6 +156,8 @@ const Sidebar = ({ onMobileClose, onAddPlatform, connections, onDisconnect, onSe
             </div>
         </aside>
     );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

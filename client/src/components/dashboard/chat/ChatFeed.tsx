@@ -1,6 +1,5 @@
-import { Suspense, memo, useRef, useMemo, useState, useCallback, useEffect } from 'react';
+import { memo, useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import Spinner from '../../common/Spinner';
 import { LocalErrorBoundary } from '../../common/LocalErrorBoundary';
 import ChatMessage from './ChatMessage';
 import type { ChatMessage as ChatMessageData } from '../../../types/chat.types';
@@ -91,28 +90,22 @@ const ChatFeed = memo(({
     return (
         <LocalErrorBoundary section="Chat Feed">
             <div className="flex-1 min-h-0 relative group">
-                <Suspense fallback={
-                    <div className="flex-1 flex items-center justify-center h-full">
-                        <Spinner size="md" />
-                    </div>
-                }>
-                    {messages.length > 0 ? (
-                        <Virtuoso
-                            ref={virtuosoRef}
-                            data={messages}
-                            itemContent={itemContent}
-                            firstItemIndex={firstItemIndex}
-                            computeItemKey={(_index, msg) => msg.id!}
-                            alignToBottom={true}
-                            followOutput={(isAtBottom) => (isAtBottom ? 'auto' : false)}
-                            className="absolute inset-0 custom-scrollbar"
-                            atBottomStateChange={setIsAtBottom}
-                            atBottomThreshold={20}
-                            increaseViewportBy={500}
-                            style={{ height: '100%', width: '100%', overflowAnchor: 'none' }}
-                        />
-                    ) : emptyState}
-                </Suspense>
+                {messages.length > 0 ? (
+                    <Virtuoso
+                        ref={virtuosoRef}
+                        data={messages}
+                        itemContent={itemContent}
+                        firstItemIndex={firstItemIndex}
+                        computeItemKey={(_index, msg) => msg.id || `msg-${_index}`}
+                        alignToBottom={true}
+                        followOutput={'auto'}
+                        className="absolute inset-0 custom-scrollbar"
+                        atBottomStateChange={setIsAtBottom}
+                        atBottomThreshold={100}
+                        increaseViewportBy={500}
+                        style={{ height: '100%', width: '100%', overflowAnchor: 'none' }}
+                    />
+                ) : emptyState}
 
                 {!isAtBottom && messages.length > 0 && (
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">

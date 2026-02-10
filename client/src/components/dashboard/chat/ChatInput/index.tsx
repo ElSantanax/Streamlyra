@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, memo } from 'react';
 import type { Theme } from 'emoji-picker-react';
 import { Categories } from 'emoji-picker-react';
 import { useAuth } from '../../../../hooks/useAuth';
@@ -12,7 +12,7 @@ import SendButton from './components/SendButton';
 // Lazy load del EmojiPicker para reducir el bundle principal
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
-const ChatInput = () => {
+const ChatInput = memo(() => {
     const { user } = useAuth();
     const chatInput = useChatInput();
     const { message, setMessage, inputRef, clearMessage, focusInput } = chatInput;
@@ -81,6 +81,8 @@ const ChatInput = () => {
             </div>
         </div>
     );
-};
+});
+
+ChatInput.displayName = 'ChatInput';
 
 export default ChatInput;

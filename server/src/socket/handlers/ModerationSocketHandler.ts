@@ -104,6 +104,6 @@ export class ModerationSocketHandler {
      * Verifica si la plataforma está soportada
      */
     private isSupportedPlatform(platform: string): platform is typeof SUPPORTED_PLATFORMS[number] {
-        return SUPPORTED_PLATFORMS.includes(platform as any);
+        return (SUPPORTED_PLATFORMS as readonly string[]).includes(platform);
     }
 }

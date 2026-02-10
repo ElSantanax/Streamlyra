@@ -2,8 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, MessageStatus } from '../../types';
 import { ensureMessageId } from './helpers';
 
-const MAX_MESSAGES = 100;
-const FLUSH_INTERVAL_MS = 150;
+const MAX_MESSAGES = 200;
+const FLUSH_INTERVAL_MS = 250;
 
 const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
   if (newMessages.length === 0) return currentMessages;

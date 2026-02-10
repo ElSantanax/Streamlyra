@@ -42,8 +42,7 @@ export const MessageContent = memo(({
                                     src={part.value}
                                     alt={part.name}
                                     title={part.name}
-                                    className="inline-block h-7 align-middle mx-0.5"
-                                    loading="lazy"
+                                    className="inline-block h-7 w-7 object-contain align-middle mx-0.5"
                                 />
                             );
                         }

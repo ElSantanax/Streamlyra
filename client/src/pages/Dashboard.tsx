@@ -3,7 +3,7 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 
@@ -12,11 +12,12 @@ import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
 import { ConnectionsProvider } from '../context/ConnectionsProvider';
 import { useConnectionsContext } from '../hooks/useConnectionsContext';
+import type { PlatformKey } from '../constants/platforms';
 
-const Sidebar = lazy(() => import('../components/dashboard/layout/Sidebar'));
-const ChatInput = lazy(() => import('../components/dashboard/chat/ChatInput/index'));
-const AddPlatformModal = lazy(() => import('../components/dashboard/connections/AddPlatformModal'));
-const ChatFeed = lazy(() => import('../components/dashboard/chat/ChatFeed'));
+import Sidebar from '../components/dashboard/layout/Sidebar';
+import ChatInput from '../components/dashboard/chat/ChatInput/index';
+import AddPlatformModal from '../components/dashboard/connections/AddPlatformModal';
+import ChatFeed from '../components/dashboard/chat/ChatFeed';
 
 const DashboardContent = () => {
     const navigate = useNavigate();
@@ -44,6 +45,19 @@ const DashboardContent = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
 
+    const toggleSidebar = useCallback((open: boolean) => {
+        setIsSidebarOpen(open);
+    }, []);
+
+    const toggleAddPlatform = useCallback((open: boolean) => {
+        setIsAddPlatformOpen(open);
+    }, []);
+
+    const handleAddPlatformFromSidebar = useCallback(() => {
+        setIsAddPlatformOpen(true);
+        setIsSidebarOpen(false);
+    }, []);
+
     useEffect(() => {
         if (chatAreaRef.current) {
             toast.setTargetElement(chatAreaRef.current);
@@ -61,7 +75,7 @@ const DashboardContent = () => {
     }, [isAuthenticated, navigate]);
 
     // Envolver desconexión para limpiar mensajes localmente también
-    const handleDisconnectPlatform = useCallback(async (platform: any) => {
+    const handleDisconnectPlatform = useCallback(async (platform: PlatformKey) => {
         try {
             await disconnectPlatform(platform);
         } catch (error) {
@@ -86,8 +100,8 @@ const DashboardContent = () => {
     return (
         <div className="page-base h-screen overflow-hidden">
             <DashboardHeader
-                onMenuClick={() => setIsSidebarOpen(true)}
-                onAddPlatform={() => setIsAddPlatformOpen(true)}
+                onMenuClick={() => toggleSidebar(true)}
+                onAddPlatform={() => toggleAddPlatform(true)}
                 isConnected={isConnected}
             />
 
@@ -96,13 +110,13 @@ const DashboardContent = () => {
                 {isAddPlatformOpen && (
                     <div
                         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
-                        onClick={() => setIsAddPlatformOpen(false)}
+                        onClick={() => toggleAddPlatform(false)}
                     />
                 )}
                 {isSidebarOpen && (
                     <div
                         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
+                        onClick={() => toggleSidebar(false)}
                     />
                 )}
 
@@ -122,11 +136,8 @@ const DashboardContent = () => {
                             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                         `}>
                             <Sidebar
-                                onMobileClose={() => setIsSidebarOpen(false)}
-                                onAddPlatform={() => {
-                                    setIsAddPlatformOpen(true);
-                                    setIsSidebarOpen(false);
-                                }}
+                                onMobileClose={() => toggleSidebar(false)}
+                                onAddPlatform={handleAddPlatformFromSidebar}
                                 connections={connections}
                                 onDisconnect={handleDisconnectPlatform}
                                 onSearchStream={searchStream}
@@ -169,7 +180,7 @@ const DashboardContent = () => {
                     <Suspense fallback={null}>
                         <AddPlatformModal
                             isOpen={isAddPlatformOpen}
-                            onClose={() => setIsAddPlatformOpen(false)}
+                            onClose={() => toggleAddPlatform(false)}
                             connections={connections}
                             onConnectionSuccess={refetchSilent}
                         />
