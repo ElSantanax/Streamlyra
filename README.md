@@ -1,14 +1,15 @@
 <pre style="font-family: monospace; line-height: 1; letter-spacing: 0;">
- ad88888ba                                                                  88                                            
-d8"     "8b  ,d                                                             88                                            
-Y8,          88                                                             88                                            
-`Y8aaaaa,  MM88MMM  8b,dPPYba,   ,adPPYba,  ,adPPYYba,  88,dPYba,,adPYba,   88       8b       d8  8b,dPPYba,  ,adPPYYba,
-  `"""""8b,  88     88P'   "Y8  a8P_____88  ""     `Y8  88P'   "88"    "8a  88       `8b     d8'  88P'   "Y8  ""     `Y8
-        `8b  88     88          8PP"""""""  ,adPPPPP88  88      88      88  88        `8b   d8'   88          ,adPPPPP88
-Y8a     a8P  88,    88          "8b,   ,aa  88,    ,88  88      88      88  88         `8b,d8'    88          88,    ,88
- "Y88888P"   "Y888  88           `"Ybbd8"'  `"8bbdP"Y8  88      88      88  88888888888  Y88'     88          `"8bbdP"Y8
-                                                                                         d8'                              
-                                                                                        d8'                             
+  /$$$$$$   /$$                                                 /$$                                   
+ /$$__  $$ | $$                                                | $$                                   
+| $$  \__//$$$$$$    /$$$$$$   /$$$$$$   /$$$$$$  /$$$$$$/$$$$ | $$       /$$   /$$  /$$$$$$  /$$$$$$ 
+|  $$$$$$|_  $$_/   /$$__  $$ /$$__  $$ |____  $$| $$_  $$_  $$| $$      | $$  | $$ /$$__  $$|____  $$
+ \____  $$ | $$    | $$  \__/| $$$$$$$$  /$$$$$$$| $$ \ $$ \ $$| $$      | $$  | $$| $$  \__/ /$$$$$$$
+ /$$  \ $$ | $$ /$$| $$      | $$_____/ /$$__  $$| $$ | $$ | $$| $$      | $$  | $$| $$      /$$__  $$
+|  $$$$$$/ |  $$$$/| $$      |  $$$$$$$|  $$$$$$$| $$ | $$ | $$| $$$$$$$$|  $$$$$$$| $$     |  $$$$$$$
+ \______/   \___/  |__/       \_______/ \_______/|__/ |__/ |__/|________/ \____  $$|__/      \_______/
+                                                                          /$$  | $$                   
+                                                                         |  $$$$$$/                   
+                                                                          \______/                    
 </pre>
 
 Es una solución moderna para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
