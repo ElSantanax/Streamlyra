@@ -24,6 +24,7 @@ const ChatMessage = memo(({
     onReply,
     onDelete,
     onBan,
+    platformIds,
     emotes,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
@@ -37,16 +38,16 @@ const ChatMessage = memo(({
     }, [onReply, user]);
 
     const handleDelete = useCallback(() => {
-        if (onDelete && id) onDelete(id);
-    }, [onDelete, id]);
+        if (onDelete && id) onDelete(id, platform, platformIds);
+    }, [onDelete, id, platform, platformIds]);
 
     const handleBan = useCallback(() => {
-        if (onBan && userId) onBan(userId, user);
-    }, [onBan, userId, user]);
+        if (onBan && userId) onBan(userId, user, platform);
+    }, [onBan, userId, user, platform]);
 
     return (
         <div className={`
-            flex flex-col gap-1 px-4 py-3 rounded-xl bg-white/5 group border border-surface-border relative overflow-hidden transition-all
+            flex flex-col gap-1 px-4 py-3 rounded-xl bg-white/5 group border border-surface-border relative overflow-hidden
             ${isSpecial ? `border-l-4 font-medium` : ''}
         `} style={isSpecial ? { borderLeftColor: brandColor } : undefined}>
 

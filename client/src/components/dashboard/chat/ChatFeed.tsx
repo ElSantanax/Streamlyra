@@ -1,4 +1,4 @@
-import { Suspense, memo, useRef, useMemo, useState, useCallback } from 'react';
+import { Suspense, memo, useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import Spinner from '../../common/Spinner';
 import { LocalErrorBoundary } from '../../common/LocalErrorBoundary';
@@ -8,6 +8,7 @@ import type { PlatformKey } from '../../../constants/platforms';
 
 interface ChatFeedProps {
     messages: ChatMessageData[];
+    firstItemIndex: number;
     isConnected: boolean;
     onReply: (username: string) => void;
     onDelete: (messageId: string, platform: PlatformKey, platformIds?: Record<string, string>) => void;
@@ -16,6 +17,7 @@ interface ChatFeedProps {
 
 const ChatFeed = memo(({
     messages,
+    firstItemIndex,
     isConnected,
     onReply,
     onDelete,
@@ -27,33 +29,48 @@ const ChatFeed = memo(({
     const scrollToBottom = useCallback(() => {
         if (virtuosoRef.current) {
             virtuosoRef.current.scrollToIndex({
-                index: messages.length - 1,
+                index: messages.length - 1 + firstItemIndex,
                 behavior: 'smooth'
             });
         }
-    }, [messages.length]);
+    }, [messages.length, firstItemIndex]);
 
-    // Handlers estables para evitar re-renderizados de los items
-    const handleDelete = useCallback((messageId: string, platform: PlatformKey, platformIds?: Record<string, string>) => {
-        onDelete(messageId, platform, platformIds);
-    }, [onDelete]);
+    // Refs para mantener los handlers actualizados sin romper la memoización de los items
+    const onReplyRef = useRef(onReply);
+    const onDeleteRef = useRef(onDelete);
+    const onBanRef = useRef(onBan);
 
-    const handleBan = useCallback((userId: string, username: string, platform: PlatformKey) => {
-        onBan(userId, username, platform);
-    }, [onBan]);
+    useEffect(() => {
+        onReplyRef.current = onReply;
+        onDeleteRef.current = onDelete;
+        onBanRef.current = onBan;
+    }, [onReply, onDelete, onBan]);
+
+    // Handlers estables que nunca cambian de referencia
+    const handleReplyStable = useCallback((username: string) => {
+        onReplyRef.current?.(username);
+    }, []);
+
+    const handleDeleteStable = useCallback((messageId: string, platform: PlatformKey, platformIds?: Record<string, string>) => {
+        onDeleteRef.current?.(messageId, platform, platformIds);
+    }, []);
+
+    const handleBanStable = useCallback((userId: string, username: string, platform: PlatformKey) => {
+        onBanRef.current?.(userId, username, platform);
+    }, []);
 
     // Renderizado de cada mensaje individual dentro de la lista virtualizada
+    // Al usar handlers estables, itemContent no cambia NUNCA, optimizando Virtuoso al máximo
     const itemContent = useCallback((_index: number, msg: ChatMessageData) => (
         <div className="pb-2 px-4 md:px-2">
             <ChatMessage
-                key={msg.id}
                 {...msg}
-                onReply={onReply}
-                onDelete={(messageId) => handleDelete(messageId, msg.platform, msg.platformIds)}
-                onBan={(userId, username) => handleBan(userId, username, msg.platform)}
+                onReply={handleReplyStable}
+                onDelete={handleDeleteStable}
+                onBan={handleBanStable}
             />
         </div>
-    ), [onReply, handleDelete, handleBan]);
+    ), [handleReplyStable, handleDeleteStable, handleBanStable]);
 
     const emptyState = useMemo(() => (
         <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 select-none h-full">
@@ -84,12 +101,15 @@ const ChatFeed = memo(({
                             ref={virtuosoRef}
                             data={messages}
                             itemContent={itemContent}
-                            followOutput="auto"
-                            initialTopMostItemIndex={messages.length - 1}
+                            firstItemIndex={firstItemIndex}
+                            computeItemKey={(_index, msg) => msg.id!}
+                            alignToBottom={true}
+                            followOutput={(isAtBottom) => (isAtBottom ? 'auto' : false)}
                             className="absolute inset-0 custom-scrollbar"
                             atBottomStateChange={setIsAtBottom}
-                            atBottomThreshold={60}
-                            style={{ height: '100%', width: '100%' }}
+                            atBottomThreshold={20}
+                            increaseViewportBy={500}
+                            style={{ height: '100%', width: '100%', overflowAnchor: 'none' }}
                         />
                     ) : emptyState}
                 </Suspense>

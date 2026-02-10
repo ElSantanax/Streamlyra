@@ -3,17 +3,9 @@
 import { Server } from 'socket.io';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
-import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent } from '../../../types/tiktok.types';
+import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent, TikTokConnection } from '../../../types/tiktok.types';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
-
-type TikTokConnection = TikTokLiveConnection & {
-    on(event: 'chat', listener: (data: TikTokChatEvent) => void): void;
-    on(event: 'gift', listener: (data: TikTokGiftEvent) => void): void;
-    on(event: 'like', listener: (data: TikTokLikeEvent) => void): void;
-    on(event: 'follow', listener: (data: TikTokFollowEvent) => void): void;
-    on(event: 'roomUser', listener: (info: { viewerCount: number }) => void): void;
-};
 
 export class TikTokEventListener {
     private streamConfirmed: Set<string> = new Set();
@@ -21,7 +13,7 @@ export class TikTokEventListener {
     constructor(private transformer: TikTokEventTransformer) { }
 
     setupListeners(userId: string, connection: TikTokLiveConnection, io: Server): void {
-        const conn = connection as TikTokConnection;
+        const conn = connection as unknown as TikTokConnection;
 
         conn.on('chat', (data: TikTokChatEvent) => {
             // Confirmar que el stream está activo al recibir el primer mensaje

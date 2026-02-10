@@ -80,7 +80,10 @@ export class TikTokErrorHandler {
     }
 
     private isBlockedError(errorStr: string): boolean {
-        return errorStr.includes('SIGI_STATE') || errorStr.includes('blocked by TikTok');
+        return errorStr.includes('SIGI_STATE') ||
+            errorStr.includes('blocked by TikTok') ||
+            errorStr.includes('429') ||
+            errorStr.includes('TooManyRequests');
     }
 
     private isNotLiveError(errorStr: string): boolean {

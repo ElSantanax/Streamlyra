@@ -57,3 +57,23 @@ export interface TikTokShareEvent {
     nickname: string;
     profilePictureUrl: string;
 }
+
+export interface TikTokRoomUserInfo {
+    viewerCount: number;
+}
+
+export interface TikTokConnection {
+    on(event: 'chat', listener: (data: TikTokChatEvent) => void): this;
+    on(event: 'gift', listener: (data: TikTokGiftEvent) => void): this;
+    on(event: 'like', listener: (data: TikTokLikeEvent) => void): this;
+    on(event: 'follow', listener: (data: TikTokFollowEvent) => void): this;
+    on(event: 'share', listener: (data: TikTokShareEvent) => void): this;
+    on(event: 'roomUser', listener: (data: TikTokRoomUserInfo) => void): this;
+    on(event: 'disconnected', listener: () => void): this;
+    on(event: 'error', listener: (err: any) => void): this;
+    on(event: string, listener: (...args: any[]) => void): this;
+
+    disconnect(): Promise<void>;
+    getState?(): any;
+    removeAllListeners(event?: string): this;
+}

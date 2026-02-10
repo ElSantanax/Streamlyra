@@ -7,6 +7,7 @@ interface ConnectionState {
     autoAttempts: number;
     isManualMode: boolean;
     cleanup?: () => void;
+    flowId?: string; // ID único para rastrear el proceso de conexión actual
 }
 
 export class TikTokConnectionStateManager {
@@ -61,8 +62,10 @@ export class TikTokConnectionStateManager {
     }
 
     incrementAutoAttempts(userId: string): void {
-        const state = this.getOrCreateState(userId);
-        state.autoAttempts++;
+        const state = this.states.get(userId);
+        if (state) {
+            state.autoAttempts++;
+        }
     }
 
     isManualMode(userId: string): boolean {
@@ -78,6 +81,15 @@ export class TikTokConnectionStateManager {
         const state = this.getOrCreateState(userId);
         if (state.cleanup) state.cleanup();
         state.cleanup = cleanup;
+    }
+
+    getFlowId(userId: string): string | undefined {
+        return this.states.get(userId)?.flowId;
+    }
+
+    setFlowId(userId: string, flowId: string | undefined): void {
+        const state = this.getOrCreateState(userId);
+        state.flowId = flowId;
     }
 
     clearState(userId: string): void {

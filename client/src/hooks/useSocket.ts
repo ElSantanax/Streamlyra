@@ -111,33 +111,6 @@ export const useSocket = ({
     };
   }, [userId]);
 
-  useEffect(() => {
-    if (!isConnected || !userId) return;
-
-    const HEARTBEAT_INTERVAL = 30000;
-
-    const sendHeartbeat = () => {
-      if (document.visibilityState === 'visible') {
-        socket.emit('heartbeat');
-      }
-    };
-
-    const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        socket.emit('heartbeat');
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isConnected, userId]);
-
   const onChatMessageRef = useRef(onChatMessage);
   const onMessageStatusUpdateRef = useRef(onMessageStatusUpdate);
   const onViewersUpdateRef = useRef(onViewersUpdate);

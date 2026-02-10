@@ -3,7 +3,7 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 
@@ -22,8 +22,18 @@ const DashboardContent = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { connections, connectionHash, disconnectPlatform, refetchSilent, searchStream } = useConnectionsContext();
-    const { messages, addMessage, updateMessageStatus, removeMessage, removeMessagesByUserId, clearMessages } = useChatMessages();
+    const {
+        messages,
+        firstItemIndex,
+        addMessage,
+        updateMessageStatus,
+        removeMessage,
+        removeMessagesByUserId,
+        clearMessages
+    } = useChatMessages();
     const chatAreaRef = useRef<HTMLElement>(null);
+
+    // Memorizar opciones de moderación de forma persistente
     const moderationOptions = useMemo(() => ({
         onMessageDeleted: removeMessage,
         onUserBanned: removeMessagesByUserId
@@ -49,6 +59,15 @@ const DashboardContent = () => {
             navigate('/login');
         }
     }, [isAuthenticated, navigate]);
+
+    // Envolver desconexión para limpiar mensajes localmente también
+    const handleDisconnectPlatform = useCallback(async (platform: any) => {
+        try {
+            await disconnectPlatform(platform);
+        } catch (error) {
+            console.error('Error disconnecting platform:', error);
+        }
+    }, [disconnectPlatform]);
 
     // Socket connection con callbacks para mensajes
     const { isConnected } = useSocket({
@@ -109,7 +128,7 @@ const DashboardContent = () => {
                                     setIsSidebarOpen(false);
                                 }}
                                 connections={connections}
-                                onDisconnect={disconnectPlatform}
+                                onDisconnect={handleDisconnectPlatform}
                                 onSearchStream={searchStream}
                                 onClearChat={clearMessages}
                             />
@@ -129,6 +148,7 @@ const DashboardContent = () => {
                     }>
                         <ChatFeed
                             messages={messages}
+                            firstItemIndex={firstItemIndex}
                             isConnected={isConnected}
                             onReply={replyToUser}
                             onDelete={deleteMessage}
