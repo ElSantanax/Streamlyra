@@ -40,21 +40,29 @@ export class TwitchChatProvider implements ChatProvider {
 
         try {
             if (this.activeClients.has(userId)) {
-                logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
+                try {
+                    logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
 
-                const connection = await Connection.findOne({
-                    where: { userId: String(userId), provider: 'twitch' }
-                });
-                if (connection?.providerUsername) {
-                    const getAccessToken = async () => this.connectionService.getValidAccessToken(userId, 'twitch');
-                    const validToken = await getAccessToken();
-                    const accessToken = validToken || connection.accessToken;
+                    const connection = await Connection.findOne({
+                        where: { userId: String(userId), provider: 'twitch' }
+                    });
+                    if (connection?.providerUsername) {
+                        const getAccessToken = async () => this.connectionService.getValidAccessToken(userId, 'twitch');
+                        const validToken = await getAccessToken();
+                        const accessToken = validToken || connection.accessToken;
 
-                    this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
-                    if (connection.providerId) {
-                        this.followerPoller.startPolling(userId, connection.providerId, getAccessToken, io);
+                        this.viewerPoller.startPolling(userId, connection.providerUsername, accessToken, io);
+                        if (connection.providerId) {
+                            this.followerPoller.startPolling(userId, connection.providerId, getAccessToken, io);
+                        }
                     }
+                } catch (error) {
+                    // Si falla el refresco de estado, SOLO logueamos y no matamos la conexión activa
+                    logger.error({ err: error, userId }, 'Error refreshing Twitch state for active client');
+                } finally {
+                    // Asegurar limpieza de connectingUsers para este flujo
+                    this.connectingUsers.delete(userId);
                 }
                 return;
             }

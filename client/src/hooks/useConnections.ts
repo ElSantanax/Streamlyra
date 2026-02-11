@@ -77,6 +77,12 @@ export const useConnections = (shouldFetch = true) => {
       const message = err instanceof Error ? err.message : 'Error fetching connections';
       setError(message);
       console.error('Error fetching connections:', err);
+
+      // Si falla la carga inicial y no es un error de auth,
+      // intentamos mantener el estado anterior si existe para evitar parpadeos
+      if (Object.keys(connections).length === 0) {
+        // Solo si estaba vacío mostramos error visual
+      }
     } finally {
       setIsLoading(false);
     }

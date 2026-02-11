@@ -20,6 +20,8 @@ export class TikTokChatProvider implements ChatProvider {
     private readonly eventListener: TikTokEventListener;
     private readonly errorHandler: TikTokErrorHandler;
     private static readonly MAX_AUTO_ATTEMPTS = 12;
+    private static readonly AUTO_DISCOVERY_INTERVAL_MS = 15000;
+    private static readonly RECONNECTION_DELAY_MS = 5000;
 
     constructor() {
         const transformer = new TikTokEventTransformer();
@@ -38,9 +40,7 @@ export class TikTokChatProvider implements ChatProvider {
 
         // 2. Si ya hay una conexión activa, solo informar estado
         if (this.stateManager.hasActiveConnection(userId)) {
-            const status = this.eventListener.isStreamConfirmed(userId) ? 'connected' : 'waiting_stream';
-            const msg = status === 'waiting_stream' ? 'Sin Live' : undefined;
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, msg, this.eventListener.isStreamConfirmed(userId));
+            this.emitCurrentConnectionStatus(userId, io);
             return;
         }
 
@@ -54,7 +54,7 @@ export class TikTokChatProvider implements ChatProvider {
                 return;
             }
 
-            const username = connection.providerUsername.replace(/^@+/, '');
+            const username = this.normalizeUsername(connection.providerUsername);
 
             // 3. Limpiar cualquier rastro anterior antes de empezar de cero
             await this.clearInternalState(userId);
@@ -81,13 +81,13 @@ export class TikTokChatProvider implements ChatProvider {
         const connection = await this.getConnection(userId);
         if (!connection || !connection.providerUsername) return;
 
-        const username = connection.providerUsername.replace(/^@+/, '');
+        const username = this.normalizeUsername(connection.providerUsername);
 
         this.stateManager.setManualMode(userId, true);
         this.stateManager.setConnecting(userId, true);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
 
-        const flowId = Math.random().toString(36).substring(7);
+        const flowId = this.generateFlowId();
         this.stateManager.setFlowId(userId, flowId);
 
         try {
@@ -112,7 +112,7 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     private async setupAutoDiscovery(userId: string, username: string, io: Server): Promise<void> {
-        const flowId = Math.random().toString(36).substring(7);
+        const flowId = this.generateFlowId();
         this.stateManager.setFlowId(userId, flowId);
 
         const tryConnect = async () => {
@@ -120,7 +120,7 @@ export class TikTokChatProvider implements ChatProvider {
         };
 
         const cleanup = retryWithIntervalAndLimit(tryConnect, {
-            intervalMs: 15000,
+            intervalMs: TikTokChatProvider.AUTO_DISCOVERY_INTERVAL_MS,
             maxAttempts: TikTokChatProvider.MAX_AUTO_ATTEMPTS,
             onRetry: () => {
                 const attempt = this.stateManager.getAutoAttempts(userId);
@@ -138,7 +138,7 @@ export class TikTokChatProvider implements ChatProvider {
 
     private async attemptDiscovery(userId: string, username: string, flowId: string, io: Server): Promise<void> {
         // 1. Verificación inicial: ¿Este flujo sigue siendo el actual y válido?
-        if (!this.stateManager.hasState(userId) || this.stateManager.getFlowId(userId) !== flowId) {
+        if (!this.isFlowValid(userId, flowId)) {
             logger.debug({ userId, username, flowId }, 'TikTok: Aborting stale discovery attempt');
             return;
         }
@@ -149,13 +149,7 @@ export class TikTokChatProvider implements ChatProvider {
         const tiktokConnection = await this.connectionManager.connect(username);
 
         // 2. Verificación post-conexión: ¿El flujo o la cuenta cambiaron durante la espera?
-        const currentConn = await this.getConnection(userId);
-        const currentBoundUsername = currentConn?.providerUsername?.replace(/^@+/, '');
-
-        const isStillValid =
-            this.stateManager.hasState(userId) &&
-            this.stateManager.getFlowId(userId) === flowId &&
-            currentBoundUsername === username;
+        const isStillValid = await this.isConnectionStillValid(userId, flowId, username);
 
         if (!isStillValid) {
             logger.info({ userId, username, flowId }, 'TikTok: Flow invalidated during connection, aborting zombie');
@@ -205,11 +199,11 @@ export class TikTokChatProvider implements ChatProvider {
             logger.info({ userId }, 'TikTok: Connection lost');
             this.stateManager.removeActiveConnection(userId);
 
-            const conn = await this.getConnection(userId);
-            if (conn) {
-                const currentUsername = conn.providerUsername.replace(/^@+/, '');
+            const connection = await this.getConnection(userId);
+            if (connection) {
+                const currentUsername = this.normalizeUsername(connection.providerUsername);
                 if (currentUsername === username) {
-                    setTimeout(() => this.connect(userId, io), 5000);
+                    setTimeout(() => this.connect(userId, io), TikTokChatProvider.RECONNECTION_DELAY_MS);
                 }
             }
         });
@@ -218,6 +212,68 @@ export class TikTokChatProvider implements ChatProvider {
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'TikTok: Force disconnect requested');
         await this.clearInternalState(userId);
+    }
+
+    /**
+     * Normaliza el username removiendo @ iniciales
+     */
+    private normalizeUsername(username: string): string {
+        return username.replace(/^@+/, '');
+    }
+
+    /**
+     * Genera un ID único para el flujo de conexión
+     */
+    private generateFlowId(): string {
+        return Math.random().toString(36).substring(7);
+    }
+
+    /**
+     * Determina el estado de conexión actual basado en stream confirmation
+     */
+    private getCurrentConnectionStatus(userId: string): {
+        status: 'connected' | 'waiting_stream';
+        message: string | undefined;
+        isLive: boolean;
+    } {
+        const isLive = this.eventListener.isStreamConfirmed(userId);
+        const status = isLive ? 'connected' : 'waiting_stream';
+        const message = status === 'waiting_stream' ? 'Sin Live' : undefined;
+
+        return { status, message, isLive };
+    }
+
+    /**
+     * Valida si el flujo de conexión sigue siendo válido
+     */
+    private isFlowValid(userId: string, flowId: string): boolean {
+        return this.stateManager.hasState(userId) &&
+            this.stateManager.getFlowId(userId) === flowId;
+    }
+
+    /**
+     * Valida si la conexión post-establecimiento sigue siendo válida
+     */
+    private async isConnectionStillValid(
+        userId: string,
+        flowId: string,
+        expectedUsername: string
+    ): Promise<boolean> {
+        const currentConnection = await this.getConnection(userId);
+        const currentBoundUsername = currentConnection?.providerUsername
+            ? this.normalizeUsername(currentConnection.providerUsername)
+            : null;
+
+        return this.isFlowValid(userId, flowId) &&
+            currentBoundUsername === expectedUsername;
+    }
+
+    /**
+     * Emite el estado de conexión actual al cliente
+     */
+    private emitCurrentConnectionStatus(userId: string, io: Server): void {
+        const { status, message, isLive } = this.getCurrentConnectionStatus(userId);
+        SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, message, isLive);
     }
 
     private async clearInternalState(userId: string): Promise<void> {

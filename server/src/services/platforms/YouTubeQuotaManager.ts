@@ -1,5 +1,3 @@
-import fs from 'fs';
-import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { YouTubePollingConfig } from '../../config/youtube.polling.config';
 import { logger } from '../../utils/logger';
@@ -10,13 +8,9 @@ export class YouTubeQuotaManager {
     private lastResetDate: string;
     private isExhausted: boolean = false;
     private exhaustedUntil: number = 0;
-    private readonly PERSISTENCE_PATH = path.join(process.cwd(), 'youtube-quota.json');
-    private persistTimeout: NodeJS.Timeout | null = null;
-    private isPersisting: boolean = false;
 
     private constructor() {
         this.lastResetDate = new Date().toISOString().split('T')[0];
-        this.loadPersistedData();
     }
 
     public static getInstance(): YouTubeQuotaManager {
@@ -24,68 +18,6 @@ export class YouTubeQuotaManager {
             YouTubeQuotaManager.instance = new YouTubeQuotaManager();
         }
         return YouTubeQuotaManager.instance;
-    }
-
-    private loadPersistedData(): void {
-        try {
-            if (fs.existsSync(this.PERSISTENCE_PATH)) {
-                const rawData = fs.readFileSync(this.PERSISTENCE_PATH, 'utf-8');
-                const data = JSON.parse(rawData) as {
-                    unitsUsed?: number;
-                    lastResetDate?: string;
-                    isExhausted?: boolean;
-                    exhaustedUntil?: number;
-                };
-                this.unitsUsed = data.unitsUsed || 0;
-                this.lastResetDate = data.lastResetDate || new Date().toISOString().split('T')[0];
-                this.isExhausted = data.isExhausted || false;
-                this.exhaustedUntil = data.exhaustedUntil || 0;
-
-                // Verificar si ya toca resetear según la fecha cargada
-                this.checkAndResetDaily();
-            }
-        } catch (error) {
-            logger.error({ err: error }, 'Error loading YouTube quota persistence');
-        }
-    }
-
-    /**
-     * Persiste los datos de forma asíncrona y debounced para no colapsar el disco ni bloquear el event loop.
-     */
-    private persistData(immediate = false): void {
-        if (this.persistTimeout) {
-            clearTimeout(this.persistTimeout);
-            this.persistTimeout = null;
-        }
-
-        if (immediate) {
-            void this.doPersist();
-            return;
-        }
-
-        // Debounce de 2 segundos para escrituras frecuentes
-        this.persistTimeout = setTimeout(() => {
-            void this.doPersist();
-        }, 2000);
-    }
-
-    private async doPersist(): Promise<void> {
-        if (this.isPersisting) return;
-        this.isPersisting = true;
-
-        try {
-            const data = {
-                unitsUsed: this.unitsUsed,
-                lastResetDate: this.lastResetDate,
-                isExhausted: this.isExhausted,
-                exhaustedUntil: this.exhaustedUntil
-            };
-            await fsPromises.writeFile(this.PERSISTENCE_PATH, JSON.stringify(data, null, 2));
-        } catch (error) {
-            logger.error({ err: error }, 'Error saving YouTube quota persistence');
-        } finally {
-            this.isPersisting = false;
-        }
     }
 
     /**
@@ -103,7 +35,6 @@ export class YouTubeQuotaManager {
             return false;
         } else if (this.isExhausted) {
             this.isExhausted = false;
-            this.persistData(true);
         }
 
         return (this.unitsUsed + requestedUnits) <= YouTubePollingConfig.DAILY_QUOTA_LIMIT;
@@ -124,8 +55,6 @@ export class YouTubeQuotaManager {
 
         if (this.unitsUsed >= YouTubePollingConfig.DAILY_QUOTA_LIMIT) {
             this.markAsExhausted(true); // Bloqueo de 24h aproximado por límite diario
-        } else {
-            this.persistData();
         }
     }
 
@@ -137,7 +66,6 @@ export class YouTubeQuotaManager {
         const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000; // 1h o 15 min
         this.isExhausted = true;
         this.exhaustedUntil = Date.now() + blockDuration;
-        this.persistData(true);
 
         logger.warn({
             unitsUsed: this.unitsUsed,
@@ -189,7 +117,6 @@ export class YouTubeQuotaManager {
             this.unitsUsed = 0;
             this.isExhausted = false;
             this.lastResetDate = today;
-            this.persistData(true);
         }
     }
 }

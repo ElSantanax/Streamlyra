@@ -36,6 +36,22 @@ const AuthCallback = () => {
                     if (platform === 'kick') {
                         codeVerifier = localStorage.getItem('kick_verifier') || undefined;
                         localStorage.removeItem('kick_verifier');
+
+                        // Validar que el codeVerifier existe antes de intentar el intercambio
+                        if (!codeVerifier) {
+                            console.error('Falta code_verifier para Kick. Posible pérdida de sesión local.');
+                            try {
+                                const toastModule = await import('../lib/notifications');
+                                toastModule.toast.error('La sesión de autenticación expiró. Por favor, intenta conectar nuevamente.');
+                            } catch (e) {
+                                console.error('Error cargando notificaciones', e);
+                            }
+
+                            // Redirigir de vuelta para intentar de nuevo
+                            const redirectUrl = localStorage.getItem('auth_redirect');
+                            navigate(redirectUrl || '/dashboard');
+                            return;
+                        }
                     }
 
                     const data = await apiAuthService.exchangeCode(platform, code, codeVerifier);
@@ -71,7 +87,17 @@ const AuthCallback = () => {
 
                     // Error genérico
                     toast.error(`Error al conectar: ${errorMessage}`);
-                    navigate('/login');
+
+                    // Si ya tengo sesión (estoy vinculando), volver al dashboard/origen en lugar de login
+                    // Verificamos si hay un usuario en el contexto o localStorage
+                    const hasSession = localStorage.getItem('user') !== null;
+                    if (hasSession) {
+                        const redirectUrl = localStorage.getItem('auth_redirect');
+                        localStorage.removeItem('auth_redirect');
+                        navigate(redirectUrl || '/dashboard');
+                    } else {
+                        navigate('/login');
+                    }
                 }
             };
 

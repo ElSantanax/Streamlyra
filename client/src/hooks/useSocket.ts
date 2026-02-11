@@ -43,17 +43,18 @@ export const useSocket = ({
   }, []);
 
   useEffect(() => {
+    // Solo conectar si hay usuario autenticado Y plataformas activas
     const hasActivePlatforms = Object.values(connectionsRef.current).some(
       (conn) => conn.connected === true
     );
 
-    if (hasActivePlatforms && !socket.connected) {
+    if (userId && hasActivePlatforms && !socket.connected) {
       socket.connect();
-    } else if (!hasActivePlatforms && socket.connected) {
+    } else if ((!hasActivePlatforms || !userId) && socket.connected) {
       socket.disconnect();
       hasIdentifiedRef.current = false;
     }
-  }, [connectionHash]); // Depender del Hash, no del objeto completo
+  }, [connectionHash, userId]); // Depender del Hash y userId
 
   useEffect(() => {
     if (!userId) {
@@ -90,7 +91,10 @@ export const useSocket = ({
     };
 
     const handleConnectError = (error: Error) => {
-      console.error('Error de conexión Socket.IO:', error);
+      // Solo loguear si hay usuario autenticado (evitar spam cuando no hay sesión)
+      if (userId) {
+        console.error('Error de conexión Socket.IO:', error);
+      }
       setIsConnected(false);
     };
 

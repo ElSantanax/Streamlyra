@@ -127,6 +127,33 @@ export class TokenRefreshService {
 
             return connection.accessToken;
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '';
+            const errorString = String(error); // Capture both message and object string representation
+
+            // Detectar refresh token expirado o revocado permanentemente
+            // "invalid_grant" es el código estándar OAuth 2.0 para refresh token inválido/expirado
+            if (errorMessage.includes('invalid_grant') ||
+                errorMessage.includes('expirado') ||
+                errorMessage.includes('invalid_token') ||
+                errorString.includes('400') || // Bad Request a menudo indica token inválido
+                errorString.includes('401')) { // Unauthorized
+
+                logger.error({ platform, connectionId: connection.id },
+                    'Refresh token expired or revoked, connection requires re-authentication');
+
+                try {
+                    // Desactivar la conexión marcándola sin tokens válidos
+                    // Esto forzará al usuario a reconectar en el frontend
+                    connection.accessToken = '';
+                    connection.refreshToken = '';
+                    connection.expiryDate = null;
+                    await connection.save();
+                } catch (saveError) {
+                    logger.error({ err: saveError, connectionId: connection.id },
+                        'Failed to clear invalid tokens from connection');
+                }
+            }
+
             logger.error(
                 { err: error, platform, connectionId: connection.id },
                 'Failed to refresh token'

@@ -56,8 +56,10 @@ class HttpClient {
         credentials: 'include', // Importante para HttpOnly cookies
       });
 
-      // Manejar sesión expirada (401)
+      // Manejar sesión expirada (401) SOLAMENTE si requiere auth
       if (response.status === 401 && requiresAuth) {
+        // En una implementación más compleja podríamos leer el body aquí para confirmar
+        // que es un error de "token expired", pero por ahora confiamos en el status y requiresAuth
         const path = window.location.pathname;
         const isPublicAuthRoute = path === '/login' || path === '/register' || path === '/auth/callback';
         if (!isPublicAuthRoute) {
@@ -66,9 +68,12 @@ class HttpClient {
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { error?: string };
+        const errorData = await response.json().catch(() => ({})) as { error?: string, message?: string };
+        // Priorizar el mensaje del backend si existe
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}`;
+
         throw new ApiError(
-          errorData.error ?? `HTTP ${response.status}`,
+          errorMessage,
           response.status,
           errorData
         );

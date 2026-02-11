@@ -66,7 +66,7 @@ export class Connection extends Model {
         type: DataType.DATE,
         allowNull: true
     })
-    declare expiryDate: Date;
+    declare expiryDate: Date | null;
 
     @ForeignKey(() => User)
     @Column(DataType.UUID)

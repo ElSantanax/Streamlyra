@@ -31,27 +31,31 @@ export class ConnectionRepository implements IConnectionRepository {
         let needsUpdate = false;
         const context = `Connection:${connection.id} (${connection.provider})`;
 
+        // Mantener referencias a los tokens planos para devolverlos al final
+        let plainAccessToken = connection.accessToken;
+        let plainRefreshToken = connection.refreshToken;
+
         if (connection.accessToken) {
             if (!this.encryptionService.isEncrypted(connection.accessToken)) {
                 needsUpdate = true;
-                const plain = connection.accessToken;
-                connection.accessToken = this.encryptionService.encrypt(plain);
+                // El token actual es plano, lo encriptamos en la instancia para guardar
+                plainAccessToken = connection.accessToken;
+                connection.accessToken = this.encryptionService.encrypt(plainAccessToken);
                 logger.info({ context }, 'Auto-migrating legacy accessToken to encrypted format');
-                this.encryptionService.decrypt(plain, context);
             } else {
-                connection.accessToken = this.encryptionService.decrypt(connection.accessToken, context);
+                // El token está encriptado, lo desencriptamos para usarlo en memoria
+                plainAccessToken = this.encryptionService.decrypt(connection.accessToken, context);
             }
         }
 
         if (connection.refreshToken) {
             if (!this.encryptionService.isEncrypted(connection.refreshToken)) {
                 needsUpdate = true;
-                const plain = connection.refreshToken;
-                connection.refreshToken = this.encryptionService.encrypt(plain);
+                plainRefreshToken = connection.refreshToken;
+                connection.refreshToken = this.encryptionService.encrypt(plainRefreshToken);
                 logger.info({ context }, 'Auto-migrating legacy refreshToken to encrypted format');
-                this.encryptionService.decrypt(plain, context);
             } else {
-                connection.refreshToken = this.encryptionService.decrypt(connection.refreshToken, context);
+                plainRefreshToken = this.encryptionService.decrypt(connection.refreshToken, context);
             }
         }
 
@@ -60,7 +64,16 @@ export class ConnectionRepository implements IConnectionRepository {
                 await connection.save({ transaction });
             } catch (err) {
                 logger.error({ err, context }, 'Failed to persist auto-migrated encrypted tokens');
+                // IMPORTANTE: Propagar el error para evitar bucles de reintento infinitos
+                throw new Error("Failed to migrate encrypted tokens");
             }
+        }
+
+        // Restaurar siempre los tokens planos en el objeto devuelto
+        // para que la aplicación pueda usarlos inmediatamente
+        connection.accessToken = plainAccessToken;
+        if (plainRefreshToken) {
+            connection.refreshToken = plainRefreshToken;
         }
 
         return connection;
