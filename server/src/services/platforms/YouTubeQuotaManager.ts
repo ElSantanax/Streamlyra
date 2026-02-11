@@ -1,4 +1,3 @@
-import path from 'path';
 import { YouTubePollingConfig } from '../../config/youtube.polling.config';
 import { logger } from '../../utils/logger';
 

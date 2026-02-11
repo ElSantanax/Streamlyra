@@ -153,7 +153,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             if (emoteUrl) {
                 emotes.push({
                     id: emote.emoteId,
-                    name: emote.emoteId, // TikTok no proporciona nombre, usamos el ID
+                    name: emote.emoteId,
                     url: emoteUrl,
                     positions: isEmoteOnly ? [[0, message.length - 1]] : [] // Posición completa si es solo emote
                 });
@@ -188,7 +188,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             message: '',
             specialMessage: `🎁 REGALO: ${repeatCount}x ${giftName}`,
             time: this.formatTime(new Date()),
-            color: '#FF0050', // Color de marca de TikTok
+            color: '#FF0050',
             isSpecial: true
         };
     }
@@ -214,7 +214,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date()),
-            color: '#FF0050' // Color de marca de TikTok
+            color: '#FF0050'
         };
     }
 }

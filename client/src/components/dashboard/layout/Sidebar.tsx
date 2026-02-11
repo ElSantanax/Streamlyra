@@ -51,7 +51,6 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect,
     }, [connections]);
 
     // Filtrar conexiones activas o en proceso para mostrar
-    // Esto optimiza el renderizado evitando hacer filter dos veces en el JSX
     const activeConnections = useMemo(() => {
         return Object.entries(connections).filter(([, data]) =>
             data.connected ||

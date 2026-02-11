@@ -70,10 +70,10 @@ export interface TikTokConnection {
     on(event: 'share', listener: (data: TikTokShareEvent) => void): this;
     on(event: 'roomUser', listener: (data: TikTokRoomUserInfo) => void): this;
     on(event: 'disconnected', listener: () => void): this;
-    on(event: 'error', listener: (err: any) => void): this;
-    on(event: string, listener: (...args: any[]) => void): this;
+    on(event: 'error', listener: (err: Error | unknown) => void): this;
+    on(event: string, listener: (...args: unknown[]) => void): this;
 
     disconnect(): Promise<void>;
-    getState?(): any;
+    getState?(): unknown;
     removeAllListeners(event?: string): this;
 }

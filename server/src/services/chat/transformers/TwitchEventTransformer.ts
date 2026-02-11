@@ -5,12 +5,10 @@ import { BaseEventTransformer } from './BaseEventTransformer';
 export class TwitchEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'twitch';
 
-     
     transformMessage(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformChatMessage(tags, message) instead');
     }
 
-     
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformSubscription, transformResub, or transformCheer instead');
     }

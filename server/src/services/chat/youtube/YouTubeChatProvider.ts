@@ -19,13 +19,11 @@ export class YouTubeChatProvider implements ChatProvider {
     }
 
     async connect(userId: string, io: Server): Promise<void> {
-        // 1. Evitar peticiones simultáneas
         if (this.stateManager.isConnecting(userId)) {
             logger.debug({ userId }, 'YouTube: Connection already in progress, skipping');
             return;
         }
 
-        // 2. Si ya está conectado y activo, solo informar
         if (this.stateManager.hasActiveConnection(userId)) {
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado');
             return;
@@ -40,18 +38,15 @@ export class YouTubeChatProvider implements ChatProvider {
                 return;
             }
 
-            // 3. Limpiar rastro anterior
             await this.disconnect(userId);
-
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
-            // 4. Iniciar auto-discovery (no bloqueante)
+            // Iniciar auto-discovery (no bloqueante) para no retrasar el retorno de la función
             void this.setupAutoDiscovery(userId, io);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'YouTube: Failed to setup connection');
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Error');
-            // Solo resetear si hubo excepción síncrona al iniciar
             this.stateManager.setConnecting(userId, false);
         }
     }
@@ -71,13 +66,7 @@ export class YouTubeChatProvider implements ChatProvider {
         try {
             await this.attemptDiscovery(userId, io);
         } catch {
-            SafeSocketEmitter.emitConnectionStatus(
-                io,
-                userId,
-                'youtube',
-                'waiting_stream',
-                'Sin Live público'
-            );
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'waiting_stream', 'Sin Live público');
         } finally {
             this.stateManager.setConnecting(userId, false);
         }
@@ -104,8 +93,6 @@ export class YouTubeChatProvider implements ChatProvider {
         });
 
         this.stateManager.setDiscoveryCleanup(userId, cleanup);
-
-        // Primer intento inmediato
         await tryConnect().catch(() => { });
     }
 
@@ -113,23 +100,17 @@ export class YouTubeChatProvider implements ChatProvider {
         this.stateManager.incrementAutoAttempts(userId);
 
         const accessToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
-        if (!accessToken) {
-            logger.warn({ userId }, 'YouTube: No valid access token');
-            throw new Error('Token inválido');
-        }
+        if (!accessToken) throw new Error('Token inválido');
 
         const broadcast = await this.broadcastDiscovery.findLiveBroadcast(accessToken);
 
-        // Verificación de cancelación: ¿El usuario se desconectó mientras buscábamos?
+        // Race condition check: ¿El usuario canceló la conexión mientras la API de YT respondía?
         if (!this.stateManager.isConnecting(userId) && !this.stateManager.isManualMode(userId)) {
             logger.info({ userId }, 'YouTube: Broadcast found but user already disconnected, aborting');
             return;
         }
 
-        if (!broadcast) {
-            logger.debug({ userId }, 'YouTube: No live broadcast found');
-            throw new Error('Broadcast not found');
-        }
+        if (!broadcast) throw new Error('Broadcast not found');
 
         await this.handleBroadcastFound(userId, broadcast, accessToken, io);
     }
@@ -145,11 +126,9 @@ export class YouTubeChatProvider implements ChatProvider {
 
         if (liveChatId) {
             logger.info({ userId, liveChatId }, 'YouTube: Active broadcast discovered');
-
-            // Parar discovery
+            
             this.stateManager.setDiscoveryCleanup(userId, () => { });
 
-            // Persistir chatroomId
             await Connection.update(
                 { chatroomId: liveChatId },
                 { where: { userId: String(userId), provider: 'youtube' } }
@@ -158,27 +137,19 @@ export class YouTubeChatProvider implements ChatProvider {
             this.stateManager.markAsConnected(userId);
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connected', 'Conectado', true);
 
-            // Iniciar pollers
             this.stateManager.getChatPoller(userId).startPolling(userId, liveChatId, accessToken, io);
             if (broadcastId) {
                 this.stateManager.getViewerPoller(userId).startPolling(userId, broadcastId, accessToken, io);
             }
 
-            // Ya no estamos "buscando/conectando", ahora estamos "activos/conectados"
             this.stateManager.setConnecting(userId, false);
         }
     }
 
     private handleAutoDiscoveryExhausted(userId: string, io: Server): void {
-        this.stateManager.setConnecting(userId, false); // Limpiar flag de conexión
+        this.stateManager.setConnecting(userId, false);
         this.stateManager.setManualMode(userId, true);
-        SafeSocketEmitter.emitConnectionStatus(
-            io,
-            userId,
-            'youtube',
-            'waiting_stream',
-            'Sin Live detectado'
-        );
+        SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'waiting_stream', 'Sin Live detectado');
     }
 
     private handleDiscoveryError(err: unknown, userId: string, io: Server): void {
@@ -187,18 +158,11 @@ export class YouTubeChatProvider implements ChatProvider {
         if (errorMessage === 'YOUTUBE_QUOTA_EXCEEDED') {
             logger.warn({ userId }, 'YouTube: Quota exceeded during discovery');
             this.stateManager.clearState(userId);
-            SafeSocketEmitter.emitConnectionStatus(
-                io,
-                userId,
-                'youtube',
-                'error',
-                'Cuotas agotadas'
-            );
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Cuotas agotadas');
         } else if (errorMessage === 'Broadcast not found' || errorMessage === 'Token inválido') {
-            // Estos son errores esperados durante el discovery, no loguear como error
+            // Errores de flujo normal durante el polling de búsqueda
             logger.debug({ userId, error: errorMessage }, 'YouTube: Expected discovery error');
         } else {
-            // Errores inesperados
             logger.error({ err, userId }, 'YouTube: Unexpected discovery error');
         }
     }
@@ -210,7 +174,6 @@ export class YouTubeChatProvider implements ChatProvider {
         } catch (error) {
             logger.error({ err: error, userId }, 'YouTube: Error during disconnection');
         } finally {
-            // Ensure connection status is updated if possible
             this.stateManager.setConnecting(userId, false);
         }
     }

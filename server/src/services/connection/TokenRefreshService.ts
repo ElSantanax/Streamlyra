@@ -1,5 +1,3 @@
-/** Servicio de renovación de tokens OAuth con verificación de expiración */
-
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { Connection } from '../../models/Connection.model';
 import { Platform } from '../../constants/platforms';
@@ -7,14 +5,12 @@ import { logger } from '../../utils/logger';
 import { calculateTokenExpiry } from '../../utils/tokenUtils';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 
+/** Servicio de renovación de tokens OAuth con verificación de expiración */
 export class TokenRefreshService {
     private static readonly BUFFER_TIME_MS = 5 * 60 * 1000;
 
-    /**
-     * Promise Cache para evitar "Thundering Herd":
-     * Múltiples requests simultáneos para el mismo token esperan a la misma Promise
-     * en lugar de hacer múltiples llamadas HTTP a la API de OAuth.
-     * Key format: "userId:platform"
+    /** * Promise Cache (Thundering Herd): Evita múltiples llamadas simultáneas a la API OAuth 
+     * para el mismo usuario/plataforma haciendo que las peticiones esperen a la misma Promise.
      */
     private refreshPromises: Map<string, Promise<string | null>> = new Map();
 
@@ -28,15 +24,10 @@ export class TokenRefreshService {
             return null;
         }
 
-        if (platform === 'tiktok') {
+        if (platform === 'tiktok' || this.isTokenValid(connection.expiryDate)) {
             return connection.accessToken;
         }
 
-        if (this.isTokenValid(connection.expiryDate)) {
-            return connection.accessToken;
-        }
-
-        // Usar Promise Cache para evitar múltiples refreshes simultáneos
         const cacheKey = `${userId}:${platform}`;
         const existingRefresh = this.refreshPromises.get(cacheKey);
 
@@ -47,7 +38,6 @@ export class TokenRefreshService {
 
         const refreshPromise = this.refreshToken(connection, platform)
             .finally(() => {
-                // Limpiar el cache cuando termine (éxito o error)
                 this.refreshPromises.delete(cacheKey);
             });
 
@@ -58,39 +48,18 @@ export class TokenRefreshService {
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
         const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
 
-        if (!connection) {
-            logger.error({ userId, platform }, 'Cannot force refresh: No connection found');
+        if (!connection || platform === 'tiktok' || !connection.refreshToken) {
+            logger.error({ userId, platform }, 'Force refresh failed: Connection invalid or unsupported');
             return null;
         }
 
-        if (platform === 'tiktok') {
-            logger.warn({ userId, platform }, 'Cannot force refresh: TikTok does not support token refresh');
-            return null;
-        }
-
-        if (!connection.refreshToken) {
-            logger.error(
-                { userId, platform, connectionId: connection.id },
-                'Cannot force refresh: No refresh token available. User must reconnect the platform.'
-            );
-            return null;
-        }
-
-        logger.debug({ userId, platform, connectionId: connection.id }, 'Forcing token refresh');
-
-        // Usar Promise Cache también para force refresh
         const cacheKey = `${userId}:${platform}`;
         const existingRefresh = this.refreshPromises.get(cacheKey);
 
-        if (existingRefresh) {
-            logger.debug({ userId, platform }, 'Reusing existing forced token refresh promise');
-            return existingRefresh;
-        }
+        if (existingRefresh) return existingRefresh;
 
         const refreshPromise = this.refreshToken(connection, platform)
-            .finally(() => {
-                this.refreshPromises.delete(cacheKey);
-            });
+            .finally(() => this.refreshPromises.delete(cacheKey));
 
         this.refreshPromises.set(cacheKey, refreshPromise);
         return refreshPromise;
@@ -98,15 +67,13 @@ export class TokenRefreshService {
 
     private isTokenValid(expiryDate: Date | null): boolean {
         if (!expiryDate) return false;
-
-        const timeUntilExpiry = expiryDate.getTime() - Date.now();
-        return timeUntilExpiry > TokenRefreshService.BUFFER_TIME_MS;
+        return (expiryDate.getTime() - Date.now()) > TokenRefreshService.BUFFER_TIME_MS;
     }
 
     private async refreshToken(connection: Connection, platform: Platform): Promise<string | null> {
         if (!connection.refreshToken) {
             logger.warn({ platform, connectionId: connection.id }, 'No refresh token available');
-            return null; // Si no hay refresh token y el access está expirado, no podemos hacer nada
+            return null;
         }
 
         try {
@@ -122,43 +89,35 @@ export class TokenRefreshService {
             connection.expiryDate = calculateTokenExpiry(newTokens.expires_in);
 
             await connection.save();
-
             logger.info({ platform, connectionId: connection.id }, 'Token refreshed successfully');
 
             return connection.accessToken;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '';
-            const errorString = String(error); // Capture both message and object string representation
+            const errorString = String(error);
 
-            // Detectar refresh token expirado o revocado permanentemente
-            // "invalid_grant" es el código estándar OAuth 2.0 para refresh token inválido/expirado
-            if (errorMessage.includes('invalid_grant') ||
+            // Detectar si el refresh token ha expirado o ha sido revocado (invalid_grant)
+            if (
+                errorMessage.includes('invalid_grant') ||
                 errorMessage.includes('expirado') ||
                 errorMessage.includes('invalid_token') ||
-                errorString.includes('400') || // Bad Request a menudo indica token inválido
-                errorString.includes('401')) { // Unauthorized
-
-                logger.error({ platform, connectionId: connection.id },
-                    'Refresh token expired or revoked, connection requires re-authentication');
-
+                errorString.includes('400') || 
+                errorString.includes('401')
+            ) {
+                logger.error({ platform, connectionId: connection.id }, 'Refresh token revoked, clearing connection');
+                
                 try {
-                    // Desactivar la conexión marcándola sin tokens válidos
-                    // Esto forzará al usuario a reconectar en el frontend
                     connection.accessToken = '';
                     connection.refreshToken = '';
                     connection.expiryDate = null;
                     await connection.save();
                 } catch (saveError) {
-                    logger.error({ err: saveError, connectionId: connection.id },
-                        'Failed to clear invalid tokens from connection');
+                    logger.error({ err: saveError }, 'Failed to clear invalid tokens');
                 }
             }
 
-            logger.error(
-                { err: error, platform, connectionId: connection.id },
-                'Failed to refresh token'
-            );
-            return null; // Es mejor devolver null que un token que sabemos que no funciona
+            logger.error({ err: error, platform }, 'Failed to refresh token');
+            return null;
         }
     }
 }

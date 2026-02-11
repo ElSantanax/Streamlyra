@@ -40,12 +40,7 @@ const AuthCallback = () => {
                         // Validar que el codeVerifier existe antes de intentar el intercambio
                         if (!codeVerifier) {
                             console.error('Falta code_verifier para Kick. Posible pérdida de sesión local.');
-                            try {
-                                const toastModule = await import('../lib/notifications');
-                                toastModule.toast.error('La sesión de autenticación expiró. Por favor, intenta conectar nuevamente.');
-                            } catch (e) {
-                                console.error('Error cargando notificaciones', e);
-                            }
+                            toast.error('La sesión de autenticación expiró. Por favor, intenta conectar nuevamente.');
 
                             // Redirigir de vuelta para intentar de nuevo
                             const redirectUrl = localStorage.getItem('auth_redirect');

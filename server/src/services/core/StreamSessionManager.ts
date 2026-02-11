@@ -32,7 +32,7 @@ export class StreamSessionManager {
 
     /**
      * Actualiza el estado de vivo de una plataforma para un usuario
-     * @returns True si el estado global de la sesión cambió (empezó o terminó)
+     * True si el estado global de la sesión cambió (empezó o terminó)
      */
     updateLiveStatus(userId: string, platform: string, isLive: boolean): { isSessionActive: boolean; startTime: string | null } {
         const session = this.getOrCreateSession(userId);

@@ -1,25 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { authService } from '../services/api/auth.service';
 import { sessionManager } from '../services/session';
 import { isProtectedRoute, isPublicAuthRoute } from '../config/routes';
+import { AuthContext, type AuthStatus, type AuthContextValue } from '../hooks/useAuthContext';
 import type { User } from '../types';
-
-export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated';
-
-export interface AuthContextValue {
-  user: User | null;
-  status: AuthStatus;
-  isChecking: boolean;
-  isAuthenticated: boolean;
-  login: (userData: User) => void;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<User | null>;
-  requireAuth: () => boolean;
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const getInitialAuthStatus = (user: User | null, currentPath: string): AuthStatus => {
   if (user) return 'authenticated';
@@ -45,8 +31,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = useCallback(
     (userData: User) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { token: _token, ...safeUser } = userData as unknown as Record<string, unknown>;
+      const safeUser = { ...userData as unknown as Record<string, unknown> };
+      delete safeUser.token;
       setUser(safeUser as unknown as User);
       setStatus('authenticated');
     },
@@ -161,13 +147,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAuthContext = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth debe usarse dentro de <AuthProvider>.');
-  }
-  return ctx;
 };

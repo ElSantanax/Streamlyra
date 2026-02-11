@@ -153,7 +153,7 @@ export class TikTokChatProvider implements ChatProvider {
 
         if (!isStillValid) {
             logger.info({ userId, username, flowId }, 'TikTok: Flow invalidated during connection, aborting zombie');
-            await this.connectionManager.disconnect(tiktokConnection);
+            this.connectionManager.disconnect(tiktokConnection);
             return;
         }
 
@@ -281,7 +281,7 @@ export class TikTokChatProvider implements ChatProvider {
             const active = this.stateManager.getActiveConnection(userId);
             if (active) {
                 active.removeAllListeners();
-                await this.connectionManager.disconnect(active);
+                this.connectionManager.disconnect(active);
             }
         } catch (error) {
             logger.error({ err: error, userId }, 'TikTok: Error during client disconnection');
