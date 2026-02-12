@@ -101,7 +101,7 @@ export class KickManager {
                 'Kick Webhooks: Suscribiendo/Actualizando webhook en la plataforma'
             );
 
-            await KickService.subscribeToWebhook(accessToken, broadcasterId, callbackUrl);
+            await KickService.subscribeToWebhook(accessToken, broadcasterId);
 
             if (existingWebhook) {
                 // Actualizar el existente

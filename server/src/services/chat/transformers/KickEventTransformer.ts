@@ -125,12 +125,12 @@ export class KickEventTransformer extends BaseEventTransformer {
     }
 
     transformFollow(event: KickFollowEvent): NormalizedChatMessage {
-        const { username, created_at } = event;
+        const { follower, created_at } = event;
 
         return {
             id: `kick-follow-${Date.now()}`,
             platform: 'kick',
-            user: username,
+            user: follower.username,
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date(created_at || Date.now())),
@@ -138,7 +138,6 @@ export class KickEventTransformer extends BaseEventTransformer {
         };
     }
 
-     
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
     }

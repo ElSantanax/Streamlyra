@@ -78,19 +78,6 @@ export interface KickChannelResponse {
     data: KickChannel[];
 }
 
-export interface KickChatroom {
-    id: number;
-    channel_id: number;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface KickChannelDetailResponse {
-    id: number;
-    user_id: number;
-    slug: string;
-    chatroom?: KickChatroom;
-}
 
 // Webhook Events
 export interface KickSubscriptionEvent {
@@ -108,11 +95,17 @@ export interface KickGiftEvent {
 }
 
 export interface KickFollowEvent {
-    broadcaster_user_id: number;
-    username: string;
-    follower_user_id: number;
-    channel_id: number;
+    broadcaster: KickBroadcaster;
+    follower: KickUser;
     created_at: string;
 }
 
-export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent | KickFollowEvent;
+export interface KickLivestreamStatusEvent {
+    broadcaster: KickBroadcaster;
+    is_live: boolean;
+    title: string;
+    started_at?: string;
+    ended_at?: string;
+}
+
+export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent | KickFollowEvent | KickLivestreamStatusEvent;

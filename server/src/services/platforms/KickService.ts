@@ -10,8 +10,7 @@ import {
     KickOAuthUser,
     KickOAuthUserResponse,
     KickChannel,
-    KickChannelResponse,
-    KickChannelDetailResponse
+    KickChannelResponse
 } from '../../types/kick.types';
 
 export class KickService extends BasePlatformService {
@@ -21,7 +20,6 @@ export class KickService extends BasePlatformService {
     private static readonly TIMEOUT = 10000;
     private static readonly TOKEN_URL = 'https://id.kick.com/oauth/token';
     private static readonly API_BASE_V1 = 'https://api.kick.com/public/v1';
-    private static readonly API_BASE_V2 = 'https://kick.com/api/v2';
     private static readonly USER_URL = `${KickService.API_BASE_V1}/users`;
     private static readonly CHANNEL_URL = `${KickService.API_BASE_V1}/channels`;
     private static readonly CHAT_URL = `${KickService.API_BASE_V1}/chat`;
@@ -131,39 +129,28 @@ export class KickService extends BasePlatformService {
         }
     }
 
-    /**
-     * Obtiene los detalles completos del canal incluyendo el chatroom
-     */
-    static async getChannelDetails(channelSlug: string, accessToken: string): Promise<KickChannelDetailResponse> {
-        try {
-            const response = await axios.get<KickChannelDetailResponse>(
-                `${KickService.API_BASE_V2}/channels/${channelSlug}`,
-                {
-                    headers: KickService.getAuthHeaders(accessToken),
-                    timeout: KickService.TIMEOUT
-                }
-            );
-            return response.data;
-        } catch (error) {
-            logger.error({ err: error, platform: 'kick', channelSlug }, 'Error fetching Kick channel details');
-            throw error;
-        }
-    }
 
     /**
      * Suscribe a eventos de chat mediante webhook
+     * Según la documentación oficial, el callback_url se configura en el dashboard de Kick
      */
-    static async subscribeToWebhook(accessToken: string, broadcasterUserId: string, callbackUrl: string) {
+    static async subscribeToWebhook(accessToken: string, broadcasterUserId: string) {
         try {
-            logger.debug({ platform: 'kick', broadcasterUserId, callbackUrl }, 'Subscribing to Kick chat webhook');
+            logger.debug({ platform: 'kick', broadcasterUserId }, 'Subscribing to Kick events');
 
             return await axios.post(
                 KickService.EVENTS_URL,
                 {
                     broadcaster_user_id: parseInt(broadcasterUserId),
-                    events: [{ name: 'chat.message.sent', version: 1 }],
-                    method: 'webhook',
-                    callback_url: callbackUrl
+                    events: [
+                        { name: 'chat.message.sent', version: 1 },
+                        { name: 'channel.followed', version: 1 },
+                        { name: 'channel.subscription.new', version: 1 },
+                        { name: 'channel.subscription.renewal', version: 1 },
+                        { name: 'channel.subscription.gifts', version: 1 },
+                        { name: 'livestream.status.updated', version: 1 }
+                    ],
+                    method: 'webhook'
                 },
                 {
                     headers: KickService.getAuthHeaders(accessToken),
@@ -171,7 +158,7 @@ export class KickService extends BasePlatformService {
                 }
             );
         } catch (error) {
-            logger.error({ err: error, platform: 'kick', broadcasterUserId }, 'Error subscribing to Kick chat webhook');
+            logger.error({ err: error, platform: 'kick', broadcasterUserId }, 'Error subscribing to Kick events');
             throw error;
         }
     }
@@ -179,16 +166,23 @@ export class KickService extends BasePlatformService {
     /**
      * Envía un mensaje al chat de Kick
      */
-    async sendChatMessage(accessToken: string, channelId: string, message: string): Promise<string> {
+    async sendChatMessage(
+        accessToken: string,
+        channelId: string,
+        message: string,
+        type: 'bot' | 'user' = 'user',
+        replyToMessageId?: string
+    ): Promise<string> {
         try {
-            logger.debug({ platform: 'kick', channelId, messageLength: message.length }, 'Sending message to Kick official API');
+            logger.debug({ platform: 'kick', channelId, messageLength: message.length, type }, 'Sending message to Kick official API');
 
             const response = await axios.post(
                 KickService.CHAT_URL,
                 {
                     content: message,
-                    type: 'user',
-                    broadcaster_user_id: parseInt(channelId)
+                    type: type,
+                    broadcaster_user_id: parseInt(channelId),
+                    reply_to_message_id: replyToMessageId
                 },
                 {
                     headers: KickService.getAuthHeaders(accessToken),
@@ -197,9 +191,9 @@ export class KickService extends BasePlatformService {
             );
 
             // Kick API retorna el message ID en data.data.message_id
-            const responseData = response.data as { data?: { message_id?: string | number } };
+            const responseData = response.data as { data?: { message_id?: string | number; is_sent?: boolean } };
             const messageId = responseData.data?.message_id || `kick-${Date.now()}`;
-            logger.info({ platform: 'kick', channelId, messageId }, 'Message sent successfully to Kick');
+            logger.info({ platform: 'kick', channelId, messageId, isSent: responseData.data?.is_sent }, 'Message sent successfully to Kick');
             return messageId.toString();
         } catch (error) {
             this.handleKickApiError(error, 'sendChatMessage');

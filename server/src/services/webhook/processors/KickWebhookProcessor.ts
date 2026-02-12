@@ -3,7 +3,7 @@
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { KickWebhook } from '../../../models/KickWebhook.model';
-import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickWebhookPayload } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickWebhookPayload, KickLivestreamStatusEvent } from '../../../types/kick.types';
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
@@ -19,14 +19,8 @@ export class KickWebhookProcessor {
         try {
             // Kick a veces envuelve el payload en un objeto 'data'
             const data = 'data' in payload ? payload.data : payload;
-            let broadcasterKickId: string | undefined;
-
-            if (eventType === 'channel.follow') {
-                broadcasterKickId = (data as KickFollowEvent).broadcaster_user_id?.toString();
-            } else {
-                const broadcaster = (data as KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent).broadcaster;
-                broadcasterKickId = broadcaster?.user_id?.toString();
-            }
+            const broadcaster = (data as KickWebhookPayload).broadcaster;
+            const broadcasterKickId = broadcaster?.user_id?.toString();
 
             if (!broadcasterKickId) {
                 logger.warn({
@@ -42,8 +36,11 @@ export class KickWebhookProcessor {
                 chatMessage = this.transformer.transformSubscription(data as KickSubscriptionEvent);
             } else if (eventType === 'channel.subscription.gifts') {
                 chatMessage = this.transformer.transformGift(data as KickGiftEvent);
-            } else if (eventType === 'channel.follow') {
+            } else if (eventType === 'channel.followed') {
                 chatMessage = this.transformer.transformFollow(data as KickFollowEvent);
+            } else if (eventType === 'livestream.status.updated') {
+                // No transform needed for chat_message, we handles it differently
+                chatMessage = null;
             } else {
                 chatMessage = this.transformer.transformMessage(data as KickChatMessagePayload);
             }
@@ -78,7 +75,7 @@ export class KickWebhookProcessor {
             }
 
             logger.info(
-                { userId: connection.userId, platform: 'kick', user: chatMessage.user, eventType },
+                { userId: connection.userId, platform: 'kick', user: chatMessage?.user || 'Sistema', eventType },
                 'Procesando evento de Kick recibido vía webhook'
             );
 
@@ -88,13 +85,41 @@ export class KickWebhookProcessor {
             );
 
             // OPTIMIZACIÓN 4: Emisión directa
-            const emitResult = SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
+            if (chatMessage) {
+                const emitResult = SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
 
-            if (!emitResult) {
-                logger.warn(
-                    { userId: connection.userId, platform: 'kick' },
-                    'Evento de Kick NO emitido al dashboard: Usuario sin sockets activos o bloqueado por eco'
+                if (!emitResult) {
+                    logger.warn(
+                        { userId: connection.userId, platform: 'kick' },
+                        'Evento de Kick NO emitido al dashboard: Usuario sin sockets activos o bloqueado por eco'
+                    );
+                }
+            } else if (eventType === 'livestream.status.updated') {
+                const statusData = data as KickLivestreamStatusEvent;
+                logger.info(
+                    { userId: connection.userId, isLive: statusData.is_live, title: statusData.title },
+                    'Actualizando estado de stream de Kick vía webhook'
                 );
+
+                SafeSocketEmitter.emitConnectionStatus(
+                    this.io,
+                    connection.userId,
+                    'kick',
+                    'connected',
+                    statusData.is_live ? 'En vivo' : 'Desconectado',
+                    statusData.is_live
+                );
+
+                // Si se apaga el stream, forzar contador a 0
+                if (!statusData.is_live) {
+                    SafeSocketEmitter.emitViewersUpdate(
+                        this.io,
+                        connection.userId,
+                        'kick',
+                        0,
+                        false
+                    );
+                }
             }
 
         } catch (error) {
