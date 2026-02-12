@@ -6,17 +6,13 @@ export default defineConfig({
   description: "Sitio de documentación de Streamlyra",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: 'Inicio', link: '/' },
-      { text: 'Ejemplos', link: '/markdown-examples' }
-    ],
+    nav: [],
 
     sidebar: [
       {
-        text: 'Ejemplos',
+        text: 'Documentación',
         items: [
-          { text: 'Ejemplos de Markdown', link: '/markdown-examples' },
-          { text: 'Ejemplos de API', link: '/api-examples' }
+          { text: 'Configuración del Entorno', link: '/configuracion-ejemplos' }
         ]
       }
     ],

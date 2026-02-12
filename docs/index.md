@@ -1,26 +1,85 @@
----
-# https://vitepress.dev/reference/default-theme-home-page
-layout: home
+# Markdown Extension Examples
 
-hero:
-  name: "Streamlyra"
-  text: "Centralizador de Chats Multiplataforma"
-  tagline: Unifica los chats de tus directos de Twitch, YouTube, TikTok y Kick en una sola interfaz
-  actions:
-    - theme: brand
-      text: Ver Documentación
-      link: /markdown-examples
-    - theme: alt
-      text: Guía de API
-      link: /api-examples
+This page demonstrates some of the built-in markdown extensions provided by VitePress.
 
-features:
-  - title: Chats Centralizados
-    details: Visualiza todos los chats de tus directos en una sola interfaz, sin cambiar entre plataformas.
-  - title: Sincronización en Tiempo Real
-    details: Recibe mensajes y eventos instantáneamente de todas tus plataformas conectadas.
-  - title: Conexiones Seguras
-    details: OAuth2 nativo con cada plataforma y credenciales encriptadas para máxima seguridad.
-  - title: Gestión Eficiente
-    details: Modera y responde a todos tus chats desde un solo lugar con herramientas unificadas.
----
+## Syntax Highlighting
+
+VitePress provides Syntax Highlighting powered by [Shiki](https://github.com/shikijs/shiki), with additional features like line-highlighting:
+
+**Input**
+
+````md
+```js{4}
+export default {
+  data () {
+    return {
+      msg: 'Highlighted!'
+    }
+  }
+}
+```
+````
+
+**Output**
+
+```js{4}
+export default {
+  data () {
+    return {
+      msg: 'Highlighted!'
+    }
+  }
+}
+```
+
+## Custom Containers
+
+**Input**
+
+```md
+::: info
+This is an info box.
+:::
+
+::: tip
+This is a tip.
+:::
+
+::: warning
+This is a warning.
+:::
+
+::: danger
+This is a dangerous warning.
+:::
+
+::: details
+This is a details block.
+:::
+```
+
+**Output**
+
+::: info
+This is an info box.
+:::
+
+::: tip
+This is a tip.
+:::
+
+::: warning
+This is a warning.
+:::
+
+::: danger
+This is a dangerous warning.
+:::
+
+::: details
+This is a details block.
+:::
+
+## More
+
+Check out the documentation for the [full list of markdown extensions](https://vitepress.dev/guide/markdown).
