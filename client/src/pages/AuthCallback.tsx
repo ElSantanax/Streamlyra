@@ -21,7 +21,29 @@ const AuthCallback = () => {
 
         if (error) {
             console.error('Error de autenticación:', error);
-            navigate('/login');
+
+            // Limpiar datos temporales de Kick si existen
+            if (state.startsWith('kick')) {
+                localStorage.removeItem('kick_verifier');
+            }
+
+            const isCancel = error === 'access_denied' || error === 'user_cancelled';
+            const message = isCancel
+                ? 'Conexión cancelada por el usuario'
+                : `Error de autenticación: ${error}`;
+
+            toast.error(message);
+
+            // Si ya tiene sesión (está vinculando), volver al origen en lugar de login
+            const hasSession = localStorage.getItem('user') !== null;
+            const redirectUrl = localStorage.getItem('auth_redirect');
+            localStorage.removeItem('auth_redirect');
+
+            if (hasSession) {
+                navigate(redirectUrl || '/dashboard');
+            } else {
+                navigate('/login');
+            }
             return;
         }
 
@@ -84,11 +106,11 @@ const AuthCallback = () => {
                     toast.error(`Error al conectar: ${errorMessage}`);
 
                     // Si ya tengo sesión (estoy vinculando), volver al dashboard/origen en lugar de login
-                    // Verificamos si hay un usuario en el contexto o localStorage
                     const hasSession = localStorage.getItem('user') !== null;
+                    const redirectUrl = localStorage.getItem('auth_redirect');
+                    localStorage.removeItem('auth_redirect');
+
                     if (hasSession) {
-                        const redirectUrl = localStorage.getItem('auth_redirect');
-                        localStorage.removeItem('auth_redirect');
                         navigate(redirectUrl || '/dashboard');
                     } else {
                         navigate('/login');
@@ -98,7 +120,13 @@ const AuthCallback = () => {
 
             authenticate();
         } else {
-            navigate('/login');
+            // Si no hay código ni error, y el usuario ya tiene sesión, mandarlo al dashboard
+            const hasSession = localStorage.getItem('user') !== null;
+            if (hasSession) {
+                navigate('/dashboard');
+            } else {
+                navigate('/login');
+            }
         }
     }, [searchParams, navigate, login]);
 
