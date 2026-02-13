@@ -15,4 +15,9 @@ export class WebhookProcessor {
         const processor = WebhookProcessorFactory.getProcessor('kick', this.io) as WebhookProcessorInterface;
         await processor.process(payload, eventType);
     }
+
+    async processTwitchEvent(payload: unknown, eventType: string): Promise<void> {
+        const processor = WebhookProcessorFactory.getProcessor('twitch', this.io) as WebhookProcessorInterface;
+        await processor.process(payload, eventType);
+    }
 }

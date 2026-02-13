@@ -1,4 +1,4 @@
-import { TwitchFollower } from '../../../types/twitch.types';
+import { TwitchFollowEventSub, TwitchSubEventSub, TwitchRaidEventSub, TwitchChatMessageEventSub } from '../../../types/twitch.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -6,12 +6,16 @@ export class TwitchEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'twitch';
 
     transformMessage(_data: unknown): NormalizedChatMessage {
-        throw new Error('Use transformChatMessage(tags, message) instead');
+        throw new Error('Use transformChatMessage(tags, message) or transformEventSubChatMessage(event) instead');
     }
 
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
-        throw new Error('Use transformSubscription, transformResub, or transformCheer instead');
+        throw new Error('Use EventSub specific transformation methods');
     }
+
+    /**
+     * MÉTODOS IRC (Compatibilidad con tmi.js)
+     */
 
     transformChatMessage(tags: Record<string, unknown>, message: string): NormalizedChatMessage {
         const emotes = this.parseEmotes(tags.emotes, message);
@@ -34,9 +38,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
         };
     }
 
-    /**
-     * Parsea los emotes de Twitch desde tags.emotes
-     */
     private parseEmotes(emotesData: unknown, message: string): Array<{
         id: string;
         name: string;
@@ -64,8 +65,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
                 const [start, end] = pos.split('-').map(Number);
                 if (!isNaN(start) && !isNaN(end)) {
                     parsedPositions.push([start, end]);
-
-                    // Extraer el nombre del emote del mensaje (solo una vez)
                     if (!emoteName && message) {
                         emoteName = message.substring(start, end + 1);
                     }
@@ -85,89 +84,86 @@ export class TwitchEventTransformer extends BaseEventTransformer {
         return emotes;
     }
 
-    transformSubscription(username: string, message: string, tags: Record<string, unknown>): NormalizedChatMessage {
-        return {
-            id: (tags?.['id'] as string) || Date.now().toString(),
-            platform: 'twitch',
-            user: username,
-            message: message || '',
-            specialMessage: '¡NUEVA SUSCRIPCIÓN! 🥳',
-            time: this.formatTime(new Date()),
-            isSub: true
-        };
-    }
+    /**
+     * --- MÉTODOS EVENTSUB (Webhooks) ---
+     */
 
-    transformResub(username: string, message: string, tags: Record<string, unknown>): NormalizedChatMessage {
+    transformEventSubFollow(event: TwitchFollowEventSub): NormalizedChatMessage {
+        const followedAtTs = new Date(event.followed_at).getTime();
         return {
-            id: (tags?.['id'] as string) || Date.now().toString(),
+            id: `twitch-follow-${event.user_id}-${followedAtTs}`,
             platform: 'twitch',
-            user: username,
-            message: message || '',
-            specialMessage: '¡RE-SUSCRIPCIÓN! 🔥',
-            time: this.formatTime(new Date()),
-            isSub: true
-        };
-    }
-
-    transformCheer(userstate: Record<string, unknown>, message: string): NormalizedChatMessage {
-        return {
-            id: (userstate.id as string) || Date.now().toString(),
-            platform: 'twitch',
-            user: (userstate['display-name'] as string) || (userstate.username as string) || 'Unknown',
-            message: message || '',
-            specialMessage: `¡HA ENVIADO ${userstate.bits} BITS! 💎`,
-            time: this.formatTime(new Date())
-        };
-    }
-
-    transformSubGift(username: string, recipientName: string, tags: Record<string, unknown>): NormalizedChatMessage {
-        return {
-            id: (tags?.['id'] as string) || Date.now().toString(),
-            platform: 'twitch',
-            user: username,
-            message: '',
-            specialMessage: `¡REGALÓ UNA SUB A ${recipientName}! 🎁`,
-            time: this.formatTime(new Date()),
-            color: '#9146FF',
-            isSub: true
-        };
-    }
-
-    transformSubMysteryGift(username: string, numbOfSubs: number, tags: Record<string, unknown>): NormalizedChatMessage {
-        return {
-            id: (tags?.['id'] as string) || Date.now().toString(),
-            platform: 'twitch',
-            user: username,
-            message: '',
-            specialMessage: `¡REGALÓ ${numbOfSubs} SUBS A LA COMUNIDAD! 🎁`,
-            time: this.formatTime(new Date()),
-            color: '#9146FF',
-            isSub: true
-        };
-    }
-
-    transformRaid(username: string, viewers: number): NormalizedChatMessage {
-        return {
-            id: `raid-${Date.now()}`,
-            platform: 'twitch',
-            user: username,
-            message: '',
-            specialMessage: `¡HIZO UNA RAID CON ${viewers} ESPECTADORES! 🚨`,
-            time: this.formatTime(new Date()),
-            color: '#9146FF',
-            isSpecial: true
-        };
-    }
-
-    transformFollow(follower: TwitchFollower): NormalizedChatMessage {
-        return {
-            id: `twitch-follow-${follower.user_id}-${Date.now()}`,
-            platform: 'twitch',
-            user: follower.user_name,
+            user: event.user_name,
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
-            time: this.formatTime(new Date(follower.followed_at || Date.now())),
-            color: '#9146FF'
+            time: this.formatTime(new Date(event.followed_at)),
+            color: '#9146FF',
+            userId: event.user_id
+        };
+    }
+
+    transformEventSubSubscription(event: TwitchSubEventSub): NormalizedChatMessage {
+        return {
+            id: `twitch-sub-${event.user_id}-${Date.now()}`,
+            platform: 'twitch',
+            user: event.user_name,
+            message: '',
+            specialMessage: event.is_gift ? '🎁 ¡Suscripción de Regalo!' : '🥳 ¡Nueva Suscripción!',
+            time: this.formatTime(new Date()),
+            color: '#9146FF',
+            isSub: true,
+            userId: event.user_id
+        };
+    }
+
+    transformEventSubRaid(event: TwitchRaidEventSub): NormalizedChatMessage {
+        return {
+            id: `twitch-raid-${event.from_broadcaster_user_id}-${Date.now()}`,
+            platform: 'twitch',
+            user: event.from_broadcaster_user_name,
+            message: '',
+            specialMessage: `🚨 ¡RAID CON ${event.viewers} ESPECTADORES!`,
+            time: this.formatTime(new Date()),
+            color: '#9146FF',
+            isSpecial: true,
+            userId: event.from_broadcaster_user_id
+        };
+    }
+
+    transformEventSubChatMessage(event: TwitchChatMessageEventSub): NormalizedChatMessage {
+        const emotes = (event.message.fragments || [])
+            .filter(f => f.type === 'emote' && f.emote)
+            .map(f => {
+                const emote = f.emote!;
+                return {
+                    id: emote.id,
+                    name: f.text,
+                    url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/1.0`,
+                    positions: [] as Array<[number, number]>
+                };
+            });
+
+        // Calcular total de bits si hay cheermotes
+        const totalBits = (event.message.fragments || [])
+            .filter(f => f.type === 'cheermote' && f.cheermote)
+            .reduce((acc, f) => acc + (f.cheermote?.bits || 0), 0);
+
+        return {
+            id: event.message_id,
+            platform: 'twitch',
+            user: event.chatter_user_name,
+            message: event.message.text,
+            time: this.formatTime(new Date()),
+            color: event.color || '#9146FF',
+            isMod: event.badges?.some(b => b.set_id === 'moderator') || false,
+            isSub: event.badges?.some(b => b.set_id === 'subscriber' || b.set_id === 'founder') || false,
+            isVIP: event.badges?.some(b => b.set_id === 'vip') || false,
+            isOwner: event.badges?.some(b => b.set_id === 'broadcaster') || false,
+            messageId: event.message_id,
+            userId: event.chatter_user_id,
+            roomId: event.broadcaster_user_id,
+            emotes: emotes.length > 0 ? emotes : undefined,
+            bits: totalBits > 0 ? totalBits : undefined
         };
     }
 }

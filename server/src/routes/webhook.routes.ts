@@ -2,7 +2,8 @@
 
 import { Router } from 'express';
 import { WebhookController } from '../controllers/webhook.controller';
-import { validateKickWebhook } from '../middleware/webhook.middleware';
+import { validateKickWebhook } from '../middleware/webhooks/kick.middleware';
+import { validateTwitchWebhook } from '../middleware/webhooks/twitch.middleware';
 import { logger } from '../utils/logger';
 
 export const createWebhookRoutes = (webhookController: WebhookController) => {
@@ -11,6 +12,7 @@ export const createWebhookRoutes = (webhookController: WebhookController) => {
     logger.debug({}, 'Configurando rutas de webhooks');
 
     router.post('/kick', validateKickWebhook, webhookController.handleKickWebhook);
+    router.post('/twitch', validateTwitchWebhook, webhookController.handleTwitchWebhook);
 
     return router;
 };

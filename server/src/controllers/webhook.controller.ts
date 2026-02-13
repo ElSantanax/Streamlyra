@@ -33,13 +33,14 @@ export class WebhookController {
             throw new AppError('Webhook data not found', 400);
         }
 
-        if (platform !== 'kick') {
-            throw new AppError(`Platform ${platform} is not supported for webhooks`, 400);
-        }
-
         if (platform === 'kick') {
             await this.webhookProcessor.processKickEvent(
                 webhookData.body as unknown as KickWebhookPayload,
+                webhookData.eventType
+            );
+        } else if (platform === 'twitch') {
+            await this.webhookProcessor.processTwitchEvent(
+                webhookData.body,
                 webhookData.eventType
             );
         }
@@ -48,9 +49,13 @@ export class WebhookController {
 
     handleKickWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
         logger.debug('KICK WEBHOOK CONTROLLER: Procesando evento');
-
         await this.handleWebhook('kick', req, res);
-
         logger.debug('KICK WEBHOOK CONTROLLER: Evento procesado exitosamente');
+    };
+
+    handleTwitchWebhook = async (req: RequestWithWebhookData, res: Response): Promise<void> => {
+        logger.debug('TWITCH WEBHOOK CONTROLLER: Procesando evento');
+        await this.handleWebhook('twitch', req, res);
+        logger.debug('TWITCH WEBHOOK CONTROLLER: Evento procesado exitosamente');
     };
 }

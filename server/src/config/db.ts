@@ -3,11 +3,12 @@ import { config } from "./index";
 import { User } from "../models/User.model";
 import { Connection } from "../models/Connection.model";
 import { KickWebhook } from "../models/KickWebhook.model";
+import { TwitchWebhook } from "../models/TwitchWebhook.model";
 
 const db = new Sequelize(config.databaseUrl, {
     dialect: "postgres",
     logging: false,
-    models: [User, Connection, KickWebhook],
+    models: [User, Connection, KickWebhook, TwitchWebhook],
     pool: {
         max: 20,          // Máximo de conexiones en el pool
         min: 2,           // Mínimo de conexiones mantenidas

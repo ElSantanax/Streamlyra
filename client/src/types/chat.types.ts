@@ -20,6 +20,7 @@ export interface ChatMessage {
   specialMessage?: string;
   status?: MessageStatus; // Estado del mensaje (solo para mensajes propios)
   errorMessage?: string; // Mensaje de error si falló
+  bits?: number; // Donación de bits (Twitch)
   platformIds?: Record<string, string>; // IDs específicos de cada plataforma para mensajes dashboard
   // Campos adicionales para moderación
   userId?: string; // ID del usuario que envió el mensaje

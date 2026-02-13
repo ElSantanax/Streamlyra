@@ -26,9 +26,10 @@ const ChatMessage = memo(({
     onBan,
     platformIds,
     emotes,
+    bits,
 }: ChatMessageProps) => {
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
-    const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP;
+    const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP || (bits !== undefined && bits > 0);
     const isYouTube = platform === 'youtube';
     const isOwnMessage = user === 'Tú' || !!isOwner;
     const isTikTok = platform === 'tiktok';
@@ -71,6 +72,13 @@ const ChatMessage = memo(({
                         {isMod && <UserBadge type="mod" isYouTube={isYouTube} />}
                         {isVIP && <UserBadge type="vip" isYouTube={isYouTube} />}
                         {isSub && <UserBadge type="sub" isYouTube={isYouTube} />}
+
+                        {bits !== undefined && bits > 0 && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-500 animate-pulse-slow">
+                                <span className="material-symbols-outlined text-[14px]">diamond</span>
+                                <span className="text-[10px] md:text-xs font-black">{bits}</span>
+                            </div>
+                        )}
 
                         <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
                         <StatusIndicator status={status} errorMessage={errorMessage} />

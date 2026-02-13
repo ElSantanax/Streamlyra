@@ -62,3 +62,98 @@ export interface TwitchFollowerResponse {
         cursor?: string;
     };
 }
+
+// --- Twitch EventSub (Webhooks) Types ---
+
+export interface TwitchEventSubSubscription {
+    id: string;
+    status: string;
+    type: string;
+    version: string;
+    condition: Record<string, string>;
+    transport: {
+        method: string;
+        callback: string;
+    };
+    created_at: string;
+    cost: number;
+}
+
+export interface TwitchEventSubVerificationPayload {
+    subscription: TwitchEventSubSubscription;
+    challenge: string;
+}
+
+export interface TwitchEventSubNotificationPayload<T = unknown> {
+    subscription: TwitchEventSubSubscription;
+    event: T;
+}
+
+export interface TwitchFollowEventSub {
+    user_id: string;
+    user_login: string;
+    user_name: string;
+    broadcaster_user_id: string;
+    broadcaster_user_login: string;
+    broadcaster_user_name: string;
+    followed_at: string;
+}
+
+export interface TwitchSubEventSub {
+    user_id: string;
+    user_login: string;
+    user_name: string;
+    broadcaster_user_id: string;
+    broadcaster_user_login: string;
+    broadcaster_user_name: string;
+    tier: string;
+    is_gift: boolean;
+}
+
+export interface TwitchRaidEventSub {
+    from_broadcaster_user_id: string;
+    from_broadcaster_user_login: string;
+    from_broadcaster_user_name: string;
+    to_broadcaster_user_id: string;
+    to_broadcaster_user_login: string;
+    to_broadcaster_user_name: string;
+    viewers: number;
+}
+
+export interface TwitchChatMessageEventSub {
+    broadcaster_user_id: string;
+    broadcaster_user_login: string;
+    broadcaster_user_name: string;
+    chatter_user_id: string;
+    chatter_user_login: string;
+    chatter_user_name: string;
+    message_id: string;
+    message: {
+        text: string;
+        fragments: Array<{
+            type: string;
+            text: string;
+            cheermote?: {
+                prefix: string;
+                bits: number;
+                tier: number;
+            };
+            emote?: {
+                id: string;
+                set_id: string;
+            };
+            mention?: {
+                user_id: string;
+                user_login: string;
+                user_name: string;
+            };
+        }>;
+    };
+    color: string;
+    badges: Array<{
+        set_id: string;
+        id: string;
+        info: string;
+    }>;
+    message_type: string;
+}
