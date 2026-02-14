@@ -20,9 +20,9 @@ export class YouTubeQuotaErrorHandler {
      * Maneja errores de cuota agotada
      * Marca la cuota como agotada y lanza un AppError
      */
-    static handleQuotaError(error: unknown): void {
+    static async handleQuotaError(error: unknown): Promise<void> {
         if (this.isQuotaError(error)) {
-            YouTubeQuotaManager.getInstance().markAsExhausted();
+            await YouTubeQuotaManager.getInstance().markAsExhausted();
             throw new AppError(
                 'Cuota de YouTube agotada. Intenta mañana.',
                 403

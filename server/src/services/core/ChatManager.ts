@@ -104,4 +104,17 @@ export class ChatManager {
             { rethrow: false }
         );
     }
+
+    async handleAccountDeletion(userId: string, platform: Platform): Promise<void> {
+        await withErrorHandling(
+            async () => {
+                const provider = this.getProvider(platform);
+                if (provider?.onAccountDeleted) {
+                    await provider.onAccountDeleted(userId);
+                }
+            },
+            { platform, userId, action: 'handleAccountDeletion' },
+            { rethrow: false }
+        );
+    }
 }

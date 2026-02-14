@@ -9,6 +9,7 @@ import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
+import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
@@ -63,7 +64,7 @@ export class YouTubeChatPoller {
             const quotaManager = YouTubeQuotaManager.getInstance();
             const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_LIST;
 
-            if (!quotaManager.hasQuota(cost)) {
+            if (!(await quotaManager.hasQuota(cost))) {
                 logger.warn({ userId }, 'YouTube chat polling paused: Quota exhausted');
                 this.stopPolling(userId);
                 SafeSocketEmitter.emitConnectionStatus(
@@ -90,7 +91,7 @@ export class YouTubeChatPoller {
                     timeout: 10000
                 });
 
-                quotaManager.consumeQuota(cost);
+                await quotaManager.consumeQuota(cost);
 
                 if (!this.polling.isRunning(userId)) return;
 
@@ -100,7 +101,7 @@ export class YouTubeChatPoller {
                 const newMessages = items || [];
 
                 const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
-                const adaptiveInterval = quotaManager.getAdaptiveInterval(currentInterval);
+                const adaptiveInterval = await quotaManager.getAdaptiveInterval(currentInterval);
 
                 this.distributeMessages(newMessages, userId, io, adaptiveInterval);
 
@@ -119,7 +120,7 @@ export class YouTubeChatPoller {
                         const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
 
                         if (isQuotaError) {
-                            quotaManager.markAsExhausted();
+                            await quotaManager.markAsExhausted();
                             logger.warn({ userId }, 'YouTube chat polling stopped: Quota exceeded error');
                             this.stopPolling(userId);
                             return;
@@ -128,6 +129,29 @@ export class YouTubeChatPoller {
 
                     if (status === 401 || status === 404) {
                         logger.warn({ userId, status, message: errorMessage }, 'YouTube chat polling stopped due to fatal API error');
+
+                        // Si el stream terminó (404), marcar contexto como inactivo
+                        if (status === 404) {
+                            try {
+                                await YouTubeStreamContext.update(
+                                    { isActive: false, endedAt: new Date() },
+                                    { where: { liveChatId, isActive: true } }
+                                );
+                                logger.info({ liveChatId }, 'YouTube stream context marked as inactive (404 detected)');
+
+                                // Notificar al frontend que el stream terminó
+                                SafeSocketEmitter.emitConnectionStatus(
+                                    io,
+                                    userId,
+                                    'youtube',
+                                    'waiting_stream',
+                                    'Stream finalizado'
+                                );
+                            } catch (e) {
+                                logger.error({ err: e }, 'Error marking stream context as inactive');
+                            }
+                        }
+
                         this.stopPolling(userId);
                         return;
                     }

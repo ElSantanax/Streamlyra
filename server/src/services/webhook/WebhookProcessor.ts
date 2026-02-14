@@ -20,4 +20,9 @@ export class WebhookProcessor {
         const processor = WebhookProcessorFactory.getProcessor('twitch', this.io) as WebhookProcessorInterface;
         await processor.process(payload, eventType);
     }
+
+    async processYouTubeEvent(channelId: string, xmlBody: string): Promise<void> {
+        const processor = WebhookProcessorFactory.getProcessor('youtube', this.io) as WebhookProcessorInterface;
+        await processor.process({ channelId, xmlBody });
+    }
 }

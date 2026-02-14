@@ -3,6 +3,7 @@ import { WebhookProcessor } from '../services/webhook/WebhookProcessor';
 import { AppError } from '../utils/AppError';
 import { KickWebhookPayload } from '../types/kick.types';
 import { logger } from '../utils/logger';
+import { RequestWithYouTubeWebhookData } from '../middleware/webhooks/youtube.middleware';
 
 interface WebhookData {
     signature: string;
@@ -57,5 +58,23 @@ export class WebhookController {
         logger.debug('TWITCH WEBHOOK CONTROLLER: Procesando evento');
         await this.handleWebhook('twitch', req, res);
         logger.debug('TWITCH WEBHOOK CONTROLLER: Evento procesado exitosamente');
+    };
+
+    handleYouTubeWebhook = async (req: RequestWithYouTubeWebhookData, res: Response): Promise<void> => {
+        logger.debug('YOUTUBE WEBHOOK CONTROLLER: Procesando evento');
+
+        const youtubeData = req.youtubeWebhookData;
+
+        if (!youtubeData) {
+            throw new AppError('YouTube webhook data not found', 400);
+        }
+
+        await this.webhookProcessor.processYouTubeEvent(
+            youtubeData.channelId,
+            youtubeData.body
+        );
+
+        res.status(200).send('OK');
+        logger.debug('YOUTUBE WEBHOOK CONTROLLER: Evento procesado exitosamente');
     };
 }

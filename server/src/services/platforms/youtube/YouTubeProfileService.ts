@@ -29,7 +29,7 @@ export class YouTubeProfileService {
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHANNEL_INFO;
 
         // Si no hay cuota, usar perfil básico del token JWT
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             logger.warn({ platform: this.platformName }, 'YouTube quota exhausted, using basic profile from token');
             return YouTubeTokenDecoder.getBasicProfileFromToken(accessToken);
         }
@@ -46,7 +46,7 @@ export class YouTubeProfileService {
                 }
             );
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
             const items = userResponse.data.items;
 

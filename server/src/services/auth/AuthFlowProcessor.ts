@@ -84,6 +84,7 @@ export class AuthFlowProcessor {
         logger.info({ userId, platform }, 'Processing platform disconnection');
 
         await this.chatManager.disconnectProvider(userId, platform);
+        await this.chatManager.handleAccountDeletion(userId, platform);
         await this.connectionService.removeConnection(userId, platform);
 
         logger.info({ userId, platform }, 'Platform disconnected successfully');

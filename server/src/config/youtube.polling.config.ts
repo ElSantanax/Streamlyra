@@ -5,8 +5,8 @@
 export const YouTubePollingConfig = {
     CHAT_POLLING_INTERVAL: 9000,
     VIEWER_POLLING_INTERVAL: 90000,
-    AUTO_DISCOVERY_INTERVAL: 20000,        // Intervalo para intentos automáticos iniciales
-    AUTO_DISCOVERY_MAX_ATTEMPTS: 3,        // Máximo 3 intentos automáticos
+    AUTO_DISCOVERY_INTERVAL: 10000, // Intervalo 10s para mayor respuesta
+    AUTO_DISCOVERY_MAX_ATTEMPTS: 6, // 6 intentos (total 1min) para dar tiempo a la API
     DAILY_QUOTA_LIMIT: 10000,
     OPERATION_COSTS: {
         CHAT_MESSAGE_SEND: 50,    // liveChatMessages.insert

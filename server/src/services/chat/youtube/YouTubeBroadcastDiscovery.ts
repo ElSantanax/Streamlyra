@@ -5,13 +5,41 @@ import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtu
 import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
+import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 
 export class YouTubeBroadcastDiscovery {
-    async findLiveBroadcast(accessToken: string): Promise<YouTubeBroadcast | null> {
+    async findLiveBroadcast(accessToken: string, channelId?: string): Promise<YouTubeBroadcast | null> {
+        // 1. Verificar contexto persistente primero (Optimización Quota)
+        if (channelId) {
+            const context = await YouTubeStreamContext.findOne({
+                where: { channelId, isActive: true }
+            });
+
+            if (context) {
+                logger.debug({ channelId, videoId: context.videoId }, 'Using cached YouTube stream context (Quota saved)');
+                // Devolver estructura compatible con YouTubeBroadcast
+                return {
+                    id: context.videoId,
+                    snippet: {
+                        liveChatId: context.liveChatId,
+                        title: 'Cached Stream Context',
+                        channelId: context.channelId,
+                        publishedAt: context.startedAt.toISOString(),
+                        description: '',
+                        thumbnails: { default: { url: '' }, medium: { url: '' }, high: { url: '' } },
+                        channelTitle: '',
+                    },
+                    status: {
+                        lifeCycleStatus: 'live'
+                    }
+                } as unknown as YouTubeBroadcast;
+            }
+        }
+
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.BROADCAST_LIST;
 
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             logger.warn('YouTube broadcast discovery paused: Quota exhausted');
             throw new Error('YOUTUBE_QUOTA_EXCEEDED');
         }
@@ -19,33 +47,46 @@ export class YouTubeBroadcastDiscovery {
         try {
             const response = await axios.get<YouTubeBroadcastResponse>('https://www.googleapis.com/youtube/v3/liveBroadcasts', {
                 params: {
-                    part: 'snippet',
-                    broadcastStatus: 'active',
+                    part: 'snippet,status',
+                    mine: true,
+                    broadcastType: 'all',
                     maxResults: 10
                 },
                 headers: { Authorization: `Bearer ${accessToken}` },
                 timeout: 10000
             });
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
             const items = response.data.items || [];
 
-            // Diagnóstico para ver qué devuelve la API
+            // Diagnóstico detallado para entender por qué no se detecta
             logger.info({
-                count: items.length,
-                statuses: items.map(i => i.status?.lifeCycleStatus)
-            }, 'YouTube Discovery Diagnostic');
+                platform: 'youtube',
+                foundCount: items.length,
+                broadcasts: items.map(i => ({
+                    id: i.id,
+                    title: i.snippet?.title,
+                    chatId: !!i.snippet?.liveChatId,
+                    status: i.status?.lifeCycleStatus
+                }))
+            }, 'YouTube: Broadcast Discovery Detailed Diagnostic');
 
-            // Seleccionar solo broadcasts con chat activo
-            const broadcast = items.find(b => b.snippet?.liveChatId) || null;
+            // Seleccionar solo broadcasts con chat activo y que estén realmente "live" o "active"
+            // Nota: Google a veces devuelve status 'active' para lo que nosotros llamamos 'live'
+            const liveBroadcasts = items.filter(b =>
+                b.snippet?.liveChatId &&
+                (b.status?.lifeCycleStatus === 'live' || b.status?.lifeCycleStatus === 'active' || b.status?.lifeCycleStatus === 'liveStarting')
+            );
+
+            const broadcast = liveBroadcasts[0] || null;
 
             if (broadcast) {
                 logger.info({
                     id: broadcast.id,
                     status: broadcast.status?.lifeCycleStatus,
                     chatId: !!broadcast.snippet?.liveChatId
-                }, 'YouTube broadcast discovered');
+                }, 'YouTube: Broadcast discovered successfully');
             }
 
             return broadcast;
@@ -66,7 +107,7 @@ export class YouTubeBroadcastDiscovery {
                 }, 'YouTube Discovery API Error');
 
                 if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
-                    quotaManager.markAsExhausted();
+                    await quotaManager.markAsExhausted();
                     throw new Error('YOUTUBE_QUOTA_EXCEEDED');
                 }
             }

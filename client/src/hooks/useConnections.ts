@@ -191,8 +191,6 @@ export const useConnections = (shouldFetch = true) => {
       sessionStartTime?: string;
       serverTime?: string;
     }) => {
-      console.log('Socket Connection Status Update:', data);
-
       const isConnected = data.status === 'connected';
 
       updateConnection(data.platform, {
@@ -233,12 +231,14 @@ export const useConnections = (shouldFetch = true) => {
 
     socket.on('connection_status', onConnectionStatus);
     socket.on('viewers_update', onViewersUpdate);
+    socket.on('youtube:stream_update', refetchSilent);
 
     return () => {
       socket.off('connection_status', onConnectionStatus);
       socket.off('viewers_update', onViewersUpdate);
+      socket.off('youtube:stream_update', refetchSilent);
     };
-  }, [updateConnection]);
+  }, [updateConnection, refetchSilent]);
 
   return {
     connections,

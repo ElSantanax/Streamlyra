@@ -106,4 +106,19 @@ export class TwitchChatProvider implements ChatProvider {
             logger.info({ userId }, 'TwitchChatProvider: Disconnect completed');
         }
     }
+
+    async onAccountDeleted(userId: string): Promise<void> {
+        logger.info({ userId }, 'TwitchChatProvider: Permanent account deletion cleanup');
+        try {
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'twitch' }
+            });
+
+            if (connection?.providerId) {
+                await this.twitchManager.deleteAllSubscriptions(connection.providerId);
+            }
+        } catch (error) {
+            logger.error({ err: error, userId }, 'TwitchChatProvider: Error during permanent deletion cleanup');
+        }
+    }
 }

@@ -19,7 +19,7 @@ export class YouTubeViewerPoller {
         const pollTask = async () => {
             if (!this.polling.isRunning(userId)) return;
 
-            if (!quotaManager.hasQuota(cost)) {
+            if (!(await quotaManager.hasQuota(cost))) {
                 logger.warn({ userId }, 'YouTube viewer polling paused: Quota exhausted');
                 this.stopPolling(userId);
                 SafeSocketEmitter.emitConnectionStatus(
@@ -39,7 +39,7 @@ export class YouTubeViewerPoller {
                     timeout: 10000
                 });
 
-                quotaManager.consumeQuota(cost);
+                await quotaManager.consumeQuota(cost);
 
                 const video = response.data.items?.[0];
                 const viewerCount = video?.liveStreamingDetails?.concurrentViewers || '0';
@@ -53,7 +53,7 @@ export class YouTubeViewerPoller {
                     isStillLive
                 );
 
-                const adaptiveInterval = quotaManager.getAdaptiveInterval(YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
+                const adaptiveInterval = await quotaManager.getAdaptiveInterval(YouTubePollingConfig.VIEWER_POLLING_INTERVAL);
                 if (this.polling.isRunning(userId)) {
                     this.polling.start(userId, pollTask, adaptiveInterval);
                 }
@@ -68,7 +68,7 @@ export class YouTubeViewerPoller {
                         const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
 
                         if (isQuotaError) {
-                            quotaManager.markAsExhausted();
+                            await quotaManager.markAsExhausted();
                             logger.warn({ userId }, 'YouTube viewer polling stopped: Quota exceeded error');
                             this.stopPolling(userId);
                             return;
@@ -77,6 +77,17 @@ export class YouTubeViewerPoller {
 
                     if (status === 401 || status === 404) {
                         logger.warn({ userId, status, message: errorMessage }, 'YouTube viewer polling stopped due to fatal API error');
+
+                        if (status === 404) {
+                            SafeSocketEmitter.emitConnectionStatus(
+                                io,
+                                userId,
+                                'youtube',
+                                'waiting_stream',
+                                'Stream finalizado'
+                            );
+                        }
+
                         this.stopPolling(userId);
                         return;
                     }

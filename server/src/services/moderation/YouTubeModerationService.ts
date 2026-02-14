@@ -26,7 +26,7 @@ export class YouTubeModerationService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_DELETE;
 
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             throw new Error('Cuota de YouTube agotada. Intenta mañana.');
         }
 
@@ -44,11 +44,11 @@ export class YouTubeModerationService {
                 timeout: 10000
             });
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
             logger.info({ messageId }, 'YouTube message deleted successfully');
         } catch (error) {
-            this.handleQuotaError(error);
+            await this.handleQuotaError(error);
 
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -86,7 +86,7 @@ export class YouTubeModerationService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_BAN_USER;
 
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             throw new Error('Cuota de YouTube agotada. Intenta mañana.');
         }
 
@@ -137,7 +137,7 @@ export class YouTubeModerationService {
                 }
             );
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
             const actionType = duration ? `timeout de ${duration} segundos` : 'ban permanente';
             logger.info({
@@ -146,7 +146,7 @@ export class YouTubeModerationService {
                 actionType
             }, 'YouTube user banned/timeout successfully');
         } catch (error) {
-            this.handleQuotaError(error);
+            await this.handleQuotaError(error);
 
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -182,13 +182,13 @@ export class YouTubeModerationService {
     /**
      * Maneja errores de cuota agotada
      */
-    private handleQuotaError(error: unknown): void {
+    private async handleQuotaError(error: unknown): Promise<void> {
         if (axios.isAxiosError(error) && error.response?.status === 403) {
             const errorData = error.response.data as { error?: { errors?: Array<{ reason?: string }> } };
             const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
 
             if (isQuotaError) {
-                YouTubeQuotaManager.getInstance().markAsExhausted();
+                await YouTubeQuotaManager.getInstance().markAsExhausted();
                 throw new Error('Cuota de YouTube agotada. Intenta mañana.');
             }
         }

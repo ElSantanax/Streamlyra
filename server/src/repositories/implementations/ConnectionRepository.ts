@@ -127,6 +127,7 @@ export class ConnectionRepository implements IConnectionRepository {
             : undefined;
 
         if (connection) {
+            connection.userId = userId; // Asegurar que el userId sea el actual (soporte para transferencia de canal entre cuentas)
             connection.accessToken = encryptedAccessToken;
             if (encryptedRefreshToken) {
                 connection.refreshToken = encryptedRefreshToken;

@@ -5,6 +5,9 @@ import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../YouTubeQuotaManager';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaErrorHandler } from './YouTubeQuotaErrorHandler';
+import { Connection } from '../../../models/Connection.model';
+import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
+import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtube.types';
 
 export class YouTubeLiveChatService {
     private readonly platformName = 'youtube';
@@ -13,7 +16,7 @@ export class YouTubeLiveChatService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.BROADCAST_LIST;
 
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             logger.warn({ platform: this.platformName }, 'Quota exhausted, skipping broadcast discovery');
             return null;
         }
@@ -25,8 +28,9 @@ export class YouTubeLiveChatService {
                 'https://www.googleapis.com/youtube/v3/liveBroadcasts',
                 {
                     params: {
-                        part: 'snippet',
-                        broadcastStatus: 'active',
+                        part: 'snippet,status',
+                        mine: true,
+                        broadcastType: 'all',
                         maxResults: 5
                     },
                     headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -34,13 +38,24 @@ export class YouTubeLiveChatService {
                 }
             );
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
-            const items = response.data.items || [];
-            const liveChatId = items[0]?.snippet?.liveChatId || null;
+            const items = (response.data as YouTubeBroadcastResponse).items || [];
+
+            // Filtrar localmente por estado 'live' ya que no podemos usar broadcastStatus con mine:true
+            const activeBroadcast = items.find((b: YouTubeBroadcast) =>
+                b.snippet?.liveChatId &&
+                (b.status?.lifeCycleStatus === 'live' || b.status?.lifeCycleStatus === 'active' || b.status?.lifeCycleStatus === 'liveStarting')
+            );
+
+            const liveChatId = activeBroadcast?.snippet?.liveChatId || null;
 
             if (!liveChatId && items.length > 0) {
-                logger.warn({ platform: this.platformName }, 'Broadcast found but liveChatId is missing. Check if chat is enabled.');
+                logger.info({
+                    platform: this.platformName,
+                    foundOther: items.length,
+                    statuses: items.map((i: YouTubeBroadcast) => i.status?.lifeCycleStatus)
+                }, 'No se encontró un directo activo con chat entre los resultados de mine:true');
             }
 
             return liveChatId;
@@ -61,7 +76,7 @@ export class YouTubeLiveChatService {
                 }, 'YouTube API Error details');
 
                 if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
-                    quotaManager.markAsExhausted();
+                    await quotaManager.markAsExhausted();
                     throw new Error('Cuota de YouTube agotada. Intenta mañana.');
                 }
 
@@ -83,7 +98,7 @@ export class YouTubeLiveChatService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHAT_MESSAGE_SEND;
 
-        if (!quotaManager.hasQuota(cost)) {
+        if (!(await quotaManager.hasQuota(cost))) {
             throw new Error('Cuota de YouTube agotada. Intenta mañana.');
         }
 
@@ -113,7 +128,7 @@ export class YouTubeLiveChatService {
                 }
             );
 
-            quotaManager.consumeQuota(cost);
+            await quotaManager.consumeQuota(cost);
 
             if (response.status !== 200) {
                 throw new Error(`YouTube API error: ${response.statusText}`);
@@ -128,7 +143,7 @@ export class YouTubeLiveChatService {
             logger.info({ platform: this.platformName, liveChatId, messageId }, 'Chat message sent successfully');
             return messageId;
         } catch (error: unknown) {
-            YouTubeQuotaErrorHandler.handleQuotaError(error);
+            await YouTubeQuotaErrorHandler.handleQuotaError(error);
 
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -150,6 +165,92 @@ export class YouTubeLiveChatService {
                 }
             }
             throw error;
+        }
+    }
+
+    /**
+     * Actualiza el contexto del stream (videoId y liveChatId) a partir de un videoId
+     * Usado principalmente por webhooks para fast-track discovery
+     */
+    async updateStreamContext(videoId: string, channelId: string): Promise<YouTubeStreamContext | null> {
+        const cost = YouTubePollingConfig.OPERATION_COSTS.VIDEO_DETAILS;
+        const quotaManager = YouTubeQuotaManager.getInstance();
+
+        if (!(await quotaManager.hasQuota(cost))) {
+            logger.warn({ platform: this.platformName }, 'Quota exhausted, skipping stream context update');
+            return null;
+        }
+
+        try {
+            logger.debug({ videoId, channelId }, 'YouTube: Updating stream context from webhook');
+
+            // Necesitamos un token válido. Buscamos cualquier usuario conectado a este canal.
+            const connection = await Connection.findOne({ where: { providerId: channelId, provider: 'youtube' } });
+
+            if (!connection) {
+                logger.debug({ channelId }, 'Webhook recibido para canal sin usuarios conectados, ignorando update de contexto');
+                return null;
+            }
+
+            const accessToken = connection.accessToken;
+
+            const response = await axios.get<{ items: Array<{ id: string, liveStreamingDetails?: { activeLiveChatId?: string }, snippet: { liveBroadcastContent: string } }> }>(
+                'https://www.googleapis.com/youtube/v3/videos',
+                {
+                    params: {
+                        part: 'snippet,liveStreamingDetails',
+                        id: videoId
+                    },
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                }
+            );
+
+            await quotaManager.consumeQuota(cost);
+
+            const item = response.data.items?.[0];
+            if (!item) {
+                logger.warn({ videoId }, 'YouTube: Video not found in videos.list during webhook update');
+                return null;
+            }
+
+            const isLive = item.snippet.liveBroadcastContent === 'live';
+            const liveChatId = item.liveStreamingDetails?.activeLiveChatId;
+
+            logger.info({
+                videoId,
+                isLive,
+                hasChat: !!liveChatId,
+                status: item.snippet.liveBroadcastContent
+            }, 'YouTube: Webhook video status check');
+
+            if (isLive && liveChatId) {
+                const [context] = await YouTubeStreamContext.upsert({
+                    channelId,
+                    videoId,
+                    liveChatId,
+                    isActive: true,
+                    startedAt: new Date()
+                });
+
+                logger.info({ channelId, videoId, liveChatId }, 'YouTube: Stream Context actualizado via Webhook (Live detectado)');
+                return context;
+            } else {
+                // Si el video deja de ser live, asegurar que el contexto se marque como inactivo
+                const [updatedCount] = await YouTubeStreamContext.update(
+                    { isActive: false, endedAt: new Date() },
+                    { where: { videoId, isActive: true } }
+                );
+
+                if (updatedCount > 0) {
+                    logger.info({ videoId }, 'YouTube: Stream Context marcado como inactivo vía Webhook (Stream finalizado o no es live)');
+                }
+            }
+
+            return null;
+
+        } catch (error) {
+            logger.error({ err: error, platform: this.platformName, videoId }, 'YouTube: Error updating stream context from webhook');
+            return null;
         }
     }
 }

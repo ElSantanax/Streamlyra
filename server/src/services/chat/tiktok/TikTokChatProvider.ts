@@ -290,4 +290,11 @@ export class TikTokChatProvider implements ChatProvider {
             this.eventListener.clearStreamConfirmation(userId);
         }
     }
+
+    async onAccountDeleted(userId: string): Promise<void> {
+        // TikTok no tiene webhooks que necesiten desuscripción global,
+        // pero aseguramos que todo rastro interno esté limpio.
+        logger.info({ userId }, 'TikTok: Permanent account deletion cleanup');
+        await this.clearInternalState(userId);
+    }
 }

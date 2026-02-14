@@ -41,13 +41,16 @@
     "typescript-eslint": "^8.53.1"
   },
   "dependencies": {
+    "@types/node-cron": "^3.0.11",
     "axios": "^1.13.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "fast-xml-parser": "^5.3.6",
     "jsonwebtoken": "^9.0.3",
+    "node-cron": "^4.2.1",
     "pg": "^8.17.1",
     "pino": "^10.3.0",
     "pino-http": "^11.0.0",

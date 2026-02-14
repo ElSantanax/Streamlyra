@@ -189,4 +189,34 @@ export class TwitchManager {
             }
         }
     }
+
+    /**
+     * Elimina todas las suscripciones de EventSub para un canal
+     */
+    async deleteAllSubscriptions(broadcasterId: string): Promise<void> {
+        try {
+            logger.info({ broadcasterId }, 'Twitch Webhooks: Eliminando todas las suscripciones por desconexión');
+
+            // 1. Obtener webhooks de la base de datos
+            const webhooks = await TwitchWebhook.findAll({
+                where: { broadcasterId }
+            });
+
+            for (const webhook of webhooks) {
+                if (webhook.subscriptionId) {
+                    await TwitchEventSubClient.deleteSubscription(webhook.subscriptionId)
+                        .catch(err => logger.error({ err, id: webhook.subscriptionId }, 'Error eliminando suscripción en Twitch API'));
+                }
+            }
+
+            // 2. Limpiar registros de la BD
+            await TwitchWebhook.destroy({
+                where: { broadcasterId }
+            });
+
+            logger.info({ broadcasterId }, 'Twitch Webhooks: Limpieza profunda completada');
+        } catch (error) {
+            logger.error({ err: error, broadcasterId }, 'Twitch Webhooks: Error durante el borrado masivo');
+        }
+    }
 }

@@ -112,4 +112,20 @@ export class KickChatProvider implements ChatProvider {
 
         logger.info({ userId }, 'KickChatProvider: Disconnect completed');
     }
+
+    async onAccountDeleted(userId: string): Promise<void> {
+        logger.info({ userId }, 'KickChatProvider: Permanent account deletion cleanup');
+        try {
+            const connection = await Connection.findOne({
+                where: { userId: String(userId), provider: 'kick' }
+            });
+
+            if (connection?.providerId) {
+                // Desactivar webhook y limpiar registros
+                await this.manager.deactivateWebhook(connection.providerId);
+            }
+        } catch (error) {
+            logger.error({ err: error, userId }, 'KickChatProvider: Error during permanent deletion cleanup');
+        }
+    }
 }

@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { WebhookController } from '../controllers/webhook.controller';
 import { validateKickWebhook } from '../middleware/webhooks/kick.middleware';
 import { validateTwitchWebhook } from '../middleware/webhooks/twitch.middleware';
+import { validateYouTubeWebhook } from '../middleware/webhooks/youtube.middleware';
 import { logger } from '../utils/logger';
 
 export const createWebhookRoutes = (webhookController: WebhookController) => {
@@ -13,6 +14,7 @@ export const createWebhookRoutes = (webhookController: WebhookController) => {
 
     router.post('/kick', validateKickWebhook, webhookController.handleKickWebhook);
     router.post('/twitch', validateTwitchWebhook, webhookController.handleTwitchWebhook);
+    router.all('/youtube', validateYouTubeWebhook, webhookController.handleYouTubeWebhook);
 
     return router;
 };

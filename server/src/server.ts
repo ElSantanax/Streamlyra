@@ -9,6 +9,7 @@ import { createWebhookRoutes } from './routes/webhook.routes';
 import { setupSocketHandlers } from './socket/socket.handler';
 import { ChatManager } from './services/core/ChatManager';
 import { AuthService } from './services/auth/AuthService';
+import { YouTubeSubscriptionRenewer } from './services/cron/YouTubeSubscriptionRenewer';
 import { AuthController } from './controllers/auth.controller';
 import { WebhookController } from './controllers/webhook.controller';
 import { WebhookProcessor } from './services/webhook/WebhookProcessor';
@@ -30,7 +31,6 @@ import { UserProfileService } from './services/auth/core/UserProfileService';
 import { AuthDTOBuilder } from './services/auth/AuthDTOBuilder';
 import { PlatformAuthHandler } from './services/auth/core/PlatformAuthHandler';
 import { UserService } from './services/user/UserService';
-
 
 import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider } from './services/chat';
 import { Platform } from './constants/platforms';
@@ -124,6 +124,10 @@ const webhookProcessor = new WebhookProcessor(io);
 const authController = new AuthController(authService);
 const webhookController = new WebhookController(webhookProcessor);
 
+// Cron Jobs
+const youtubeSubscriptionRenewer = new YouTubeSubscriptionRenewer();
+youtubeSubscriptionRenewer.start();
+
 app.use(cors({
     origin: config.frontendUrl,
     credentials: true,
@@ -158,7 +162,15 @@ app.use(pinoHttp({
 
 app.use(express.json({
     verify: (req: RequestWithRawBody, _res: Response, buf: Buffer) => {
-        req.rawBody = buf.toString();
+        if (buf && buf.length) req.rawBody = buf.toString();
+    }
+}));
+
+// Soporte para capturar rawBody en webhooks de YouTube (XML/Atom)
+app.use(express.text({
+    type: ['application/xml', 'application/atom+xml'],
+    verify: (req: RequestWithRawBody, _res: Response, buf: Buffer) => {
+        if (buf && buf.length) req.rawBody = buf.toString();
     }
 }));
 
