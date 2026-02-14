@@ -1,253 +1,186 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authService } from '../services/api/auth.service';
-import type { ConnectionInfo } from '../types';
+import type { ConnectionInfo, ConnectionStatus, ConnectionStats, ConnectionStatusUpdate, ViewersUpdate } from '../types';
 import type { PlatformKey } from '../constants/platforms';
-
 import { socket } from '../services/socket';
 
-const initialConnections: Record<string, ConnectionInfo> = {
-  twitch: { connected: false, viewers: 0 },
-  youtube: { connected: false, viewers: 0 },
-  tiktok: { connected: false, viewers: 0 },
-  kick: { connected: false, viewers: 0 },
+const initialStatus: Record<string, ConnectionStatus> = {
+  twitch: { connected: false },
+  youtube: { connected: false },
+  tiktok: { connected: false },
+  kick: { connected: false },
 };
 
-const isConnectionEqual = (a: ConnectionInfo | undefined, b: ConnectionInfo): boolean => {
-  if (!a) return false;
-  return (
-    a.connected === b.connected &&
-    a.username === b.username &&
-    a.viewers === b.viewers &&
-    a.status === b.status &&
-    a.statusMessage === b.statusMessage &&
-    a.isLive === b.isLive &&
-    a.sessionStartTime === b.sessionStartTime &&
-    a.serverTime === b.serverTime
-  );
+const initialStats: Record<string, ConnectionStats> = {
+  twitch: { viewers: 0 },
+  youtube: { viewers: 0 },
+  tiktok: { viewers: 0 },
+  kick: { viewers: 0 },
 };
 
 export const useConnections = (shouldFetch = true) => {
-  const [connections, setConnections] = useState<Record<string, ConnectionInfo>>(initialConnections);
+  const [status, setStatus] = useState<Record<string, ConnectionStatus>>(initialStatus);
+  const [stats, setStats] = useState<Record<string, ConnectionStats>>(initialStats);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Usamos refs para acceder al estado actual dentro de los callbacks de socket sin recrearlos
+  const statusRef = useRef(status);
+  const statsRef = useRef(stats);
+
+  useEffect(() => {
+    statusRef.current = status;
+    statsRef.current = stats;
+  }, [status, stats]);
+
   const fetchConnections = useCallback(async () => {
     if (!shouldFetch) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
       const data = await authService.getMe();
-      setConnections(prev => {
-        const updated: Record<string, ConnectionInfo> = {};
-        let hasChanges = false;
 
-        Object.keys(data.connections).forEach(platform => {
-          const serverConnected = data.connections[platform].connected;
-          const prevPlatform = prev[platform];
-          const prevStatus = prevPlatform?.status;
-          const prevConnected = prevPlatform?.connected;
+      const newStatus: Record<string, ConnectionStatus> = {};
+      const newStats: Record<string, ConnectionStats> = {};
+      let statusChanged = false;
+      let statsChanged = false;
 
-          const shouldShowAsConnecting = serverConnected && !prevConnected && !prevStatus;
+      Object.keys(data.connections).forEach(platform => {
+        const fetched = data.connections[platform];
 
-          const newConnection: ConnectionInfo = {
-            connected: serverConnected,
-            username: data.connections[platform].username,
-            viewers: prevPlatform?.viewers ?? 0,
-            status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
-            statusMessage: prevPlatform?.statusMessage,
-            isLive: data.connections[platform].isLive ?? prevPlatform?.isLive,
-            sessionStartTime: data.connections[platform].sessionStartTime !== undefined
-              ? data.connections[platform].sessionStartTime
-              : prevPlatform?.sessionStartTime,
-            serverTime: data.connections[platform].serverTime ?? prevPlatform?.serverTime
-          };
+        // Extraer Status
+        newStatus[platform] = {
+          connected: fetched.connected,
+          username: fetched.username,
+          status: statusRef.current[platform]?.status, // Mantener status efímero si existe
+          statusMessage: statusRef.current[platform]?.statusMessage,
+          isLive: fetched.isLive
+        };
 
-          if (!isConnectionEqual(prevPlatform, newConnection)) {
-            hasChanges = true;
-          }
+        // Extraer Stats
+        newStats[platform] = {
+          viewers: fetched.viewers ?? 0,
+          sessionStartTime: fetched.sessionStartTime,
+          serverTime: fetched.serverTime
+        };
 
-          updated[platform] = newConnection;
-        });
-
-        return hasChanges ? updated : prev;
+        if (JSON.stringify(newStatus[platform]) !== JSON.stringify(statusRef.current[platform])) {
+          statusChanged = true;
+        }
+        if (JSON.stringify(newStats[platform]) !== JSON.stringify(statsRef.current[platform])) {
+          statsChanged = true;
+        }
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error fetching connections';
-      setError(message);
-      console.error('Error fetching connections:', err);
 
+      if (statusChanged) setStatus(newStatus);
+      if (statsChanged) setStats(newStats);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error fetching connections');
     } finally {
       setIsLoading(false);
     }
   }, [shouldFetch]);
 
-  const updateConnection = useCallback((platform: string, updates: Partial<ConnectionInfo>) => {
-    setConnections(prev => {
-      const prevPlatform = prev[platform];
+  const updateStatus = useCallback((platform: string, updates: Partial<ConnectionStatus>) => {
+    setStatus(prev => {
+      const next = { ...prev[platform], ...updates };
+      if (JSON.stringify(prev[platform]) === JSON.stringify(next)) return prev;
+      return { ...prev, [platform]: next };
+    });
+  }, []);
 
-      // Clean updates: only apply keys that are NOT undefined
-      const cleanUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([, v]) => v !== undefined)
-      );
-
-      const newConnection: ConnectionInfo = {
-        ...prevPlatform,
-        ...cleanUpdates,
-      };
-
-      if (isConnectionEqual(prevPlatform, newConnection)) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [platform]: newConnection,
-      };
+  const updateStats = useCallback((platform: string, updates: Partial<ConnectionStats>) => {
+    setStats(prev => {
+      const next = { ...prev[platform], ...updates };
+      if (JSON.stringify(prev[platform]) === JSON.stringify(next)) return prev;
+      return { ...prev, [platform]: next };
     });
   }, []);
 
   const disconnectPlatform = useCallback(async (platform: PlatformKey) => {
     try {
       await authService.disconnectPlatform(platform);
-      updateConnection(platform, {
-        connected: false,
-        viewers: 0,
-        isLive: false
-      });
+      updateStatus(platform, { connected: false, isLive: false, status: 'disconnected' });
+      updateStats(platform, { viewers: 0 });
     } catch (err) {
       console.error('Error disconnecting platform:', err);
       throw err;
     }
-  }, [updateConnection]);
-
-  const refetchSilent = useCallback(async () => {
-    // Refetch sin activar isLoading para evitar sensación de recarga
-    if (!shouldFetch) return;
-
-    try {
-      const data = await authService.getMe();
-      setConnections(prev => {
-        const updated: Record<string, ConnectionInfo> = {};
-        let hasChanges = false;
-
-        Object.keys(data.connections).forEach(platform => {
-          const serverConnected = data.connections[platform].connected;
-          const prevPlatform = prev[platform];
-          const prevStatus = prevPlatform?.status;
-          const prevConnected = prevPlatform?.connected;
-
-          const shouldShowAsConnecting = serverConnected && !prevConnected && !prevStatus;
-
-          const newConnection: ConnectionInfo = {
-            connected: serverConnected,
-            username: data.connections[platform].username,
-            viewers: prevPlatform?.viewers ?? 0,
-            status: prevStatus ?? (shouldShowAsConnecting ? 'connecting' : undefined),
-            statusMessage: prevPlatform?.statusMessage,
-            isLive: data.connections[platform].isLive ?? prevPlatform?.isLive,
-            sessionStartTime: data.connections[platform].sessionStartTime !== undefined
-              ? data.connections[platform].sessionStartTime
-              : prevPlatform?.sessionStartTime,
-            serverTime: data.connections[platform].serverTime ?? prevPlatform?.serverTime
-          };
-
-          if (!isConnectionEqual(prevPlatform, newConnection)) {
-            hasChanges = true;
-          }
-
-          updated[platform] = newConnection;
-        });
-
-        return hasChanges ? updated : prev;
-      });
-    } catch (err) {
-      console.error('Silent refetch failed:', err);
-      if (err instanceof Error && err.message.includes('401')) {
-        setError('Sesión expirada');
-      }
-    }
-  }, [shouldFetch]);
-
-  const searchStream = useCallback((platform: PlatformKey) => {
-    if (platform === 'youtube') {
-      socket.emit('youtube_boost_discovery');
-    } else if (platform === 'tiktok') {
-      socket.emit('tiktok_boost_discovery');
-    }
-  }, []);
+  }, [updateStatus, updateStats]);
 
   useEffect(() => {
-    fetchConnections();
-  }, [fetchConnections]);
+    if (shouldFetch) fetchConnections();
+  }, [shouldFetch, fetchConnections]);
 
   useEffect(() => {
-    const onConnectionStatus = (data: {
-      platform: string;
-      status: string;
-      message?: string;
-      isLive?: boolean;
-      sessionStartTime?: string;
-      serverTime?: string;
-    }) => {
-      const isConnected = data.status === 'connected';
-
-      updateConnection(data.platform, {
-        status: data.status as 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected',
+    const onConnectionStatus = (data: ConnectionStatusUpdate) => {
+      updateStatus(data.platform, {
+        connected: data.status === 'connected' || data.status === 'waiting_stream' || data.status === 'connecting',
+        status: data.status,
         statusMessage: data.message,
-        connected: isConnected || data.status === 'waiting_stream' || data.status === 'connecting',
-        isLive: data.isLive,
+        isLive: data.isLive
+      });
+
+      if (data.serverTime) {
+        updateStats(data.platform, {
+          sessionStartTime: data.sessionStartTime,
+          serverTime: data.serverTime
+        });
+      }
+    };
+
+    const onViewersUpdate = (data: ViewersUpdate) => {
+      if (!statusRef.current[data.platform]?.connected) return;
+
+      updateStats(data.platform, {
+        viewers: data.count,
         sessionStartTime: data.sessionStartTime,
         serverTime: data.serverTime
       });
-    };
 
-    const onViewersUpdate = (data: {
-      platform: string;
-      count: number;
-      isLive?: boolean;
-      sessionStartTime?: string;
-      serverTime?: string;
-    }) => {
-      // Solo actualizar si la plataforma está marcada como conectada en el estado local
-      setConnections(prev => {
-        if (!prev[data.platform]?.connected) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          [data.platform]: {
-            ...prev[data.platform],
-            viewers: data.count,
-            isLive: data.isLive,
-            sessionStartTime: data.sessionStartTime,
-            serverTime: data.serverTime
-          }
-        };
-      });
+      // Si el estado de isLive cambia en el evento de viewers, actualizar Status
+      if (data.isLive !== undefined && data.isLive !== statusRef.current[data.platform]?.isLive) {
+        updateStatus(data.platform, { isLive: data.isLive });
+      }
     };
 
     socket.on('connection_status', onConnectionStatus);
     socket.on('viewers_update', onViewersUpdate);
-    socket.on('youtube:stream_update', refetchSilent);
+    socket.on('youtube:stream_update', fetchConnections);
 
     return () => {
       socket.off('connection_status', onConnectionStatus);
       socket.off('viewers_update', onViewersUpdate);
-      socket.off('youtube:stream_update', refetchSilent);
+      socket.off('youtube:stream_update', fetchConnections);
     };
-  }, [updateConnection, refetchSilent]);
+  }, [updateStatus, updateStats, fetchConnections]);
+
+  // Helper para mantener compatibilidad con componentes que aún esperen ConnectionInfo unido
+  const mergedConnections = Object.keys(status).reduce((acc, platform) => {
+    acc[platform] = { ...status[platform], ...stats[platform] } as ConnectionInfo;
+    return acc;
+  }, {} as Record<string, ConnectionInfo>);
 
   return {
-    connections,
+    connections: mergedConnections, // Mantener por compatibilidad inicial
+    connectionsStatus: status,
+    connectionsStats: stats,
     isLoading,
     error,
-    updateConnection,
+    updateConnection: (p: string, u: Partial<ConnectionInfo>) => {
+      const { viewers, sessionStartTime, serverTime, ...statusUpdates } = u;
+      if (Object.keys(statusUpdates).length > 0) updateStatus(p, statusUpdates);
+      if (viewers !== undefined || sessionStartTime || serverTime) {
+        updateStats(p, { viewers, sessionStartTime, serverTime });
+      }
+    },
     disconnectPlatform,
     refetch: fetchConnections,
-    refetchSilent,
-    searchStream,
+    searchStream: (platform: PlatformKey) => {
+      if (platform === 'youtube') socket.emit('youtube_boost_discovery');
+      else if (platform === 'tiktok') socket.emit('tiktok_boost_discovery');
+    }
   };
 };

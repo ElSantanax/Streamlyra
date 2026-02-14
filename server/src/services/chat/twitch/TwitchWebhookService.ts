@@ -1,10 +1,7 @@
-/**
- * Servicio de verificación de firmas de webhooks de Twitch (EventSub)
- */
-
 import * as crypto from 'crypto';
 import { logger } from '../../../utils/logger';
 import { TwitchWebhook } from '../../../models/TwitchWebhook.model';
+import { WebhookCache } from '../../webhook/WebhookCache';
 
 export class TwitchWebhookService {
     private static processedMessages = new Set<string>();
@@ -113,6 +110,14 @@ export class TwitchWebhookService {
             );
         }
 
+        // Invalidar caché para que el procesador vea el nuevo estado 'enabled'
+        if (type) {
+            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('twitch', broadcasterId, type));
+        } else {
+            // Si no hay tipo, invalidamos todas las suscripciones de ese broadcaster por si acaso
+            WebhookCache.getInstance().invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
+        }
+
         logger.info({ broadcasterId, subscriptionId, type }, 'Twitch Webhooks: Suscripción habilitada correctamente');
     }
 
@@ -131,6 +136,10 @@ export class TwitchWebhookService {
             },
             { where }
         );
+
+        // Invalidar caché
+        WebhookCache.getInstance().invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
+
         logger.warn({ broadcasterId, subscriptionId, status }, 'Twitch Webhooks: Suscripción marcada como REVOCADA');
     }
 

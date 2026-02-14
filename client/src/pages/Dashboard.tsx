@@ -11,7 +11,7 @@ import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
 import { ConnectionsProvider } from '../context/ConnectionsProvider';
-import { useConnectionsContext } from '../hooks/useConnectionsContext';
+import { useConnectionsStatus } from '../hooks/useConnectionsContext';
 import type { PlatformKey } from '../constants/platforms';
 
 import Sidebar from '../components/dashboard/layout/Sidebar';
@@ -22,7 +22,16 @@ import ChatFeed from '../components/dashboard/chat/ChatFeed';
 const DashboardContent = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const { connections, connectionHash, disconnectPlatform, refetchSilent, searchStream } = useConnectionsContext();
+
+    // Usamos el contexto optimizado de STATUS para el layout principal
+    const {
+        connectionsStatus,
+        connectionHash,
+        disconnectPlatform,
+        searchStream,
+        refetchConnections
+    } = useConnectionsStatus();
+
     const {
         messages,
         firstItemIndex,
@@ -88,7 +97,8 @@ const DashboardContent = () => {
         userId: user?.id,
         onChatMessage: addMessage,
         onMessageStatusUpdate: updateMessageStatus,
-        connections,
+        connections: connectionsStatus, // useSocket solo usa .connected
+
         connectionHash,
     });
 
@@ -138,7 +148,6 @@ const DashboardContent = () => {
                             <Sidebar
                                 onMobileClose={() => toggleSidebar(false)}
                                 onAddPlatform={handleAddPlatformFromSidebar}
-                                connections={connections}
                                 onDisconnect={handleDisconnectPlatform}
                                 onSearchStream={searchStream}
                                 onClearChat={clearMessages}
@@ -181,8 +190,7 @@ const DashboardContent = () => {
                         <AddPlatformModal
                             isOpen={isAddPlatformOpen}
                             onClose={() => toggleAddPlatform(false)}
-                            connections={connections}
-                            onConnectionSuccess={refetchSilent}
+                            onConnectionSuccess={refetchConnections}
                         />
                     </Suspense>
                 </LocalErrorBoundary>

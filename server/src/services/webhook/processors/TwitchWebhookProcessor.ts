@@ -13,12 +13,16 @@ import {
 import { TwitchEventTransformer } from '../../chat/transformers/TwitchEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
+import { WebhookCache } from '../WebhookCache';
 
 export class TwitchWebhookProcessor {
+
     private transformer: TwitchEventTransformer;
+    private cache: WebhookCache;
 
     constructor(private io: Server) {
         this.transformer = new TwitchEventTransformer();
+        this.cache = WebhookCache.getInstance();
     }
 
     async process(payload: TwitchEventSubNotificationPayload, eventType: string): Promise<void> {
@@ -34,43 +38,64 @@ export class TwitchWebhookProcessor {
                 return;
             }
 
-            // Buscar la conexión del broadcaster
-            const connection = await Connection.findOne({
-                where: {
-                    provider: 'twitch',
-                    providerId: broadcasterId
+            // 1. Obtener conexión (con caché)
+            const connCacheKey = WebhookCache.keys.connection('twitch', broadcasterId);
+            let connection = this.cache.get<Connection>(connCacheKey);
+
+            if (!connection) {
+                connection = await Connection.findOne({
+                    where: { provider: 'twitch', providerId: broadcasterId }
+                });
+
+                if (connection) {
+                    this.cache.set(connCacheKey, connection);
                 }
-            });
+            }
 
             if (!connection) {
                 logger.debug({ broadcasterId }, 'No connection found for Twitch broadcaster');
                 return;
             }
 
-            // Buscar el webhook activo
-            const webhook = await TwitchWebhook.findOne({
-                where: {
-                    broadcasterId: broadcasterId,
-                    type: eventType,
-                    status: 'enabled'
-                }
-            });
+            // 2. Verificar estado del webhook (con caché)
+            const whCacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, eventType);
+            let isEnabled = this.cache.get<boolean>(whCacheKey);
 
-            if (!webhook) {
-                logger.info(
+            if (isEnabled === null) {
+                const webhook = await TwitchWebhook.findOne({
+                    where: {
+                        broadcasterId: broadcasterId,
+                        type: eventType,
+                        status: 'enabled'
+                    }
+                });
+                isEnabled = !!webhook;
+                this.cache.set(whCacheKey, isEnabled);
+
+                // Si el webhook existe, también lo guardamos para actualizar el timestamp si hace falta
+                // Pero para la validación rápida, el booleano basta.
+            }
+
+            if (!isEnabled) {
+                logger.debug(
                     { userId: connection.userId, broadcasterId, eventType },
                     'Twitch webhook ignorado: Suscripción no activa en DB para este tipo de evento'
                 );
                 return;
             }
 
-            // Actualización asíncrona del timestamp
-            void webhook.update({ lastEventAt: new Date() }).catch((err: unknown) =>
-                logger.error({ err, webhookId: webhook.id }, 'Error actualizando timestamp de Twitch webhook')
+            // Actualización asíncrona del timestamp (opcional, no bloqueante)
+            // Aquí podríamos optimizar más, pero como es asíncrono no penaliza el tiempo de respuesta
+            TwitchWebhook.update(
+                { lastEventAt: new Date() },
+                { where: { broadcasterId, type: eventType } }
+            ).catch((err: unknown) =>
+                logger.error({ err, broadcasterId, eventType }, 'Error actualizando timestamp de Twitch webhook')
             );
 
             let chatMessage;
             const event = payload.event;
+
 
             switch (eventType) {
                 case 'channel.chat.message':

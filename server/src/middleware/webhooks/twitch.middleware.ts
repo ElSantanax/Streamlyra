@@ -7,10 +7,12 @@ import { TwitchWebhookService } from '../../services/chat/twitch/TwitchWebhookSe
 import { TwitchWebhook } from '../../models/TwitchWebhook.model';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
+import { WebhookCache } from '../../services/webhook/WebhookCache';
 import {
     RequestWithWebhookData,
     validateTimestamp
 } from './utils';
+
 
 /**
  * Interfaz para el payload de Twitch (Interna)
@@ -78,29 +80,44 @@ export const validateTwitchWebhook = async (
         // 3. Buscar el secreto (Prioridad: ID de suscripción > Tipo + Canal)
         let dbWebhookData = null;
 
-        if (subscriptionId) {
-            dbWebhookData = await TwitchWebhook.findOne({
-                where: { subscriptionId }
-            });
-        }
+        // Intentar obtener de caché por broadcasterId + type (que es lo que tenemos más a mano)
+        const cache = WebhookCache.getInstance();
+        const cacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, type);
+        dbWebhookData = cache.get<TwitchWebhook>(cacheKey + ':full');
 
-        // Fallback: Si no se encuentra por ID, buscar por tipo y canal (útil durante resincronizaciones)
-        if (!dbWebhookData && type) {
-            dbWebhookData = await TwitchWebhook.findOne({
-                where: {
-                    broadcasterId,
-                    type,
-                    status: ['enabled', 'verification_pending', 'revoked']
-                }
-            });
-        }
-
-        // Fallback Legacy (solo broadcasterId - menos seguro, para compatibilidad)
         if (!dbWebhookData) {
-            dbWebhookData = await TwitchWebhook.findOne({
-                where: { broadcasterId, status: ['enabled', 'verification_pending', 'revoked'] },
-                order: [['createdAt', 'DESC']] // Usar el más reciente si hay varios
-            });
+            if (subscriptionId) {
+                dbWebhookData = await TwitchWebhook.findOne({
+                    where: { subscriptionId }
+                });
+            }
+
+            // Fallback: Si no se encuentra por ID, buscar por tipo y canal
+            if (!dbWebhookData && type) {
+                dbWebhookData = await TwitchWebhook.findOne({
+                    where: {
+                        broadcasterId,
+                        type,
+                        status: ['enabled', 'verification_pending', 'revoked']
+                    }
+                });
+            }
+
+            // Fallback Legacy
+            if (!dbWebhookData) {
+                dbWebhookData = await TwitchWebhook.findOne({
+                    where: { broadcasterId, status: ['enabled', 'verification_pending', 'revoked'] },
+                    order: [['createdAt', 'DESC']]
+                });
+            }
+
+            if (dbWebhookData) {
+                // Guardar en caché el objeto completo para la validación de firma
+                // Usamos un sufijo :full para diferenciarlo del booleano simple usado en el procesador
+                cache.set(cacheKey + ':full', dbWebhookData);
+                // De paso actualizamos el booleano simple
+                cache.set(cacheKey, dbWebhookData.status === 'enabled');
+            }
         }
 
         if (!dbWebhookData) {

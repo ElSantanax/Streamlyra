@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { socket } from '../services/socket';
-import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionInfo } from '../types';
+import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionStatus } from '../types';
+
 
 interface UseSocketOptions {
   userId?: string;
@@ -8,7 +9,8 @@ interface UseSocketOptions {
   onMessageStatusUpdate?: (messageId: string, status: 'sending' | 'sent' | 'error', errorMessage?: string, platformIds?: Record<string, string>) => void;
   onViewersUpdate?: (data: ViewersUpdate) => void;
   onConnectionStatus?: (data: ConnectionStatusUpdate) => void;
-  connections?: Record<string, ConnectionInfo>;
+  connections?: Record<string, ConnectionStatus>;
+
   connectionHash?: string;
 }
 
@@ -128,17 +130,22 @@ export const useSocket = ({
   }, [onChatMessage, onMessageStatusUpdate, onViewersUpdate, onConnectionStatus]);
 
   useEffect(() => {
-    const handleChatMessage = (msg: ChatMessage) => {
-      if (msg.platform === 'dashboard') {
-        onChatMessageRef.current?.(msg);
-        return;
-      }
+    const handleChatMessage = (msg: ChatMessage | ChatMessage[]) => {
+      const messages = Array.isArray(msg) ? msg : [msg];
 
-      if (msg.platform && !connectionsRef.current[msg.platform]?.connected) {
-        return;
-      }
-      onChatMessageRef.current?.(msg);
+      messages.forEach(m => {
+        if (m.platform === 'dashboard') {
+          onChatMessageRef.current?.(m);
+          return;
+        }
+
+        if (m.platform && !connectionsRef.current[m.platform]?.connected) {
+          return;
+        }
+        onChatMessageRef.current?.(m);
+      });
     };
+
 
     const handleMessageStatusUpdate = (data: {
       messageId: string;

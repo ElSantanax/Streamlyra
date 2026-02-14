@@ -3,6 +3,7 @@ import { IConnectionRepository } from '../interfaces/IConnectionRepository';
 import { AuthTokens } from '../../types/index';
 import { calculateTokenExpiry } from '../../utils/tokenUtils';
 import { Transaction } from 'sequelize';
+import { WebhookCache } from '../../services/webhook/WebhookCache';
 
 /**
  * Implementación del repositorio de conexiones usando Sequelize
@@ -16,9 +17,11 @@ import { logger } from '../../utils/logger';
  */
 export class ConnectionRepository implements IConnectionRepository {
     private encryptionService: EncryptionService;
+    private cache: WebhookCache;
 
     constructor() {
         this.encryptionService = new EncryptionService();
+        this.cache = WebhookCache.getInstance();
     }
 
     /**
@@ -152,16 +155,24 @@ export class ConnectionRepository implements IConnectionRepository {
         }
 
         // Retornar con tokens planos para que la aplicación los pueda usar inmediatamente
-        // Esto modifica la instancia en memoria, pero ya se guardó encriptada en BD
         connection.accessToken = tokens.access_token;
         if (tokens.refresh_token) {
             connection.refreshToken = tokens.refresh_token;
         }
 
+        // Invalidar caché de webhooks ante cambios en la conexión
+        this.cache.invalidate(WebhookCache.keys.connection(provider, providerId));
+
         return connection;
     }
 
     async removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number> {
+        // Obtenemos la conexión antes de borrar para saber el providerId a invalidar
+        const connection = await Connection.findOne({ where: { userId, provider }, transaction });
+        if (connection?.providerId) {
+            this.cache.invalidate(WebhookCache.keys.connection(provider, connection.providerId));
+        }
+
         return Connection.destroy({ where: { userId, provider }, transaction });
     }
 

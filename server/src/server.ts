@@ -31,6 +31,8 @@ import { UserProfileService } from './services/auth/core/UserProfileService';
 import { AuthDTOBuilder } from './services/auth/AuthDTOBuilder';
 import { PlatformAuthHandler } from './services/auth/core/PlatformAuthHandler';
 import { UserService } from './services/user/UserService';
+import { MessageBatcher } from './utils/MessageBatcher';
+
 
 import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider } from './services/chat';
 import { Platform } from './constants/platforms';
@@ -194,7 +196,12 @@ app.get('/', (_req, res) => {
 
 app.use(errorHandler);
 
+// Inicializar el agrupador de mensajes (Batcher)
+MessageBatcher.getInstance().setIo(io);
+
 setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService);
+
+
 
 export { app, io, chatManager };
 export default server;

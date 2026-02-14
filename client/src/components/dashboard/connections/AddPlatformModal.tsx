@@ -8,25 +8,20 @@ import { validateTikTokUsername } from '../../../lib/validators';
 import { Modal } from '../../ui';
 import { toast } from '../../../lib/notifications';
 import { getUserFriendlyMessage } from '../../../lib/errors';
+import { useConnectionsStatus } from '../../../hooks/useConnectionsContext';
 
 interface AddPlatformModalProps {
     isOpen: boolean;
     onClose: () => void;
-    connections?: Record<string, {
-        connected: boolean;
-        username?: string;
-        status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
-        statusMessage?: string;
-    }>;
     onConnectionSuccess?: () => void;
 }
 
 const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     isOpen,
     onClose,
-    connections = {},
     onConnectionSuccess
 }) => {
+    const { connectionsStatus: connections = {} } = useConnectionsStatus();
     const [tiktokUsername, setTiktokUsername] = useState('');
     const [tiktokError, setTiktokError] = useState<string | undefined>();
 
@@ -131,3 +126,4 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 };
 
 export default AddPlatformModal;
+

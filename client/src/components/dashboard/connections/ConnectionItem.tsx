@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MdDeleteOutline, MdOutlineVisibility, MdSearch } from 'react-icons/md';
 import { PLATFORMS } from '../../../constants/platforms';
 import type { PlatformKey } from '../../../constants/platforms';
@@ -14,7 +15,7 @@ export interface ConnectionItemProps {
     onSearchStream?: () => void;
 }
 
-export const ConnectionItem = ({
+export const ConnectionItem = memo(({
     platformKey,
     status,
     viewers,
@@ -116,4 +117,6 @@ export const ConnectionItem = ({
             )}
         </div>
     );
-};
+});
+
+ConnectionItem.displayName = 'ConnectionItem';

@@ -1,85 +1,91 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useConnections } from '../hooks/useConnections';
 import { useAuth } from '../hooks/useAuth';
-import { ConnectionsContext } from '../hooks/useConnectionsContext';
-import type { ConnectionInfo } from '../types';
-import type { PlatformKey } from '../constants/platforms';
+import {
+    ConnectionsStatusContext,
+    ConnectionsStatsContext,
+    ConnectionsContext
+} from '../hooks/useConnectionsContext';
+import type { ConnectionInfo, ConnectionStats } from '../types';
 
-export interface ConnectionsContextValue {
-    connections: Record<string, ConnectionInfo>;
-    updateConnection: (platform: string, updates: Partial<ConnectionInfo>) => void;
-    disconnectPlatform: (platform: PlatformKey) => Promise<void>;
-    refetchConnections: () => Promise<void>;
-    refetchSilent: () => Promise<void>;
-    searchStream: (platform: PlatformKey) => void;
-    getConnectedPlatforms: () => string[];
-    isLoadingConnections: boolean;
-    connectionsError: string | null;
-    // Nueva propiedad para saber si la conectividad estructural cambió
-    connectionHash: string;
-}
 
 export const ConnectionsProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
     const connectionsRef = useRef<Record<string, ConnectionInfo>>({});
 
     const {
-        connections,
+        connections,        // Legacy
+        connectionsStatus,  // Optimized
+        connectionsStats,   // Optimized
         updateConnection,
         disconnectPlatform,
         refetch: refetchConnections,
-        refetchSilent,
         searchStream,
         isLoading: isLoadingConnections,
         error: connectionsError
     } = useConnections(isAuthenticated);
 
-    // Sincronizar la ref
+    // Sincronizar la ref para getConnectedPlatforms
     useEffect(() => {
         connectionsRef.current = connections;
     }, [connections]);
 
-    // Generar un hash que SOLO cambie cuando cambia el estado de conexión, no los viewers
+    // Hash estructural
     const connectionHash = useMemo(() => {
-        return Object.entries(connections)
-            .map(([platform, info]) => `${platform}:${info.connected}:${info.status}`)
+        return Object.entries(connectionsStatus)
+            .map(([p, s]) => `${p}:${s.connected}:${s.isLive}`)
             .join('|');
-    }, [connections]);
+    }, [connectionsStatus]);
 
     const getConnectedPlatforms = useCallback(() => {
-        return Object.entries(connectionsRef.current)
-            .filter(([, info]) => info.connected)
-            .map(([platform]) => platform);
-    }, []);
+        return Object.entries(connectionsStatus)
+            .filter(([, s]) => s.connected)
+            .map(([p]) => p);
+    }, [connectionsStatus]);
 
-    const value = useMemo(() => ({
-        connections,
-        updateConnection,
-        disconnectPlatform,
-        refetchConnections,
-        refetchSilent,
-        searchStream,
-        getConnectedPlatforms,
+    // 1. Valor para STATUS (Poco frecuente)
+    const statusValue = useMemo(() => ({
+        connectionsStatus,
         isLoadingConnections,
         connectionsError,
-        connectionHash
+        connectionHash,
+        disconnectPlatform,
+        refetchConnections,
+        searchStream,
+        getConnectedPlatforms
     }), [
-        connections,
-        updateConnection,
-        disconnectPlatform,
-        refetchConnections,
-        refetchSilent,
-        searchStream,
-        getConnectedPlatforms,
+        connectionsStatus,
         isLoadingConnections,
         connectionsError,
-        connectionHash
+        connectionHash,
+        disconnectPlatform,
+        refetchConnections,
+        searchStream,
+        getConnectedPlatforms
     ]);
 
+    // 2. Valor para STATS (Frecuente)
+    const statsValue = useMemo(() => ({
+        connectionsStats,
+        updateConnectionStats: (p: string, u: Partial<ConnectionStats>) => updateConnection(p, u)
+    }), [connectionsStats, updateConnection]);
+
+    // 3. Valor LEGADO (Cambia siempre)
+    const legacyValue = useMemo(() => ({
+        ...statusValue,
+        connections,
+        updateConnection
+    }), [statusValue, connections, updateConnection]);
+
     return (
-        <ConnectionsContext.Provider value={value}>
-            {children}
-        </ConnectionsContext.Provider>
+        <ConnectionsStatusContext.Provider value={statusValue}>
+            <ConnectionsStatsContext.Provider value={statsValue}>
+                <ConnectionsContext.Provider value={legacyValue}>
+                    {children}
+                </ConnectionsContext.Provider>
+            </ConnectionsStatsContext.Provider>
+        </ConnectionsStatusContext.Provider>
     );
 };
+
 

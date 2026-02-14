@@ -7,12 +7,15 @@ import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollo
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
+import { WebhookCache } from '../WebhookCache';
 
 export class KickWebhookProcessor {
     private transformer: KickEventTransformer;
+    private cache: WebhookCache;
 
     constructor(private io: Server) {
         this.transformer = new KickEventTransformer();
+        this.cache = WebhookCache.getInstance();
     }
 
     async process(payload: KickWebhookPayload | { data: KickWebhookPayload }, eventType: string = 'chat.message.sent'): Promise<void> {
@@ -31,6 +34,47 @@ export class KickWebhookProcessor {
                 return;
             }
 
+            // 1. Obtener conexión (con caché)
+            const connCacheKey = WebhookCache.keys.connection('kick', broadcasterKickId);
+            let connection = this.cache.get<Connection>(connCacheKey);
+
+            if (!connection) {
+                connection = await Connection.findOne({
+                    where: { provider: 'kick', providerId: broadcasterKickId }
+                });
+                if (connection) {
+                    this.cache.set(connCacheKey, connection);
+                }
+            }
+
+            if (!connection) {
+                logger.debug({ broadcasterKickId }, 'No connection found for Kick broadcaster');
+                return;
+            }
+
+            // 2. Verificar estado del webhook (con caché)
+            const whCacheKey = WebhookCache.keys.webhook('kick', broadcasterKickId);
+            let isActive = this.cache.get<boolean>(whCacheKey);
+
+            if (isActive === null) {
+                const webhook = await KickWebhook.findOne({
+                    where: {
+                        broadcasterId: broadcasterKickId,
+                        isActive: true
+                    }
+                });
+                isActive = !!webhook;
+                this.cache.set(whCacheKey, isActive);
+            }
+
+            if (!isActive) {
+                logger.debug(
+                    { userId: connection.userId, broadcasterKickId, eventType },
+                    'Kick webhook ignorado: El webhook no está registrado como activo para este canal'
+                );
+                return;
+            }
+
             let chatMessage;
             if (eventType === 'channel.subscription.new' || eventType === 'channel.subscription.renewal') {
                 chatMessage = this.transformer.transformSubscription(data as KickSubscriptionEvent);
@@ -39,39 +83,9 @@ export class KickWebhookProcessor {
             } else if (eventType === 'channel.followed') {
                 chatMessage = this.transformer.transformFollow(data as KickFollowEvent);
             } else if (eventType === 'livestream.status.updated') {
-                // No transform needed for chat_message, we handles it differently
                 chatMessage = null;
             } else {
                 chatMessage = this.transformer.transformMessage(data as KickChatMessagePayload);
-            }
-
-            // Buscar la conexión del broadcaster
-            const connection = await Connection.findOne({
-                where: {
-                    provider: 'kick',
-                    providerId: broadcasterKickId
-                }
-            });
-
-            if (!connection) {
-                logger.debug({ broadcasterKickId }, 'No connection found for Kick broadcaster');
-                return;
-            }
-
-            // Buscar el webhook activo
-            const webhook = await KickWebhook.findOne({
-                where: {
-                    broadcasterId: broadcasterKickId,
-                    isActive: true
-                }
-            });
-
-            if (!webhook) {
-                logger.info(
-                    { userId: connection.userId, broadcasterKickId, eventType },
-                    'Kick webhook ignorado: El webhook no está registrado como activo para este canal'
-                );
-                return;
             }
 
             logger.info(
@@ -80,8 +94,11 @@ export class KickWebhookProcessor {
             );
 
             // Actualización asíncrona del timestamp
-            void webhook.update({ lastEventAt: new Date() }).catch((err: unknown) =>
-                logger.error({ err, webhookId: webhook.id }, 'Error updating webhook timestamp')
+            KickWebhook.update(
+                { lastEventAt: new Date() },
+                { where: { broadcasterId: broadcasterKickId } }
+            ).catch((err: unknown) =>
+                logger.error({ err, broadcasterKickId }, 'Error updating webhook timestamp')
             );
 
             // OPTIMIZACIÓN 4: Emisión directa
@@ -127,3 +144,4 @@ export class KickWebhookProcessor {
         }
     }
 }
+

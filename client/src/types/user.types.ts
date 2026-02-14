@@ -19,13 +19,19 @@ export interface MeResponse {
   connections: Record<string, ConnectionInfo>;
 }
 
-export interface ConnectionInfo {
+export interface ConnectionStatus {
   connected: boolean;
   username?: string;
-  viewers?: number;
   status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   statusMessage?: string;
   isLive?: boolean;
+}
+
+export interface ConnectionStats {
+  viewers: number;
   sessionStartTime?: string;
   serverTime?: string;
 }
+
+export interface ConnectionInfo extends ConnectionStatus, ConnectionStats { }
+

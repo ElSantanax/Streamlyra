@@ -1,17 +1,17 @@
-/**
- * Procesador de Webhooks de YouTube (PubSubHubbub)
- * Maneja notificaciones de nuevos videos y streams en vivo
- */
-
 import { Server } from 'socket.io';
 import { logger } from '../../../utils/logger';
 import { YouTubePubSubParser, YouTubeNotification } from '../../chat/youtube/YouTubePubSubParser';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { Connection } from '../../../models/Connection.model';
 import { YouTubeLiveChatService } from '../../platforms/youtube/YouTubeLiveChatService';
+import { WebhookCache } from '../WebhookCache';
 
 export class YouTubeWebhookProcessor {
-    constructor(private io: Server) { }
+    private cache: WebhookCache;
+
+    constructor(private io: Server) {
+        this.cache = WebhookCache.getInstance();
+    }
 
     /**
      * Procesa una notificación de YouTube
@@ -67,12 +67,27 @@ export class YouTubeWebhookProcessor {
     }
 
     /**
+     * Obtiene las conexiones de un canal usando caché
+     */
+    private async getChannelConnections(channelId: string): Promise<Connection[]> {
+        const cacheKey = WebhookCache.keys.connection('youtube', channelId);
+        let connections = this.cache.get<Connection[]>(cacheKey);
+
+        if (!connections) {
+            connections = await Connection.findAll({
+                where: { provider: 'youtube', providerId: channelId }
+            });
+            this.cache.set(cacheKey, connections);
+        }
+
+        return connections;
+    }
+
+    /**
      * Notifica un cambio de estado a conectado si se detectó el stream vía webhook
      */
     private async notifyStreamFound(channelId: string, videoId: string): Promise<void> {
-        const connections = await Connection.findAll({
-            where: { provider: 'youtube', providerId: channelId }
-        });
+        const connections = await this.getChannelConnections(channelId);
 
         for (const connection of connections) {
             SafeSocketEmitter.emitConnectionStatus(
@@ -93,12 +108,7 @@ export class YouTubeWebhookProcessor {
     private async notifyConnectedUsers(notification: YouTubeNotification): Promise<void> {
         try {
             // Buscar todas las conexiones de YouTube para este canal
-            const connections = await Connection.findAll({
-                where: {
-                    provider: 'youtube',
-                    providerId: notification.channelId
-                }
-            });
+            const connections = await this.getChannelConnections(notification.channelId);
 
             if (connections.length === 0) {
                 logger.debug({ channelId: notification.channelId }, 'No hay usuarios conectados a este canal');
@@ -132,3 +142,4 @@ export class YouTubeWebhookProcessor {
         }
     }
 }
+

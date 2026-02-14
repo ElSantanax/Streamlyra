@@ -5,60 +5,54 @@ import type { PlatformKey } from '../../../constants/platforms';
 import { formatViewers } from '../../../lib/formatters';
 import { ConnectionItem } from '../connections/ConnectionItem';
 import { SimpleTimer } from '../../common/SimpleTimer';
+import { useConnectionsStatus, useConnectionsStats } from '../../../hooks/useConnectionsContext';
 
 interface SidebarProps {
     onMobileClose?: () => void;
     onAddPlatform?: () => void;
-    connections: Record<string, {
-        connected: boolean;
-        username?: string;
-        viewers?: number;
-        status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
-        statusMessage?: string;
-        isLive?: boolean;
-        sessionStartTime?: string;
-        serverTime?: string;
-    }>;
     onDisconnect: (platform: PlatformKey) => void;
     onSearchStream?: (platform: PlatformKey) => void;
     onClearChat?: () => void;
 }
 
-const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
-    // Calcular espectadores totales
+const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
+    const { connectionsStatus, searchStream } = useConnectionsStatus();
+    const { connectionsStats } = useConnectionsStats();
+
+    // 1. Calcular espectadores totales (Solo depende de stats)
     const totalViewers = useMemo(
-        () => Object.values(connections).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
-        [connections]
+        () => Object.values(connectionsStats).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
+        [connectionsStats]
     );
 
-    // Calcular tiempo al aire total (el del stream más antiguo o el enviado por el servidor)
-    const sessionStartTime = useMemo(() => {
-        const starts = Object.values(connections)
-            .filter(c => c.isLive)
-            .map(c => c.sessionStartTime)
+    // 2. Calcular tiempo al aire (Depende de status para saber qué stats mirar)
+    const timerData = useMemo(() => {
+        const activePlatforms = Object.keys(connectionsStatus).filter(p => connectionsStatus[p].isLive);
+        if (activePlatforms.length === 0) return { sessionStartTime: undefined, latestServerTime: undefined };
+
+        // Buscar el inicio de sesión más antiguo de las plataformas activas
+        const starts = activePlatforms
+            .map(p => connectionsStats[p]?.sessionStartTime)
             .filter((s): s is string => !!s);
 
-        return starts.length > 0 ? starts[0] : undefined;
-    }, [connections]);
-
-    const latestServerTime = useMemo(() => {
-        const times = Object.values(connections)
-            .map(c => c.serverTime)
+        const serverTimes = activePlatforms
+            .map(p => connectionsStats[p]?.serverTime)
             .filter((s): s is string => !!s)
             .map(s => new Date(s).getTime());
 
-        return times.length > 0 ? new Date(Math.max(...times)).toISOString() : undefined;
-    }, [connections]);
+        return {
+            sessionStartTime: starts.length > 0 ? starts[0] : undefined,
+            latestServerTime: serverTimes.length > 0 ? new Date(Math.max(...serverTimes)).toISOString() : undefined
+        };
+    }, [connectionsStatus, connectionsStats]);
 
-    // Filtrar conexiones activas o en proceso para mostrar
-    const activeConnections = useMemo(() => {
-        return Object.entries(connections).filter(([, data]) =>
-            data.connected ||
-            data.status === 'connecting' ||
-            data.status === 'error' ||
-            data.status === 'waiting_stream'
+    // 3. Filtrar conexiones activas (Solo depende de Status)
+    const activePlatforms = useMemo(() => {
+        return Object.keys(connectionsStatus).filter(p =>
+            connectionsStatus[p].connected ||
+            ['connecting', 'error', 'waiting_stream'].includes(connectionsStatus[p].status || '')
         );
-    }, [connections]);
+    }, [connectionsStatus]);
 
     return (
         <aside className="flex h-full w-full flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto custom-scrollbar">
@@ -77,29 +71,21 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect,
             <div className="flex flex-col gap-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Conexiones</h3>
 
-                {activeConnections.length > 0 ? (
-                    activeConnections.map(([key, data]) => {
-                        // Mapear el estado interno al estado del componente
-                        const status = data.status === 'connecting'
-                            ? 'connecting'
-                            : data.status === 'waiting_stream'
-                                ? 'waiting_stream'
-                                : data.status === 'error'
-                                    ? 'error'
-                                    : data.connected
-                                        ? 'connected'
-                                        : 'disconnected';
+                {activePlatforms.length > 0 ? (
+                    activePlatforms.map((key) => {
+                        const s = connectionsStatus[key];
+                        const st = connectionsStats[key];
 
                         return (
                             <ConnectionItem
                                 key={key}
                                 platformKey={key as PlatformKey}
-                                status={status}
-                                viewers={data.viewers !== undefined ? formatViewers(data.viewers) : undefined}
-                                statusMessage={data.statusMessage}
-                                isLive={data.isLive}
+                                status={s.status || (s.connected ? 'connected' : 'disconnected')}
+                                viewers={st.viewers !== undefined ? formatViewers(st.viewers) : undefined}
+                                statusMessage={s.statusMessage}
+                                isLive={s.isLive}
                                 onDisconnect={() => onDisconnect(key as PlatformKey)}
-                                onSearchStream={() => onSearchStream?.(key as PlatformKey)}
+                                onSearchStream={() => (onSearchStream || searchStream)?.(key as PlatformKey)}
                             />
                         );
                     })
@@ -131,8 +117,8 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect,
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tiempo al Aire</span>
                         <span className="text-base font-black text-white">
-                            {sessionStartTime ? (
-                                <SimpleTimer startTime={sessionStartTime} serverTime={latestServerTime} />
+                            {timerData.sessionStartTime ? (
+                                <SimpleTimer startTime={timerData.sessionStartTime} serverTime={timerData.latestServerTime} />
                             ) : (
                                 "00:00:00"
                             )}
@@ -160,3 +146,4 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, connections, onDisconnect,
 Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;
+

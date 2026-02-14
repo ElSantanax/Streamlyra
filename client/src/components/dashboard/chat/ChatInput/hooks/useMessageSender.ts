@@ -4,7 +4,7 @@ import type { SendMessagePayload, MessageSentResult } from '../../../../../types
 import { socket } from '../../../../../services/socket';
 import { toast } from '../../../../../lib/notifications/toast';
 import { validateMessage } from '../utils/messageValidation';
-import { useConnectionsContext } from '../../../../../hooks/useConnectionsContext';
+import { useConnectionsStatus } from '../../../../../hooks/useConnectionsContext';
 
 export const useMessageSender = (
     user: User | null,
@@ -13,7 +13,8 @@ export const useMessageSender = (
     focusInput: () => void
 ) => {
     const [isSending, setIsSending] = useState(false);
-    const { getConnectedPlatforms } = useConnectionsContext();
+    const { getConnectedPlatforms } = useConnectionsStatus();
+
 
     useEffect(() => {
         const handleMessageSentResult = (result: MessageSentResult) => {

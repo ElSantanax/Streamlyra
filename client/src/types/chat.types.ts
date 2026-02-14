@@ -37,7 +37,11 @@ export interface ChatMessage {
 export interface ViewersUpdate {
   platform: string;
   count: number;
+  isLive?: boolean;
+  sessionStartTime?: string;
+  serverTime?: string;
 }
+
 
 export interface ConnectionStatusUpdate {
   platform: string;

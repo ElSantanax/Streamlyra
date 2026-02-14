@@ -5,6 +5,9 @@ import { logger } from './logger';
 import { sentMessageCache } from './SentMessageCache';
 import { config } from '../config';
 import { StreamSessionManager } from '../services/core/StreamSessionManager';
+import { MessageBatcher } from './MessageBatcher';
+import { NormalizedChatMessage } from '../services/chat/transformers/EventTransformer';
+
 
 interface EmitOptions {
     userId: string;
@@ -125,12 +128,12 @@ export class SafeSocketEmitter {
             }
         }
 
-        return this.emit(io, {
-            userId,
-            event: 'chat_message',
-            data: message,
-            platform
-        });
+        // Delegar al Batcher para optimización
+        const batcher = MessageBatcher.getInstance();
+        batcher.setIo(io);
+        batcher.add(userId, message as NormalizedChatMessage);
+
+        return true;
     }
 
     static emitViewersUpdate(
