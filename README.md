@@ -114,39 +114,9 @@ cd client && npm run dev
 
 Accede a la aplicación en `http://localhost:5173`
 
-## Cómo Contribuir
+## 🤝 Contribuir
 
-Todas las contribuciones son bienvenidas, sin importar tu nivel de experiencia. Aquí hay algunas formas de participar:
-
-### Para Programadores
-
-- Revisa los [issues abiertos](../../issues) y elige uno que te interese
-- Mejora la documentación del código
-- Optimiza el rendimiento
-- Agrega tests para aumentar la cobertura
-- Implementa nuevas funcionalidades
-
-### Para Diseñadores
-
-- Mejora la interfaz de usuario
-- Crea mockups para nuevas funcionalidades
-- Optimiza la experiencia móvil
-- Diseña iconos y recursos visuales
-
-### Para Testers
-
-- Reporta bugs con pasos detallados para reproducirlos
-- Prueba la aplicación en diferentes navegadores
-- Valida el comportamiento en casos extremos
-- Sugiere mejoras en la usabilidad
-
-### Proceso de Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu funcionalidad (`git checkout -b feature/nueva-funcionalidad`)
-3. Haz commit de tus cambios (`git commit -m 'feat: agrega nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+¿Interesado en contribuir a Streamlyra? Revisa nuestra [Guía de Contribución](./CONTRIBUTING.md) para saber cómo puedes participar, sin importar tu nivel de experiencia.
 
 ## Documentación Adicional
 
