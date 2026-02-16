@@ -62,7 +62,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      * Transforma mensaje de chat de TikTok
      * Implementación de la interfaz base
      */
-     
+
     transformMessage(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformChatMessage, transformGift, or transformFollow instead');
     }
@@ -71,7 +71,7 @@ export class TikTokEventTransformer extends BaseEventTransformer {
      * Transforma evento especial de TikTok
      * Implementación de la interfaz base
      */
-     
+
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Use transformGift or transformFollow instead');
     }
@@ -214,7 +214,8 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date()),
-            color: '#FF0050'
+            color: '#FF0050',
+            isSpecial: true
         };
     }
 }

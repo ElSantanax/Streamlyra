@@ -1,5 +1,4 @@
 import { UserService } from '../../user/UserService';
-import { ConnectionService } from '../../connection/ConnectionService';
 import { AuthDTOBuilder, AuthResponse } from '../AuthDTOBuilder';
 import { AuthTokens, PlatformProfile } from '../../../types/index';
 import { withErrorHandling } from '../../../utils/errorHandling';
@@ -8,10 +7,12 @@ import db from '../../../config/db';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
 
+/**
+ * PlatformAuthHandler: Maneja la autenticación y vinculación de perfiles de plataformas externas.
+ */
 export class PlatformAuthHandler {
     constructor(
         private userService: UserService,
-        private connectionService: ConnectionService,
         private connectionRepository: IConnectionRepository,
         private dtoBuilder: AuthDTOBuilder
     ) { }
@@ -29,29 +30,35 @@ export class PlatformAuthHandler {
                 );
 
                 return await db.transaction(async (transaction) => {
-                    const { user, isNew } = await this.userService.findOrCreateFromPlatform(
+                    const { user, isNew, existingConnection } = await this.userService.findOrCreateFromPlatform(
                         profile,
                         currentUserId,
                         transaction
-                    );
-
-                    const existingConnection = await this.connectionService.getConnectionByProvider(
-                        profile.provider,
-                        profile.providerId
                     );
 
                     const shouldActivate = isNew || !!currentUserId || !!existingConnection;
                     const activationReason = isNew ? 'new_user' : (currentUserId ? 'explicit_link' : 'existing_refresh');
 
                     if (shouldActivate) {
-                        await this.createOrUpdateConnection(user.id, profile, tokens, transaction);
+                        try {
+                            await this.connectionRepository.createOrUpdate(
+                                user.id,
+                                profile.provider,
+                                profile.providerId,
+                                profile.providerUsername,
+                                tokens,
+                                transaction
+                            );
+                        } catch (error) {
+                            if (error instanceof UniqueConstraintError || (error instanceof Error && (error as { code?: string }).code === '23505')) {
+                                logger.info('Recovered from unique constraint error in connection creation');
+                            } else {
+                                throw error;
+                            }
+                        }
                     }
 
-                    const twitchConnection = await this.connectionRepository.findByUserAndProvider(
-                        user.id,
-                        'twitch',
-                        transaction
-                    );
+                    const twitchConnection = user.connections?.find(c => c.provider === 'twitch');
                     const hasTwitch = !!twitchConnection;
 
                     const shouldSyncProfile = profile.provider === 'twitch' || (isNew && !hasTwitch);

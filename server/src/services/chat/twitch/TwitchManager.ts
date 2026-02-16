@@ -7,9 +7,6 @@ import { logger } from '../../../utils/logger';
 import { config } from '../../../config';
 
 export class TwitchManager {
-    /**
-     * Lista de eventos a los que nos suscribiremos por defecto para cada canal
-     */
     private readonly EVENT_TYPES = [
         { type: 'channel.follow', version: '2' },
         { type: 'channel.subscribe', version: '1' },
@@ -19,9 +16,6 @@ export class TwitchManager {
         { type: 'stream.offline', version: '1' }
     ];
 
-    /**
-     * Registra o actualiza todas las suscripciones de EventSub para un usuario
-     */
     async registerWebhooks(userId: string, broadcasterId: string): Promise<void> {
         try {
             if (!config.appUrl?.startsWith('https://')) {
@@ -39,9 +33,6 @@ export class TwitchManager {
         }
     }
 
-    /**
-     * Asegura que una suscripción específica exista y esté activa
-     */
     private async ensureSubscription(
         userId: string,
         broadcasterId: string,
@@ -57,16 +48,13 @@ export class TwitchManager {
                 where: { broadcasterId, type }
             });
 
-            // Si ya existe y está habilitado con la misma URL, no hacemos nada
             if (existingWebhook?.status === 'enabled' && existingWebhook.callbackUrl === callbackUrl) {
                 logger.debug({ broadcasterId, type }, 'Twitch Webhooks: Suscripción ya activa');
                 return;
             }
 
-            // Generar o recuperar secreto
             const secret = existingWebhook?.secret || TwitchWebhookService.generateSecret();
 
-            // Preparar condición de forma específica por tipo de evento (Twitch es estricto con esto)
             condition = {};
 
             switch (type) {
@@ -92,7 +80,6 @@ export class TwitchManager {
                     condition.broadcaster_user_id = broadcasterId;
             }
 
-            // Llamar a la API de Twitch
             const subscription = await TwitchEventSubClient.subscribe(
                 type,
                 version,
@@ -127,77 +114,82 @@ export class TwitchManager {
                 logger.info({ broadcasterId, type }, 'Twitch Webhooks: Nueva suscripción creada (pendiente de verificación)');
             }
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: { status?: number, message?: string } }, message: string };
-            const errorData = axiosError.response?.data;
+            const axiosError = error as { response?: { data?: { status?: number, message?: string }, status?: number }, message: string };
 
-            // Manejo de Conflictos (409): La suscripción ya existe en Twitch pero tal vez con otro secreto o estado
-            if (errorData?.status === 409) {
+            if (axiosError.response?.status === 409) {
                 logger.warn({ broadcasterId, type }, 'Twitch Webhooks: Conflicto 409 detectado. Intentando limpiar y resincronizar...');
 
                 try {
-                    // 1. Listar todas las suscripciones actuales del canal
-                    const subscriptions = await TwitchEventSubClient.listSubscriptions();
+                    const subscriptions = await TwitchEventSubClient.listSubscriptions('enabled');
 
-                    // 2. Buscar la que coincide con este tipo y broadcasterId
-                    // Twitch devuelve broadcaster_user_id, to_broadcaster_user_id o user_id según el tipo
                     const conflict = subscriptions.find(s => {
-                        if (s.type !== type) return false;
-                        const cond = s.condition;
-                        return cond['broadcaster_user_id'] === broadcasterId ||
-                            cond['to_broadcaster_user_id'] === broadcasterId ||
-                            cond['user_id'] === broadcasterId;
+                        return s.type === type && (
+                            s.condition.broadcaster_user_id === broadcasterId ||
+                            s.condition.user_id === broadcasterId ||
+                            s.condition.to_broadcaster_user_id === broadcasterId
+                        );
                     });
 
                     if (conflict) {
                         logger.info({ subscriptionId: conflict.id, type }, 'Twitch Webhooks: Eliminando suscripción conflictiva antigua');
                         await TwitchEventSubClient.deleteSubscription(conflict.id);
-
-                        // 3. Reintentar la suscripción una sola vez
-                        // Generar nuevo secreto para estar seguros
-                        const newSecret = TwitchWebhookService.generateSecret();
-                        const retrySub = await TwitchEventSubClient.subscribe(
-                            type, version, condition, callbackUrl, newSecret
-                        );
-
-                        const newId = retrySub.data?.[0]?.id || null;
-
-                        if (existingWebhook) {
-                            await existingWebhook.update({
-                                userId,
-                                subscriptionId: newId,
-                                status: 'verification_pending',
-                                secret: newSecret,
-                                callbackUrl,
-                                registeredAt: new Date()
-                            });
-                        } else {
-                            await TwitchWebhook.create({
-                                userId, broadcasterId, subscriptionId: newId,
-                                type, status: 'verification_pending',
-                                secret: newSecret, callbackUrl,
-                                registeredAt: new Date()
-                            });
+                    } else {
+                        const allSubs = await TwitchEventSubClient.listSubscriptions();
+                        const deepConflict = allSubs.find(s => {
+                            return s.type === type && (
+                                s.condition.broadcaster_user_id === broadcasterId ||
+                                s.condition.user_id === broadcasterId ||
+                                s.condition.to_broadcaster_user_id === broadcasterId
+                            );
+                        });
+                        if (deepConflict) {
+                            await TwitchEventSubClient.deleteSubscription(deepConflict.id);
                         }
-                        logger.info({ broadcasterId, type }, 'Twitch Webhooks: Resincronización completada tras conflicto');
-                        return;
                     }
+
+                    const newSecret = TwitchWebhookService.generateSecret();
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    const retrySub = await TwitchEventSubClient.subscribe(
+                        type, version, condition, callbackUrl, newSecret
+                    );
+
+                    const newId = retrySub.data?.[0]?.id || null;
+
+                    if (existingWebhook) {
+                        await existingWebhook.update({
+                            userId,
+                            subscriptionId: newId,
+                            status: 'verification_pending',
+                            secret: newSecret,
+                            callbackUrl,
+                            registeredAt: new Date()
+                        });
+                    } else {
+                        await TwitchWebhook.create({
+                            userId, broadcasterId, subscriptionId: newId,
+                            type, status: 'verification_pending',
+                            secret: newSecret, callbackUrl,
+                            registeredAt: new Date()
+                        });
+                    }
+                    logger.info({ broadcasterId, type }, 'Twitch Webhooks: Resincronización completada tras conflicto');
+                    return;
+
                 } catch (retryError) {
                     logger.error({ err: retryError, type }, 'Twitch Webhooks: Error fatal intentando resolver conflicto 409');
                 }
             } else {
-                logger.error({ err: errorData || axiosError.message, type }, 'Error en ensureSubscription de Twitch');
+                logger.error({ err: axiosError.response?.data || axiosError.message, type }, 'Error en ensureSubscription de Twitch');
             }
         }
     }
 
-    /**
-     * Elimina todas las suscripciones de EventSub para un canal
-     */
     async deleteAllSubscriptions(broadcasterId: string): Promise<void> {
         try {
             logger.info({ broadcasterId }, 'Twitch Webhooks: Eliminando todas las suscripciones por desconexión');
 
-            // 1. Obtener webhooks de la base de datos
             const webhooks = await TwitchWebhook.findAll({
                 where: { broadcasterId }
             });
@@ -209,7 +201,6 @@ export class TwitchManager {
                 }
             }
 
-            // 2. Limpiar registros de la BD
             await TwitchWebhook.destroy({
                 where: { broadcasterId }
             });
@@ -217,6 +208,58 @@ export class TwitchManager {
             logger.info({ broadcasterId }, 'Twitch Webhooks: Limpieza profunda completada');
         } catch (error) {
             logger.error({ err: error, broadcasterId }, 'Twitch Webhooks: Error durante el borrado masivo');
+        }
+    }
+
+    async syncSubscriptionsOnStartup(): Promise<void> {
+        if (!config.appUrl?.startsWith('https://')) {
+            logger.warn('Twitch Sync: APP_URL no es HTTPS, omitiendo sincronización.');
+            return;
+        }
+
+        const currentCallbackUrl = `${config.appUrl}/api/webhooks/twitch`;
+        logger.info({ currentCallbackUrl }, 'Twitch Sync: Iniciando sincronización inteligente...');
+
+        try {
+            const twitchSubs = await TwitchEventSubClient.listSubscriptions();
+            let validCount = 0;
+            let deletedCount = 0;
+
+            for (const sub of twitchSubs) {
+                const existingDbWebhook = await TwitchWebhook.findOne({
+                    where: { subscriptionId: sub.id }
+                });
+
+                if (!existingDbWebhook) {
+                    logger.info({ id: sub.id, type: sub.type }, 'Twitch Sync: Borrando suscripción huérfana (sin secreto local)');
+                    await TwitchEventSubClient.deleteSubscription(sub.id);
+                    deletedCount++;
+                    continue;
+                }
+
+                const subWithTransport = sub as unknown as { transport?: { callback?: string } };
+                const transport = subWithTransport.transport;
+                const twitchCallback = transport?.callback;
+
+                if (twitchCallback && twitchCallback !== currentCallbackUrl) {
+                    logger.info({ id: sub.id, oldUrl: twitchCallback }, 'Twitch Sync: Borrando suscripción con URL obsoleta');
+                    await TwitchEventSubClient.deleteSubscription(sub.id);
+                    await existingDbWebhook.update({ status: 'revoked' });
+                    deletedCount++;
+                    continue;
+                }
+
+                if (existingDbWebhook.status !== sub.status) {
+                    await existingDbWebhook.update({ status: sub.status });
+                    logger.debug({ id: sub.id, status: sub.status }, 'Twitch Sync: Estado actualizado en DB');
+                }
+
+                validCount++;
+            }
+
+            logger.info({ valid: validCount, deleted: deletedCount }, 'Twitch Sync: Sincronización completada.');
+        } catch (error) {
+            logger.error({ err: error }, 'Twitch Sync: Error durante la sincronización inicial');
         }
     }
 }

@@ -41,7 +41,7 @@ private invalidateCache(connectionId: string) {
 
 ---
 
-### 2. MÚLTIPLES CONSULTAS A BD EN AUTENTICACIÓN
+### 2. MÚLTIPLES CONSULTAS A BD EN AUTENTICACIÓN ✅ (CORREGIDO)
 
 **Archivo:** `server/src/services/auth/core/PlatformAuthHandler.ts`
 
@@ -556,7 +556,7 @@ const Dashboard = () => {
 ### 🔴 CRÍTICO (Implementar YA)
 
 1. ✅ Caché de tokens desencriptados (#1) - **IMPLEMENTADO**
-2. ✅ Optimización de consultas en autenticación (#2)
+2. ✅ Optimización de consultas en autenticación (#2) - **IMPLEMENTADO**
 3. ✅ Caché en /me endpoint (#6)
 
 ### 🟡 ALTO (Implementar pronto)

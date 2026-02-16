@@ -134,7 +134,8 @@ export class KickEventTransformer extends BaseEventTransformer {
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date(created_at || Date.now())),
-            color: '#53fc18'
+            color: '#53fc18',
+            isSpecial: true
         };
     }
 

@@ -33,8 +33,7 @@ import { PlatformAuthHandler } from './services/auth/core/PlatformAuthHandler';
 import { UserService } from './services/user/UserService';
 import { MessageBatcher } from './utils/MessageBatcher';
 
-
-import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider } from './services/chat';
+import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider, TwitchManager } from './services/chat';
 import { Platform } from './constants/platforms';
 
 interface RequestWithRawBody extends Request {
@@ -106,7 +105,6 @@ const userServiceInst = new UserService(userRepository, connectionRepository);
 const authDTOBuilder = new AuthDTOBuilder();
 const platformAuthHandler = new PlatformAuthHandler(
     userServiceInst,
-    connectionService,
     connectionRepository,
     authDTOBuilder
 );
@@ -201,7 +199,14 @@ MessageBatcher.getInstance().setIo(io);
 
 setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService);
 
-
+(async () => {
+    try {
+        const twitchManager = new TwitchManager();
+        await twitchManager.syncSubscriptionsOnStartup();
+    } catch (err) {
+        logger.error({ err }, 'Twitch Startup: Error fatal en la sincronización inicial');
+    }
+})();
 
 export { app, io, chatManager };
 export default server;

@@ -98,6 +98,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             specialMessage: '👤 NUEVO SEGUIDOR',
             time: this.formatTime(new Date(event.followed_at)),
             color: '#9146FF',
+            isSpecial: true,
             userId: event.user_id
         };
     }

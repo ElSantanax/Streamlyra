@@ -1,6 +1,7 @@
 /** Servicio de gestión de usuarios con creación desde perfiles de plataformas */
 
 import { User } from '../../models/User.model';
+import { Connection } from '../../models/Connection.model';
 import { PlatformProfile } from '../../types/index';
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
@@ -31,21 +32,32 @@ export class UserService {
         profile: PlatformProfile,
         currentUserId?: string,
         transaction?: Transaction
-    ): Promise<{ user: User, isNew: boolean }> {
+    ): Promise<{ user: User, isNew: boolean, existingConnection?: Connection }> {
+        // Optimización: Intentar traer el usuario con conexiones de una sola vez
         if (currentUserId) {
-            const user = await this.userRepository.findById(currentUserId, transaction);
+            const user = await this.userRepository.findByIdWithConnections(currentUserId, transaction);
             if (user) return { user, isNew: false };
         }
 
-        const existingUserByConn = await this.findByPlatformId(profile.provider, profile.providerId, transaction);
-        if (existingUserByConn) return { user: existingUserByConn, isNew: false };
+        // Buscar por providerId
+        const existingConnection = await this.connectionRepository.findByProvider(profile.provider, profile.providerId, transaction);
+        if (existingConnection) {
+            const user = await this.userRepository.findByIdWithConnections(existingConnection.userId, transaction);
+            if (user) return { user, isNew: false, existingConnection };
+        }
 
+        // Buscar por email
         if (profile.email) {
-            const existingUserByEmail = await this.findByEmail(profile.email, transaction);
-            if (existingUserByEmail) return { user: existingUserByEmail, isNew: false };
+            const existingUserByEmail = await this.userRepository.findByEmail(profile.email, transaction);
+            if (existingUserByEmail) {
+                // Truco para reutilizar findByIdWithConnections y tener el mismo formato de retorno
+                const userWithConns = await this.userRepository.findByIdWithConnections(existingUserByEmail.id, transaction);
+                if (userWithConns) return { user: userWithConns, isNew: false };
+            }
         }
 
         const user = await this.createFromProfile(profile, transaction);
+        // El usuario nuevo no tiene conexiones, no hace falta recargar
         return { user, isNew: true };
     }
 

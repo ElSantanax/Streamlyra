@@ -52,11 +52,12 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             isOwner: item.authorDetails?.isChatOwner as boolean,
             isSub,
             isVIP: item.authorDetails?.isVerified as boolean,
+            isSpecial: !!specialMessage,
             emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
         };
     }
 
-     
+
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
     }
