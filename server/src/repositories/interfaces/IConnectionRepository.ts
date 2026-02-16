@@ -25,4 +25,6 @@ export interface IConnectionRepository {
     removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number>;
 
     updateTokens(connectionId: string, tokens: AuthTokens, transaction?: Transaction): Promise<Connection | null>;
+
+    clearTokens(connectionId: string, transaction?: Transaction): Promise<void>;
 }

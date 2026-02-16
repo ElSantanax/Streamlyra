@@ -2,7 +2,6 @@ import { IConnectionRepository } from '../../repositories/interfaces/IConnection
 import { Connection } from '../../models/Connection.model';
 import { Platform } from '../../constants/platforms';
 import { logger } from '../../utils/logger';
-import { calculateTokenExpiry } from '../../utils/tokenUtils';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 
 /** Servicio de renovación de tokens OAuth con verificación de expiración */
@@ -82,16 +81,12 @@ export class TokenRefreshService {
             const platformService = PlatformServiceFactory.getService(platform);
             const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
 
-            connection.accessToken = newTokens.access_token;
-            if (newTokens.refresh_token) {
-                connection.refreshToken = newTokens.refresh_token;
-            }
-            connection.expiryDate = calculateTokenExpiry(newTokens.expires_in);
+            // USAR REPOSITORIO PARA ACTUALIZAR Y LIMPIAR CACHÉ
+            await this.connectionRepository.updateTokens(connection.id, newTokens);
 
-            await connection.save();
             logger.info({ platform, connectionId: connection.id }, 'Token refreshed successfully');
 
-            return connection.accessToken;
+            return newTokens.access_token;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '';
             const errorString = String(error);
@@ -101,16 +96,14 @@ export class TokenRefreshService {
                 errorMessage.includes('invalid_grant') ||
                 errorMessage.includes('expirado') ||
                 errorMessage.includes('invalid_token') ||
-                errorString.includes('400') || 
+                errorString.includes('400') ||
                 errorString.includes('401')
             ) {
                 logger.error({ platform, connectionId: connection.id }, 'Refresh token revoked, clearing connection');
-                
+
                 try {
-                    connection.accessToken = '';
-                    connection.refreshToken = '';
-                    connection.expiryDate = null;
-                    await connection.save();
+                    // USAR REPOSITORIO PARA LIMPIAR Y BORRAR CACHÉ
+                    await this.connectionRepository.clearTokens(connection.id);
                 } catch (saveError) {
                     logger.error({ err: saveError }, 'Failed to clear invalid tokens');
                 }

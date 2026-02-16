@@ -19,6 +19,12 @@ export class ConnectionRepository implements IConnectionRepository {
     private encryptionService: EncryptionService;
     private cache: WebhookCache;
 
+    // Caché estática compartida por todas las instancias del repositorio
+    private static tokenCache = new Map<string, {
+        accessToken: string,
+        refreshToken: string | null,
+    }>();
+
     constructor() {
         this.encryptionService = new EncryptionService();
         this.cache = WebhookCache.getInstance();
@@ -26,27 +32,34 @@ export class ConnectionRepository implements IConnectionRepository {
 
     /**
      * Helper para desencriptar una conexión antes de retornarla
-     * Si detecta datos legacy (planos), los encripta y guarda automáticamente
+     * Implementa caché en memoria para evitar desencriptaciones repetitivas
      */
     private async decryptAndSyncConnection(connection: Connection | null, transaction?: Transaction): Promise<Connection | null> {
         if (!connection) return null;
 
+        // Intentar obtener de la caché primero
+        const cached = ConnectionRepository.tokenCache.get(connection.id);
+        if (cached) {
+            connection.accessToken = cached.accessToken;
+            if (cached.refreshToken) {
+                connection.refreshToken = cached.refreshToken;
+            }
+            return connection;
+        }
+
         let needsUpdate = false;
         const context = `Connection:${connection.id} (${connection.provider})`;
 
-        // Mantener referencias a los tokens planos para devolverlos al final
         let plainAccessToken = connection.accessToken;
         let plainRefreshToken = connection.refreshToken;
 
         if (connection.accessToken) {
             if (!this.encryptionService.isEncrypted(connection.accessToken)) {
                 needsUpdate = true;
-                // El token actual es plano, lo encriptamos en la instancia para guardar
                 plainAccessToken = connection.accessToken;
                 connection.accessToken = this.encryptionService.encrypt(plainAccessToken);
                 logger.info({ context }, 'Auto-migrating legacy accessToken to encrypted format');
             } else {
-                // El token está encriptado, lo desencriptamos para usarlo en memoria
                 plainAccessToken = this.encryptionService.decrypt(connection.accessToken, context);
             }
         }
@@ -67,13 +80,17 @@ export class ConnectionRepository implements IConnectionRepository {
                 await connection.save({ transaction });
             } catch (err) {
                 logger.error({ err, context }, 'Failed to persist auto-migrated encrypted tokens');
-                // IMPORTANTE: Propagar el error para evitar bucles de reintento infinitos
                 throw new Error("Failed to migrate encrypted tokens");
             }
         }
 
-        // Restaurar siempre los tokens planos en el objeto devuelto
-        // para que la aplicación pueda usarlos inmediatamente
+        // Guardar en caché para futuras consultas
+        ConnectionRepository.tokenCache.set(connection.id, {
+            accessToken: plainAccessToken,
+            refreshToken: plainRefreshToken
+        });
+
+        // Restaurar tokens planos para uso inmediato
         connection.accessToken = plainAccessToken;
         if (plainRefreshToken) {
             connection.refreshToken = plainRefreshToken;
@@ -123,14 +140,13 @@ export class ConnectionRepository implements IConnectionRepository {
     ): Promise<Connection> {
         let connection = await Connection.findOne({ where: { provider, providerId }, transaction });
 
-        // Encriptar tokens antes de guardar
         const encryptedAccessToken = this.encryptionService.encrypt(tokens.access_token);
         const encryptedRefreshToken = tokens.refresh_token
             ? this.encryptionService.encrypt(tokens.refresh_token)
             : undefined;
 
         if (connection) {
-            connection.userId = userId; // Asegurar que el userId sea el actual (soporte para transferencia de canal entre cuentas)
+            connection.userId = userId;
             connection.accessToken = encryptedAccessToken;
             if (encryptedRefreshToken) {
                 connection.refreshToken = encryptedRefreshToken;
@@ -141,6 +157,9 @@ export class ConnectionRepository implements IConnectionRepository {
                 connection.chatroomId = chatroomId;
             }
             await connection.save({ transaction });
+
+            // Invalidar caché tras actualización
+            ConnectionRepository.tokenCache.delete(connection.id);
         } else {
             connection = await Connection.create({
                 provider,
@@ -154,23 +173,22 @@ export class ConnectionRepository implements IConnectionRepository {
             }, { transaction });
         }
 
-        // Retornar con tokens planos para que la aplicación los pueda usar inmediatamente
         connection.accessToken = tokens.access_token;
         if (tokens.refresh_token) {
             connection.refreshToken = tokens.refresh_token;
         }
 
-        // Invalidar caché de webhooks ante cambios en la conexión
         this.cache.invalidate(WebhookCache.keys.connection(provider, providerId));
 
         return connection;
     }
 
     async removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number> {
-        // Obtenemos la conexión antes de borrar para saber el providerId a invalidar
         const connection = await Connection.findOne({ where: { userId, provider }, transaction });
-        if (connection?.providerId) {
+        if (connection) {
             this.cache.invalidate(WebhookCache.keys.connection(provider, connection.providerId));
+            // Invalidar caché local
+            ConnectionRepository.tokenCache.delete(connection.id);
         }
 
         return Connection.destroy({ where: { userId, provider }, transaction });
@@ -187,6 +205,9 @@ export class ConnectionRepository implements IConnectionRepository {
         connection.expiryDate = calculateTokenExpiry(tokens.expires_in);
         await connection.save({ transaction });
 
+        // Invalidar caché tras actualización
+        ConnectionRepository.tokenCache.delete(connectionId);
+
         // Retornar desencriptado para uso inmediato
         connection.accessToken = tokens.access_token;
         if (tokens.refresh_token) {
@@ -194,5 +215,18 @@ export class ConnectionRepository implements IConnectionRepository {
         }
 
         return connection;
+    }
+
+    async clearTokens(connectionId: string, transaction?: Transaction): Promise<void> {
+        const connection = await Connection.findByPk(connectionId, { transaction });
+        if (!connection) return;
+
+        connection.accessToken = '';
+        connection.refreshToken = '';
+        connection.expiryDate = null;
+        await connection.save({ transaction });
+
+        // Invalidar caché tras actualización
+        ConnectionRepository.tokenCache.delete(connectionId);
     }
 }
