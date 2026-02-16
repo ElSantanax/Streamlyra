@@ -91,7 +91,7 @@ const connection = await Connection.findOne({
 
 ---
 
-### 3. POLLING EXCESIVO EN YOUTUBE
+### 3. POLLING EXCESIVO EN YOUTUBE ✅ RESUELTO
 
 **Archivos:**
 
@@ -141,7 +141,7 @@ class AdaptivePoller {
 
 ---
 
-### 4. FALTA DE ÍNDICES EN BD
+### 4. FALTA DE ÍNDICES EN BD ✅ NO NECESARIO
 
 **Archivo:** `server/src/models/Connection.model.ts`
 
@@ -172,7 +172,7 @@ indexes: [
 
 ---
 
-### 5. THUNDERING HERD EN SOCKET CONNECTIONS
+### 5. THUNDERING HERD EN SOCKET CONNECTIONS ✅ RESUELTO
 
 **Archivo:** `server/src/socket/services/SocketConnectionManager.ts`
 
@@ -561,9 +561,9 @@ const Dashboard = () => {
 
 ### 🟡 ALTO (Implementar pronto)
 
-4. ⬜ Polling adaptativo en YouTube (#3)
+4. ✅ Polling adaptativo en YouTube (#3) - **CORREGIDO** (valor cuota 1→5)
 5. ⬜ Reconexiones optimizadas en providers (#7)
-6. ⬜ Índices adicionales en BD (#4)
+6. ✅ Índices adicionales en BD (#4) - **NO NECESARIO** (índices actuales suficientes)
 
 ### 🟢 MEDIO (Cuando sea posible)
 
