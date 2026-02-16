@@ -18,6 +18,14 @@ const initialStats: Record<string, ConnectionStats> = {
   kick: { viewers: 0 },
 };
 
+import type { MeResponse } from '../types';
+
+// Cache global fuera del hook para persistir entre montajes
+let cachedData: MeResponse | null = null;
+let lastFetchTime = 0;
+let activePromise: Promise<MeResponse> | null = null; // Promesa en vuelo para deduplicación
+const CACHE_DURATION = 30000; // 30 segundos
+
 export const useConnections = (shouldFetch = true) => {
   const [status, setStatus] = useState<Record<string, ConnectionStatus>>(initialStatus);
   const [stats, setStats] = useState<Record<string, ConnectionStats>>(initialStats);
@@ -33,55 +41,89 @@ export const useConnections = (shouldFetch = true) => {
     statsRef.current = stats;
   }, [status, stats]);
 
-  const fetchConnections = useCallback(async () => {
+  const processData = useCallback((data: MeResponse) => {
+    const newStatus: Record<string, ConnectionStatus> = {};
+    const newStats: Record<string, ConnectionStats> = {};
+    let statusChanged = false;
+    let statsChanged = false;
+
+    Object.keys(data.connections).forEach(platform => {
+      const fetched = data.connections[platform];
+
+      // Extraer Status
+      newStatus[platform] = {
+        connected: fetched.connected,
+        username: fetched.username,
+        status: statusRef.current[platform]?.status, // Mantener status efímero si existe
+        statusMessage: statusRef.current[platform]?.statusMessage,
+        isLive: fetched.isLive
+      };
+
+      // Extraer Stats
+      newStats[platform] = {
+        viewers: fetched.viewers ?? 0,
+        sessionStartTime: fetched.sessionStartTime,
+        serverTime: fetched.serverTime
+      };
+
+      if (JSON.stringify(newStatus[platform]) !== JSON.stringify(statusRef.current[platform])) {
+        statusChanged = true;
+      }
+      if (JSON.stringify(newStats[platform]) !== JSON.stringify(statsRef.current[platform])) {
+        statsChanged = true;
+      }
+    });
+
+    if (statusChanged) setStatus(newStatus);
+    if (statsChanged) setStats(newStats);
+  }, []);
+
+  const fetchConnections = useCallback(async (force = false) => {
     if (!shouldFetch) return;
+
+    // 1. Verificar caché cliente (si no forzamos actualización y es válida)
+    const now = Date.now();
+    if (!force && cachedData && (now - lastFetchTime < CACHE_DURATION)) {
+      processData(cachedData);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await authService.getMe();
+      // 2. Deduplicación de peticiones en vuelo
+      // Si ya hay una promesa activa (alguien más pidió datos hace milisegundos), nos colgamos de ella
+      let data;
+      if (activePromise && !force) {
+        data = await activePromise;
+      } else {
+        // Si no hay promesa activa, creamos una nueva y la guardamos globalmente
+        const promise = authService.getMe();
+        activePromise = promise;
 
-      const newStatus: Record<string, ConnectionStatus> = {};
-      const newStats: Record<string, ConnectionStats> = {};
-      let statusChanged = false;
-      let statsChanged = false;
-
-      Object.keys(data.connections).forEach(platform => {
-        const fetched = data.connections[platform];
-
-        // Extraer Status
-        newStatus[platform] = {
-          connected: fetched.connected,
-          username: fetched.username,
-          status: statusRef.current[platform]?.status, // Mantener status efímero si existe
-          statusMessage: statusRef.current[platform]?.statusMessage,
-          isLive: fetched.isLive
-        };
-
-        // Extraer Stats
-        newStats[platform] = {
-          viewers: fetched.viewers ?? 0,
-          sessionStartTime: fetched.sessionStartTime,
-          serverTime: fetched.serverTime
-        };
-
-        if (JSON.stringify(newStatus[platform]) !== JSON.stringify(statusRef.current[platform])) {
-          statusChanged = true;
+        try {
+          data = await promise;
+          // Solo actualizamos caché si la petición fue exitosa
+          cachedData = data;
+          lastFetchTime = Date.now();
+        } finally {
+          // Importante: Limpiar la promesa activa al terminar (sea éxito o error)
+          // para permitir futuras peticiones frescas
+          if (activePromise === promise) {
+            activePromise = null;
+          }
         }
-        if (JSON.stringify(newStats[platform]) !== JSON.stringify(statsRef.current[platform])) {
-          statsChanged = true;
-        }
-      });
+      }
 
-      if (statusChanged) setStatus(newStatus);
-      if (statsChanged) setStats(newStats);
+      processData(data);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error fetching connections');
     } finally {
       setIsLoading(false);
     }
-  }, [shouldFetch]);
+  }, [shouldFetch, processData]);
 
   const updateStatus = useCallback((platform: string, updates: Partial<ConnectionStatus>) => {
     setStatus(prev => {

@@ -38,7 +38,7 @@ export class AuthController {
 
         this.setCsrfCookie(res);
 
-         
+
         const { token: _token, ...responseData } = result;
         res.json(responseData);
     }
@@ -64,6 +64,10 @@ export class AuthController {
         if (!result) {
             throw new AppError('Usuario no encontrado', 404);
         }
+
+        // Agregar caché HTTP
+        res.setHeader("Cache-Control", "private, max-age=30");
+        res.setHeader("ETag", `"${req.user.id}-${Date.now()}"`);
 
         res.json(result);
     };
@@ -101,7 +105,7 @@ export class AuthController {
 
         this.setCsrfCookie(res);
 
-         
+
         const { token: _token, ...responseData } = result;
         res.json(responseData);
     };

@@ -212,7 +212,7 @@ private async hasActiveProviderConnections(userId: string): Promise<boolean> {
 
 ---
 
-### 6. FALTA DE CACHÉ EN /ME ENDPOINT
+### 6. FALTA DE CACHÉ EN /ME ENDPOINT ✅ RESUELTO
 
 **Archivos:**
 
