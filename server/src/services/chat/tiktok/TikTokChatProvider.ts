@@ -214,23 +214,17 @@ export class TikTokChatProvider implements ChatProvider {
         await this.clearInternalState(userId);
     }
 
-    /**
-     * Normaliza el username removiendo @ iniciales
-     */
+    // Normaliza el username removiendo @ iniciales
     private normalizeUsername(username: string): string {
         return username.replace(/^@+/, '');
     }
 
-    /**
-     * Genera un ID único para el flujo de conexión
-     */
+    // Genera un ID único para el flujo de conexión
     private generateFlowId(): string {
         return Math.random().toString(36).substring(7);
     }
 
-    /**
-     * Determina el estado de conexión actual basado en stream confirmation
-     */
+    // Determina el estado de conexión actual basado en stream confirmation
     private getCurrentConnectionStatus(userId: string): {
         status: 'connected' | 'waiting_stream';
         message: string | undefined;
@@ -243,17 +237,13 @@ export class TikTokChatProvider implements ChatProvider {
         return { status, message, isLive };
     }
 
-    /**
-     * Valida si el flujo de conexión sigue siendo válido
-     */
+    // Valida si el flujo de conexión sigue siendo válido
     private isFlowValid(userId: string, flowId: string): boolean {
         return this.stateManager.hasState(userId) &&
             this.stateManager.getFlowId(userId) === flowId;
     }
 
-    /**
-     * Valida si la conexión post-establecimiento sigue siendo válida
-     */
+    // Valida si la conexión post-establecimiento sigue siendo válida
     private async isConnectionStillValid(
         userId: string,
         flowId: string,
@@ -268,9 +258,7 @@ export class TikTokChatProvider implements ChatProvider {
             currentBoundUsername === expectedUsername;
     }
 
-    /**
-     * Emite el estado de conexión actual al cliente
-     */
+    // Emite el estado de conexión actual al cliente
     private emitCurrentConnectionStatus(userId: string, io: Server): void {
         const { status, message, isLive } = this.getCurrentConnectionStatus(userId);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, message, isLive);

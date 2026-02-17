@@ -8,7 +8,6 @@ import { StreamSessionManager } from '../services/core/StreamSessionManager';
 import { MessageBatcher } from './MessageBatcher';
 import { NormalizedChatMessage } from '../services/chat/transformers/EventTransformer';
 
-
 interface EmitOptions {
     userId: string;
     event: string;

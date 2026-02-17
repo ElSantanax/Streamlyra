@@ -16,7 +16,6 @@ export class SocketConnectionManager {
     private lockManager = new SocketLockManager();
     private connectedUsers = new Set<string>();
 
-
     constructor(private chatManager: ChatManager) {
     }
 
