@@ -26,7 +26,7 @@ export class KickEventTransformer extends BaseEventTransformer {
             color: '#53fc18', // Color verde de Kick
             isMod: sender?.identity?.badges?.some((b) => b.type === 'moderator') || false,
             isSub: sender?.identity?.badges?.some((b) => b.type === 'subscriber') || false,
-            isVIP: sender?.is_verified || false,
+            isVIP: sender?.identity?.badges?.some((b) => b.type === 'vip') || false,
             isOwner: broadcaster?.user_id === sender?.user_id,
             // Campos para moderación
             messageId: message_id || '',

@@ -29,7 +29,7 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             color: '#9146FF',
             isMod: (tags.mod as boolean) || false,
             isSub: (tags.subscriber as boolean) || false,
-            isVIP: !!(tags.vip as boolean),
+            isVIP: !!(tags.vip) || (tags.badges as Record<string, string>)?.vip === '1',
             isOwner: (tags.badges as Record<string, string>)?.broadcaster === '1',
             messageId: (tags.id as string) || undefined,
             userId: (tags['user-id'] as string) || undefined,
