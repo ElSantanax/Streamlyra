@@ -69,48 +69,98 @@ export class TokenRefreshService {
         return (expiryDate.getTime() - Date.now()) > TokenRefreshService.BUFFER_TIME_MS;
     }
 
+    private isTransientError(error: unknown): boolean {
+        if (!error || typeof error !== 'object') return false;
+
+        const err = error as {
+            response?: { status?: number };
+            code?: string;
+            message?: string
+        };
+
+        const status = err.response?.status;
+        const code = err.code || err.message;
+
+        // Errores de red o de timeout
+        const networkErrors = ['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'ERR_NETWORK'];
+        if (networkErrors.some(errMsg => String(code).includes(errMsg))) return true;
+
+        // Errores de servidor (5xx) o Rate Limit (429)
+        if (typeof status === 'number') {
+            return (status >= 500 && status <= 599) || status === 429;
+        }
+
+        return false;
+    }
+
     private async refreshToken(connection: Connection, platform: Platform): Promise<string | null> {
         if (!connection.refreshToken) {
             logger.warn({ platform, connectionId: connection.id }, 'No refresh token available');
             return null;
         }
 
-        try {
-            logger.debug({ platform, connectionId: connection.id }, 'Refreshing access token');
+        const MAX_RETRIES = 3;
+        let lastError: unknown;
 
-            const platformService = PlatformServiceFactory.getService(platform);
-            const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                if (attempt > 0) {
+                    logger.debug({ platform, connectionId: connection.id, attempt: attempt + 1 }, 'Retrying token refresh');
+                } else {
+                    logger.debug({ platform, connectionId: connection.id }, 'Refreshing access token');
+                }
 
-            // USAR REPOSITORIO PARA ACTUALIZAR Y LIMPIAR CACHÉ
-            await this.connectionRepository.updateTokens(connection.id, newTokens);
+                const platformService = PlatformServiceFactory.getService(platform);
+                const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
 
-            logger.info({ platform, connectionId: connection.id }, 'Token refreshed successfully');
+                // USAR REPOSITORIO PARA ACTUALIZAR Y LIMPIAR CACHÉ
+                await this.connectionRepository.updateTokens(connection.id, newTokens);
 
-            return newTokens.access_token;
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '';
-            const errorString = String(error);
+                logger.info({ platform, connectionId: connection.id }, 'Token refreshed successfully');
+                return newTokens.access_token;
 
-            // Detectar si el refresh token ha expirado o ha sido revocado (invalid_grant)
-            if (
-                errorMessage.includes('invalid_grant') ||
-                errorMessage.includes('expirado') ||
-                errorMessage.includes('invalid_token') ||
-                errorString.includes('400') ||
-                errorString.includes('401')
-            ) {
-                logger.error({ platform, connectionId: connection.id }, 'Refresh token revoked, clearing connection');
+            } catch (error) {
+                lastError = error;
 
-                try {
-                    // USAR REPOSITORIO PARA LIMPIAR Y BORRAR CACHÉ
-                    await this.connectionRepository.clearTokens(connection.id);
-                } catch (saveError) {
-                    logger.error({ err: saveError }, 'Failed to clear invalid tokens');
+                // Si no es un error transitorio, no reintentamos
+                if (!this.isTransientError(error)) {
+                    logger.warn({ platform, connectionId: connection.id }, 'Permanent error during refresh, skipping retries');
+                    break;
+                }
+
+                // Si es el último intento, no esperamos
+                if (attempt < MAX_RETRIES - 1) {
+                    const baseDelay = Math.pow(2, attempt) * 1000; // 1s, 2s...
+                    const jitter = Math.random() * 1000;
+                    const delay = baseDelay + jitter;
+
+                    logger.warn({ platform, attempt: attempt + 1, delay: Math.round(delay) }, 'Transient error during refresh, waiting for retry...');
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
-
-            logger.error({ err: error, platform }, 'Failed to refresh token');
-            return null;
         }
+
+        // Manejo de error final (Lógica original preservada)
+        const errorMessage = lastError instanceof Error ? lastError.message : '';
+        const errorString = String(lastError);
+
+        if (
+            errorMessage.includes('invalid_grant') ||
+            errorMessage.includes('expirado') ||
+            errorMessage.includes('invalid_token') ||
+            errorString.includes('400') ||
+            errorString.includes('401')
+        ) {
+            logger.error({ platform, connectionId: connection.id }, 'Refresh token revoked, clearing connection');
+
+            try {
+                await this.connectionRepository.clearTokens(connection.id);
+            } catch (saveError) {
+                logger.error({ err: saveError }, 'Failed to clear invalid tokens');
+            }
+        }
+
+        logger.error({ err: lastError, platform }, 'Failed to refresh token after all attempts');
+        return null;
     }
 }
