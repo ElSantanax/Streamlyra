@@ -4,6 +4,7 @@ import { UserBadge } from '../../../common/UserBadge';
 import { StatusIndicator } from './components/StatusIndicator';
 import { MessageActions } from './components/MessageActions';
 import { MessageContent } from './components/MessageContent';
+import { MdDiamond } from 'react-icons/md';
 import type { ChatMessageProps } from './types';
 
 const ChatMessage = memo(({
@@ -75,7 +76,7 @@ const ChatMessage = memo(({
 
                         {bits !== undefined && bits > 0 && (
                             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-500 animate-pulse-slow">
-                                <span className="material-symbols-outlined text-[14px]">diamond</span>
+                                <MdDiamond size={14} />
                                 <span className="text-[10px] md:text-xs font-black">{bits}</span>
                             </div>
                         )}

@@ -68,16 +68,10 @@ class ToastManager {
       ${this.getTypeStyles(type)}
     `;
 
-    const icon = this.getIcon(type);
-    const iconEl = document.createElement('span');
-    iconEl.className = 'shrink-0 text-lg';
-    iconEl.innerHTML = icon;
-
     const messageEl = document.createElement('span');
     messageEl.className = 'text-sm font-medium text-center';
     messageEl.textContent = message;
 
-    toast.appendChild(iconEl);
     toast.appendChild(messageEl);
     container.appendChild(toast);
 
@@ -108,16 +102,6 @@ class ToastManager {
       info: 'bg-blue-500/10 border-blue-500/20 text-blue-500',
     };
     return styles[type];
-  }
-
-  private getIcon(type: ToastType): string {
-    const icons = {
-      success: '✓',
-      error: '✕',
-      warning: '⚠',
-      info: 'ℹ',
-    };
-    return icons[type];
   }
 
   success(message: string, options?: ToastOptions) {

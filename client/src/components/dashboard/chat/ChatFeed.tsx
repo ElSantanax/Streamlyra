@@ -1,6 +1,7 @@
 import { memo, useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { LocalErrorBoundary } from '../../common/LocalErrorBoundary';
+import { MdArrowDownward } from 'react-icons/md';
 import ChatMessage from './ChatMessage';
 import type { ChatMessage as ChatMessageData } from '../../../types/chat.types';
 import type { PlatformKey } from '../../../constants/platforms';
@@ -114,7 +115,7 @@ const ChatFeed = memo(({
                             className="bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white px-4 py-2 rounded-full shadow-2xl shadow-black/50 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in slide-in-from-bottom-2 fade-in hover:bg-surface-light group-hover:opacity-100"
                         >
                             <span className="text-primary font-bold">Ver mensajes nuevos</span>
-                            <span className="material-symbols-outlined text-[16px] text-primary">arrow_downward</span>
+                            <MdArrowDownward size={16} className="text-primary" />
                         </button>
                     </div>
                 )}

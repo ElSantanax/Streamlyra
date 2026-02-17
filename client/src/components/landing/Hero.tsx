@@ -1,5 +1,6 @@
 import { FaTwitch, FaYoutube, FaTiktok } from "react-icons/fa";
 import { SiKick } from "react-icons/si";
+import { MdDashboard, MdChat, MdAnalytics } from "react-icons/md";
 
 const Hero = () => {
     return (
@@ -46,19 +47,13 @@ const Hero = () => {
                             <div className="flex flex-1 overflow-hidden">
                                 <div className="w-12 border-r border-gray-200 dark:border-white/5 flex flex-col items-center py-4 gap-4">
                                     <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                                        <span className="material-symbols-outlined text-sm">
-                                            dashboard
-                                        </span>
+                                        <MdDashboard className="text-sm" />
                                     </div>
                                     <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                        <span className="material-symbols-outlined text-sm">
-                                            chat
-                                        </span>
+                                        <MdChat className="text-sm" />
                                     </div>
                                     <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                        <span className="material-symbols-outlined text-sm">
-                                            analytics
-                                        </span>
+                                        <MdAnalytics className="text-sm" />
                                     </div>
                                 </div>
                                 <div className="flex-1 p-4 flex flex-col gap-4">

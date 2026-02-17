@@ -1,3 +1,5 @@
+import { MdSend } from 'react-icons/md';
+
 interface SendButtonProps {
     onClick: () => void;
     disabled: boolean;
@@ -10,7 +12,7 @@ const SendButton = ({ onClick, disabled }: SendButtonProps) => {
             onClick={onClick}
             disabled={disabled}
         >
-            Enviar <span className="material-symbols-outlined text-[16px]">send</span>
+            Enviar <MdSend size={16} />
         </button>
     );
 };
