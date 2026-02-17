@@ -52,8 +52,8 @@ export class YouTubeChatProvider implements ChatProvider {
 
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
-            // Iniciar auto-discovery (no bloqueante) para no retrasar el retorno de la función
-            void this.setupAutoDiscovery(userId, io);
+            // Iniciar auto-discovery (no bloqueante) paseando la conexión ya obtenida
+            void this.setupAutoDiscovery(userId, connection, io);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'YouTube: Failed to setup connection');
@@ -75,7 +75,10 @@ export class YouTubeChatProvider implements ChatProvider {
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'connecting', 'Buscando...');
 
         try {
-            await this.attemptDiscovery(userId, io);
+            const connection = await this.getConnection(userId);
+            if (!connection) throw new Error('No connection found');
+
+            await this.attemptDiscovery(userId, connection, io);
         } catch {
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'waiting_stream', 'Sin Live público');
         } finally {
@@ -89,13 +92,13 @@ export class YouTubeChatProvider implements ChatProvider {
         });
     }
 
-    private async setupAutoDiscovery(userId: string, io: Server): Promise<void> {
+    private async setupAutoDiscovery(userId: string, connection: Connection, io: Server): Promise<void> {
         const tryConnect = async () => {
             if (this.stateManager.getAutoAttempts(userId) >= YouTubePollingConfig.AUTO_DISCOVERY_MAX_ATTEMPTS) {
                 this.handleAutoDiscoveryExhausted(userId, io);
                 return;
             }
-            await this.attemptDiscovery(userId, io);
+            await this.attemptDiscovery(userId, connection, io);
         };
 
         const cleanup = retryWithInterval(tryConnect, {
@@ -107,13 +110,8 @@ export class YouTubeChatProvider implements ChatProvider {
         await tryConnect().catch(() => { });
     }
 
-    private async attemptDiscovery(userId: string, io: Server): Promise<void> {
+    private async attemptDiscovery(userId: string, connection: Connection, io: Server): Promise<void> {
         this.stateManager.incrementAutoAttempts(userId);
-
-        const connection = await this.getConnection(userId);
-        if (!connection) {
-            throw new Error('Token inválido'); // Si no hay conexión, no podemos hacer mucho
-        }
 
         const validToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
         if (!validToken) throw new Error('Token inválido');

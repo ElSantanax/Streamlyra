@@ -120,9 +120,10 @@ export class TwitchManager {
                 logger.warn({ broadcasterId, type }, 'Twitch Webhooks: Conflicto 409 detectado. Intentando limpiar y resincronizar...');
 
                 try {
-                    const subscriptions = await TwitchEventSubClient.listSubscriptions('enabled');
+                    // Buscar en TODAS las suscripciones (activas, pendientes, etc)
+                    const allSubs = await TwitchEventSubClient.listSubscriptions();
 
-                    const conflict = subscriptions.find(s => {
+                    const conflict = allSubs.find(s => {
                         return s.type === type && (
                             s.condition.broadcaster_user_id === broadcasterId ||
                             s.condition.user_id === broadcasterId ||
@@ -131,25 +132,17 @@ export class TwitchManager {
                     });
 
                     if (conflict) {
-                        logger.info({ subscriptionId: conflict.id, type }, 'Twitch Webhooks: Eliminando suscripción conflictiva antigua');
+                        logger.info({ subscriptionId: conflict.id, type, status: conflict.status }, 'Twitch Webhooks: Eliminando suscripción conflictiva antigua');
                         await TwitchEventSubClient.deleteSubscription(conflict.id);
                     } else {
-                        const allSubs = await TwitchEventSubClient.listSubscriptions();
-                        const deepConflict = allSubs.find(s => {
-                            return s.type === type && (
-                                s.condition.broadcaster_user_id === broadcasterId ||
-                                s.condition.user_id === broadcasterId ||
-                                s.condition.to_broadcaster_user_id === broadcasterId
-                            );
-                        });
-                        if (deepConflict) {
-                            await TwitchEventSubClient.deleteSubscription(deepConflict.id);
-                        }
+                        logger.warn({ type, broadcasterId }, 'Twitch Webhooks: Conflicto 409 reportado pero no se encontró suscripción coincidente en la lista');
                     }
 
                     const newSecret = TwitchWebhookService.generateSecret();
 
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Aumentar delay a 3s para dar tiempo a Twitch de propagar el borrado
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+
 
                     const retrySub = await TwitchEventSubClient.subscribe(
                         type, version, condition, callbackUrl, newSecret

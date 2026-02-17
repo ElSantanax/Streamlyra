@@ -37,22 +37,9 @@ export class TwitchChatProvider implements ChatProvider {
 
         try {
             if (this.activeClients.has(userId)) {
-                try {
-                    logger.debug({ userId }, 'User already has an active Twitch client, refreshing state');
-                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
-
-                    const connection = await Connection.findOne({
-                        where: { userId: String(userId), provider: 'twitch' }
-                    });
-
-                    if (connection?.providerId) {
-                        void this.twitchManager.registerWebhooks(userId, connection.providerId);
-                    }
-                } catch (error) {
-                    logger.error({ err: error, userId }, 'Error refreshing Twitch state for active client');
-                } finally {
-                    this.connectingUsers.delete(userId);
-                }
+                logger.debug({ userId }, 'User already has an active Twitch client, skipping unnecessary DB lookup');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
+                this.connectingUsers.delete(userId);
                 return;
             }
 

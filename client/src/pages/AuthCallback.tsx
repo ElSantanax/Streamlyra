@@ -4,6 +4,7 @@ import { authService as apiAuthService } from '../services/api/auth.service';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from '../lib/notifications';
+import { invalidateConnectionsCache } from '../hooks/useConnections';
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
@@ -73,7 +74,9 @@ const AuthCallback = () => {
 
                     const data = await apiAuthService.exchangeCode(platform, code, codeVerifier);
 
+
                     login(data.user);
+                    invalidateConnectionsCache();
 
                     // Redirigir
                     const redirectUrl = localStorage.getItem('auth_redirect');

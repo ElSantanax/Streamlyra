@@ -65,16 +65,17 @@ export class AuthController {
             throw new AppError('Usuario no encontrado', 404);
         }
 
-        // Agregar caché HTTP
-        res.setHeader("Cache-Control", "private, max-age=30");
-        res.setHeader("ETag", `"${req.user.id}-${Date.now()}"`);
+        // Desactivar caché HTTP para evitar inconsistencias en acciones rápidas (conectar/desconectar)
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+        res.setHeader("Surrogate-Control", "no-store");
 
         res.json(result);
     };
 
     disconnectPlatform = async (req: AuthRequest, res: Response): Promise<void> => {
         const { provider } = req.body as { provider: Platform };
-
 
         if (!req.user) {
             throw new AppError('No autorizado', 401);

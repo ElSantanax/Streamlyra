@@ -26,6 +26,11 @@ let lastFetchTime = 0;
 let activePromise: Promise<MeResponse> | null = null; // Promesa en vuelo para deduplicación
 const CACHE_DURATION = 30000; // 30 segundos
 
+export const invalidateConnectionsCache = () => {
+  cachedData = null;
+  lastFetchTime = 0;
+};
+
 export const useConnections = (shouldFetch = true) => {
   const [status, setStatus] = useState<Record<string, ConnectionStatus>>(initialStatus);
   const [stats, setStats] = useState<Record<string, ConnectionStats>>(initialStats);
