@@ -9,8 +9,10 @@ import { Op } from 'sequelize';
 import { logger } from '../../../utils/logger';
 import { YouTubeSubscription } from '../../../models/YouTubeSubscription.model';
 import { config } from '../../../config';
+import { EncryptionService } from '../../security/EncryptionService';
 
 export class YouTubePubSubService {
+    private static readonly encryptionService = new EncryptionService();
     private static readonly HUB_URL = 'https://pubsubhubbub.appspot.com/subscribe';
     private static readonly TOPIC_BASE = 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=';
     private static readonly LEASE_SECONDS = 432000; // ~5 días
@@ -82,12 +84,13 @@ export class YouTubePubSubService {
             );
 
             if (response.status === 202 || response.status === 204) {
+                const encryptedSecret = this.encryptionService.encrypt(secret);
                 if (subscription) {
                     // Actualizar registro existente (si estaba expired o denied)
                     await subscription.update({
                         topicUrl,
                         callbackUrl,
-                        secret,
+                        secret: encryptedSecret,
                         status: 'pending',
                         expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
                         registeredAt: new Date()
@@ -100,7 +103,7 @@ export class YouTubePubSubService {
                         channelId,
                         topicUrl,
                         callbackUrl,
-                        secret,
+                        secret: encryptedSecret,
                         status: 'pending',
                         expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
                         registeredAt: new Date()
@@ -239,13 +242,21 @@ export class YouTubePubSubService {
                 expiresAt: subscription.expirationDate
             }, 'Renovando suscripción de YouTube PubSubHubbub');
 
+            // Desencriptar para la petición a YouTube y asegurar formato encriptado en DB
+            let plainSecret = subscription.secret;
+            const context = `YouTubeSubscription:${subscription.id}:Renewal`;
+
+            if (this.encryptionService.isEncrypted(plainSecret)) {
+                plainSecret = this.encryptionService.decrypt(plainSecret, context);
+            }
+
             const response = await axios.post(
                 this.HUB_URL,
                 new URLSearchParams({
                     'hub.mode': 'subscribe',
                     'hub.topic': subscription.topicUrl,
                     'hub.callback': subscription.callbackUrl,
-                    'hub.secret': subscription.secret,
+                    'hub.secret': plainSecret,
                     'hub.lease_seconds': this.LEASE_SECONDS.toString()
                 }),
                 {
@@ -257,9 +268,12 @@ export class YouTubePubSubService {
             );
 
             if (response.status === 202 || response.status === 204) {
+                // Si llegamos aquí, el secreto plano es correcto. Aseguramos que en DB esté encriptado.
+                const encryptedSecret = this.encryptionService.encrypt(plainSecret);
                 await subscription.update({
                     expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
-                    status: 'pending' // Volvemos a pending hasta que llegue la verificación
+                    status: 'pending', // Volvemos a pending hasta que llegue la verificación
+                    secret: encryptedSecret
                 });
 
                 logger.info({ channelId: subscription.channelId }, 'Renovación de suscripción solicitada exitosamente');

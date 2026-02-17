@@ -80,7 +80,7 @@ export class TwitchWebhook extends Model<TwitchWebhookAttributes> {
     declare status: string;
 
     @Column({
-        type: DataType.STRING(100),
+        type: DataType.TEXT,
         allowNull: false
     })
     declare secret: string;

@@ -76,7 +76,7 @@ export class YouTubeSubscription extends Model<YouTubeSubscriptionAttributes> {
     declare callbackUrl: string;
 
     @Column({
-        type: DataType.STRING(100),
+        type: DataType.TEXT,
         allowNull: false,
         comment: 'Secret para validar firma de notificaciones'
     })

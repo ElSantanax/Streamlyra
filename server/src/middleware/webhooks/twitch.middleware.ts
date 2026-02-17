@@ -12,6 +12,9 @@ import {
     RequestWithWebhookData,
     validateTimestamp
 } from './utils';
+import { EncryptionService } from '../../services/security/EncryptionService';
+
+const encryptionService = new EncryptionService();
 
 
 /**
@@ -125,10 +128,23 @@ export const validateTwitchWebhook = async (
             throw new AppError('Webhook not registered', 404);
         }
 
-        // 4. Verificar firma (HMAC-SHA256)
+        // 4. Desencriptar secreto y Auto-migración si es necesario
+        let plainSecret = dbWebhookData.secret;
+        const context = `TwitchWebhook:${dbWebhookData.id} (${dbWebhookData.broadcasterId})`;
+
+        if (!encryptionService.isEncrypted(plainSecret)) {
+            // Migrar a encriptado silenciosamente
+            const encryptedSecret = encryptionService.encrypt(plainSecret);
+            await dbWebhookData.update({ secret: encryptedSecret });
+            logger.info({ context }, 'Auto-migrating legacy Twitch webhook secret to encrypted format');
+        } else {
+            plainSecret = encryptionService.decrypt(plainSecret, context);
+        }
+
+        // 5. Verificar firma (HMAC-SHA256)
         const rawBody = req.rawBody || JSON.stringify(req.body);
         const isValidSignature = TwitchWebhookService.verifySignature(
-            dbWebhookData.secret,
+            plainSecret,
             messageId,
             timestamp,
             rawBody,
@@ -139,12 +155,12 @@ export const validateTwitchWebhook = async (
             throw new AppError('Invalid Twitch signature', 401);
         }
 
-        // 5. Prevención de Duplicados
+        // 6. Prevención de Duplicados
         if (TwitchWebhookService.isDuplicate(messageId)) {
             return res.status(200).send('OK (Duplicate)');
         }
 
-        // 6. Manejo de Revocaciones
+        // 7. Manejo de Revocaciones
         if (messageType === 'revocation') {
             await TwitchWebhookService.handleRevocation(
                 broadcasterId,
@@ -154,7 +170,7 @@ export const validateTwitchWebhook = async (
             return res.status(200).send('OK (Revoked)');
         }
 
-        // 7. Respuesta inmediata al Challenge
+        // 8. Respuesta inmediata al Challenge
         if (messageType === 'webhook_callback_verification') {
             await TwitchWebhookService.handleVerification(
                 broadcasterId,
@@ -164,7 +180,7 @@ export const validateTwitchWebhook = async (
             return res.status(200).send(body.challenge);
         }
 
-        // 8. Preparar datos para el procesador final (TwitchWebhookProcessor)
+        // 9. Preparar datos para el procesador final (TwitchWebhookProcessor)
         req.webhookData = {
             signature,
             timestamp,

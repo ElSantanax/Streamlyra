@@ -5,8 +5,10 @@ import { TwitchWebhook } from '../../../models/TwitchWebhook.model';
 import { TwitchWebhookService } from './TwitchWebhookService';
 import { logger } from '../../../utils/logger';
 import { config } from '../../../config';
+import { EncryptionService } from '../../security/EncryptionService';
 
 export class TwitchManager {
+    private encryptionService = new EncryptionService();
     private readonly EVENT_TYPES = [
         { type: 'channel.follow', version: '2' },
         { type: 'channel.subscribe', version: '1' },
@@ -89,13 +91,14 @@ export class TwitchManager {
             );
 
             const subscriptionId = subscription.data?.[0]?.id || null;
+            const encryptedSecret = this.encryptionService.encrypt(secret);
 
             if (existingWebhook) {
                 await existingWebhook.update({
                     userId,
                     subscriptionId,
                     status: 'verification_pending',
-                    secret,
+                    secret: encryptedSecret,
                     callbackUrl,
                     registeredAt: new Date()
                 });
@@ -107,7 +110,7 @@ export class TwitchManager {
                     subscriptionId,
                     type,
                     status: 'verification_pending',
-                    secret,
+                    secret: encryptedSecret,
                     callbackUrl,
                     registeredAt: new Date()
                 });
@@ -139,6 +142,7 @@ export class TwitchManager {
                     }
 
                     const newSecret = TwitchWebhookService.generateSecret();
+                    const encryptedRetrySecret = this.encryptionService.encrypt(newSecret);
 
                     // Aumentar delay a 3s para dar tiempo a Twitch de propagar el borrado
                     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -155,7 +159,7 @@ export class TwitchManager {
                             userId,
                             subscriptionId: newId,
                             status: 'verification_pending',
-                            secret: newSecret,
+                            secret: encryptedRetrySecret,
                             callbackUrl,
                             registeredAt: new Date()
                         });
@@ -163,7 +167,7 @@ export class TwitchManager {
                         await TwitchWebhook.create({
                             userId, broadcasterId, subscriptionId: newId,
                             type, status: 'verification_pending',
-                            secret: newSecret, callbackUrl,
+                            secret: encryptedRetrySecret, callbackUrl,
                             registeredAt: new Date()
                         });
                     }

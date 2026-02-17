@@ -7,6 +7,9 @@ import { YouTubePubSubService } from '../../services/chat/youtube/YouTubePubSubS
 import { YouTubeSubscription } from '../../models/YouTubeSubscription.model';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
+import { EncryptionService } from '../../services/security/EncryptionService';
+
+const encryptionService = new EncryptionService();
 
 interface RequestWithRawBody extends Request {
     rawBody?: string;
@@ -59,7 +62,20 @@ export const validateYouTubeWebhook = async (
                 throw new AppError('Subscription not found', 404);
             }
 
-            // Manejar la verificación
+            // Desencriptar y Auto-migración si es necesario
+            let plainSecret = subscription.secret;
+            const context = `YouTubeSubscription:${subscription.id} (${subscription.channelId})`;
+
+            if (!encryptionService.isEncrypted(plainSecret)) {
+                const encryptedSecret = encryptionService.encrypt(plainSecret);
+                await subscription.update({ secret: encryptedSecret });
+                logger.info({ context }, 'Auto-migrating legacy YouTube secret (on GET) to encrypted format');
+            } else {
+                plainSecret = encryptionService.decrypt(plainSecret, context);
+            }
+
+            // Manejar la verificación (usando el secreto plano si fuera necesario, 
+            // aunque handleVerification no lo usa directamente, lo mencionamos por coherencia)
             const responseChallenge = await YouTubePubSubService.handleVerification(
                 channelId,
                 mode,
@@ -105,9 +121,21 @@ export const validateYouTubeWebhook = async (
                 throw new AppError('Subscription not found', 404);
             }
 
+            // Desencriptar y Auto-migración si es necesario
+            let plainSecret = subscription.secret;
+            const context = `YouTubeSubscription:${subscription.id} (${subscription.channelId})`;
+
+            if (!encryptionService.isEncrypted(plainSecret)) {
+                const encryptedSecret = encryptionService.encrypt(plainSecret);
+                await subscription.update({ secret: encryptedSecret });
+                logger.info({ context }, 'Auto-migrating legacy YouTube secret (on POST) to encrypted format');
+            } else {
+                plainSecret = encryptionService.decrypt(plainSecret, context);
+            }
+
             // Verificar firma HMAC
             const isValidSignature = YouTubePubSubService.verifySignature(
-                subscription.secret,
+                plainSecret,
                 rawBody,
                 signature
             );
