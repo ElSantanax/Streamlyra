@@ -2,7 +2,7 @@
 
 export { AppError } from './AppError';
 export { logger } from './logger';
-export { retryWithInterval } from './retryWithInterval';
+export { retryWithIntervalAndLimit } from './retryWithInterval';
 export * from './oauth.utils';
 export { calculateTokenExpiry } from './tokenUtils';
 export { SafeSocketEmitter } from './SafeSocketEmitter';

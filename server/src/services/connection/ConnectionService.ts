@@ -4,7 +4,7 @@ import { IConnectionRepository } from '../../repositories/interfaces/IConnection
 import { TokenRefreshService } from './TokenRefreshService';
 import { Platform } from '../../constants/platforms';
 import { AuthTokens } from '../../types/index';
-
+import { Connection } from '../../models/Connection.model';
 
 export class ConnectionService {
     private tokenRefreshService: TokenRefreshService;
@@ -43,5 +43,13 @@ export class ConnectionService {
 
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {
         return this.tokenRefreshService.forceTokenRefresh(userId, platform);
+    }
+
+    async updateChatroomId(userId: string, provider: string, chatroomId: string): Promise<void> {
+        return this.connectionRepository.updateChatroomId(userId, provider, chatroomId);
+    }
+
+    async getAccount(userId: string, provider: string): Promise<Connection | null> {
+        return this.connectionRepository.findByUserAndProvider(userId, provider);
     }
 }

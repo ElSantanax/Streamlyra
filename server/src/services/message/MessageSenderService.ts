@@ -136,7 +136,7 @@ export class MessageSenderService {
                 // Si no hay liveChatId cacheado, intentar obtenerlo
                 if (!liveChatId) {
                     try {
-                        liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken);
+                        liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken, connection.providerId);
                     } catch (error) {
                         if (error instanceof Error && error.message.includes('cuota')) {
                             throw error;

@@ -4,7 +4,7 @@
 
 import cron, { ScheduledTask } from 'node-cron';
 import { logger } from '../../utils/logger';
-import { YouTubePubSubService } from '../chat/youtube/YouTubePubSubService';
+import { youtubePubSubService } from '../chat/youtube/YouTubePubSubService';
 
 export class YouTubeSubscriptionRenewer {
     private job: ScheduledTask | null = null;
@@ -45,7 +45,7 @@ export class YouTubeSubscriptionRenewer {
     async renewSubscriptions(): Promise<void> {
         try {
             // Obtener suscripciones que expiran en los próximos 2 días (para tener margen)
-            const expiringSubscriptions = await YouTubePubSubService.getExpiringSubscriptions(2);
+            const expiringSubscriptions = await youtubePubSubService.getExpiringSubscriptions(2);
 
             if (expiringSubscriptions.length === 0) {
                 logger.info('No hay suscripciones de YouTube próximas a expirar');
@@ -59,7 +59,7 @@ export class YouTubeSubscriptionRenewer {
 
             for (const subscription of expiringSubscriptions) {
                 try {
-                    await YouTubePubSubService.renewSubscription(subscription);
+                    await youtubePubSubService.renewSubscription(subscription);
                     renewedCount++;
                     // Pequeña pausa para no saturar
                     await new Promise(resolve => setTimeout(resolve, 500));

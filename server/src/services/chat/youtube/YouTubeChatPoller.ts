@@ -10,6 +10,7 @@ import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
+import { ConnectionService } from '../../connection/ConnectionService';
 
 export class YouTubeChatPoller {
     private polling: PollingManager = new PollingManager();
@@ -17,7 +18,7 @@ export class YouTubeChatPoller {
     private transformer: YouTubeEventTransformer;
     private activeTimeouts: Set<NodeJS.Timeout> = new Set();
 
-    constructor() {
+    constructor(private connectionService: ConnectionService) {
         this.transformer = new YouTubeEventTransformer();
     }
 
@@ -57,7 +58,7 @@ export class YouTubeChatPoller {
         );
     }
 
-    async startPolling(userId: string, liveChatId: string, accessToken: string, io: Server): Promise<void> {
+    async startPolling(userId: string, liveChatId: string, io: Server): Promise<void> {
         const pollTask = async () => {
             if (!this.polling.isRunning(userId)) return;
 
@@ -85,9 +86,27 @@ export class YouTubeChatPoller {
             }
 
             try {
+                // Obtener un token SIEMPRE válido antes de cada petición (Auto-Refresh)
+                const validToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
+                if (!validToken) {
+                    logger.error({ userId }, 'YouTube chat polling aborted: Could not refresh token');
+
+                    SafeSocketEmitter.emitConnectionStatus(
+                        io,
+                        userId,
+                        'youtube',
+                        'error',
+                        'Sesión expirada',
+                        true
+                    );
+
+                    this.stopPolling(userId);
+                    return;
+                }
+
                 const response = await axios.get<YouTubeChatMessagesResponse>('https://www.googleapis.com/youtube/v3/liveChat/messages', {
                     params: { liveChatId, part: 'snippet,authorDetails', pageToken: this.nextPageToken },
-                    headers: { Authorization: `Bearer ${accessToken}` },
+                    headers: { Authorization: `Bearer ${validToken}` },
                     timeout: 10000
                 });
 
@@ -100,8 +119,13 @@ export class YouTubeChatPoller {
 
                 const newMessages = items || [];
 
-                const currentInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
-                const adaptiveInterval = await quotaManager.getAdaptiveInterval(currentInterval);
+                // BLINDAJE DE CUOTA: Google a veces devuelve intervalos de 1-2s. 
+                // Forzamos un mínimo basado en nuestra configuración (15s) para evitar drenaje.
+                const googleInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
+                const minInterval = YouTubePollingConfig.CHAT_POLLING_INTERVAL;
+                const safeInterval = Math.max(googleInterval, minInterval);
+
+                const adaptiveInterval = await quotaManager.getAdaptiveInterval(safeInterval);
 
                 this.distributeMessages(newMessages, userId, io, adaptiveInterval);
 

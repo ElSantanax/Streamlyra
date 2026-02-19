@@ -8,11 +8,14 @@ import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
+import { ConnectionService } from '../../connection/ConnectionService';
 
 export class YouTubeViewerPoller {
     private polling: PollingManager = new PollingManager();
 
-    startPolling(userId: string, broadcastId: string, accessToken: string, io: Server): void {
+    constructor(private connectionService: ConnectionService) { }
+
+    startPolling(userId: string, broadcastId: string, io: Server): void {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.VIDEO_DETAILS;
 
@@ -33,9 +36,17 @@ export class YouTubeViewerPoller {
             }
 
             try {
+                // Obtener un token SIEMPRE válido antes de cada petición (Auto-Refresh)
+                const validToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
+                if (!validToken) {
+                    logger.error({ userId }, 'YouTube viewer polling aborted: Could not refresh token');
+                    this.stopPolling(userId);
+                    return;
+                }
+
                 const response = await axios.get<YouTubeVideoResponse>('https://www.googleapis.com/youtube/v3/videos', {
                     params: { part: 'liveStreamingDetails', id: broadcastId },
-                    headers: { Authorization: `Bearer ${accessToken}` },
+                    headers: { Authorization: `Bearer ${validToken}` },
                     timeout: 10000
                 });
 

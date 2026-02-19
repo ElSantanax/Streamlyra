@@ -42,8 +42,8 @@ export class YouTubeService extends BasePlatformService {
         return this.profileService.normalizePlatformProfile(channel);
     }
 
-    async getActiveLiveChatId(accessToken: string): Promise<string | null> {
-        return this.liveChatService.getActiveLiveChatId(accessToken);
+    async getActiveLiveChatId(accessToken: string, channelId?: string): Promise<string | null> {
+        return this.liveChatService.getActiveLiveChatId(accessToken, channelId);
     }
 
     async sendChatMessage(

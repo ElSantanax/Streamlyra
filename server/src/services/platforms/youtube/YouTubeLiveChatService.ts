@@ -7,58 +7,70 @@ import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaErrorHandler } from './YouTubeQuotaErrorHandler';
 import { Connection } from '../../../models/Connection.model';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
-import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtube.types';
+import { YouTubeBroadcastResponse } from '../../../types/youtube.types';
+import { ConnectionService } from '../../connection/ConnectionService';
 
 export class YouTubeLiveChatService {
+    constructor(private connectionService?: ConnectionService) { }
     private readonly platformName = 'youtube';
 
-    async getActiveLiveChatId(accessToken: string): Promise<string | null> {
-        const quotaManager = YouTubeQuotaManager.getInstance();
+    async getActiveLiveChatId(accessToken: string, channelId?: string): Promise<string | null> {
+        // 1. Estrategia Cache-First: Consumo 0 de cuota
+        if (channelId) {
+            try {
+                const cachedContext = await YouTubeStreamContext.findOne({
+                    where: { channelId, isActive: true }
+                });
+
+                if (cachedContext?.liveChatId) {
+                    logger.debug({ channelId, liveChatId: cachedContext.liveChatId }, 'YouTube: Cache hit for active LiveChatId (0 quota)');
+                    return cachedContext.liveChatId;
+                }
+            } catch (error) {
+                logger.warn({ err: error, channelId }, 'YouTube: Error reading stream context cache, falling back to API');
+            }
+        }
+
+        // 2. Estrategia Fallback: Llamada a API (Consumo 1 cuota)
         const cost = YouTubePollingConfig.OPERATION_COSTS.BROADCAST_LIST;
+        const quotaManager = YouTubeQuotaManager.getInstance();
 
         if (!(await quotaManager.hasQuota(cost))) {
-            logger.warn({ platform: this.platformName }, 'Quota exhausted, skipping broadcast discovery');
+            logger.warn({ platform: this.platformName }, 'Quota exhausted, returning null for active live chat');
             return null;
         }
 
         try {
-            logger.debug({ platform: this.platformName }, 'Fetching active live chat ID');
-
-            const response = await axios.get<{ items?: Array<{ snippet: { liveChatId?: string } }> }>(
+            const response = await axios.get<YouTubeBroadcastResponse>(
                 'https://www.googleapis.com/youtube/v3/liveBroadcasts',
                 {
                     params: {
-                        part: 'snippet,status',
-                        mine: true,
+                        part: 'snippet',
+                        broadcastStatus: 'active',
                         broadcastType: 'all',
-                        maxResults: 5
+                        maxResults: 1
                     },
-                    headers: { 'Authorization': `Bearer ${accessToken}` },
-                    timeout: 10000
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 }
             );
 
             await quotaManager.consumeQuota(cost);
 
-            const items = (response.data as YouTubeBroadcastResponse).items || [];
-
-            // Filtrar localmente por estado 'live' ya que no podemos usar broadcastStatus con mine:true
-            const activeBroadcast = items.find((b: YouTubeBroadcast) =>
-                b.snippet?.liveChatId &&
-                (b.status?.lifeCycleStatus === 'live' || b.status?.lifeCycleStatus === 'active' || b.status?.lifeCycleStatus === 'liveStarting')
-            );
-
-            const liveChatId = activeBroadcast?.snippet?.liveChatId || null;
-
-            if (!liveChatId && items.length > 0) {
-                logger.info({
-                    platform: this.platformName,
-                    foundOther: items.length,
-                    statuses: items.map((i: YouTubeBroadcast) => i.status?.lifeCycleStatus)
-                }, 'No se encontró un directo activo con chat entre los resultados de mine:true');
+            const items = response.data.items;
+            if (!items || items.length === 0) {
+                return null;
             }
 
-            return liveChatId;
+            const liveChatId = items[0].snippet?.liveChatId;
+
+            if (!liveChatId) {
+                logger.info({
+                    platform: this.platformName,
+                    broadcastId: items[0].id
+                }, 'Active broadcast found but has no live chat');
+            }
+
+            return liveChatId || null;
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -192,7 +204,19 @@ export class YouTubeLiveChatService {
                 return null;
             }
 
-            const accessToken = connection.accessToken;
+            // Obtener token siempre válido — refresca automáticamente si está expirado
+            let accessToken: string;
+            if (this.connectionService) {
+                const validToken = await this.connectionService.getValidAccessToken(connection.userId, 'youtube');
+                if (!validToken) {
+                    logger.warn({ channelId, userId: connection.userId }, 'YouTube: No se pudo obtener token válido para webhook update, abortando');
+                    return null;
+                }
+                accessToken = validToken;
+            } else {
+                // Fallback: token crudo de DB (compatibilidad con instancias sin ConnectionService)
+                accessToken = connection.accessToken;
+            }
 
             const response = await axios.get<{ items: Array<{ id: string, liveStreamingDetails?: { activeLiveChatId?: string }, snippet: { liveBroadcastContent: string } }> }>(
                 'https://www.googleapis.com/youtube/v3/videos',

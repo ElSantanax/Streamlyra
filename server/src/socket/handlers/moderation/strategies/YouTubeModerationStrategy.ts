@@ -13,7 +13,7 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
     private service: YouTubeModerationService,
     private youtubeService: YouTubeService,
     private validator: ModerationValidator
-  ) {}
+  ) { }
 
   async executeAction(context: ModerationContext): Promise<void> {
     const { socket, authenticatedUserId, action, messageId, targetUserId, duration } = context;
@@ -27,7 +27,7 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
 
     if (!validated) return;
 
-    const { token } = validated;
+    const { token, connection } = validated;
 
     // Manejar eliminación de mensaje
     if (action === 'delete' && messageId) {
@@ -52,8 +52,8 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
 
     // Manejar ban o timeout de usuario
     if ((action === 'ban' || action === 'timeout') && targetUserId) {
-      // Obtener el liveChatId activo
-      const liveChatId = await this.youtubeService.getActiveLiveChatId(token);
+      // Obtener el liveChatId activo (usando caché optimizada)
+      const liveChatId = await this.youtubeService.getActiveLiveChatId(token, connection.providerId);
 
       if (!liveChatId) {
         socket.emit('moderation_error', {

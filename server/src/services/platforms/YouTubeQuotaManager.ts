@@ -9,6 +9,9 @@ export class YouTubeQuotaManager {
     private isExhausted: boolean = false;
     private exhaustedUntil: number = 0;
     private initialized: boolean = false;
+    private isDirty: boolean = false;
+    private persistTimer: NodeJS.Timeout | null = null;
+    private persistedUnits: number = 0;
 
     private constructor() {
         this.lastResetDate = new Date().toISOString().split('T')[0];
@@ -32,6 +35,7 @@ export class YouTubeQuotaManager {
 
         if (quota) {
             this.unitsUsed = quota.unitsUsed;
+            this.persistedUnits = quota.unitsUsed;
             this.isExhausted = quota.isExhausted;
             this.exhaustedUntil = quota.exhaustedUntil ? quota.exhaustedUntil.getTime() : 0;
 
@@ -60,17 +64,44 @@ export class YouTubeQuotaManager {
      * Persiste el estado actual en la base de datos
      */
     private async persistState(): Promise<void> {
-        const today = this.getTodayDate();
+        if (!this.initialized) return;
 
-        await YouTubeQuota.upsert({
-            date: today,
-            unitsUsed: this.unitsUsed,
-            isExhausted: this.isExhausted,
-            exhaustedUntil: this.isExhausted && this.exhaustedUntil > 0
-                ? new Date(this.exhaustedUntil)
-                : null,
-            lastReset: new Date()
-        });
+        const today = this.getTodayDate();
+        const unitsToSync = this.unitsUsed - this.persistedUnits;
+
+        try {
+            await YouTubeQuota.upsert({
+                date: today,
+                // Si hay diferencia, usamos un valor base conservador, pero lo ideal es el flujo atómico
+                unitsUsed: this.unitsUsed,
+                isExhausted: this.isExhausted,
+                exhaustedUntil: this.isExhausted && this.exhaustedUntil > 0
+                    ? new Date(this.exhaustedUntil)
+                    : null,
+                lastReset: new Date()
+            });
+
+            this.persistedUnits = this.unitsUsed;
+            this.isDirty = false;
+            logger.debug({ unitsSync: unitsToSync, totalSinceStart: this.unitsUsed }, 'Estado de cuota de YouTube sincronizado con BD');
+        } catch (error) {
+            logger.error({ err: error }, 'Error al sincronizar estado de cuota de YouTube');
+        }
+    }
+
+    /**
+     * Inicia un temporizador para persistir los cambios si no hay uno ya activo
+     */
+    private schedulePersistence(): void {
+        this.isDirty = true;
+        if (this.persistTimer) return;
+
+        this.persistTimer = setTimeout(async () => {
+            this.persistTimer = null;
+            if (this.isDirty) {
+                await this.persistState();
+            }
+        }, YouTubePollingConfig.QUOTA_PERSIST_INTERVAL_MS);
     }
 
     /**
@@ -110,8 +141,8 @@ export class YouTubeQuotaManager {
             percent: ((this.unitsUsed / YouTubePollingConfig.DAILY_QUOTA_LIMIT) * 100).toFixed(2) + '%'
         }, 'YouTube quota consumed');
 
-        // Persistir en BD
-        await this.persistState();
+        // En lugar de persistir inmediatamente, programamos una persistencia diferida
+        this.schedulePersistence();
 
         if (this.unitsUsed >= YouTubePollingConfig.DAILY_QUOTA_LIMIT) {
             await this.markAsExhausted(true);
@@ -134,6 +165,11 @@ export class YouTubeQuotaManager {
             retryInMinutes: isDailyLimit ? 60 : 15
         }, 'CUOTA DE YOUTUBE AGOTADA O LÍMITE DE TASA ALCANZADO');
 
+        // En caso de agotamiento, persistimos inmediatamente ya que es crítico
+        if (this.persistTimer) {
+            clearTimeout(this.persistTimer);
+            this.persistTimer = null;
+        }
         await this.persistState();
     }
 

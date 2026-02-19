@@ -4,6 +4,7 @@ import axios from 'axios';
 import { logger } from '../../utils/logger';
 import { YouTubeQuotaManager } from '../platforms/YouTubeQuotaManager';
 import { YouTubePollingConfig } from '../../config/youtube.polling.config';
+import { YouTubeQuotaErrorHandler } from '../platforms/youtube/YouTubeQuotaErrorHandler';
 
 export interface YouTubeDeleteMessageParams {
     messageId: string;
@@ -48,7 +49,7 @@ export class YouTubeModerationService {
 
             logger.info({ messageId }, 'YouTube message deleted successfully');
         } catch (error) {
-            await this.handleQuotaError(error);
+            await YouTubeQuotaErrorHandler.handleQuotaError(error);
 
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -146,7 +147,7 @@ export class YouTubeModerationService {
                 actionType
             }, 'YouTube user banned/timeout successfully');
         } catch (error) {
-            await this.handleQuotaError(error);
+            await YouTubeQuotaErrorHandler.handleQuotaError(error);
 
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -179,18 +180,4 @@ export class YouTubeModerationService {
         }
     }
 
-    /**
-     * Maneja errores de cuota agotada
-     */
-    private async handleQuotaError(error: unknown): Promise<void> {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
-            const errorData = error.response.data as { error?: { errors?: Array<{ reason?: string }> } };
-            const isQuotaError = errorData?.error?.errors?.some(e => e.reason === 'quotaExceeded');
-
-            if (isQuotaError) {
-                await YouTubeQuotaManager.getInstance().markAsExhausted();
-                throw new Error('Cuota de YouTube agotada. Intenta mañana.');
-            }
-        }
-    }
 }

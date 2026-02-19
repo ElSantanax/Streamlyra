@@ -3,7 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { YouTubePubSubService } from '../../services/chat/youtube/YouTubePubSubService';
+import { youtubePubSubService } from '../../services/chat/youtube/YouTubePubSubService';
 import { YouTubeSubscription } from '../../models/YouTubeSubscription.model';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
@@ -76,7 +76,7 @@ export const validateYouTubeWebhook = async (
 
             // Manejar la verificación (usando el secreto plano si fuera necesario, 
             // aunque handleVerification no lo usa directamente, lo mencionamos por coherencia)
-            const responseChallenge = await YouTubePubSubService.handleVerification(
+            const responseChallenge = await youtubePubSubService.handleVerification(
                 channelId,
                 mode,
                 challenge
@@ -134,7 +134,7 @@ export const validateYouTubeWebhook = async (
             }
 
             // Verificar firma HMAC
-            const isValidSignature = YouTubePubSubService.verifySignature(
+            const isValidSignature = youtubePubSubService.verifySignature(
                 plainSecret,
                 rawBody,
                 signature
@@ -146,7 +146,7 @@ export const validateYouTubeWebhook = async (
             }
 
             // Actualizar última notificación
-            await YouTubePubSubService.updateLastNotification(channelId);
+            await youtubePubSubService.updateLastNotification(channelId);
 
             // Pasar datos al controlador
             req.youtubeWebhookData = {

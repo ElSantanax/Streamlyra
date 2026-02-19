@@ -1,15 +1,13 @@
-/** Descubridor de broadcast en vivo de YouTube con detección de cuota agotada */
-
 import axios from 'axios';
 import { YouTubeBroadcast, YouTubeBroadcastResponse } from '../../../types/youtube.types';
 import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
+import { YouTubeError, YouTubeErrorType } from './YouTubeError';
 
 export class YouTubeBroadcastDiscovery {
     async findLiveBroadcast(accessToken: string, channelId?: string): Promise<YouTubeBroadcast | null> {
-        // 1. Verificar contexto persistente primero (Optimización Quota)
         if (channelId) {
             const context = await YouTubeStreamContext.findOne({
                 where: { channelId, isActive: true }
@@ -17,7 +15,6 @@ export class YouTubeBroadcastDiscovery {
 
             if (context) {
                 logger.debug({ channelId, videoId: context.videoId }, 'Using cached YouTube stream context (Quota saved)');
-                // Devolver estructura compatible con YouTubeBroadcast
                 return {
                     id: context.videoId,
                     snippet: {
@@ -41,7 +38,7 @@ export class YouTubeBroadcastDiscovery {
 
         if (!(await quotaManager.hasQuota(cost))) {
             logger.warn('YouTube broadcast discovery paused: Quota exhausted');
-            throw new Error('YOUTUBE_QUOTA_EXCEEDED');
+            throw new YouTubeError(YouTubeErrorType.QUOTA_EXCEEDED, 'YouTube quota exceeded');
         }
 
         try {
@@ -60,8 +57,7 @@ export class YouTubeBroadcastDiscovery {
 
             const items = response.data.items || [];
 
-            // Diagnóstico detallado para entender por qué no se detecta
-            logger.info({
+            logger.debug({
                 platform: 'youtube',
                 foundCount: items.length,
                 broadcasts: items.map(i => ({
@@ -72,8 +68,6 @@ export class YouTubeBroadcastDiscovery {
                 }))
             }, 'YouTube: Broadcast Discovery Detailed Diagnostic');
 
-            // Seleccionar solo broadcasts con chat activo y que estén realmente "live" o "active"
-            // Nota: Google a veces devuelve status 'active' para lo que nosotros llamamos 'live'
             const liveBroadcasts = items.filter(b =>
                 b.snippet?.liveChatId &&
                 (b.status?.lifeCycleStatus === 'live' || b.status?.lifeCycleStatus === 'active' || b.status?.lifeCycleStatus === 'liveStarting')
@@ -108,9 +102,11 @@ export class YouTubeBroadcastDiscovery {
 
                 if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
                     await quotaManager.markAsExhausted();
-                    throw new Error('YOUTUBE_QUOTA_EXCEEDED');
+                    throw new YouTubeError(YouTubeErrorType.QUOTA_EXCEEDED, 'YouTube quota exceeded', error);
                 }
             }
+
+            if (error instanceof YouTubeError) throw error;
 
             logger.error({ err: error }, 'Error discovering YouTube broadcast');
             return null;

@@ -14,7 +14,7 @@ export const apiLimiter = rateLimit({
     message: {
         error: 'Demasiadas peticiones desde esta IP, por favor intenta nuevamente en 15 minutos'
     },
-    handler: (req, res, next, options) => {
+    handler: (req, res, _next, options) => {
         logger.warn({ ip: req.ip, path: req.path }, 'Rate limit exceeded for API');
         res.status(options.statusCode).json(options.message);
     },
@@ -38,7 +38,7 @@ export const authLimiter = rateLimit({
     message: {
         error: 'Demasiados intentos de autenticación, por favor intenta nuevamente en 15 minutos'
     },
-    handler: (req, res, next, options) => {
+    handler: (req, res, _next, options) => {
         logger.warn({ ip: req.ip, path: req.path }, 'Auth rate limit exceeded');
         res.status(options.statusCode).json(options.message);
     },

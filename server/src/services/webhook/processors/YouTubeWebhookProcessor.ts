@@ -5,12 +5,15 @@ import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { Connection } from '../../../models/Connection.model';
 import { YouTubeLiveChatService } from '../../platforms/youtube/YouTubeLiveChatService';
 import { WebhookCache } from '../WebhookCache';
+import { ConnectionService } from '../../connection/ConnectionService';
 
 export class YouTubeWebhookProcessor {
     private cache: WebhookCache;
+    private liveChatService: YouTubeLiveChatService;
 
-    constructor(private io: Server) {
+    constructor(private io: Server, connectionService: ConnectionService) {
         this.cache = WebhookCache.getInstance();
+        this.liveChatService = new YouTubeLiveChatService(connectionService);
     }
 
     /**
@@ -44,22 +47,25 @@ export class YouTubeWebhookProcessor {
                 return;
             }
 
-            // Actualizar contexto de stream (verificar si es live real y obtener liveChatId) antes de notificar
-            // Esto asegura que la DB tenga el estado correcto para los pollers
+            // Actualizar contexto de stream y verificar si es un directo real con chat
             try {
-                const liveChatService = new YouTubeLiveChatService();
-                const context = await liveChatService.updateStreamContext(notification.videoId, notification.channelId);
+                const context = await this.liveChatService.updateStreamContext(notification.videoId, notification.channelId);
 
-                // Si encontramos un chat activo, notificar al frontend DE INMEDIATO para cambiar estado a conectado
-                if (context?.liveChatId) {
+                // IMPORTANTE: Solo procedemos si el contexto confirma que es un Directo ACTIVO
+                if (context?.isActive && context?.liveChatId) {
+                    logger.info({ videoId: notification.videoId }, 'YouTube: Directo confirmado vía Webhook, notificando a usuarios');
+
+                    // 1. Notificar estado a conectado (cambio visual inmediato)
                     await this.notifyStreamFound(notification.channelId, notification.videoId);
+
+                    // 2. Notificar actualización de stream (para recarga selectiva)
+                    await this.notifyConnectedUsers(notification);
+                } else {
+                    logger.debug({ videoId: notification.videoId }, 'YouTube: Notificación ignorada (no es un directo activo o no tiene chat)');
                 }
             } catch (error) {
-                logger.warn({ err: error, videoId: notification.videoId }, 'Fallo al actualizar contexto de stream desde webhook, continuando notificación');
+                logger.error({ err: error, videoId: notification.videoId }, 'Error al validar directo desde webhook');
             }
-
-            // Buscar usuarios conectados a este canal y notificarles (evento original)
-            await this.notifyConnectedUsers(notification);
 
         } catch (error) {
             logger.error({ err: error, channelId }, 'Error procesando notificación de YouTube');

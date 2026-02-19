@@ -2,6 +2,7 @@
 
 import { YouTubeChatPoller } from './YouTubeChatPoller';
 import { YouTubeViewerPoller } from './YouTubeViewerPoller';
+import { ConnectionService } from '../../connection/ConnectionService';
 
 interface ConnectionState {
     chatPoller: YouTubeChatPoller;
@@ -16,14 +17,14 @@ export class YouTubeConnectionStateManager {
     private states: Map<string, ConnectionState> = new Map();
     private connectingUsers: Set<string> = new Set();
 
-    constructor() { }
+    constructor(private connectionService: ConnectionService) { }
 
     private getOrCreateState(userId: string): ConnectionState {
         let state = this.states.get(userId);
         if (!state) {
             state = {
-                chatPoller: new YouTubeChatPoller(),
-                viewerPoller: new YouTubeViewerPoller(),
+                chatPoller: new YouTubeChatPoller(this.connectionService),
+                viewerPoller: new YouTubeViewerPoller(this.connectionService),
                 autoAttempts: 0,
                 isManualMode: false,
                 isActive: false
@@ -82,6 +83,22 @@ export class YouTubeConnectionStateManager {
     markAsConnected(userId: string): void {
         const state = this.getOrCreateState(userId);
         state.isActive = true;
+        state.autoAttempts = 0; // Reset attempts on success
+    }
+
+    /**
+     * Pone al usuario en modo espera (exhausto) limpiando el proceso de discovery
+     * pero manteniendo la intención de conexión manual.
+     */
+    setWaitingMode(userId: string): void {
+        const state = this.states.get(userId);
+        if (state) {
+            if (state.cleanup) state.cleanup();
+            state.cleanup = undefined;
+            state.isManualMode = true;
+            state.isActive = false;
+        }
+        this.connectingUsers.delete(userId);
     }
 
     clearState(userId: string): void {
@@ -91,7 +108,7 @@ export class YouTubeConnectionStateManager {
             try {
                 if (state.cleanup) state.cleanup();
             } catch {
-                // Silently continue to ensure other cleanups run
+                // Silently continue
             }
 
             try {
@@ -105,7 +122,9 @@ export class YouTubeConnectionStateManager {
             } catch {
                 // Silently continue
             }
+
             state.isActive = false;
+            state.cleanup = undefined;
         }
         this.states.delete(userId);
         this.connectingUsers.delete(userId);

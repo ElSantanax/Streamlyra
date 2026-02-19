@@ -27,4 +27,5 @@ export interface IConnectionRepository {
     updateTokens(connectionId: string, tokens: AuthTokens, transaction?: Transaction): Promise<Connection | null>;
 
     clearTokens(connectionId: string, transaction?: Transaction): Promise<void>;
+    updateChatroomId(userId: string, provider: string, chatroomId: string): Promise<void>;
 }

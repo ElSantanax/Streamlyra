@@ -1,8 +1,3 @@
-/**
- * Servicio de PubSubHubbub para YouTube
- * Gestiona suscripciones a notificaciones de actualización de videos
- */
-
 import axios from 'axios';
 import crypto from 'crypto';
 import { Op } from 'sequelize';
@@ -11,24 +6,18 @@ import { YouTubeSubscription } from '../../../models/YouTubeSubscription.model';
 import { config } from '../../../config';
 import { EncryptionService } from '../../security/EncryptionService';
 
-export class YouTubePubSubService {
-    private static readonly encryptionService = new EncryptionService();
-    private static readonly HUB_URL = 'https://pubsubhubbub.appspot.com/subscribe';
-    private static readonly TOPIC_BASE = 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=';
-    private static readonly LEASE_SECONDS = 432000; // ~5 días
-    private static readonly TIMEOUT = 10000;
+class YouTubePubSubService {
+    private readonly encryptionService = new EncryptionService();
+    private readonly HUB_URL = 'https://pubsubhubbub.appspot.com/subscribe';
+    private readonly TOPIC_BASE = 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=';
+    private readonly LEASE_SECONDS = 432000;
+    private readonly TIMEOUT = 10000;
 
-    /**
-     * Genera un secret único para validar notificaciones
-     */
-    private static generateSecret(): string {
+    private generateSecret(): string {
         return crypto.randomBytes(32).toString('hex');
     }
 
-    /**
-     * Verifica la firma HMAC de una notificación
-     */
-    static verifySignature(secret: string, body: string, signature: string): boolean {
+    verifySignature(secret: string, body: string, signature: string): boolean {
         const hmac = crypto.createHmac('sha1', secret);
         hmac.update(body);
         const expectedSignature = 'sha1=' + hmac.digest('hex');
@@ -38,10 +27,7 @@ export class YouTubePubSubService {
         );
     }
 
-    /**
-     * Suscribe a notificaciones de un canal de YouTube
-     */
-    static async subscribe(
+    async subscribe(
         userId: string,
         channelId: string
     ): Promise<void> {
@@ -52,7 +38,6 @@ export class YouTubePubSubService {
         try {
             logger.info({ userId, channelId }, 'Suscribiendo a notificaciones de YouTube (PubSubHubbub)');
 
-            // Verificar si ya existe una suscripción para este usuario y canal (en cualquier estado)
             const subscription = await YouTubeSubscription.findOne({
                 where: {
                     userId,
@@ -65,7 +50,6 @@ export class YouTubePubSubService {
                 return;
             }
 
-            // Realizar la petición de suscripción al hub
             const response = await axios.post(
                 this.HUB_URL,
                 new URLSearchParams({
@@ -86,7 +70,6 @@ export class YouTubePubSubService {
             if (response.status === 202 || response.status === 204) {
                 const encryptedSecret = this.encryptionService.encrypt(secret);
                 if (subscription) {
-                    // Actualizar registro existente (si estaba expired o denied)
                     await subscription.update({
                         topicUrl,
                         callbackUrl,
@@ -97,7 +80,6 @@ export class YouTubePubSubService {
                     });
                     logger.info({ userId, channelId }, 'Registro de suscripción previo actualizado a pending');
                 } else {
-                    // Crear nuevo registro
                     await YouTubeSubscription.create({
                         userId,
                         channelId,
@@ -121,10 +103,7 @@ export class YouTubePubSubService {
         }
     }
 
-    /**
-     * Cancela la suscripción de un canal
-     */
-    static async unsubscribe(
+    async unsubscribe(
         userId: string,
         channelId: string
     ): Promise<void> {
@@ -155,7 +134,6 @@ export class YouTubePubSubService {
                 }
             );
 
-            // Marcar como expirada en BD
             await subscription.update({
                 status: 'expired',
                 expirationDate: new Date()
@@ -168,10 +146,7 @@ export class YouTubePubSubService {
         }
     }
 
-    /**
-     * Maneja la verificación del challenge (GET request del hub)
-     */
-    static async handleVerification(
+    async handleVerification(
         channelId: string,
         mode: string,
         challenge: string
@@ -179,7 +154,6 @@ export class YouTubePubSubService {
         logger.info({ channelId, mode }, 'Recibida verificación de YouTube PubSubHubbub');
 
         if (mode === 'subscribe') {
-            // Actualizar estado en BD
             await YouTubeSubscription.update(
                 { status: 'verified' },
                 {
@@ -205,20 +179,14 @@ export class YouTubePubSubService {
         return challenge;
     }
 
-    /**
-     * Actualiza el timestamp de última notificación
-     */
-    static async updateLastNotification(channelId: string): Promise<void> {
+    async updateLastNotification(channelId: string): Promise<void> {
         await YouTubeSubscription.update(
             { lastNotificationAt: new Date() },
             { where: { channelId, status: 'verified' } }
         );
     }
 
-    /**
-     * Obtiene suscripciones próximas a expirar (para renovación)
-     */
-    static async getExpiringSubscriptions(daysBeforeExpiry: number = 2): Promise<YouTubeSubscription[]> {
+    async getExpiringSubscriptions(daysBeforeExpiry: number = 2): Promise<YouTubeSubscription[]> {
         const expirationThreshold = new Date();
         expirationThreshold.setDate(expirationThreshold.getDate() + daysBeforeExpiry);
 
@@ -232,17 +200,13 @@ export class YouTubePubSubService {
         });
     }
 
-    /**
-     * Renueva una suscripción próxima a expirar
-     */
-    static async renewSubscription(subscription: YouTubeSubscription): Promise<void> {
+    async renewSubscription(subscription: YouTubeSubscription): Promise<void> {
         try {
             logger.info({
                 channelId: subscription.channelId,
                 expiresAt: subscription.expirationDate
             }, 'Renovando suscripción de YouTube PubSubHubbub');
 
-            // Desencriptar para la petición a YouTube y asegurar formato encriptado en DB
             let plainSecret = subscription.secret;
             const context = `YouTubeSubscription:${subscription.id}:Renewal`;
 
@@ -268,11 +232,10 @@ export class YouTubePubSubService {
             );
 
             if (response.status === 202 || response.status === 204) {
-                // Si llegamos aquí, el secreto plano es correcto. Aseguramos que en DB esté encriptado.
                 const encryptedSecret = this.encryptionService.encrypt(plainSecret);
                 await subscription.update({
                     expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
-                    status: 'pending', // Volvemos a pending hasta que llegue la verificación
+                    status: 'pending',
                     secret: encryptedSecret
                 });
 
@@ -284,3 +247,6 @@ export class YouTubePubSubService {
         }
     }
 }
+
+export const youtubePubSubService = new YouTubePubSubService();
+export { YouTubePubSubService };

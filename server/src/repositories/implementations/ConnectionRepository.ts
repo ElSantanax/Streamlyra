@@ -229,4 +229,11 @@ export class ConnectionRepository implements IConnectionRepository {
         // Invalidar caché tras actualización
         ConnectionRepository.tokenCache.delete(connectionId);
     }
+
+    async updateChatroomId(userId: string, provider: string, chatroomId: string): Promise<void> {
+        await Connection.update(
+            { chatroomId },
+            { where: { userId: String(userId), provider } }
+        );
+    }
 }
