@@ -58,7 +58,7 @@ export class YouTubeChatPoller {
         );
     }
 
-    async startPolling(userId: string, liveChatId: string, io: Server): Promise<void> {
+    async startPolling(userId: string, liveChatId: string, io: Server, onFatalError?: () => void): Promise<void> {
         const pollTask = async () => {
             if (!this.polling.isRunning(userId)) return;
 
@@ -82,6 +82,7 @@ export class YouTubeChatPoller {
                     'La cuota de YouTube se ha agotado. El chat se reanudará mañana.',
                     'youtube'
                 );
+                onFatalError?.();
                 return;
             }
 
@@ -97,10 +98,11 @@ export class YouTubeChatPoller {
                         'youtube',
                         'error',
                         'Sesión expirada',
-                        true
+                        false
                     );
 
                     this.stopPolling(userId);
+                    onFatalError?.();
                     return;
                 }
 
@@ -177,6 +179,7 @@ export class YouTubeChatPoller {
                         }
 
                         this.stopPolling(userId);
+                        onFatalError?.();
                         return;
                     }
                 }

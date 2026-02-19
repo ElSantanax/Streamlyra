@@ -78,18 +78,4 @@ export class YouTubePubSubParser {
             return null;
         }
     }
-
-    /**
-     * Determina si la notificación es de un video en vivo
-     * Esto requiere verificar el tipo de video con la API
-     */
-    static isLiveNotification(notification: YouTubeNotification): boolean {
-        // El feed no indica directamente si es un live
-        // Debemos verificarlo con una petición a la API
-        // Por ahora, asumimos que todas las notificaciones son potencialmente relevantes
-        const timeDiff = Date.now() - notification.publishedAt.getTime();
-        const isRecent = timeDiff < 5 * 60 * 1000; // Últimos 5 minutos
-
-        return isRecent;
-    }
 }

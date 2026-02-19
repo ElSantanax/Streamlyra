@@ -75,12 +75,12 @@ export class ChatManager {
         );
     }
 
-    async boostProviderDiscovery(userId: string, platform: Platform): Promise<void> {
+    async boostProviderDiscovery(userId: string, platform: Platform, forceRefresh: boolean = false): Promise<void> {
         await withErrorHandling(
             async () => {
                 const provider = this.getProvider(platform);
                 if (provider?.boostDiscovery) {
-                    await provider.boostDiscovery(userId, this.io);
+                    await provider.boostDiscovery(userId, this.io, forceRefresh);
                 }
             },
             { userId, platform, action: 'boostDiscovery' },

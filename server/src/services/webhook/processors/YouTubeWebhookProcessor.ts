@@ -1,19 +1,20 @@
 import { Server } from 'socket.io';
 import { logger } from '../../../utils/logger';
-import { YouTubePubSubParser, YouTubeNotification } from '../../chat/youtube/YouTubePubSubParser';
-import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { YouTubePubSubParser } from '../../chat/youtube/YouTubePubSubParser';
 import { Connection } from '../../../models/Connection.model';
-import { YouTubeLiveChatService } from '../../platforms/youtube/YouTubeLiveChatService';
 import { WebhookCache } from '../WebhookCache';
 import { ConnectionService } from '../../connection/ConnectionService';
+import { ChatManager } from '../../core/ChatManager';
 
 export class YouTubeWebhookProcessor {
     private cache: WebhookCache;
-    private liveChatService: YouTubeLiveChatService;
 
-    constructor(private io: Server, connectionService: ConnectionService) {
+    constructor(
+        private io: Server,
+        private connectionService: ConnectionService,
+        private chatManager: ChatManager
+    ) {
         this.cache = WebhookCache.getInstance();
-        this.liveChatService = new YouTubeLiveChatService(connectionService);
     }
 
     /**
@@ -24,7 +25,7 @@ export class YouTubeWebhookProcessor {
         try {
             logger.debug({ channelId }, 'Procesando notificación de YouTube PubSubHubbub');
 
-            // Parsear XML
+            // 1. Parsear XML (Costo 0 de cuota)
             const notification = YouTubePubSubParser.parseNotification(xmlBody);
 
             if (!notification) {
@@ -35,36 +36,27 @@ export class YouTubeWebhookProcessor {
             logger.info({
                 channelId: notification.channelId,
                 videoId: notification.videoId,
-                title: notification.title,
-                publishedAt: notification.publishedAt
-            }, 'Notificación de YouTube recibida');
+                title: notification.title
+            }, 'YouTube: Webhook "despertador" recibido');
 
-            // Verificar si es una notificación reciente (posible inicio de stream)
-            const isRecent = YouTubePubSubParser.isLiveNotification(notification);
+            // 2. Buscar usuarios asociados a este canal
+            const connections = await this.getChannelConnections(notification.channelId);
 
-            if (!isRecent) {
-                logger.debug({ videoId: notification.videoId }, 'Notificación antigua, ignorando');
+            if (connections.length === 0) {
+                logger.debug({ channelId: notification.channelId }, 'No hay usuarios activos para este canal, ignorando');
                 return;
             }
 
-            // Actualizar contexto de stream y verificar si es un directo real con chat
-            try {
-                const context = await this.liveChatService.updateStreamContext(notification.videoId, notification.channelId);
+            // 3. Disparar búsqueda de directos (Discovery Boost) para cada usuario
+            // Esto usa liveBroadcasts.list que es la única fuente fiable para directos.
+            // Si el video era un upload normal, findLiveBroadcast simplemente no encontrará nada (Costo 1).
+            // Si es un live real, lo encontrará y conectará (Costo 1).
+            for (const connection of connections) {
+                logger.info({ userId: connection.userId }, 'YouTube: Webhook disparando Boost de descubrimiento');
 
-                // IMPORTANTE: Solo procedemos si el contexto confirma que es un Directo ACTIVO
-                if (context?.isActive && context?.liveChatId) {
-                    logger.info({ videoId: notification.videoId }, 'YouTube: Directo confirmado vía Webhook, notificando a usuarios');
-
-                    // 1. Notificar estado a conectado (cambio visual inmediato)
-                    await this.notifyStreamFound(notification.channelId, notification.videoId);
-
-                    // 2. Notificar actualización de stream (para recarga selectiva)
-                    await this.notifyConnectedUsers(notification);
-                } else {
-                    logger.debug({ videoId: notification.videoId }, 'YouTube: Notificación ignorada (no es un directo activo o no tiene chat)');
-                }
-            } catch (error) {
-                logger.error({ err: error, videoId: notification.videoId }, 'Error al validar directo desde webhook');
+                // Disparamos en segundo plano para no bloquear el webhook respuesta
+                void this.chatManager.boostProviderDiscovery(connection.userId, 'youtube')
+                    .catch(err => logger.error({ err, userId: connection.userId }, 'Error al ejecutar boost desde webhook'));
             }
 
         } catch (error) {
@@ -87,65 +79,6 @@ export class YouTubeWebhookProcessor {
         }
 
         return connections;
-    }
-
-    /**
-     * Notifica un cambio de estado a conectado si se detectó el stream vía webhook
-     */
-    private async notifyStreamFound(channelId: string, videoId: string): Promise<void> {
-        const connections = await this.getChannelConnections(channelId);
-
-        for (const connection of connections) {
-            SafeSocketEmitter.emitConnectionStatus(
-                this.io,
-                connection.userId,
-                'youtube',
-                'connected',
-                'Detectado vía Webhook',
-                true
-            );
-            logger.info({ userId: connection.userId, videoId }, 'YouTube: Estado forzado a "connected" vía Webhook');
-        }
-    }
-
-    /**
-     * Notifica a usuarios que tienen conectado este canal
-     */
-    private async notifyConnectedUsers(notification: YouTubeNotification): Promise<void> {
-        try {
-            // Buscar todas las conexiones de YouTube para este canal
-            const connections = await this.getChannelConnections(notification.channelId);
-
-            if (connections.length === 0) {
-                logger.debug({ channelId: notification.channelId }, 'No hay usuarios conectados a este canal');
-                return;
-            }
-
-            // Emitir evento a cada usuario
-            for (const connection of connections) {
-                SafeSocketEmitter.emit(this.io, {
-                    userId: connection.userId,
-                    event: 'youtube:stream_update',
-                    data: {
-                        channelId: notification.channelId,
-                        videoId: notification.videoId,
-                        title: notification.title,
-                        link: notification.link,
-                        publishedAt: notification.publishedAt,
-                        type: 'new_video'
-                    },
-                    platform: 'youtube'
-                });
-
-                logger.info({
-                    userId: connection.userId,
-                    channelId: notification.channelId,
-                    videoId: notification.videoId
-                }, 'Notificación de stream de YouTube enviada al usuario');
-            }
-        } catch (error) {
-            logger.error({ err: error }, 'Error notificando a usuarios conectados');
-        }
     }
 }
 

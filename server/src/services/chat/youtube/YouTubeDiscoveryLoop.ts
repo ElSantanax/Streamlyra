@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import { YouTubeBroadcast } from '../../../types/youtube.types';
 import { YouTubeConnectionStateManager } from './YouTubeConnectionStateManager';
 import { YouTubeBroadcastDiscovery } from './YouTubeBroadcastDiscovery';
 import { ConnectionService } from '../../connection/ConnectionService';
@@ -13,7 +14,7 @@ export class YouTubeDiscoveryLoop {
     constructor(
         private stateManager: YouTubeConnectionStateManager,
         private connectionService: ConnectionService,
-        private onBroadcastFound: (userId: string, broadcast: { id?: string; snippet?: { liveChatId?: string } }, io: Server) => Promise<void>
+        private onBroadcastFound: (userId: string, broadcast: YouTubeBroadcast, io: Server) => Promise<void>
     ) {
         this.broadcastDiscovery = new YouTubeBroadcastDiscovery();
     }
@@ -57,7 +58,7 @@ export class YouTubeDiscoveryLoop {
 
     async performManualDiscovery(userId: string, account: { providerId: string }, io: Server): Promise<void> {
         try {
-            await this.attemptDiscovery(userId, account, io);
+            await this.attemptDiscovery(userId, account, io, true); // Manual = skipCache
         } catch (err) {
             if (YouTubeError.isYouTubeError(err) && err.type === YouTubeErrorType.BROADCAST_NOT_FOUND) {
                 this.notifyStatus(io, userId, 'waiting_stream', 'Sin Live público');
@@ -68,7 +69,7 @@ export class YouTubeDiscoveryLoop {
         }
     }
 
-    private async attemptDiscovery(userId: string, account: { providerId: string }, io: Server): Promise<void> {
+    private async attemptDiscovery(userId: string, account: { providerId: string }, io: Server, skipCache: boolean = false): Promise<void> {
         if (!this.stateManager.isManualMode(userId)) {
             this.stateManager.incrementAutoAttempts(userId);
         }
@@ -78,7 +79,7 @@ export class YouTubeDiscoveryLoop {
             throw new YouTubeError(YouTubeErrorType.INVALID_TOKEN, 'Token inválido o expirado');
         }
 
-        const broadcast = await this.broadcastDiscovery.findLiveBroadcast(validToken, account.providerId);
+        const broadcast = await this.broadcastDiscovery.findLiveBroadcast(validToken, account.providerId, skipCache);
 
         if (!this.stateManager.isConnecting(userId) && !this.stateManager.isManualMode(userId)) {
             logger.info({ userId }, 'YouTube: Broadcast found but user already disconnected, aborting');
@@ -135,7 +136,7 @@ export class YouTubeDiscoveryLoop {
         logger.info({ userId }, 'YouTube: Auto discovery exhausted, switching to STANDBY mode');
 
         this.stateManager.setWaitingMode(userId);
-        this.notifyStatus(io, userId, 'waiting_stream', 'Esperando directo...', true);
+        this.notifyStatus(io, userId, 'waiting_stream', 'Esperando directo...', false);
 
         const STANDBY_INTERVAL = 5 * 60 * 1000;
         let standbyTimer: NodeJS.Timeout | null = null;
@@ -150,7 +151,7 @@ export class YouTubeDiscoveryLoop {
                 if (isStandbyStopped || !this.stateManager.isManualMode(userId)) return;
 
                 if (YouTubeError.isYouTubeError(err) && err.type === YouTubeErrorType.INVALID_TOKEN) {
-                    this.notifyStatus(io, userId, 'error', 'Token inválido', true);
+                    this.notifyStatus(io, userId, 'error', 'Token inválido', false);
                     this.stateManager.clearState(userId);
                     return;
                 }
@@ -169,7 +170,7 @@ export class YouTubeDiscoveryLoop {
         standbyTimer = setTimeout(runStandbyLoop, STANDBY_INTERVAL);
     }
 
-    private notifyStatus(io: Server, userId: string, status: 'connecting' | 'waiting_stream' | 'connected' | 'disconnected' | 'error', message: string, persist: boolean = false): void {
-        SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', status, message, persist);
+    private notifyStatus(io: Server, userId: string, status: 'connecting' | 'waiting_stream' | 'connected' | 'disconnected' | 'error', message: string, isLive: boolean = false): void {
+        SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', status, message, isLive);
     }
 }

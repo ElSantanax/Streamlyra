@@ -2,13 +2,18 @@ import { Server } from 'socket.io';
 import { KickWebhookPayload } from '../../types/kick.types';
 import { WebhookProcessorFactory } from './WebhookProcessorFactory';
 import { ConnectionService } from '../connection/ConnectionService';
+import { ChatManager } from '../core/ChatManager';
 
 interface WebhookProcessorInterface {
     process(payload: unknown, eventType?: string): Promise<void>;
 }
 
 export class WebhookProcessor {
-    constructor(private io: Server, private connectionService: ConnectionService) { }
+    constructor(
+        private io: Server,
+        private connectionService: ConnectionService,
+        private chatManager: ChatManager
+    ) { }
 
     async processKickEvent(payload: KickWebhookPayload, eventType: string): Promise<void> {
         const processor = WebhookProcessorFactory.getProcessor('kick', this.io) as WebhookProcessorInterface;
@@ -21,7 +26,12 @@ export class WebhookProcessor {
     }
 
     async processYouTubeEvent(channelId: string, xmlBody: string): Promise<void> {
-        const processor = WebhookProcessorFactory.getProcessor('youtube', this.io, this.connectionService) as WebhookProcessorInterface;
+        const processor = WebhookProcessorFactory.getProcessor(
+            'youtube',
+            this.io,
+            this.connectionService,
+            this.chatManager
+        ) as WebhookProcessorInterface;
         await processor.process({ channelId, xmlBody });
     }
 }

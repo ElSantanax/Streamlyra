@@ -193,22 +193,12 @@ export const useConnections = (shouldFetch = true) => {
       }
     };
 
-    const onStreamUpdate = () => {
-      // Solo forzar recarga si no sabíamos que estaba en vivo
-      // o si el evento indica explícitamente un cambio necesario.
-      if (!statusRef.current['youtube']?.isLive) {
-        fetchConnections(true);
-      }
-    };
-
     socket.on('connection_status', onConnectionStatus);
     socket.on('viewers_update', onViewersUpdate);
-    socket.on('youtube:stream_update', onStreamUpdate);
 
     return () => {
       socket.off('connection_status', onConnectionStatus);
       socket.off('viewers_update', onViewersUpdate);
-      socket.off('youtube:stream_update', onStreamUpdate);
     };
   }, [updateStatus, updateStats, fetchConnections]);
 

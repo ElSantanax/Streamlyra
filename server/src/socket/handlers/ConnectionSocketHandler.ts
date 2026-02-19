@@ -21,7 +21,7 @@ export class ConnectionSocketHandler {
         socket.on('youtube_boost_discovery', async () => {
             logger.info({ socketId: socket.id, userId: authenticatedUserId }, 'YouTube boost discovery requested');
             try {
-                await this.connectionManager.getChatManager().boostProviderDiscovery(authenticatedUserId, 'youtube');
+                await this.connectionManager.getChatManager().boostProviderDiscovery(authenticatedUserId, 'youtube', true);
             } catch (error) {
                 logger.error({ err: error, userId: authenticatedUserId }, 'Error triggering YouTube boost discovery');
             }

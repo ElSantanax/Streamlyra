@@ -9,13 +9,14 @@ import { logger } from '../../../utils/logger';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaManager } from '../../platforms/YouTubeQuotaManager';
 import { ConnectionService } from '../../connection/ConnectionService';
+import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 
 export class YouTubeViewerPoller {
     private polling: PollingManager = new PollingManager();
 
     constructor(private connectionService: ConnectionService) { }
 
-    startPolling(userId: string, broadcastId: string, io: Server): void {
+    startPolling(userId: string, broadcastId: string, io: Server, onFatalError?: () => void): void {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.VIDEO_DETAILS;
 
@@ -32,6 +33,7 @@ export class YouTubeViewerPoller {
                     'error',
                     'Cuotas agotadas'
                 );
+                onFatalError?.();
                 return;
             }
 
@@ -41,6 +43,7 @@ export class YouTubeViewerPoller {
                 if (!validToken) {
                     logger.error({ userId }, 'YouTube viewer polling aborted: Could not refresh token');
                     this.stopPolling(userId);
+                    onFatalError?.();
                     return;
                 }
 
@@ -90,16 +93,28 @@ export class YouTubeViewerPoller {
                         logger.warn({ userId, status, message: errorMessage }, 'YouTube viewer polling stopped due to fatal API error');
 
                         if (status === 404) {
-                            SafeSocketEmitter.emitConnectionStatus(
-                                io,
-                                userId,
-                                'youtube',
-                                'waiting_stream',
-                                'Stream finalizado'
-                            );
+                            try {
+                                // broadcastId es el videoId en YouTubeStreamContext
+                                await YouTubeStreamContext.update(
+                                    { isActive: false, endedAt: new Date() },
+                                    { where: { videoId: broadcastId, isActive: true } }
+                                );
+                                logger.info({ broadcastId }, 'YouTube stream context marked as inactive (Viewer 404 detected)');
+
+                                SafeSocketEmitter.emitConnectionStatus(
+                                    io,
+                                    userId,
+                                    'youtube',
+                                    'waiting_stream',
+                                    'Stream finalizado'
+                                );
+                            } catch (e) {
+                                logger.error({ err: e }, 'Error marking stream context as inactive in ViewerPoller');
+                            }
                         }
 
                         this.stopPolling(userId);
+                        onFatalError?.();
                         return;
                     }
                 }

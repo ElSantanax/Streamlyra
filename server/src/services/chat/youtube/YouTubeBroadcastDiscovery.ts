@@ -7,8 +7,8 @@ import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model
 import { YouTubeError, YouTubeErrorType } from './YouTubeError';
 
 export class YouTubeBroadcastDiscovery {
-    async findLiveBroadcast(accessToken: string, channelId?: string): Promise<YouTubeBroadcast | null> {
-        if (channelId) {
+    async findLiveBroadcast(accessToken: string, channelId?: string, skipCache: boolean = false): Promise<YouTubeBroadcast | null> {
+        if (channelId && !skipCache) {
             const context = await YouTubeStreamContext.findOne({
                 where: { channelId, isActive: true }
             });

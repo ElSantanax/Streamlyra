@@ -71,7 +71,7 @@ export function createContainer(io: Server) {
     );
 
     const authService = new AuthService(authFlowProcessor, userProfileService);
-    const webhookProcessor = new WebhookProcessor(io, connectionService);
+    const webhookProcessor = new WebhookProcessor(io, connectionService, chatManager);
 
     // Controllers
     const authController = new AuthController(authService);

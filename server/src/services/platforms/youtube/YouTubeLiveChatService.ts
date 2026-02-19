@@ -5,7 +5,6 @@ import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../YouTubeQuotaManager';
 import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaErrorHandler } from './YouTubeQuotaErrorHandler';
-import { Connection } from '../../../models/Connection.model';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 import { YouTubeBroadcastResponse } from '../../../types/youtube.types';
 import { ConnectionService } from '../../connection/ConnectionService';
@@ -180,101 +179,4 @@ export class YouTubeLiveChatService {
         }
     }
 
-    /**
-     * Actualiza el contexto del stream (videoId y liveChatId) a partir de un videoId
-     * Usado principalmente por webhooks para fast-track discovery
-     */
-    async updateStreamContext(videoId: string, channelId: string): Promise<YouTubeStreamContext | null> {
-        const cost = YouTubePollingConfig.OPERATION_COSTS.VIDEO_DETAILS;
-        const quotaManager = YouTubeQuotaManager.getInstance();
-
-        if (!(await quotaManager.hasQuota(cost))) {
-            logger.warn({ platform: this.platformName }, 'Quota exhausted, skipping stream context update');
-            return null;
-        }
-
-        try {
-            logger.debug({ videoId, channelId }, 'YouTube: Updating stream context from webhook');
-
-            // Necesitamos un token válido. Buscamos cualquier usuario conectado a este canal.
-            const connection = await Connection.findOne({ where: { providerId: channelId, provider: 'youtube' } });
-
-            if (!connection) {
-                logger.debug({ channelId }, 'Webhook recibido para canal sin usuarios conectados, ignorando update de contexto');
-                return null;
-            }
-
-            // Obtener token siempre válido — refresca automáticamente si está expirado
-            let accessToken: string;
-            if (this.connectionService) {
-                const validToken = await this.connectionService.getValidAccessToken(connection.userId, 'youtube');
-                if (!validToken) {
-                    logger.warn({ channelId, userId: connection.userId }, 'YouTube: No se pudo obtener token válido para webhook update, abortando');
-                    return null;
-                }
-                accessToken = validToken;
-            } else {
-                // Fallback: token crudo de DB (compatibilidad con instancias sin ConnectionService)
-                accessToken = connection.accessToken;
-            }
-
-            const response = await axios.get<{ items: Array<{ id: string, liveStreamingDetails?: { activeLiveChatId?: string }, snippet: { liveBroadcastContent: string } }> }>(
-                'https://www.googleapis.com/youtube/v3/videos',
-                {
-                    params: {
-                        part: 'snippet,liveStreamingDetails',
-                        id: videoId
-                    },
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                }
-            );
-
-            await quotaManager.consumeQuota(cost);
-
-            const item = response.data.items?.[0];
-            if (!item) {
-                logger.warn({ videoId }, 'YouTube: Video not found in videos.list during webhook update');
-                return null;
-            }
-
-            const isLive = item.snippet.liveBroadcastContent === 'live';
-            const liveChatId = item.liveStreamingDetails?.activeLiveChatId;
-
-            logger.info({
-                videoId,
-                isLive,
-                hasChat: !!liveChatId,
-                status: item.snippet.liveBroadcastContent
-            }, 'YouTube: Webhook video status check');
-
-            if (isLive && liveChatId) {
-                const [context] = await YouTubeStreamContext.upsert({
-                    channelId,
-                    videoId,
-                    liveChatId,
-                    isActive: true,
-                    startedAt: new Date()
-                });
-
-                logger.info({ channelId, videoId, liveChatId }, 'YouTube: Stream Context actualizado via Webhook (Live detectado)');
-                return context;
-            } else {
-                // Si el video deja de ser live, asegurar que el contexto se marque como inactivo
-                const [updatedCount] = await YouTubeStreamContext.update(
-                    { isActive: false, endedAt: new Date() },
-                    { where: { videoId, isActive: true } }
-                );
-
-                if (updatedCount > 0) {
-                    logger.info({ videoId }, 'YouTube: Stream Context marcado como inactivo vía Webhook (Stream finalizado o no es live)');
-                }
-            }
-
-            return null;
-
-        } catch (error) {
-            logger.error({ err: error, platform: this.platformName, videoId }, 'YouTube: Error updating stream context from webhook');
-            return null;
-        }
-    }
 }
