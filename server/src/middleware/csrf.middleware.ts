@@ -57,6 +57,11 @@ const shouldValidateCsrf = (req: AuthRequest): boolean => {
  * Middleware que establece la cookie CSRF si no existe
  */
 export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    // Optimización: No establecer cookies en rutas excluidas (ej: webhooks)
+    if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) {
+        return next();
+    }
+
     const token = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
 
     if (!token) {

@@ -4,10 +4,10 @@ import { Op } from 'sequelize';
 import { logger } from '../../../utils/logger';
 import { YouTubeSubscription } from '../../../models/YouTubeSubscription.model';
 import { config } from '../../../config';
-import { EncryptionService } from '../../security/EncryptionService';
+import { encryptionService } from '../../security/EncryptionService';
 
 class YouTubePubSubService {
-    private readonly encryptionService = new EncryptionService();
+    private readonly encryptionService = encryptionService;
     private readonly HUB_URL = 'https://pubsubhubbub.appspot.com/subscribe';
     private readonly TOPIC_BASE = 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=';
     private readonly LEASE_SECONDS = 432000;

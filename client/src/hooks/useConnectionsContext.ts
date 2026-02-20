@@ -12,7 +12,7 @@ export interface ConnectionsStatusContextValue {
     connectionsError: string | null;
     connectionHash: string;
     disconnectPlatform: (platform: PlatformKey) => Promise<void>;
-    refetchConnections: () => Promise<void>;
+    refetchConnections: (force?: boolean) => Promise<void>;
     searchStream: (platform: PlatformKey) => void;
     getConnectedPlatforms: () => string[];
 }

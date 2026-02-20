@@ -2,6 +2,8 @@ import { rateLimit } from 'express-rate-limit';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 
+const IS_TEST = config.nodeEnv === 'test';
+
 /**
  * Limitador general para la API
  * Permite 100 peticiones cada 15 minutos por IP
@@ -19,7 +21,7 @@ export const apiLimiter = rateLimit({
         res.status(options.statusCode).json(options.message);
     },
     skip: (req) => {
-        return config.nodeEnv === 'test' ||
+        return IS_TEST ||
             req.originalUrl.startsWith('/api/auth') ||
             req.originalUrl.startsWith('/api/webhooks');
     }
@@ -42,7 +44,7 @@ export const authLimiter = rateLimit({
         logger.warn({ ip: req.ip, path: req.path }, 'Auth rate limit exceeded');
         res.status(options.statusCode).json(options.message);
     },
-    skip: () => config.nodeEnv === 'test'
+    skip: () => IS_TEST
 });
 
 /**
@@ -55,5 +57,5 @@ export const webhookLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many webhook events' },
-    skip: () => config.nodeEnv === 'test'
+    skip: () => IS_TEST
 });

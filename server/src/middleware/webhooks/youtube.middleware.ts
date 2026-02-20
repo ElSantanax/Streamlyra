@@ -7,9 +7,7 @@ import { youtubePubSubService } from '../../services/chat/youtube/YouTubePubSubS
 import { YouTubeSubscription } from '../../models/YouTubeSubscription.model';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
-import { EncryptionService } from '../../services/security/EncryptionService';
-
-const encryptionService = new EncryptionService();
+import { encryptionService } from '../../services/security/EncryptionService';
 
 interface RequestWithRawBody extends Request {
     rawBody?: string;
@@ -21,6 +19,25 @@ export interface RequestWithYouTubeWebhookData extends RequestWithRawBody {
         body: string;
     };
 }
+
+/**
+ * Función auxiliar para desencriptación y auto-migración de secretos de YouTube
+ */
+const getPlainSecret = async (subscription: YouTubeSubscription, source: 'GET' | 'POST'): Promise<string> => {
+    let plainSecret = subscription.secret;
+    const context = `YouTubeSubscription:${subscription.id} (${subscription.channelId})`;
+
+    if (!encryptionService.isEncrypted(plainSecret)) {
+        const encryptedSecret = encryptionService.encrypt(plainSecret);
+        subscription.update({ secret: encryptedSecret }).catch(err => {
+            logger.error({ err, context }, `Error en auto-migración silenciosa de YouTube (${source})`);
+        });
+        logger.info({ context }, `Auto-migrating legacy YouTube secret (on ${source}) non-blocking`);
+    } else {
+        plainSecret = encryptionService.decrypt(plainSecret, context);
+    }
+    return plainSecret;
+};
 
 /**
  * Middleware que valida webhooks de YouTube (PubSubHubbub)
@@ -62,17 +79,10 @@ export const validateYouTubeWebhook = async (
                 throw new AppError('Subscription not found', 404);
             }
 
-            // Desencriptar y Auto-migración si es necesario
-            let plainSecret = subscription.secret;
-            const context = `YouTubeSubscription:${subscription.id} (${subscription.channelId})`;
+            // Ejecutar desencriptación/auto-migración si es necesario
+            await getPlainSecret(subscription, 'GET');
 
-            if (!encryptionService.isEncrypted(plainSecret)) {
-                const encryptedSecret = encryptionService.encrypt(plainSecret);
-                await subscription.update({ secret: encryptedSecret });
-                logger.info({ context }, 'Auto-migrating legacy YouTube secret (on GET) to encrypted format');
-            } else {
-                plainSecret = encryptionService.decrypt(plainSecret, context);
-            }
+            // Manejar la verificación... (resto de la lógica)
 
             // Manejar la verificación (usando el secreto plano si fuera necesario, 
             // aunque handleVerification no lo usa directamente, lo mencionamos por coherencia)
@@ -122,16 +132,7 @@ export const validateYouTubeWebhook = async (
             }
 
             // Desencriptar y Auto-migración si es necesario
-            let plainSecret = subscription.secret;
-            const context = `YouTubeSubscription:${subscription.id} (${subscription.channelId})`;
-
-            if (!encryptionService.isEncrypted(plainSecret)) {
-                const encryptedSecret = encryptionService.encrypt(plainSecret);
-                await subscription.update({ secret: encryptedSecret });
-                logger.info({ context }, 'Auto-migrating legacy YouTube secret (on POST) to encrypted format');
-            } else {
-                plainSecret = encryptionService.decrypt(plainSecret, context);
-            }
+            const plainSecret = await getPlainSecret(subscription, 'POST');
 
             // Verificar firma HMAC
             const isValidSignature = youtubePubSubService.verifySignature(
@@ -145,8 +146,10 @@ export const validateYouTubeWebhook = async (
                 throw new AppError('Invalid signature', 401);
             }
 
-            // Actualizar última notificación
-            await youtubePubSubService.updateLastNotification(channelId);
+            // Actualizar última notificación (Non-blocking)
+            youtubePubSubService.updateLastNotification(channelId).catch(err => {
+                logger.error({ err, channelId }, 'Error actualizando última notificación de YouTube');
+            });
 
             // Pasar datos al controlador
             req.youtubeWebhookData = {

@@ -94,6 +94,7 @@ export class WebhookCache {
     static keys = {
         connection: (provider: string, providerId: string) => `conn:${provider}:${providerId}`,
         webhook: (provider: string, broadcasterId: string, type?: string) =>
-            `wh:${provider}:${broadcasterId}${type ? `:${type}` : ''}`
+            `wh:${provider}:${broadcasterId}${type ? `:${type}` : ''}`,
+        twitchSub: (subscriptionId: string) => `wh:twitch:sub:${subscriptionId}`
     };
 }

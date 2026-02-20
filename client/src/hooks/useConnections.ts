@@ -149,6 +149,7 @@ export const useConnections = (shouldFetch = true) => {
   const disconnectPlatform = useCallback(async (platform: PlatformKey) => {
     try {
       await authService.disconnectPlatform(platform);
+      invalidateConnectionsCache(); // Invalidar caché para que la próxima petición sea fresca
       updateStatus(platform, { connected: false, isLive: false, status: 'disconnected' });
       updateStats(platform, { viewers: 0 });
     } catch (err) {

@@ -58,7 +58,7 @@ export class KickWebhookService {
             verifier.end();
 
             const isValid = verifier.verify(key, Buffer.from(signature, 'base64'));
-            logger.info({ isValid, messageId }, 'Resultado de verificación de firma de Kick');
+            logger.debug({ isValid, messageId }, 'Resultado de verificación de firma de Kick');
             return isValid;
         } catch (error) {
             logger.error({ err: error, messageId }, 'Error verificando firma de Kick');

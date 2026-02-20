@@ -110,12 +110,18 @@ export class TwitchWebhookService {
             );
         }
 
-        // Invalidar caché para que el procesador vea el nuevo estado 'enabled'
+        // Invalidar caché (Tanto la llave legacy como la nueva de subscriptionId)
+        const cache = WebhookCache.getInstance();
         if (type) {
-            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('twitch', broadcasterId, type));
-        } else {
-            // Si no hay tipo, invalidamos todas las suscripciones de ese broadcaster por si acaso
-            WebhookCache.getInstance().invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
+            cache.invalidate(WebhookCache.keys.webhook('twitch', broadcasterId, type));
+            cache.invalidate(WebhookCache.keys.webhook('twitch', broadcasterId, type) + ':full');
+        }
+        if (subscriptionId) {
+            cache.invalidate(WebhookCache.keys.twitchSub(subscriptionId));
+        }
+        if (!type && !subscriptionId) {
+            // Fallback: Invalidar solo los webhooks de ESTE broadcaster
+            cache.invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
         }
 
         logger.info({ broadcasterId, subscriptionId, type }, 'Twitch Webhooks: Suscripción habilitada correctamente');
@@ -137,8 +143,12 @@ export class TwitchWebhookService {
             { where }
         );
 
-        // Invalidar caché
-        WebhookCache.getInstance().invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
+        // Invalidar caché (Tanto la llave legacy como la nueva de subscriptionId)
+        const cache = WebhookCache.getInstance();
+        cache.invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
+        if (subscriptionId) {
+            cache.invalidate(WebhookCache.keys.twitchSub(subscriptionId));
+        }
 
         logger.warn({ broadcasterId, subscriptionId, status }, 'Twitch Webhooks: Suscripción marcada como REVOCADA');
     }

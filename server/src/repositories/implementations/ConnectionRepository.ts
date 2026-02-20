@@ -8,7 +8,7 @@ import { WebhookCache } from '../../services/webhook/WebhookCache';
 /**
  * Implementación del repositorio de conexiones usando Sequelize
  */
-import { EncryptionService } from '../../services/security/EncryptionService';
+import { encryptionService } from '../../services/security/EncryptionService';
 import { logger } from '../../utils/logger';
 
 /**
@@ -16,7 +16,7 @@ import { logger } from '../../utils/logger';
  * Aplica encriptación transparente a los tokens (Access y Refresh)
  */
 export class ConnectionRepository implements IConnectionRepository {
-    private encryptionService: EncryptionService;
+    private encryptionService = encryptionService;
     private cache: WebhookCache;
 
     // Caché estática compartida por todas las instancias del repositorio
@@ -26,7 +26,6 @@ export class ConnectionRepository implements IConnectionRepository {
     }>();
 
     constructor() {
-        this.encryptionService = new EncryptionService();
         this.cache = WebhookCache.getInstance();
     }
 

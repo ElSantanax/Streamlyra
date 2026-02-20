@@ -85,3 +85,7 @@ export class EncryptionService {
         }
     }
 }
+
+// Exportar instancia única para evitar múltiples asignaciones de memoria
+export const encryptionService = new EncryptionService();
+export default encryptionService;

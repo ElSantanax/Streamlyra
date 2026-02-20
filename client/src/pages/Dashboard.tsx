@@ -190,7 +190,7 @@ const DashboardContent = () => {
                         <AddPlatformModal
                             isOpen={isAddPlatformOpen}
                             onClose={() => toggleAddPlatform(false)}
-                            onConnectionSuccess={refetchConnections}
+                            onConnectionSuccess={() => refetchConnections(true)}
                         />
                     </Suspense>
                 </LocalErrorBoundary>

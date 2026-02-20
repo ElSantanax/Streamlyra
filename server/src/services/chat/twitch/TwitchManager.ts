@@ -5,10 +5,10 @@ import { TwitchWebhook } from '../../../models/TwitchWebhook.model';
 import { TwitchWebhookService } from './TwitchWebhookService';
 import { logger } from '../../../utils/logger';
 import { config } from '../../../config';
-import { EncryptionService } from '../../security/EncryptionService';
+import { encryptionService } from '../../security/EncryptionService';
 
 export class TwitchManager {
-    private encryptionService = new EncryptionService();
+    private encryptionService = encryptionService;
     private readonly EVENT_TYPES = [
         { type: 'channel.follow', version: '2' },
         { type: 'channel.subscribe', version: '1' },

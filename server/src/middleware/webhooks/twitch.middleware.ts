@@ -3,6 +3,7 @@
  */
 
 import { Response, NextFunction } from 'express';
+import { Op } from 'sequelize';
 import { TwitchWebhookService } from '../../services/chat/twitch/TwitchWebhookService';
 import { TwitchWebhook } from '../../models/TwitchWebhook.model';
 import { AppError } from '../../utils/AppError';
@@ -12,9 +13,7 @@ import {
     RequestWithWebhookData,
     validateTimestamp
 } from './utils';
-import { EncryptionService } from '../../services/security/EncryptionService';
-
-const encryptionService = new EncryptionService();
+import { encryptionService } from '../../services/security/EncryptionService';
 
 
 /**
@@ -80,46 +79,54 @@ export const validateTwitchWebhook = async (
             throw new AppError('Missing broadcaster ID in payload', 400);
         }
 
-        // 3. Buscar el secreto (Prioridad: ID de suscripción > Tipo + Canal)
-        let dbWebhookData = null;
-
-        // Intentar obtener de caché por broadcasterId + type (que es lo que tenemos más a mano)
+        // 3. Buscar el secreto (Estrategia de Caché Multinivel)
+        let dbWebhookData: TwitchWebhook | null = null;
         const cache = WebhookCache.getInstance();
-        const cacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, type);
-        dbWebhookData = cache.get<TwitchWebhook>(cacheKey + ':full');
 
+        // 3a. Intentar por subscriptionId (Más preciso)
+        if (subscriptionId) {
+            const subCacheKey = WebhookCache.keys.twitchSub(subscriptionId);
+            dbWebhookData = cache.get<TwitchWebhook>(subCacheKey);
+        }
+
+        // 3b. Intentar por broadcaster + type (Fallback Caché)
         if (!dbWebhookData) {
+            const legacyCacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, type) + ':full';
+            dbWebhookData = cache.get<TwitchWebhook>(legacyCacheKey);
+        }
+
+        // 3c. Búsqueda UNIFICADA en Base de Datos (Estrategia: Prioridad absoluta al más reciente)
+        if (!dbWebhookData) {
+            const orFilters: Record<string, unknown>[] = [];
+
             if (subscriptionId) {
-                dbWebhookData = await TwitchWebhook.findOne({
-                    where: { subscriptionId }
-                });
+                orFilters.push({ subscriptionId });
             }
 
-            // Fallback: Si no se encuentra por ID, buscar por tipo y canal
-            if (!dbWebhookData && type) {
-                dbWebhookData = await TwitchWebhook.findOne({
-                    where: {
-                        broadcasterId,
-                        type,
-                        status: ['enabled', 'verification_pending', 'revoked']
-                    }
-                });
+            // Fallback: Broadcaster + (Tipo opcional si viene en el payload)
+            const fallback: Record<string, unknown> = {
+                broadcasterId,
+                status: { [Op.in]: ['enabled', 'verification_pending', 'revoked'] }
+            };
+            if (type) {
+                fallback.type = type;
             }
 
-            // Fallback Legacy
-            if (!dbWebhookData) {
-                dbWebhookData = await TwitchWebhook.findOne({
-                    where: { broadcasterId, status: ['enabled', 'verification_pending', 'revoked'] },
-                    order: [['createdAt', 'DESC']]
-                });
-            }
+            orFilters.push(fallback);
+
+            dbWebhookData = await TwitchWebhook.findOne({
+                where: { [Op.or]: orFilters },
+                order: [['createdAt', 'DESC']]
+            });
 
             if (dbWebhookData) {
-                // Guardar en caché el objeto completo para la validación de firma
-                // Usamos un sufijo :full para diferenciarlo del booleano simple usado en el procesador
-                cache.set(cacheKey + ':full', dbWebhookData);
-                // De paso actualizamos el booleano simple
-                cache.set(cacheKey, dbWebhookData.status === 'enabled');
+                // Poblado multinivel de caché para detener futuras queries
+                if (dbWebhookData.subscriptionId) {
+                    cache.set(WebhookCache.keys.twitchSub(dbWebhookData.subscriptionId), dbWebhookData);
+                }
+                const legacyCacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, dbWebhookData.type);
+                cache.set(legacyCacheKey + ':full', dbWebhookData);
+                cache.set(legacyCacheKey, dbWebhookData.status === 'enabled');
             }
         }
 
@@ -133,10 +140,12 @@ export const validateTwitchWebhook = async (
         const context = `TwitchWebhook:${dbWebhookData.id} (${dbWebhookData.broadcasterId})`;
 
         if (!encryptionService.isEncrypted(plainSecret)) {
-            // Migrar a encriptado silenciosamente
+            // Migrar a encriptado de forma persistente pero SIN bloquear el hot path
             const encryptedSecret = encryptionService.encrypt(plainSecret);
-            await dbWebhookData.update({ secret: encryptedSecret });
-            logger.info({ context }, 'Auto-migrating legacy Twitch webhook secret to encrypted format');
+            dbWebhookData.update({ secret: encryptedSecret }).catch(err => {
+                logger.error({ err, context }, 'Error en auto-migración silenciosa de Twitch');
+            });
+            logger.info({ context }, 'Auto-migrating legacy Twitch webhook secret (non-blocking)');
         } else {
             plainSecret = encryptionService.decrypt(plainSecret, context);
         }
