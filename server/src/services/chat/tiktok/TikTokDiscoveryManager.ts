@@ -1,5 +1,3 @@
-/** Gestor de la lógica de búsqueda y reconexión de TikTok Live */
-
 import { Server } from 'socket.io';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { TikTokConnection } from '../../../types/tiktok.types';
@@ -24,9 +22,6 @@ export class TikTokDiscoveryManager {
         private readonly eventListener: TikTokEventListener
     ) { }
 
-    /**
-     * Inicia el proceso de búsqueda automática del stream
-     */
     async setupAutoDiscovery(userId: string, username: string, io: Server, onReconnect: () => void): Promise<void> {
         const flowId = this.generateFlowId();
         this.stateManager.setFlowId(userId, flowId);
@@ -47,14 +42,9 @@ export class TikTokDiscoveryManager {
         });
 
         this.stateManager.setDiscoveryCleanup(userId, cleanup);
-
-        // Primer intento inmediato
         await tryConnect().catch(() => { });
     }
 
-    /**
-     * Realiza un intento manual de conexión (Boost)
-     */
     async boostDiscovery(userId: string, username: string, io: Server, onReconnect: () => void): Promise<void> {
         const flowId = this.generateFlowId();
         this.stateManager.setFlowId(userId, flowId);
@@ -74,9 +64,6 @@ export class TikTokDiscoveryManager {
         }
     }
 
-    /**
-     * Intento individual de conexión al Live
-     */
     private async attemptDiscovery(
         userId: string,
         username: string,
@@ -84,7 +71,6 @@ export class TikTokDiscoveryManager {
         io: Server,
         onReconnect: () => void
     ): Promise<void> {
-        // 1. Verificación inicial de flujo
         if (!this.isFlowValid(userId, flowId)) {
             logger.debug({ userId, username, flowId }, 'TikTok: Aborting stale discovery attempt');
             return;
@@ -94,8 +80,6 @@ export class TikTokDiscoveryManager {
         this.stateManager.incrementAutoAttempts(userId);
 
         const tiktokConnection = await this.connectionManager.connect(username);
-
-        // 2. Verificación post-conexión
         const isStillValid = await this.isConnectionStillValid(userId, flowId, username);
 
         if (!isStillValid) {
@@ -104,12 +88,10 @@ export class TikTokDiscoveryManager {
             return;
         }
 
-        // Éxito: limpiar reintentos y establecer conexión activa
         this.stateManager.setDiscoveryCleanup(userId, () => { });
         this.stateManager.setActiveConnection(userId, tiktokConnection);
         this.stateManager.setConnecting(userId, false);
 
-        // Informar estado y configurar listeners
         SafeSocketEmitter.emitConnectionStatus(
             io,
             userId,

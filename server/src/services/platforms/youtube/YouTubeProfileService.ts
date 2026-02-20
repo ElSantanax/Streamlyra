@@ -1,5 +1,3 @@
-/** Servicio de gestión de perfiles de YouTube */
-
 import axios from 'axios';
 import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../YouTubeQuotaManager';
@@ -28,7 +26,6 @@ export class YouTubeProfileService {
         const quotaManager = YouTubeQuotaManager.getInstance();
         const cost = YouTubePollingConfig.OPERATION_COSTS.CHANNEL_INFO;
 
-        // Si no hay cuota, usar perfil básico del token JWT
         if (!(await quotaManager.hasQuota(cost))) {
             logger.warn({ platform: this.platformName }, 'YouTube quota exhausted, using basic profile from token');
             return YouTubeTokenDecoder.getBasicProfileFromToken(accessToken);
@@ -58,7 +55,6 @@ export class YouTubeProfileService {
             logger.debug({ platform: this.platformName, channelId: items[0].id }, 'YouTube profile fetched successfully');
             return items[0];
         } catch (error: unknown) {
-            // Si es error de cuota, usar perfil básico en lugar de fallar
             if (YouTubeQuotaErrorHandler.isQuotaError(error)) {
                 logger.warn({ platform: this.platformName }, 'YouTube quota exceeded, falling back to basic profile');
                 return YouTubeTokenDecoder.getBasicProfileFromToken(accessToken);

@@ -2,26 +2,17 @@ import axios from 'axios';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
 
-/**
- * Cliente dedicado exclusivamente a operaciones con la API de EventSub de Twitch
- * y gestión de Access Tokens de Aplicación (Client Credentials).
- */
 export class TwitchEventSubClient {
     private static appAccessToken: string | null = null;
     private static tokenExpiry: number = 0;
 
-    /**
-     * Obtiene un App Access Token (Client Credentials Flow)
-     * Requerido para suscripciones de EventSub vía Webhooks.
-     * Gestiona caché interna para evitar llamadas excesivas.
-     */
     static async getAppAccessToken(): Promise<string> {
         if (this.appAccessToken && Date.now() < this.tokenExpiry) {
             return this.appAccessToken;
         }
 
         try {
-            logger.debug('Twitch: Solicitando nuevo App Access Token (Client Credentials)');
+            logger.debug('Twitch: Solicitando nuevo App Access Token');
             const response = await axios.post<{ access_token: string; expires_in: number }>('https://id.twitch.tv/oauth2/token', null, {
                 params: {
                     client_id: config.oauth.twitch.clientId!,
@@ -44,9 +35,6 @@ export class TwitchEventSubClient {
         }
     }
 
-    /**
-     * Suscribe a un evento de Twitch EventSub
-     */
     static async subscribe(
         type: string,
         version: string,
@@ -95,9 +83,6 @@ export class TwitchEventSubClient {
         }
     }
 
-    /**
-     * Elimina una suscripción de EventSub
-     */
     static async deleteSubscription(id: string): Promise<void> {
         try {
             const appToken = await this.getAppAccessToken();
@@ -119,9 +104,6 @@ export class TwitchEventSubClient {
         }
     }
 
-    /**
-     * Lista todas las suscripciones de EventSub activas para este Client ID
-     */
     static async listSubscriptions(status?: string): Promise<Array<{ id: string, type: string, condition: Record<string, string>, status: string }>> {
         try {
             const appToken = await this.getAppAccessToken();

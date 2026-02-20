@@ -20,8 +20,6 @@ export class ChatManager {
         this.providers = new Map();
     }
 
-    // Método setter para inyectar proveedores post-construcción si es necesario, 
-    // o simplemente inyectar el Map directamente.
     setProviders(providersMap: Map<Platform, ChatProvider>) {
         this.providers = providersMap;
     }
@@ -97,7 +95,6 @@ export class ChatManager {
                     await provider.disconnect(userId);
                 }
 
-                // Notificar a todos los sockets que la plataforma se ha desconectado realmente
                 SafeSocketEmitter.emitConnectionStatus(this.io, userId, platform, 'disconnected', 'Plataforma detenida');
             },
             { platform, userId, action: 'disconnectProvider' },

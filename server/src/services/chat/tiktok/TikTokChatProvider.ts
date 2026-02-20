@@ -1,5 +1,3 @@
-/** Proveedor de chat de TikTok con discovery automático inicial y manual */
-
 import { Server } from 'socket.io';
 import { ChatProvider } from '../shared/ChatProvider';
 import { TikTokConnectionManager } from './TikTokConnectionManager';
@@ -26,7 +24,6 @@ export class TikTokChatProvider implements ChatProvider {
         this.errorHandler = new TikTokErrorHandler();
         this.stateManager = new TikTokConnectionStateManager();
 
-        // Inicializamos el gestor de búsqueda
         this.discovery = new TikTokDiscoveryManager(
             this.connectionManager,
             this.stateManager,
@@ -36,13 +33,11 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     async connect(userId: string, io: Server): Promise<void> {
-        // 1. Evitar ráfagas de conexión
         if (this.stateManager.isConnecting(userId)) {
             logger.debug({ userId }, 'TikTok: Connection already in progress, skipping');
             return;
         }
 
-        // 2. Si ya hay una conexión activa, solo informar estado
         if (this.stateManager.hasActiveConnection(userId)) {
             this.emitCurrentConnectionStatus(userId, io);
             return;
@@ -60,16 +55,14 @@ export class TikTokChatProvider implements ChatProvider {
 
             const username = this.normalizeUsername(connection.providerUsername);
 
-            // 3. Limpiar estado anterior antes de empezar
             await this.clearInternalState(userId);
 
-            // 4. Iniciar flujo de búsqueda automática delegando al discovery manager
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
             await this.discovery.setupAutoDiscovery(
                 userId,
                 username,
                 io,
-                () => this.connect(userId, io) // Callback para reconexión
+                () => this.connect(userId, io)
             );
 
         } catch (error) {
@@ -96,7 +89,6 @@ export class TikTokChatProvider implements ChatProvider {
         this.stateManager.setConnecting(userId, true);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connecting', 'Buscando...');
 
-        // Delegar el intento manual al discovery manager
         await this.discovery.boostDiscovery(
             userId,
             username,
@@ -116,12 +108,10 @@ export class TikTokChatProvider implements ChatProvider {
         });
     }
 
-    // Normaliza el username removiendo @ iniciales
     private normalizeUsername(username: string): string {
         return username.replace(/^@+/, '');
     }
 
-    // Determina el estado de conexión actual basado en stream confirmation
     private getCurrentConnectionStatus(userId: string): {
         status: 'connected' | 'waiting_stream';
         message: string | undefined;
@@ -134,7 +124,6 @@ export class TikTokChatProvider implements ChatProvider {
         return { status, message, isLive };
     }
 
-    // Emite el estado de conexión actual al cliente
     private emitCurrentConnectionStatus(userId: string, io: Server): void {
         const { status, message, isLive } = this.getCurrentConnectionStatus(userId);
         SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', status, message, isLive);

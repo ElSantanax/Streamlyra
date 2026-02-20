@@ -1,5 +1,3 @@
-/** Servicio de Twitch con OAuth y envío de mensajes */
-
 import axios from 'axios';
 import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
 import { TwitchUserResponse } from '../../types/twitch.types';

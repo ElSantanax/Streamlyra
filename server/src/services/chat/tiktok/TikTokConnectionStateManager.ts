@@ -1,5 +1,3 @@
-/** Gestor de estado de conexiones activas de TikTok con tracking de reconexión */
-
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 
 interface ConnectionState {
@@ -7,7 +5,7 @@ interface ConnectionState {
     autoAttempts: number;
     isManualMode: boolean;
     cleanup?: () => void;
-    flowId?: string; // ID único para rastrear el proceso de conexión actual
+    flowId?: string;
 }
 
 export class TikTokConnectionStateManager {
@@ -56,7 +54,6 @@ export class TikTokConnectionStateManager {
         }
     }
 
-    // Discovery tracking
     getAutoAttempts(userId: string): number {
         return this.states.get(userId)?.autoAttempts || 0;
     }

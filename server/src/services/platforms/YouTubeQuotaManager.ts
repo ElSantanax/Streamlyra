@@ -24,9 +24,6 @@ export class YouTubeQuotaManager {
         return YouTubeQuotaManager.instance;
     }
 
-    /**
-     * Inicializa el gestor cargando el estado desde la base de datos
-     */
     private async initialize(): Promise<void> {
         if (this.initialized) return;
 
@@ -45,7 +42,6 @@ export class YouTubeQuotaManager {
                 isExhausted: this.isExhausted
             }, 'Estado de cuota de YouTube cargado desde BD');
         } else {
-            // Crear registro para hoy
             await YouTubeQuota.create({
                 date: today,
                 unitsUsed: 0,
@@ -60,9 +56,6 @@ export class YouTubeQuotaManager {
         this.initialized = true;
     }
 
-    /**
-     * Persiste el estado actual en la base de datos
-     */
     private async persistState(): Promise<void> {
         if (!this.initialized) return;
 
@@ -72,7 +65,6 @@ export class YouTubeQuotaManager {
         try {
             await YouTubeQuota.upsert({
                 date: today,
-                // Si hay diferencia, usamos un valor base conservador, pero lo ideal es el flujo atómico
                 unitsUsed: this.unitsUsed,
                 isExhausted: this.isExhausted,
                 exhaustedUntil: this.isExhausted && this.exhaustedUntil > 0
@@ -89,9 +81,6 @@ export class YouTubeQuotaManager {
         }
     }
 
-    /**
-     * Inicia un temporizador para persistir los cambios si no hay uno ya activo
-     */
     private schedulePersistence(): void {
         this.isDirty = true;
         if (this.persistTimer) return;
@@ -104,18 +93,13 @@ export class YouTubeQuotaManager {
         }, YouTubePollingConfig.QUOTA_PERSIST_INTERVAL_MS);
     }
 
-    /**
-     * Verifica si hay cuota disponible para una operación
-     */
     public async hasQuota(requestedUnits: number = 1): Promise<boolean> {
         await this.initialize();
         await this.checkAndResetDaily();
 
-        // En desarrollo, FORZAMOS que siempre intente la petición para ver el error real de Google
         const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
         if (isDev) return true;
 
-        // Si estamos en periodo de bloqueo por error de cuota previo
         if (this.isExhausted && Date.now() < this.exhaustedUntil) {
             return false;
         } else if (this.isExhausted) {
@@ -126,9 +110,6 @@ export class YouTubeQuotaManager {
         return (this.unitsUsed + requestedUnits) <= YouTubePollingConfig.DAILY_QUOTA_LIMIT;
     }
 
-    /**
-     * Registra el consumo de unidades
-     */
     public async consumeQuota(units: number): Promise<void> {
         await this.initialize();
         await this.checkAndResetDaily();
@@ -141,7 +122,6 @@ export class YouTubeQuotaManager {
             percent: ((this.unitsUsed / YouTubePollingConfig.DAILY_QUOTA_LIMIT) * 100).toFixed(2) + '%'
         }, 'YouTube quota consumed');
 
-        // En lugar de persistir inmediatamente, programamos una persistencia diferida
         this.schedulePersistence();
 
         if (this.unitsUsed >= YouTubePollingConfig.DAILY_QUOTA_LIMIT) {
@@ -149,14 +129,10 @@ export class YouTubeQuotaManager {
         }
     }
 
-    /**
-     * Marca la cuota como agotada (usualmente disparado por un error 403 de la API)
-     * isDailyLimit Si es true, el bloqueo es largo. Si es false (por defecto), es temporal (15 min)
-     */
     public async markAsExhausted(isDailyLimit: boolean = false): Promise<void> {
         await this.initialize();
 
-        const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000; // 1h o 15 min
+        const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000;
         this.isExhausted = true;
         this.exhaustedUntil = Date.now() + blockDuration;
 
@@ -165,7 +141,6 @@ export class YouTubeQuotaManager {
             retryInMinutes: isDailyLimit ? 60 : 15
         }, 'CUOTA DE YOUTUBE AGOTADA O LÍMITE DE TASA ALCANZADO');
 
-        // En caso de agotamiento, persistimos inmediatamente ya que es crítico
         if (this.persistTimer) {
             clearTimeout(this.persistTimer);
             this.persistTimer = null;
@@ -173,9 +148,6 @@ export class YouTubeQuotaManager {
         await this.persistState();
     }
 
-    /**
-     * Retorna el estado actual de la cuota
-     */
     public async getStatus() {
         await this.initialize();
         await this.checkAndResetDaily();
@@ -190,21 +162,15 @@ export class YouTubeQuotaManager {
         };
     }
 
-    /**
-     * Calcula un intervalo de polling adaptativo basado en la cuota restante.
-     * Si queda poca cuota, aumenta el intervalo para estirar el tiempo de uso.
-     */
     public async getAdaptiveInterval(baseInterval: number): Promise<number> {
         const stats = await this.getStatus();
 
         if (stats.isExhausted) return baseInterval * 10;
 
-        // Si hemos usado más del 80% de la cuota, triplicamos el intervalo
         if (stats.percentUsed > 80) {
             return baseInterval * 3;
         }
 
-        // Si hemos usado más del 50%, lo duplicamos
         if (stats.percentUsed > 50) {
             return baseInterval * 2;
         }
@@ -227,7 +193,6 @@ export class YouTubeQuotaManager {
             this.exhaustedUntil = 0;
             this.lastResetDate = today;
 
-            // Crear nuevo registro para el día actual
             await YouTubeQuota.create({
                 date: today,
                 unitsUsed: 0,

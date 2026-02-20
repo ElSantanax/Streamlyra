@@ -7,10 +7,6 @@ import { Connection } from '../../../../models/Connection.model';
 import { Platform } from '../../../../constants/platforms';
 import { IModerationStrategy, ModerationContext } from './IModerationStrategy';
 
-/**
- * Estrategia de moderación para el Dashboard
- * Maneja eliminación de mensajes que pueden estar sincronizados con múltiples plataformas
- */
 export class DashboardModerationStrategy implements IModerationStrategy {
   constructor(
     private twitchService: TwitchModerationService,
@@ -22,7 +18,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
   async executeAction(context: ModerationContext): Promise<void> {
     const { socket, authenticatedUserId, action, messageId, platformIds } = context;
 
-    // Solo soportamos eliminación en el dashboard
     if (action !== 'delete') {
       socket.emit('moderation_error', {
         code: 'UNSUPPORTED_ACTION',
@@ -31,7 +26,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
       return;
     }
 
-    // Si no hay platformIds, el mensaje solo se elimina del dashboard (ya ocurrió optimisticamente)
     if (!platformIds || Object.keys(platformIds).length === 0) {
       socket.emit('moderation_success', {
         action: 'delete',
@@ -47,7 +41,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
       'Processing dashboard message deletion'
     );
 
-    // Intentar eliminar de cada plataforma
     const deletionPromises = Object.entries(platformIds).map(([platform, pid]) =>
       this.deletePlatformMessage(authenticatedUserId, platform as Platform, pid)
     );
@@ -55,7 +48,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
     const results = await Promise.all(deletionPromises);
     const allSuccessful = results.every(r => r.success);
 
-    // Emitir resultado apropiado
     if (allSuccessful) {
       socket.emit('moderation_success', {
         action: 'delete',
@@ -74,9 +66,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
     }
   }
 
-  /**
-   * Intenta eliminar un mensaje de una plataforma específica
-   */
   private async deletePlatformMessage(
     userId: string,
     platform: Platform,
@@ -111,9 +100,6 @@ export class DashboardModerationStrategy implements IModerationStrategy {
     }
   }
 
-  /**
-   * Elimina un mensaje de Twitch (requiere broadcasterId y moderatorId)
-   */
   private async deleteTwitchMessage(
     userId: string,
     messageId: string,

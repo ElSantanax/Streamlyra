@@ -30,10 +30,6 @@ export class StreamSessionManager {
         return session;
     }
 
-    /**
-     * Actualiza el estado de vivo de una plataforma para un usuario
-     * True si el estado global de la sesión cambió (empezó o terminó)
-     */
     updateLiveStatus(userId: string, platform: string, isLive: boolean): { isSessionActive: boolean; startTime: string | null } {
         const session = this.getOrCreateSession(userId);
 
@@ -69,9 +65,6 @@ export class StreamSessionManager {
         return this.sessions.get(userId)?.livePlatforms.has(platform) || false;
     }
 
-    /**
-     * Limpia la sesión de un usuario para evitar fugas de memoria
-     */
     clearSession(userId: string): void {
         const session = this.sessions.get(userId);
         if (session) {

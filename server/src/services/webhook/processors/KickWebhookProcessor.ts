@@ -1,5 +1,3 @@
-/** Procesador de webhooks de Kick con validación de estado y sockets activos */
-
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { KickWebhook } from '../../../models/KickWebhook.model';
@@ -20,7 +18,6 @@ export class KickWebhookProcessor {
 
     async process(payload: KickWebhookPayload | { data: KickWebhookPayload }, eventType: string = 'chat.message.sent'): Promise<void> {
         try {
-            // Kick a veces envuelve el payload en un objeto 'data'
             const data = 'data' in payload ? payload.data : payload;
             const broadcaster = (data as KickWebhookPayload).broadcaster;
             const broadcasterKickId = broadcaster?.user_id?.toString();
@@ -34,7 +31,6 @@ export class KickWebhookProcessor {
                 return;
             }
 
-            // 1. Obtener conexión (con caché)
             const connCacheKey = WebhookCache.keys.connection('kick', broadcasterKickId);
             let connection = this.cache.get<Connection>(connCacheKey);
 
@@ -52,7 +48,6 @@ export class KickWebhookProcessor {
                 return;
             }
 
-            // 2. Verificar estado del webhook (con caché)
             const whCacheKey = WebhookCache.keys.webhook('kick', broadcasterKickId);
             let isActive = this.cache.get<boolean>(whCacheKey);
 
@@ -93,7 +88,6 @@ export class KickWebhookProcessor {
                 'Procesando evento de Kick recibido vía webhook'
             );
 
-            // Actualización asíncrona del timestamp
             KickWebhook.update(
                 { lastEventAt: new Date() },
                 { where: { broadcasterId: broadcasterKickId } }
@@ -101,7 +95,6 @@ export class KickWebhookProcessor {
                 logger.error({ err, broadcasterKickId }, 'Error updating webhook timestamp')
             );
 
-            // OPTIMIZACIÓN 4: Emisión directa
             if (chatMessage) {
                 const emitResult = SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'kick');
 
@@ -127,7 +120,6 @@ export class KickWebhookProcessor {
                     statusData.is_live
                 );
 
-                // Si se apaga el stream, forzar contador a 0
                 if (!statusData.is_live) {
                     SafeSocketEmitter.emitViewersUpdate(
                         this.io,
@@ -144,4 +136,3 @@ export class KickWebhookProcessor {
         }
     }
 }
-

@@ -1,5 +1,3 @@
-/** Decodificador de tokens JWT de YouTube para obtener información básica del perfil */
-
 import { logger } from '../../../utils/logger';
 
 interface YouTubeChannel {
@@ -15,13 +13,8 @@ interface YouTubeChannel {
 }
 
 export class YouTubeTokenDecoder {
-    /**
-     * Obtiene información básica del perfil desde el token JWT de YouTube
-     * Se usa como fallback cuando la cuota está agotada
-     */
     static getBasicProfileFromToken(accessToken: string): YouTubeChannel {
         try {
-            // Decodificar el JWT para obtener información básica
             const payloadBase64 = accessToken.split('.')[1];
             if (!payloadBase64) {
                 throw new Error('Invalid token format');
@@ -30,10 +23,9 @@ export class YouTubeTokenDecoder {
             const payloadString = Buffer.from(payloadBase64, 'base64').toString();
             const payload = JSON.parse(payloadString) as { sub?: string };
 
-            // YouTube incluye el channel ID en el token
             const channelId = payload.sub || `yt_${Date.now()}`;
 
-            logger.info({ channelId }, 'Using basic YouTube profile from token due to quota limits');
+            logger.info({ channelId }, 'Using basic YouTube profile from token');
 
             return {
                 id: channelId,
@@ -49,7 +41,6 @@ export class YouTubeTokenDecoder {
         } catch (error) {
             logger.error({ err: error }, 'Failed to decode YouTube token, using fallback profile');
 
-            // Fallback completo si no se puede decodificar el token
             const fallbackId = `yt_${Date.now()}`;
             return {
                 id: fallbackId,

@@ -1,5 +1,3 @@
-/** Servicio de moderación para Kick */
-
 import axios from 'axios';
 import { logger } from '../../utils/logger';
 
@@ -12,16 +10,13 @@ export interface KickBanUserParams {
     broadcasterUserId: string;
     userId: string;
     accessToken: string;
-    duration?: number; // En minutos para timeout (1-10080), omitir para ban permanente
-    reason?: string; // Máximo 100 caracteres
+    duration?: number;
+    reason?: string;
 }
 
 export class KickModerationService {
     private static readonly BASE_URL = 'https://api.kick.com/public/v1';
 
-    /**
-     * Elimina un mensaje específico del chat de Kick
-     */
     async deleteMessage(params: KickDeleteMessageParams): Promise<void> {
         const { messageId, accessToken } = params;
 
@@ -39,7 +34,6 @@ export class KickModerationService {
                 }
             );
 
-            // Log success details
             logger.info({
                 messageId,
                 status: response.status,
@@ -63,28 +57,21 @@ export class KickModerationService {
                 if (status === 401) {
                     throw new Error('Token de acceso inválido o expirado');
                 } else if (status === 403) {
-                    throw new Error('No tienes permisos de moderador en este canal. Verifica que tu token tenga el scope "moderation:chat_message:manage"');
+                    throw new Error('No tienes permisos de moderador en este canal.');
                 } else if (status === 404) {
                     throw new Error('Mensaje no encontrado o ya fue eliminado (404)');
                 } else {
-                    throw new Error(
-                        `Error al eliminar mensaje de Kick (${status}): ${errorData?.message || error.message}`
-                    );
+                    throw new Error(`Error al eliminar mensaje de Kick (${status}): ${errorData?.message || error.message}`);
                 }
             }
-            logger.error({ err: error, messageId }, 'Unexpected error deleting Kick message');
             throw error;
         }
     }
 
-    /**
-     * Banea o pone en timeout a un usuario en Kick
-     */
     async banUser(params: KickBanUserParams): Promise<void> {
         const { broadcasterUserId, userId, accessToken, duration, reason } = params;
 
         try {
-            // Kick requiere que los IDs sean números enteros (integers)
             const body: {
                 broadcaster_user_id: number;
                 user_id: number;
@@ -95,7 +82,6 @@ export class KickModerationService {
                 user_id: Number(userId)
             };
 
-            // Si se incluye duration, es un timeout (en minutos). Si no, es un ban permanente
             if (duration !== undefined) {
                 body.duration = Number(duration);
             }
@@ -142,34 +128,23 @@ export class KickModerationService {
                     broadcasterUserId,
                     status,
                     statusText: error.response?.statusText,
-                    errorData,
-                    sentBody: {
-                        broadcaster_user_id: Number(broadcasterUserId),
-                        user_id: Number(userId),
-                        duration
-                    }
+                    errorData
                 }, 'Error banning Kick user');
 
                 if (status === 401) {
-                    throw new Error('Token de acceso inválido o expirado. Asegúrate de tener el scope "moderation:ban"');
+                    throw new Error('Token de acceso inválido o expirado.');
                 } else if (status === 403) {
-                    throw new Error('No tienes permisos de moderador en este canal. Verifica que tu token tenga el scope "moderation:ban"');
+                    throw new Error('No tienes permisos de moderador en este canal.');
                 } else if (status === 400) {
-                    throw new Error('Petición inválida. Verifica que los IDs sean correctos o si el usuario ya está baneado.');
+                    throw new Error('Petición inválida. Verifica los IDs o si el usuario ya está baneado.');
                 } else {
-                    throw new Error(
-                        `Error al banear usuario en Kick (${status}): ${errorData?.message || error.message}`
-                    );
+                    throw new Error(`Error al banear usuario en Kick (${status}): ${errorData?.message || error.message}`);
                 }
             }
-            logger.error({ err: error, userId, broadcasterUserId }, 'Unexpected error banning Kick user');
             throw error;
         }
     }
 
-    /**
-     * Desbanea a un usuario en Kick
-     */
     async unbanUser(broadcasterUserId: string, userId: string, accessToken: string): Promise<void> {
         try {
             const response = await axios.delete(
@@ -208,18 +183,15 @@ export class KickModerationService {
                 }, 'Error unbanning Kick user');
 
                 if (status === 401) {
-                    throw new Error('Token de acceso inválido o expirado. Asegúrate de tener el scope "moderation:ban"');
+                    throw new Error('Token de acceso inválido o expirado.');
                 } else if (status === 403) {
-                    throw new Error('No tienes permisos de moderador en este canal. Verifica que tu token tenga el scope "moderation:ban"');
+                    throw new Error('No tienes permisos de moderador en este canal.');
                 } else if (status === 404) {
-                    throw new Error('Usuario no encontrado en la lista de baneados (404)');
+                    throw new Error('Usuario no encontrado en la lista de baneados.');
                 } else {
-                    throw new Error(
-                        `Error al desbanear usuario en Kick (${status}): ${errorData?.message || error.message}`
-                    );
+                    throw new Error(`Error al desbanear usuario en Kick (${status}): ${errorData?.message || error.message}`);
                 }
             }
-            logger.error({ err: error, userId, broadcasterUserId }, 'Unexpected error unbanning Kick user');
             throw error;
         }
     }

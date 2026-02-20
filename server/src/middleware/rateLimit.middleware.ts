@@ -5,14 +5,13 @@ import { config } from '../config';
 const IS_TEST = config.nodeEnv === 'test';
 
 /**
- * Limitador general para la API
- * Permite 100 peticiones cada 15 minutos por IP
+ * Limitador general para la API: 100 peticiones / 15 min.
  */
 export const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    limit: 100, // Límite de 100 peticiones por ventana
-    standardHeaders: true, // Retorna info de rate limit en los headers `RateLimit-*`
-    legacyHeaders: false, // Deshabilita los headers `X-RateLimit-*`
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
         error: 'Demasiadas peticiones desde esta IP, por favor intenta nuevamente en 15 minutos'
     },
@@ -28,13 +27,11 @@ export const apiLimiter = rateLimit({
 });
 
 /**
- * Limitador estricto para rutas de autenticación
- * Permite 20 peticiones cada 15 minutos por IP
- * Ayuda a prevenir ataques de fuerza bruta
+ * Limitador estricto para autenticación: Previene ataques de fuerza bruta.
  */
 export const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    limit: 20, // Estricto: solo 20 intentos
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -48,12 +45,11 @@ export const authLimiter = rateLimit({
 });
 
 /**
- * Limitador para webhooks (deben ser rápidos pero protegidos de spam)
- * Kick/Twitch pueden enviar muchos eventos, así que el límite es más alto
+ * Limitador para webhooks: Permite ráfagas altas de eventos (Kick/Twitch).
  */
 export const webhookLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minuto
-    limit: 600, // ~10 peticiones por segundo si vienen de la misma IP
+    windowMs: 1 * 60 * 1000,
+    limit: 600,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many webhook events' },

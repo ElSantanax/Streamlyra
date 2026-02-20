@@ -38,7 +38,6 @@ export class YouTubeViewerPoller {
             }
 
             try {
-                // Obtener un token SIEMPRE válido antes de cada petición (Auto-Refresh)
                 const validToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
                 if (!validToken) {
                     logger.error({ userId }, 'YouTube viewer polling aborted: Could not refresh token');
@@ -94,7 +93,6 @@ export class YouTubeViewerPoller {
 
                         if (status === 404) {
                             try {
-                                // broadcastId es el videoId en YouTubeStreamContext
                                 await YouTubeStreamContext.update(
                                     { isActive: false, endedAt: new Date() },
                                     { where: { videoId: broadcastId, isActive: true } }

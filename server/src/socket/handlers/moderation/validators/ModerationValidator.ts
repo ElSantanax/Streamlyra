@@ -3,17 +3,9 @@ import { Connection } from '../../../../models/Connection.model';
 import { ConnectionService } from '../../../../services/connection/ConnectionService';
 import { Platform } from '../../../../constants/platforms';
 
-/**
- * Validador centralizado para operaciones de moderación
- * Maneja validación de conexiones y tokens
- */
 export class ModerationValidator {
   constructor(private connectionService: ConnectionService) { }
 
-  /**
-   * Valida que el usuario tenga una conexión activa y un token válido
-   * Objeto con conexión y token si es válido, null si falla
-   */
   async validateAndGetToken(
     socket: Socket,
     authenticatedUserId: string,

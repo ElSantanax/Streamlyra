@@ -1,5 +1,3 @@
-/** Factory para crear instancias del procesador de webhook apropiado por plataforma */
-
 import { Server } from 'socket.io';
 import { Platform } from '../../constants/platforms';
 import { KickWebhookProcessor } from './processors/KickWebhookProcessor';
@@ -22,7 +20,7 @@ export class WebhookProcessorFactory {
             if (!connectionService || !chatManager) {
                 throw new Error('ConnectionService and ChatManager are required for YouTube webhook processing');
             }
-            return new YouTubeWebhookProcessor(io, connectionService, chatManager);
+            return new YouTubeWebhookProcessor(chatManager);
         }
 
         throw new Error(`Platform ${platform} does not have a webhook processor implemented`);

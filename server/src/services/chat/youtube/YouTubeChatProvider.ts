@@ -54,7 +54,6 @@ export class YouTubeChatProvider implements ChatProvider {
     }
 
     async boostDiscovery(userId: string, io: Server, forceRefresh: boolean = false): Promise<void> {
-        // Si no es forzado y ya estamos conectados, ignorar para ahorrar cuota
         if (!forceRefresh && this.stateManager.hasActiveConnection(userId)) {
             logger.debug({ userId }, 'YouTube: Already connected, skipping automatic discovery boost');
             return;
@@ -67,19 +66,17 @@ export class YouTubeChatProvider implements ChatProvider {
         logger.info({ userId, forceRefresh }, 'YouTube: Webhook/Manual boost initiated');
 
         try {
-            // Si es un refresco forzado, limpiamos el estado previo para evitar duplicados de pollers
             if (forceRefresh) {
                 this.stateManager.clearState(userId);
-                // Necesitamos re-activar el estado de "conectando" tras el clearState
                 this.stateManager.setConnecting(userId, true);
             }
 
-            // Asegurar suscripción a PubSub también en modo boost si no se hizo antes
-            void youtubePubSubService.subscribe(userId, account.providerId).catch(() => { });
-
+            void youtubePubSubService.subscribe(userId, account.providerId).catch(err => {
+                logger.warn({ err, userId }, 'YouTube: Optional PubSub subscription failed during boost');
+            });
             await this.discoveryLoop.performManualDiscovery(userId, account, io);
-        } catch {
-            // Ignorar error aquí, ya se maneja en discoveryLoop o se propaga si es necesario
+        } catch (error) {
+            logger.error({ err: error, userId }, 'YouTube: Manual discovery boost failed');
         } finally {
             this.stateManager.setConnecting(userId, false);
         }
@@ -117,10 +114,8 @@ export class YouTubeChatProvider implements ChatProvider {
 
         logger.info({ userId, liveChatId }, 'YouTube: Active broadcast discovered');
 
-        // Persistir contexto en DB para habilitar Cache-First (Costo 0 de cuota en futuras búsquedas)
         if (broadcastId && channelId) {
             try {
-                // 1. Limpiar otros contextos activos antiguos para este canal (KISS: solo uno puede estar activo)
                 await YouTubeStreamContext.update(
                     { isActive: false, endedAt: new Date() },
                     {
@@ -132,7 +127,6 @@ export class YouTubeChatProvider implements ChatProvider {
                     }
                 );
 
-                // 2. Upsert del contexto actual
                 await YouTubeStreamContext.upsert({
                     channelId,
                     videoId: broadcastId,
@@ -147,13 +141,15 @@ export class YouTubeChatProvider implements ChatProvider {
             }
         }
 
-        this.stateManager.setDiscoveryCleanup(userId, () => { });
+        this.stateManager.setDiscoveryCleanup(userId, () => {
+            // No cleanup needed for YouTube discovered streams at the moments
+        });
+
         await this.connectionService.updateChatroomId(userId, 'youtube', liveChatId)
             .catch(err => logger.error({ err, userId }, 'Failed to persist YouTube chatroomId'));
 
         this.stateManager.markAsConnected(userId);
         this.stateManager.setConnecting(userId, false);
-
         this.notifyStatus(io, userId, 'connected', 'Conectado', true);
 
         this.initializePollingServices(userId, liveChatId, broadcastId, io);
@@ -200,16 +196,14 @@ export class YouTubeChatProvider implements ChatProvider {
             if (account) {
                 const channelId = account.providerId;
 
-                // 1. Cancelar suscripción a PubSubHubbub
                 await youtubePubSubService.unsubscribe(userId, channelId)
-                    .catch((e: unknown) => logger.error({ err: e, channelId }, 'Failed to unsubscribe from YouTube PubSub during deletion'));
+                    .catch((e: unknown) => logger.error({ err: e, channelId }, 'Failed to unsubscribe from YouTube PubSub'));
 
-                // 2. Limpiar caché de conexiones para el webhook
                 WebhookCache.getInstance().invalidate(WebhookCache.keys.connection('youtube', channelId));
 
                 await YouTubeStreamContext.destroy({
                     where: { channelId }
-                }).catch((e: unknown) => logger.error({ err: e, channelId }, 'Failed to delete stream context during deletion'));
+                }).catch((e: unknown) => logger.error({ err: e, channelId }, 'Failed to delete stream context'));
 
                 logger.info({ userId, channelId }, 'YouTube: Permanent cleanup completed');
             }

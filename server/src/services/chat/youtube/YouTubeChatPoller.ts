@@ -1,5 +1,3 @@
-/** Encuestador de chat de YouTube con distribución gradual de mensajes */
-
 import axios from 'axios';
 import { Server } from 'socket.io';
 import { YouTubeChatMessage, YouTubeChatMessagesResponse } from '../../../types/youtube.types';
@@ -45,7 +43,6 @@ export class YouTubeChatPoller {
             const timeoutId = setTimeout(() => {
                 const normalizedMessage = this.transformer.transformMessage(item);
                 SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'youtube');
-
                 this.activeTimeouts.delete(timeoutId);
             }, delayBetweenMessages * index);
 
@@ -68,13 +65,7 @@ export class YouTubeChatPoller {
             if (!(await quotaManager.hasQuota(cost))) {
                 logger.warn({ userId }, 'YouTube chat polling paused: Quota exhausted');
                 this.stopPolling(userId);
-                SafeSocketEmitter.emitConnectionStatus(
-                    io,
-                    userId,
-                    'youtube',
-                    'error',
-                    'Cuotas agotadas'
-                );
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Cuotas agotadas');
                 SafeSocketEmitter.emitError(
                     io,
                     userId,
@@ -87,20 +78,10 @@ export class YouTubeChatPoller {
             }
 
             try {
-                // Obtener un token SIEMPRE válido antes de cada petición (Auto-Refresh)
                 const validToken = await this.connectionService.getValidAccessToken(userId, 'youtube');
                 if (!validToken) {
                     logger.error({ userId }, 'YouTube chat polling aborted: Could not refresh token');
-
-                    SafeSocketEmitter.emitConnectionStatus(
-                        io,
-                        userId,
-                        'youtube',
-                        'error',
-                        'Sesión expirada',
-                        false
-                    );
-
+                    SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'error', 'Sesión expirada', false);
                     this.stopPolling(userId);
                     onFatalError?.();
                     return;
@@ -120,9 +101,6 @@ export class YouTubeChatPoller {
                 if (nextPageToken) this.nextPageToken = nextPageToken;
 
                 const newMessages = items || [];
-
-                // BLINDAJE DE CUOTA: Google a veces devuelve intervalos de 1-2s. 
-                // Forzamos un mínimo basado en nuestra configuración (15s) para evitar drenaje.
                 const googleInterval = pollingIntervalMillis || YouTubePollingConfig.CHAT_POLLING_INTERVAL;
                 const minInterval = YouTubePollingConfig.CHAT_POLLING_INTERVAL;
                 const safeInterval = Math.max(googleInterval, minInterval);
@@ -156,23 +134,13 @@ export class YouTubeChatPoller {
                     if (status === 401 || status === 404) {
                         logger.warn({ userId, status, message: errorMessage }, 'YouTube chat polling stopped due to fatal API error');
 
-                        // Si el stream terminó (404), marcar contexto como inactivo
                         if (status === 404) {
                             try {
                                 await YouTubeStreamContext.update(
                                     { isActive: false, endedAt: new Date() },
                                     { where: { liveChatId, isActive: true } }
                                 );
-                                logger.info({ liveChatId }, 'YouTube stream context marked as inactive (404 detected)');
-
-                                // Notificar al frontend que el stream terminó
-                                SafeSocketEmitter.emitConnectionStatus(
-                                    io,
-                                    userId,
-                                    'youtube',
-                                    'waiting_stream',
-                                    'Stream finalizado'
-                                );
+                                SafeSocketEmitter.emitConnectionStatus(io, userId, 'youtube', 'waiting_stream', 'Stream finalizado');
                             } catch (e) {
                                 logger.error({ err: e }, 'Error marking stream context as inactive');
                             }
@@ -196,11 +164,7 @@ export class YouTubeChatPoller {
         this.nextPageToken = undefined;
 
         if (this.activeTimeouts.size > 0) {
-            logger.debug(
-                { userId, cancelledTimeouts: this.activeTimeouts.size },
-                'Cancelling active timeouts for YouTube poller'
-            );
-
+            logger.debug({ userId, cancelledTimeouts: this.activeTimeouts.size }, 'Cancelling active timeouts for YouTube poller');
             this.activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
             this.activeTimeouts.clear();
         }

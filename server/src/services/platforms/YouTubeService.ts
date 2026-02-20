@@ -1,5 +1,3 @@
-/** Servicio de YouTube con OAuth - Orquestador principal */
-
 import { BasePlatformService, PlatformProfile } from '../base/BasePlatformService';
 import { config } from '../../config';
 import { OAuthExchangeOptions } from '../../utils/oauth.utils';

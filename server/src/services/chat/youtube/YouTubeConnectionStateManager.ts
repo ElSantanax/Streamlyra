@@ -1,8 +1,7 @@
-/** Gestor de estado de conexiones activas de YouTube con tracking de pollers y discovery */
-
 import { YouTubeChatPoller } from './YouTubeChatPoller';
 import { YouTubeViewerPoller } from './YouTubeViewerPoller';
 import { ConnectionService } from '../../connection/ConnectionService';
+import { logger } from '../../../utils/logger';
 
 interface ConnectionState {
     chatPoller: YouTubeChatPoller;
@@ -55,7 +54,6 @@ export class YouTubeConnectionStateManager {
         return this.getOrCreateState(userId).viewerPoller;
     }
 
-    // Discovery tracking
     getAutoAttempts(userId: string): number {
         return this.states.get(userId)?.autoAttempts || 0;
     }
@@ -83,13 +81,9 @@ export class YouTubeConnectionStateManager {
     markAsConnected(userId: string): void {
         const state = this.getOrCreateState(userId);
         state.isActive = true;
-        state.autoAttempts = 0; // Reset attempts on success
+        state.autoAttempts = 0;
     }
 
-    /**
-     * Pone al usuario en modo espera (exhausto) limpiando el proceso de discovery
-     * pero manteniendo la intención de conexión manual.
-     */
     setWaitingMode(userId: string): void {
         const state = this.states.get(userId);
         if (state) {
@@ -104,23 +98,22 @@ export class YouTubeConnectionStateManager {
     clearState(userId: string): void {
         const state = this.states.get(userId);
         if (state) {
-            // Executing cleanup steps safely
             try {
                 if (state.cleanup) state.cleanup();
-            } catch {
-                // Silently continue
+            } catch (error) {
+                logger.warn({ error, userId }, 'YouTube: Error during state cleanup');
             }
 
             try {
                 state.chatPoller.stopPolling(userId);
-            } catch {
-                // Silently continue
+            } catch (error) {
+                logger.error({ error, userId }, 'YouTube: Failed to stop chat poller during cleanup');
             }
 
             try {
                 state.viewerPoller.stopPolling(userId);
-            } catch {
-                // Silently continue
+            } catch (error) {
+                logger.error({ error, userId }, 'YouTube: Failed to stop viewer poller during cleanup');
             }
 
             state.isActive = false;

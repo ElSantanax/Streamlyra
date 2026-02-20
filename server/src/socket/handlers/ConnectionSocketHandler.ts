@@ -8,12 +8,9 @@ export class ConnectionSocketHandler {
     ) { }
 
     setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
-        // Handle initial connection identification
         this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
 
         socket.on('identify', async () => {
-            // Re-identificar cuando el cliente lo solicita (ej: al volver al Dashboard)
-            // Esto asegura que el estado de las conexiones se re-emita
             await this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
             socket.emit('identified', { userId: authenticatedUserId, message: 'Conectado de forma segura' });
         });

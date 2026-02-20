@@ -1,22 +1,15 @@
-/** Gestiona el mapeo entre sockets y IDs de usuario y el conteo de conexiones */
-
 export class SocketRegistry {
     private socketUserMap: Map<string, string> = new Map();
     private userSocketCount: Map<string, number> = new Map();
 
-    /**
-     * Registra un nuevo socket para un usuario
-     */
     register(socketId: string, userId: string): { isFirstSocket: boolean; currentCount: number } {
         const existingUserId = this.socketUserMap.get(socketId);
 
-        // Si el socket ya está registrado para este usuario, no incrementamos el contador
         if (existingUserId === userId) {
             const currentCount = this.userSocketCount.get(userId) || 1;
             return { isFirstSocket: currentCount === 1, currentCount };
         }
 
-        // Si el socket estaba registrado para OTRO usuario (raro), lo limpiamos primero
         if (existingUserId && existingUserId !== userId) {
             this.remove(socketId);
         }
@@ -29,9 +22,6 @@ export class SocketRegistry {
         return { isFirstSocket, currentCount: newCount };
     }
 
-    /**
-     * Elimina un socket del registro
-     */
     remove(socketId: string): { userId?: string; isLastSocket: boolean; remainingCount: number } {
         const userId = this.socketUserMap.get(socketId);
         if (!userId) {
@@ -51,23 +41,14 @@ export class SocketRegistry {
         return { userId, isLastSocket: false, remainingCount: newCount };
     }
 
-    /**
-     * Obtiene el userId asociado a un socketId
-     */
     getUserId(socketId: string): string | undefined {
         return this.socketUserMap.get(socketId);
     }
 
-    /**
-     * Verifica si el usuario tiene algún socket activo
-     */
     hasUser(userId: string): boolean {
         return this.userSocketCount.has(userId);
     }
 
-    /**
-     * Revierte el registro de un socket (usado en caso de error en el proceso de identificación)
-     */
     rollbackRegistration(socketId: string, userId: string): { remainingCount: number } {
         this.socketUserMap.delete(socketId);
         const count = this.userSocketCount.get(userId) || 0;

@@ -1,5 +1,3 @@
-/** Factory para crear instancias de servicios OAuth de plataformas */
-
 import { TwitchService } from './TwitchService';
 import { YouTubeService } from './YouTubeService';
 import { KickService } from './KickService';
@@ -16,7 +14,7 @@ export class PlatformServiceFactory {
 
     static getService(platform: Platform): OAuthService {
         const service = this.OAUTH_SERVICES[platform];
-        
+
         if (!service) {
             throw new AppError(`Platform ${platform} is not supported for OAuth`, 400);
         }

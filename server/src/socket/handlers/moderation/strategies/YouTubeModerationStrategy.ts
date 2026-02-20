@@ -4,10 +4,6 @@ import { YouTubeService } from '../../../../services/platforms/YouTubeService';
 import { ModerationValidator } from '../validators/ModerationValidator';
 import { IModerationStrategy, ModerationContext } from './IModerationStrategy';
 
-/**
- * Estrategia de moderación para YouTube
- * Maneja eliminación de mensajes, bans y timeouts
- */
 export class YouTubeModerationStrategy implements IModerationStrategy {
   constructor(
     private service: YouTubeModerationService,
@@ -18,7 +14,6 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
   async executeAction(context: ModerationContext): Promise<void> {
     const { socket, authenticatedUserId, action, messageId, targetUserId, duration } = context;
 
-    // Validar conexión y obtener token
     const validated = await this.validator.validateAndGetToken(
       socket,
       authenticatedUserId,
@@ -29,7 +24,6 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
 
     const { token, connection } = validated;
 
-    // Manejar eliminación de mensaje
     if (action === 'delete' && messageId) {
       await this.service.deleteMessage({
         messageId,
@@ -50,9 +44,7 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
       return;
     }
 
-    // Manejar ban o timeout de usuario
     if ((action === 'ban' || action === 'timeout') && targetUserId) {
-      // Obtener el liveChatId activo (usando caché optimizada)
       const liveChatId = await this.youtubeService.getActiveLiveChatId(token, connection.providerId);
 
       if (!liveChatId) {
@@ -67,7 +59,7 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
         liveChatId,
         channelId: targetUserId,
         accessToken: token,
-        duration: action === 'timeout' ? (duration || 300) : undefined // YouTube usa segundos
+        duration: action === 'timeout' ? (duration || 300) : undefined
       });
 
       socket.emit('moderation_success', {
@@ -77,7 +69,6 @@ export class YouTubeModerationStrategy implements IModerationStrategy {
         message: action === 'ban' ? 'Usuario baneado' : 'Usuario en timeout'
       });
 
-      // Emitir evento para eliminar mensajes del usuario baneado
       socket.emit('user_banned', {
         platform: 'youtube',
         targetUserId,

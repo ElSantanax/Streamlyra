@@ -1,5 +1,3 @@
-/** Gestor unificado de Kick con canal, espectadores y webhooks centralizados */
-
 import { Server } from 'socket.io';
 import { KickService } from '../../platforms/KickService';
 import { KickWebhook } from '../../../models/KickWebhook.model';
@@ -89,13 +87,11 @@ export class KickManager {
                 where: { broadcasterId }
             });
 
-            // Si ya existe y tiene la misma URL y está activo, no hacemos nada
             if (existingWebhook?.isActive && existingWebhook.callbackUrl === callbackUrl) {
                 logger.debug({ userId, broadcasterId }, 'Kick Webhooks: Webhook ya está activo y con la URL correcta');
                 return;
             }
 
-            // Si la URL cambió o no estaba activo, necesitamos (re)suscribir en Kick
             logger.info(
                 { userId, broadcasterId, oldUrl: existingWebhook?.callbackUrl, newUrl: callbackUrl },
                 'Kick Webhooks: Suscribiendo/Actualizando webhook en la plataforma'
@@ -104,17 +100,15 @@ export class KickManager {
             await KickService.subscribeToWebhook(accessToken, broadcasterId);
 
             if (existingWebhook) {
-                // Actualizar el existente
                 await existingWebhook.update({
                     callbackUrl,
                     isActive: true,
                     deactivatedAt: null,
                     registeredAt: new Date(),
-                    userId // Asegurar que sea el userId actual
+                    userId
                 });
                 logger.info({ userId, broadcasterId }, 'Kick Webhooks: Webhook existente actualizado y reactivado');
             } else {
-                // Crear uno nuevo
                 await KickWebhook.create({
                     userId,
                     broadcasterId,

@@ -1,5 +1,3 @@
-/** Gestor de polling genérico con manejo de errores y ejecución inmediata */
-
 import { logger } from '../../../utils/logger';
 
 export class PollingManager {
@@ -11,8 +9,6 @@ export class PollingManager {
         this.intervalMsMap.set(id, intervalMs);
 
         if (isUpdate) {
-            // Si ya existe, solo actualizamos el intervalo para la próxima ejecución
-            // No detenemos para evitar interrumpir tareas en curso o causar bucles
             return;
         }
 
@@ -25,7 +21,6 @@ export class PollingManager {
                 logger.error({ err: error, pollingId: id }, 'Error in polling task');
             }
 
-            // Programar la siguiente ejecución solo si sigue corriendo
             if (this.isRunning(id)) {
                 const currentInterval = this.intervalMsMap.get(id) || intervalMs;
                 const timeout = setTimeout(runTask, currentInterval);
@@ -33,10 +28,7 @@ export class PollingManager {
             }
         };
 
-        // Marcar como running (placeholder)
         this.intervals.set(id, setTimeout(() => { }, 0));
-
-        // Primera ejecución inmediata
         void runTask();
     }
 
@@ -56,5 +48,6 @@ export class PollingManager {
     stopAll() {
         this.intervals.forEach((timeout) => clearTimeout(timeout));
         this.intervals.clear();
+        this.intervalMsMap.clear();
     }
 }

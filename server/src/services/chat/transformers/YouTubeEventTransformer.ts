@@ -1,8 +1,3 @@
-/**
- * Transformador de Eventos de YouTube
- * Responsabilidad: Transformar eventos específicos de YouTube a formato normalizado
- */
-
 import { YouTubeChatMessage } from '../../../types/youtube.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
@@ -10,9 +5,7 @@ import { parseYouTubeEmotes } from '../../../constants/youtube-emotes';
 
 export class YouTubeEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'youtube';
-    /**
-     * Transforma mensaje de chat de YouTube
-     */
+
     transformMessage(item: YouTubeChatMessage): NormalizedChatMessage {
         let specialMessage: string | undefined;
         let displayMessage = (item.snippet?.displayMessage as string) || '';
@@ -34,19 +27,18 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             specialMessage = `¡HA REGALADO ${(item.snippet?.membershipGiftingDetails as Record<string, unknown>)?.giftMembershipsCount} MEMBRESÍAS! 🎁`;
         }
 
-        // Parsear emotes nativos de YouTube del mensaje
         const parsedEmotes = parseYouTubeEmotes(displayMessage);
 
         return {
             id: (item.id as string) || '',
-            messageId: (item.id as string) || '', // Agregar messageId explícitamente para moderación
+            messageId: (item.id as string) || '',
             platform: 'youtube',
             user: (item.authorDetails?.displayName as string) || '',
-            userId: (item.authorDetails?.channelId as string) || '', // ID del canal del autor para moderación
+            userId: (item.authorDetails?.channelId as string) || '',
             message: displayMessage,
             specialMessage,
             time: this.formatTime(new Date((item.snippet?.publishedAt as string) || Date.now())),
-            color: '#FF0000', // Color rojo de YouTube
+            color: '#FF0000',
             avatar: item.authorDetails?.profileImageUrl as string,
             isMod: item.authorDetails?.isChatModerator as boolean,
             isOwner: item.authorDetails?.isChatOwner as boolean,
@@ -56,7 +48,6 @@ export class YouTubeEventTransformer extends BaseEventTransformer {
             emotes: parsedEmotes.length > 0 ? parsedEmotes : undefined
         };
     }
-
 
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');

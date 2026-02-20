@@ -1,17 +1,10 @@
-/**
- * Transformador de Eventos de Kick
- * Responsabilidad: Transformar eventos específicos de Kick a formato normalizado
- */
-
 import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent } from '../../../types/kick.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
 export class KickEventTransformer extends BaseEventTransformer {
     protected readonly platformName = 'kick';
-    /**
-     * Transforma mensaje de chat de Kick
-     */
+
     transformMessage(payload: KickChatMessagePayload): NormalizedChatMessage {
         const { broadcaster, sender, content, message_id, created_at, emotes } = payload;
 
@@ -23,12 +16,11 @@ export class KickEventTransformer extends BaseEventTransformer {
             user: sender?.username || 'Sistema',
             message: content || '',
             time: this.formatTime(new Date(created_at || Date.now())),
-            color: '#53fc18', // Color verde de Kick
+            color: '#53fc18',
             isMod: sender?.identity?.badges?.some((b) => b.type === 'moderator') || false,
             isSub: sender?.identity?.badges?.some((b) => b.type === 'subscriber') || false,
             isVIP: sender?.identity?.badges?.some((b) => b.type === 'vip') || false,
             isOwner: broadcaster?.user_id === sender?.user_id,
-            // Campos para moderación
             messageId: message_id || '',
             userId: sender?.user_id?.toString() || '',
             roomId: broadcaster?.user_id?.toString() || '',
@@ -36,10 +28,6 @@ export class KickEventTransformer extends BaseEventTransformer {
         };
     }
 
-    /**
-     * Parsea los emotes de Kick desde el payload
-     * Formato: [{ emote_id: string, positions: [{ s: number, e: number }] }]
-     */
     private parseEmotes(emotesData: Array<{ emote_id: string; positions: Array<{ s: number; e: number }> }> | undefined, message: string): Array<{
         id: string;
         name: string;
@@ -68,7 +56,6 @@ export class KickEventTransformer extends BaseEventTransformer {
                 if (start !== undefined && end !== undefined) {
                     parsedPositions.push([start, end]);
 
-                    // Extraer el nombre del emote del mensaje (solo una vez)
                     if (!emoteName && message) {
                         emoteName = message.substring(start, end + 1);
                     }

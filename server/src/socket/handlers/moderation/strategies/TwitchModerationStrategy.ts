@@ -3,20 +3,15 @@ import { TwitchModerationService } from '../../../../services/moderation/TwitchM
 import { ModerationValidator } from '../validators/ModerationValidator';
 import { IModerationStrategy, ModerationContext } from './IModerationStrategy';
 
-/**
- * Estrategia de moderación para Twitch
- * Maneja eliminación de mensajes, bans y timeouts
- */
 export class TwitchModerationStrategy implements IModerationStrategy {
   constructor(
     private service: TwitchModerationService,
     private validator: ModerationValidator
-  ) {}
+  ) { }
 
   async executeAction(context: ModerationContext): Promise<void> {
     const { socket, authenticatedUserId, action, messageId, targetUserId, reason, duration } = context;
 
-    // Validar conexión y obtener token
     const validated = await this.validator.validateAndGetToken(
       socket,
       authenticatedUserId,
@@ -29,7 +24,6 @@ export class TwitchModerationStrategy implements IModerationStrategy {
     const broadcasterId = connection.providerId;
     const moderatorId = connection.providerId;
 
-    // Manejar eliminación de mensaje
     if (action === 'delete' && messageId) {
       await this.service.deleteMessage({
         broadcasterId,
@@ -52,7 +46,6 @@ export class TwitchModerationStrategy implements IModerationStrategy {
       return;
     }
 
-    // Manejar ban o timeout de usuario
     if ((action === 'ban' || action === 'timeout') && targetUserId) {
       await this.service.banUser({
         broadcasterId,
@@ -70,7 +63,6 @@ export class TwitchModerationStrategy implements IModerationStrategy {
         message: action === 'ban' ? 'Usuario baneado' : 'Usuario en timeout'
       });
 
-      // Emitir evento para eliminar mensajes del usuario baneado
       socket.emit('user_banned', {
         platform: 'twitch',
         targetUserId,

@@ -1,6 +1,3 @@
-/**
- * Middleware de manejo de errores - Procesa y formatea errores para respuestas HTTP
- */
 import { NextFunction, Request, Response } from 'express';
 import { AppError } from '../utils/AppError';
 import { config } from '../config';
@@ -13,10 +10,9 @@ interface ErrorResponse {
 }
 
 /**
- * Middleware global de manejo de errores
- * Debe ser el último middleware registrado en la aplicación
+ * Manejador global de errores. 
+ * Se encarga de centralizar el logging y formatear la respuesta al cliente.
  */
- 
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
     const isAppError = err instanceof AppError;
     const isError = err instanceof Error;
@@ -24,7 +20,6 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
     const statusCode = isAppError ? err.statusCode : 500;
     const message = isAppError ? err.message : 'Error interno del servidor';
 
-    // Logging mejorado con más contexto
     if (config.nodeEnv !== 'test') {
         const logData = {
             statusCode,
@@ -32,7 +27,7 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
             ...(isError && { name: err.name }),
             ...(isAppError && { isOperational: true })
         };
-        
+
         if (statusCode >= 500) {
             logger.error({ err, ...logData }, 'Unhandled error');
         } else {
@@ -40,10 +35,9 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
         }
     }
 
-    // Construir respuesta
     const response: ErrorResponse = { error: message };
 
-    // Incluir stack trace solo en desarrollo
+    // Exponer stack trace únicamente en entorno de desarrollo
     if (config.nodeEnv === 'development' && isError) {
         response.stack = err.stack;
     }

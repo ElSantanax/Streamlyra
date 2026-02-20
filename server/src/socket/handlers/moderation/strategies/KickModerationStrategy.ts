@@ -3,20 +3,15 @@ import { KickModerationService } from '../../../../services/moderation/KickModer
 import { ModerationValidator } from '../validators/ModerationValidator';
 import { IModerationStrategy, ModerationContext } from './IModerationStrategy';
 
-/**
- * Estrategia de moderación para Kick
- * Maneja eliminación de mensajes, bans y timeouts
- */
 export class KickModerationStrategy implements IModerationStrategy {
   constructor(
     private service: KickModerationService,
     private validator: ModerationValidator
-  ) {}
+  ) { }
 
   async executeAction(context: ModerationContext): Promise<void> {
     const { socket, authenticatedUserId, action, messageId, targetUserId, reason, duration } = context;
 
-    // Validar conexión y obtener token
     const validated = await this.validator.validateAndGetToken(
       socket,
       authenticatedUserId,
@@ -28,7 +23,6 @@ export class KickModerationStrategy implements IModerationStrategy {
     const { connection, token } = validated;
     const broadcasterUserId = connection.providerId;
 
-    // Manejar eliminación de mensaje
     if (action === 'delete' && messageId) {
       await this.service.deleteMessage({
         messageId,
@@ -49,13 +43,12 @@ export class KickModerationStrategy implements IModerationStrategy {
       return;
     }
 
-    // Manejar ban o timeout de usuario
     if ((action === 'ban' || action === 'timeout') && targetUserId) {
       await this.service.banUser({
         broadcasterUserId,
         userId: targetUserId,
         accessToken: token,
-        duration: action === 'timeout' ? (duration || 10) : undefined, // Kick usa minutos
+        duration: action === 'timeout' ? (duration || 10) : undefined,
         reason
       });
 
@@ -66,7 +59,6 @@ export class KickModerationStrategy implements IModerationStrategy {
         message: action === 'ban' ? 'Usuario baneado' : 'Usuario en timeout'
       });
 
-      // Emitir evento para eliminar mensajes del usuario baneado
       socket.emit('user_banned', {
         platform: 'kick',
         targetUserId,

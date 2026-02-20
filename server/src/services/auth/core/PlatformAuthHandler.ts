@@ -4,7 +4,7 @@ import { AuthTokens, PlatformProfile } from '../../../types/index';
 import { withErrorHandling } from '../../../utils/errorHandling';
 import { logger } from '../../../utils/logger';
 import db from '../../../config/db';
-import { Transaction, UniqueConstraintError } from 'sequelize';
+import { UniqueConstraintError } from 'sequelize';
 import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
 import { WebhookCache } from '../../webhook/WebhookCache';
 
@@ -92,34 +92,5 @@ export class PlatformAuthHandler {
         });
 
         return result as AuthResponse;
-    }
-
-    private async createOrUpdateConnection(
-        userId: string,
-        profile: PlatformProfile,
-        tokens: AuthTokens,
-        transaction: Transaction
-    ): Promise<void> {
-        let chatroomId: string | undefined;
-
-        try {
-            await this.connectionRepository.createOrUpdate(
-                userId,
-                profile.provider,
-                profile.providerId,
-                profile.providerUsername,
-                tokens,
-                transaction,
-                chatroomId
-            );
-        } catch (error) {
-            logger.warn({ error, userId, provider: profile.provider }, 'Connection creation failed, attempting token update only');
-
-            if (error instanceof UniqueConstraintError || (error instanceof Error && (error as { code?: string }).code === '23505')) {
-                logger.info('Recovered from unique constraint error in connection creation');
-                return;
-            }
-            throw error;
-        }
     }
 }

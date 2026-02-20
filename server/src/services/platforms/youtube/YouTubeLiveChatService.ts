@@ -1,5 +1,3 @@
-/** Servicio de gestión de live chat y mensajes de YouTube */
-
 import axios from 'axios';
 import { logger } from '../../../utils/logger';
 import { YouTubeQuotaManager } from '../YouTubeQuotaManager';
@@ -7,14 +5,12 @@ import { YouTubePollingConfig } from '../../../config/youtube.polling.config';
 import { YouTubeQuotaErrorHandler } from './YouTubeQuotaErrorHandler';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 import { YouTubeBroadcastResponse } from '../../../types/youtube.types';
-import { ConnectionService } from '../../connection/ConnectionService';
 
 export class YouTubeLiveChatService {
-    constructor(private connectionService?: ConnectionService) { }
+    constructor() { }
     private readonly platformName = 'youtube';
 
     async getActiveLiveChatId(accessToken: string, channelId?: string): Promise<string | null> {
-        // 1. Estrategia Cache-First: Consumo 0 de cuota
         if (channelId) {
             try {
                 const cachedContext = await YouTubeStreamContext.findOne({
@@ -22,15 +18,14 @@ export class YouTubeLiveChatService {
                 });
 
                 if (cachedContext?.liveChatId) {
-                    logger.debug({ channelId, liveChatId: cachedContext.liveChatId }, 'YouTube: Cache hit for active LiveChatId (0 quota)');
+                    logger.debug({ channelId, liveChatId: cachedContext.liveChatId }, 'YouTube: Cache hit for active LiveChatId');
                     return cachedContext.liveChatId;
                 }
             } catch (error) {
-                logger.warn({ err: error, channelId }, 'YouTube: Error reading stream context cache, falling back to API');
+                logger.warn({ err: error, channelId }, 'YouTube: Error reading stream context cache');
             }
         }
 
-        // 2. Estrategia Fallback: Llamada a API (Consumo 1 cuota)
         const cost = YouTubePollingConfig.OPERATION_COSTS.BROADCAST_LIST;
         const quotaManager = YouTubeQuotaManager.getInstance();
 
@@ -56,17 +51,11 @@ export class YouTubeLiveChatService {
             await quotaManager.consumeQuota(cost);
 
             const items = response.data.items;
-            if (!items || items.length === 0) {
-                return null;
-            }
+            if (!items || items.length === 0) return null;
 
             const liveChatId = items[0].snippet?.liveChatId;
-
             if (!liveChatId) {
-                logger.info({
-                    platform: this.platformName,
-                    broadcastId: items[0].id
-                }, 'Active broadcast found but has no live chat');
+                logger.info({ platform: this.platformName, broadcastId: items[0].id }, 'Active broadcast found but has no live chat');
             }
 
             return liveChatId || null;
@@ -80,12 +69,6 @@ export class YouTubeLiveChatService {
                     };
                 } | undefined;
 
-                logger.error({
-                    status,
-                    errorData,
-                    platform: this.platformName
-                }, 'YouTube API Error details');
-
                 if (status === 403 && errorData?.error?.errors?.some((e) => e.reason === 'quotaExceeded')) {
                     await quotaManager.markAsExhausted();
                     throw new Error('Cuota de YouTube agotada. Intenta mañana.');
@@ -95,9 +78,7 @@ export class YouTubeLiveChatService {
                     throw new Error(`Error de configuración de YouTube (400): ${errorData?.error?.message || 'Petición inválida'}`);
                 }
             }
-
-            logger.error({ err: error, platform: this.platformName }, 'Failed to get active live chat ID');
-            throw error; // Rethrow para que MessageSenderService no diga "No hay directo"
+            throw error;
         }
     }
 
@@ -114,23 +95,17 @@ export class YouTubeLiveChatService {
         }
 
         try {
-            logger.debug({ platform: this.platformName, liveChatId }, 'Sending chat message to YouTube');
-
             const response = await axios.post(
                 'https://www.googleapis.com/youtube/v3/liveChat/messages',
                 {
                     snippet: {
                         liveChatId: liveChatId,
                         type: 'textMessageEvent',
-                        textMessageDetails: {
-                            messageText: message
-                        }
+                        textMessageDetails: { messageText: message }
                     }
                 },
                 {
-                    params: {
-                        part: 'id,snippet'
-                    },
+                    params: { part: 'id,snippet' },
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json'
@@ -141,15 +116,9 @@ export class YouTubeLiveChatService {
 
             await quotaManager.consumeQuota(cost);
 
-            if (response.status !== 200) {
-                throw new Error(`YouTube API error: ${response.statusText}`);
-            }
-
             const responseData = response.data as { id?: string };
             const messageId = responseData.id;
-            if (!messageId) {
-                throw new Error('YouTube no devolvió un ID de mensaje');
-            }
+            if (!messageId) throw new Error('YouTube no devolvió un ID de mensaje');
 
             logger.info({ platform: this.platformName, liveChatId, messageId }, 'Chat message sent successfully');
             return messageId;
@@ -161,8 +130,7 @@ export class YouTubeLiveChatService {
                 const errorData = error.response?.data as { error?: { message?: string } } | undefined;
 
                 if (status === 401) {
-                    error.message = 'Token de acceso inválido o expirado';
-                    throw error;
+                    throw new Error('Token de acceso inválido o expirado');
                 } else if (status === 403) {
                     throw new Error('No tienes permisos para enviar mensajes en este chat');
                 } else if (status === 404) {
@@ -170,13 +138,10 @@ export class YouTubeLiveChatService {
                 } else if (status === 429) {
                     throw new Error('Límite de tasa excedido. Intenta de nuevo más tarde');
                 } else {
-                    throw new Error(
-                        `Error de API de YouTube: ${errorData?.error?.message || error.message}`
-                    );
+                    throw new Error(`Error de API de YouTube: ${errorData?.error?.message || error.message}`);
                 }
             }
             throw error;
         }
     }
-
 }

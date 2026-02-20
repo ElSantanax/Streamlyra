@@ -1,8 +1,3 @@
-/**
- * Parser de notificaciones XML de YouTube PubSubHubbub
- * Convierte el Atom Feed XML en datos estructurados
- */
-
 import { XMLParser } from 'fast-xml-parser';
 import { logger } from '../../../utils/logger';
 
@@ -38,14 +33,9 @@ export class YouTubePubSubParser {
         attributeNamePrefix: '@_'
     });
 
-    /**
-     * Parsea el XML del feed de YouTube
-     */
     static parseNotification(xmlBody: string): YouTubeNotification | null {
         try {
             const result = this.parser.parse(xmlBody) as YouTubePubSubFeed;
-
-            // El feed de YouTube usa namespace yt:
             const entry = result.feed?.entry;
 
             if (!entry) {

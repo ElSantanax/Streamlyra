@@ -40,7 +40,6 @@ export function isValidModerationPayload(payload: unknown): payload is Moderatio
         return false;
     }
 
-    // El dashboard puede ser origen de acciones, pero las plataformas de destino son las reales
     const validPlatforms = [...PLATFORMS, 'dashboard'];
     if (!validPlatforms.includes(p.platform as string)) {
         return false;

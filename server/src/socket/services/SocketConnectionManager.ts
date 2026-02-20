@@ -1,8 +1,5 @@
-/** Gestor de conexión de socket con identificación de usuario y conexión a plataformas */
-
 import { Socket, Server } from 'socket.io';
 import { ChatManager } from '../../services/core/ChatManager';
-
 import { logger } from '../../utils/logger';
 import { isValidUserId } from '../utils/SocketValidator';
 import { SocketRegistry } from './SocketRegistry';
@@ -36,9 +33,7 @@ export class SocketConnectionManager {
         try {
             logger.debug({ userId, socketId: socket.id }, 'Iniciando identificación de usuario');
 
-            // 0. CHECK RÁPIDO: Si ya sabemos que este usuario está full conectado (Hot Path)
             if (this.registry.hasUser(userId as string) && this.connectedUsers.has(userId as string)) {
-                // Registrar el socket sin efectos secundarios pesados
                 this.registry.register(socket.id, userId as string);
                 socket.join(userId as string);
 
@@ -47,11 +42,9 @@ export class SocketConnectionManager {
                 return;
             }
 
-            // 1. Registro del socket
             const { isFirstSocket } = this.registry.register(socket.id, userId as string);
             socket.join(userId as string);
 
-            // 2. Manejo de la conexión a plataformas con Lock
             let connectionPromise = this.lockManager.getLock(userId);
 
             if (isFirstSocket && !connectionPromise) {
@@ -90,7 +83,6 @@ export class SocketConnectionManager {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
             logger.error({ err: error, userId, socketId: socket.id }, 'Error fatal en handleIdentify');
 
-            // Limpieza en caso de error
             const { remainingCount } = this.registry.rollbackRegistration(socket.id, userId as string);
             if (remainingCount === 0) {
                 await this.chatManager.disconnectUser(userId as string).catch(() => { });
@@ -114,17 +106,14 @@ export class SocketConnectionManager {
         if (isLastSocket) {
             logger.info({ userId, socketId }, 'Último socket desconectado: Preparando limpieza');
 
-            // Limpieza de caché de estado
             this.connectedUsers.delete(userId);
 
-            // IMPORTANTE: Esperar a cualquier conexión que esté en curso antes de desconectar
             const existingLock = this.lockManager.getLock(userId);
             if (existingLock) {
                 logger.debug({ userId }, 'Esperando cierre de conexión pendiente antes de desconectar');
                 await existingLock.catch(() => { });
             }
 
-            // Doble verificación: ¿entró un socket nuevo mientras esperábamos el lock?
             if (!this.registry.hasUser(userId)) {
                 await this.chatManager.disconnectUser(userId);
                 StreamSessionManager.getInstance().clearSession(userId);

@@ -144,9 +144,7 @@ export class TwitchManager {
                     const newSecret = TwitchWebhookService.generateSecret();
                     const encryptedRetrySecret = this.encryptionService.encrypt(newSecret);
 
-                    // Aumentar delay a 3s para dar tiempo a Twitch de propagar el borrado
                     await new Promise(resolve => setTimeout(resolve, 3000));
-
 
                     const retrySub = await TwitchEventSubClient.subscribe(
                         type, version, condition, callbackUrl, newSecret

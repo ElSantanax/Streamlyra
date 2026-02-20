@@ -7,9 +7,6 @@ export class TwitchWebhookService {
     private static processedMessages = new Set<string>();
     private static readonly MAX_CACHE_SIZE = 1000;
 
-    /**
-     * Verifica la firma enviada por Twitch en el header Twitch-Eventsub-Message-Signature
-     */
     static verifySignature(
         secret: string,
         messageId: string,
@@ -50,9 +47,6 @@ export class TwitchWebhookService {
         }
     }
 
-    /**
-     * Verifica si el mensaje ya ha sido procesado para evitar duplicados
-     */
     static isDuplicate(messageId: string): boolean {
         if (this.processedMessages.has(messageId)) {
             logger.debug({ messageId }, 'Twitch Webhooks: Mensaje duplicado ignorado');
@@ -70,16 +64,12 @@ export class TwitchWebhookService {
         return false;
     }
 
-    /**
-     * Maneja la verificación del callback (Challenge) de forma precisa
-     */
     static async handleVerification(broadcasterId: string, subscriptionId: string, type?: string): Promise<void> {
         if (!subscriptionId) {
             logger.error({ broadcasterId, type }, 'No se pudo verificar: Falta subscriptionId');
             return;
         }
 
-        // Primero intentamos por subscriptionId que es lo más preciso
         const updated = await TwitchWebhook.update(
             {
                 status: 'enabled',
@@ -93,7 +83,6 @@ export class TwitchWebhookService {
             }
         );
 
-        // Si no se actualizó nada (tal vez el ID aún no estaba en DB), intentamos por broadcasterId y tipo
         if (updated[0] === 0 && type) {
             await TwitchWebhook.update(
                 {
@@ -110,7 +99,6 @@ export class TwitchWebhookService {
             );
         }
 
-        // Invalidar caché (Tanto la llave legacy como la nueva de subscriptionId)
         const cache = WebhookCache.getInstance();
         if (type) {
             cache.invalidate(WebhookCache.keys.webhook('twitch', broadcasterId, type));
@@ -120,16 +108,12 @@ export class TwitchWebhookService {
             cache.invalidate(WebhookCache.keys.twitchSub(subscriptionId));
         }
         if (!type && !subscriptionId) {
-            // Fallback: Invalidar solo los webhooks de ESTE broadcaster
             cache.invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
         }
 
         logger.info({ broadcasterId, subscriptionId, type }, 'Twitch Webhooks: Suscripción habilitada correctamente');
     }
 
-    /**
-     * Maneja la revocación de una suscripción específica
-     */
     static async handleRevocation(broadcasterId: string, status: string, subscriptionId?: string): Promise<void> {
         const where = subscriptionId
             ? { broadcasterId, subscriptionId }
@@ -143,7 +127,6 @@ export class TwitchWebhookService {
             { where }
         );
 
-        // Invalidar caché (Tanto la llave legacy como la nueva de subscriptionId)
         const cache = WebhookCache.getInstance();
         cache.invalidate(new RegExp(`^wh:twitch:${broadcasterId}:`));
         if (subscriptionId) {
@@ -153,9 +136,6 @@ export class TwitchWebhookService {
         logger.warn({ broadcasterId, subscriptionId, status }, 'Twitch Webhooks: Suscripción marcada como REVOCADA');
     }
 
-    /**
-     * Genera un secreto aleatorio para una nueva suscripción
-     */
     static generateSecret(): string {
         return crypto.randomBytes(32).toString('hex');
     }

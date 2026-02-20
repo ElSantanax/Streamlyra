@@ -20,7 +20,7 @@ export class TwitchChatProvider implements ChatProvider {
     private eventListener: TwitchEventListener;
     private twitchManager: TwitchManager;
 
-    constructor(private connectionService: ConnectionService) {
+    constructor(connectionService: ConnectionService) {
         this.transformer = new TwitchEventTransformer();
         this.connectionManager = new TwitchConnectionManager(connectionService);
         this.eventListener = new TwitchEventListener(this.transformer);

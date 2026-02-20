@@ -4,13 +4,8 @@ import { Platform } from '../../constants/platforms';
 import { logger } from '../../utils/logger';
 import { PlatformServiceFactory } from '../platforms/PlatformServiceFactory';
 
-/** Servicio de renovación de tokens OAuth con verificación de expiración */
 export class TokenRefreshService {
     private static readonly BUFFER_TIME_MS = 5 * 60 * 1000;
-
-    /** * Promise Cache (Thundering Herd): Evita múltiples llamadas simultáneas a la API OAuth 
-     * para el mismo usuario/plataforma haciendo que las peticiones esperen a la misma Promise.
-     */
     private refreshPromises: Map<string, Promise<string | null>> = new Map();
 
     constructor(private connectionRepository: IConnectionRepository) { }
@@ -81,11 +76,9 @@ export class TokenRefreshService {
         const status = err.response?.status;
         const code = err.code || err.message;
 
-        // Errores de red o de timeout
         const networkErrors = ['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'ERR_NETWORK'];
         if (networkErrors.some(errMsg => String(code).includes(errMsg))) return true;
 
-        // Errores de servidor (5xx) o Rate Limit (429)
         if (typeof status === 'number') {
             return (status >= 500 && status <= 599) || status === 429;
         }
@@ -113,7 +106,6 @@ export class TokenRefreshService {
                 const platformService = PlatformServiceFactory.getService(platform);
                 const newTokens = await platformService.refreshAccessToken(connection.refreshToken);
 
-                // USAR REPOSITORIO PARA ACTUALIZAR Y LIMPIAR CACHÉ
                 await this.connectionRepository.updateTokens(connection.id, newTokens);
 
                 logger.info({ platform, connectionId: connection.id }, 'Token refreshed successfully');
@@ -122,15 +114,13 @@ export class TokenRefreshService {
             } catch (error) {
                 lastError = error;
 
-                // Si no es un error transitorio, no reintentamos
                 if (!this.isTransientError(error)) {
                     logger.warn({ platform, connectionId: connection.id }, 'Permanent error during refresh, skipping retries');
                     break;
                 }
 
-                // Si es el último intento, no esperamos
                 if (attempt < MAX_RETRIES - 1) {
-                    const baseDelay = Math.pow(2, attempt) * 1000; // 1s, 2s...
+                    const baseDelay = Math.pow(2, attempt) * 1000;
                     const jitter = Math.random() * 1000;
                     const delay = baseDelay + jitter;
 
@@ -140,7 +130,6 @@ export class TokenRefreshService {
             }
         }
 
-        // Manejo de error final (Lógica original preservada)
         const errorMessage = lastError instanceof Error ? lastError.message : '';
         const errorString = String(lastError);
 

@@ -1,10 +1,6 @@
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { logger } from '../../../utils/logger';
 
-/**
- * Interfaz extendida para acceder a propiedades internas de la librería 
- * que no están formalmente en los tipos base de tiktok-live-connector.
- */
 interface ExtendedTikTokConnection extends TikTokLiveConnection {
     getRoomInfo?: () => TikTokRoomInfo;
     roomInfo: TikTokRoomInfo;
@@ -32,9 +28,7 @@ export class TikTokConnectionManager {
                 )
             ]);
         } catch (error) {
-            try {
-                tiktokChat.disconnect();
-            } catch { /* ignore */ }
+            this.disconnect(tiktokChat, true);
             throw error;
         } finally {
             if (timeoutId) clearTimeout(timeoutId);
@@ -42,10 +36,9 @@ export class TikTokConnectionManager {
 
         const client = tiktokChat as ExtendedTikTokConnection;
         const roomInfo = client.getRoomInfo?.() ?? client.roomInfo;
-        
+
         logger.debug({ username, roomInfo }, 'TikTok: Room Info Debug');
 
-        // status 2 = LIVE, status 4 = OFFLINE
         const status = roomInfo?.data?.status ?? roomInfo?.status;
 
         if (!roomInfo || status !== 2) {
@@ -58,11 +51,15 @@ export class TikTokConnectionManager {
         return tiktokChat;
     }
 
-    disconnect(connection: TikTokLiveConnection): void {
+    disconnect(connection: TikTokLiveConnection, silent = false): void {
         try {
             connection.disconnect();
         } catch (error) {
-            logger.error({ err: error }, 'Error disconnecting TikTok');
+            if (silent) {
+                logger.debug({ err: error }, 'Silent disconnect failed (expected during cleanup)');
+            } else {
+                logger.error({ err: error }, 'Error disconnecting TikTok');
+            }
         }
     }
 }

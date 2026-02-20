@@ -1,7 +1,3 @@
-/**
- * Utilidades base para middlewares de webhooks
- */
-
 import { Request } from 'express';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
@@ -23,13 +19,10 @@ export interface RequestWithWebhookData extends RequestWithRawBody {
 }
 
 /**
- * Tiempo máximo permitido para un timestamp (Anti-replay)
+ * Margen de tolerancia para timestamps (5 min) para mitigar Replay Attacks.
  */
-export const MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000; // 5 minutos
+export const MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
 
-/**
- * Extrae un header probando múltiples nombres posibles
- */
 export const extractHeader = (req: Request, headerNames: readonly string[]): string => {
     for (const name of headerNames) {
         const value = req.header(name);
@@ -39,26 +32,23 @@ export const extractHeader = (req: Request, headerNames: readonly string[]): str
 };
 
 /**
- * Valida la antigüedad del timestamp para prevenir replay attacks
+ * Valida la antigüedad del mensaje y detecta discrepancias de reloj (Clock Skew).
  */
 export const validateTimestamp = (timestamp: string): void => {
     const timestampDate = new Date(timestamp);
     const now = new Date();
 
-    // Verificar si es una fecha válida
     if (isNaN(timestampDate.getTime())) {
         throw new AppError('Invalid timestamp format', 400);
     }
 
     const age = now.getTime() - timestampDate.getTime();
 
-    // Verificar si el timestamp está demasiado en el pasado
     if (age > MAX_TIMESTAMP_AGE_MS) {
         logger.warn({ timestamp, age }, 'Webhook timestamp too old');
         throw new AppError('Webhook timestamp too old', 400);
     }
 
-    // Verificar si está demasiado en el futuro (clock skew)
     if (age < -MAX_TIMESTAMP_AGE_MS) {
         logger.warn({ timestamp, age }, 'Webhook timestamp from future');
         throw new AppError('Webhook timestamp from future', 400);

@@ -13,10 +13,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
         throw new Error('Use EventSub specific transformation methods');
     }
 
-    /**
-     * MÉTODOS IRC (Compatibilidad con tmi.js)
-     */
-
     transformChatMessage(tags: Record<string, unknown>, message: string): NormalizedChatMessage {
         const emotes = this.parseEmotes(tags.emotes, message);
 
@@ -84,10 +80,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
         return emotes;
     }
 
-    /**
-     * --- MÉTODOS EVENTSUB (Webhooks) ---
-     */
-
     transformEventSubFollow(event: TwitchFollowEventSub): NormalizedChatMessage {
         const followedAtTs = new Date(event.followed_at).getTime();
         return {
@@ -144,7 +136,6 @@ export class TwitchEventTransformer extends BaseEventTransformer {
                 };
             });
 
-        // Calcular total de bits si hay cheermotes
         const totalBits = (event.message.fragments || [])
             .filter(f => f.type === 'cheermote' && f.cheermote)
             .reduce((acc, f) => acc + (f.cheermote?.bits || 0), 0);

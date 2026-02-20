@@ -1,5 +1,3 @@
-/** Exports centralizados de todos los servicios */
-
 // Core services
 export * from './core';
 

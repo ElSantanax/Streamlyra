@@ -1,5 +1,3 @@
-/** Servicio de moderación para Twitch */
-
 import axios from 'axios';
 import { config } from '../../config';
 import { logger } from '../../utils/logger';
@@ -17,13 +15,10 @@ export interface BanUserParams {
     userId: string;
     accessToken: string;
     reason?: string;
-    duration?: number; // En segundos, omitir para ban permanente
+    duration?: number;
 }
 
 export class TwitchModerationService {
-    /**
-     * Elimina un mensaje específico del chat
-     */
     async deleteMessage(params: DeleteMessageParams): Promise<void> {
         const { broadcasterId, moderatorId, messageId, accessToken } = params;
 
@@ -54,18 +49,13 @@ export class TwitchModerationService {
                 } else if (status === 404) {
                     throw new Error('Mensaje no encontrado o ya fue eliminado');
                 } else {
-                    throw new Error(
-                        `Error al eliminar mensaje: ${errorData?.message || error.message}`
-                    );
+                    throw new Error(`Error al eliminar mensaje: ${errorData?.message || error.message}`);
                 }
             }
             throw error;
         }
     }
 
-    /**
-     * Banea o pone en timeout a un usuario
-     */
     async banUser(params: BanUserParams): Promise<void> {
         const { broadcasterId, moderatorId, userId, accessToken, reason, duration } = params;
 
@@ -107,8 +97,7 @@ export class TwitchModerationService {
                 }
             );
 
-            const actionType = duration ? `timeout de ${duration}s` : 'ban permanente';
-            logger.info({ userId, broadcasterId, actionType }, 'Usuario baneado/timeout exitosamente');
+            logger.info({ userId, broadcasterId }, 'Usuario baneado/timeout exitosamente');
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
@@ -119,11 +108,9 @@ export class TwitchModerationService {
                 } else if (status === 403) {
                     throw new Error('No tienes permisos de moderador en este canal');
                 } else if (status === 400) {
-                    throw new Error('No puedes banear a este usuario (puede ser el broadcaster o un moderador)');
+                    throw new Error('No puedes banear a este usuario');
                 } else {
-                    throw new Error(
-                        `Error al banear usuario: ${errorData?.message || error.message}`
-                    );
+                    throw new Error(`Error al banear usuario: ${errorData?.message || error.message}`);
                 }
             }
             throw error;

@@ -1,5 +1,3 @@
-/** Procesador de webhooks de Twitch (EventSub) con validación de estado y sockets activos */
-
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { TwitchWebhook } from '../../../models/TwitchWebhook.model';
@@ -38,7 +36,6 @@ export class TwitchWebhookProcessor {
                 return;
             }
 
-            // 1. Obtener conexión (con caché)
             const connCacheKey = WebhookCache.keys.connection('twitch', broadcasterId);
             let connection = this.cache.get<Connection>(connCacheKey);
 
@@ -57,7 +54,6 @@ export class TwitchWebhookProcessor {
                 return;
             }
 
-            // 2. Verificar estado del webhook (con caché)
             const whCacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, eventType);
             let isEnabled = this.cache.get<boolean>(whCacheKey);
 
@@ -71,9 +67,6 @@ export class TwitchWebhookProcessor {
                 });
                 isEnabled = !!webhook;
                 this.cache.set(whCacheKey, isEnabled);
-
-                // Si el webhook existe, también lo guardamos para actualizar el timestamp si hace falta
-                // Pero para la validación rápida, el booleano basta.
             }
 
             if (!isEnabled) {
@@ -84,8 +77,6 @@ export class TwitchWebhookProcessor {
                 return;
             }
 
-            // Actualización asíncrona del timestamp (opcional, no bloqueante)
-            // Aquí podríamos optimizar más, pero como es asíncrono no penaliza el tiempo de respuesta
             TwitchWebhook.update(
                 { lastEventAt: new Date() },
                 { where: { broadcasterId, type: eventType } }
@@ -95,7 +86,6 @@ export class TwitchWebhookProcessor {
 
             let chatMessage;
             const event = payload.event;
-
 
             switch (eventType) {
                 case 'channel.chat.message':
@@ -122,7 +112,6 @@ export class TwitchWebhookProcessor {
                     return;
             }
 
-            // Emisión al dashboard
             if (chatMessage) {
                 logger.info(
                     { userId: connection.userId, platform: 'twitch', user: chatMessage.user, eventType },

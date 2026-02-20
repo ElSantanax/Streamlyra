@@ -1,7 +1,3 @@
-/**
- * Cronjob para renovar suscripciones de YouTube PubSubHubbub próximas a expirar
- */
-
 import cron, { ScheduledTask } from 'node-cron';
 import { logger } from '../../utils/logger';
 import { youtubePubSubService } from '../chat/youtube/YouTubePubSubService';
@@ -9,10 +5,6 @@ import { youtubePubSubService } from '../chat/youtube/YouTubePubSubService';
 export class YouTubeSubscriptionRenewer {
     private job: ScheduledTask | null = null;
 
-    /**
-     * Inicia el cronjob
-     * Se ejecuta diariamente a las 04:00 AM
-     */
     start(): void {
         if (this.job) {
             logger.warn('YouTube Subscription Renewer cron already started');
@@ -21,16 +13,12 @@ export class YouTubeSubscriptionRenewer {
 
         logger.info('Iniciando cronjob de renovación de suscripciones de YouTube (04:00 AM diario)');
 
-        // Ejecutar a las 04:00 AM todos los días
         this.job = cron.schedule('0 4 * * *', async () => {
             logger.info('Ejecutando tarea programada: Renovación de suscripciones de YouTube');
             await this.renewSubscriptions();
         });
     }
 
-    /**
-     * Detiene el cronjob
-     */
     stop(): void {
         if (this.job) {
             this.job.stop();
@@ -39,12 +27,8 @@ export class YouTubeSubscriptionRenewer {
         }
     }
 
-    /**
-     * Lógica de renovación
-     */
     async renewSubscriptions(): Promise<void> {
         try {
-            // Obtener suscripciones que expiran en los próximos 2 días (para tener margen)
             const expiringSubscriptions = await youtubePubSubService.getExpiringSubscriptions(2);
 
             if (expiringSubscriptions.length === 0) {
@@ -61,7 +45,6 @@ export class YouTubeSubscriptionRenewer {
                 try {
                     await youtubePubSubService.renewSubscription(subscription);
                     renewedCount++;
-                    // Pequeña pausa para no saturar
                     await new Promise(resolve => setTimeout(resolve, 500));
                 } catch (error) {
                     logger.error({ err: error, subscriptionId: subscription.id }, 'Error renovando suscripción individual');

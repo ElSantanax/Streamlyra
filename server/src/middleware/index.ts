@@ -1,7 +1,3 @@
-/**
- * Exports centralizados de todos los middlewares
- */
-
 export { authenticateToken, optionalAuthenticate, type AuthRequest } from './auth.middleware';
 export { validateKickWebhook } from './webhooks/kick.middleware';
 export { validateTwitchWebhook } from './webhooks/twitch.middleware';

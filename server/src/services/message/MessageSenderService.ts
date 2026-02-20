@@ -1,5 +1,3 @@
-/** Servicio de envío de mensajes a múltiples plataformas con manejo de errores independiente */
-
 import { ConnectionService } from '../connection/ConnectionService';
 import { TwitchService } from '../platforms/TwitchService';
 import { YouTubeService } from '../platforms/YouTubeService';
@@ -30,23 +28,15 @@ export class MessageSenderService {
             'Starting message send to multiple platforms'
         );
 
-        // Marcar mensaje como enviado desde el dashboard para prevenir ecos
         sentMessageCache.markAsSent(userId, message);
 
-        // Si el array de plataformas está vacío, enviar a todas las plataformas conectadas
         let targetPlatforms: string[];
 
         if (platforms.length === 0) {
-            logger.info({ userId }, 'Empty platforms array - fetching all connected platforms');
             const connections = await this.connectionService.getAllConnections(userId);
             targetPlatforms = connections
                 .map(conn => conn.provider)
                 .filter(p => p !== 'tiktok');
-
-            logger.info(
-                { userId, connectedPlatforms: targetPlatforms },
-                'Sending to all connected platforms'
-            );
         } else {
             targetPlatforms = platforms.filter(p => p !== 'tiktok');
         }
@@ -56,7 +46,6 @@ export class MessageSenderService {
         );
 
         const results = await Promise.all(sendPromises);
-
         const success = results.some(r => r.success);
 
         logger.info(
@@ -130,10 +119,8 @@ export class MessageSenderService {
             'youtube',
             userId,
             async (accessToken, connection) => {
-                // Usar el liveChatId cacheado en chatroomId si está disponible
                 let liveChatId: string | null = connection.chatroomId || null;
 
-                // Si no hay liveChatId cacheado, intentar obtenerlo
                 if (!liveChatId) {
                     try {
                         liveChatId = await this.youtubeService.getActiveLiveChatId(accessToken, connection.providerId);
@@ -145,17 +132,14 @@ export class MessageSenderService {
                     }
 
                     if (!liveChatId) {
-                        logger.debug({ userId, platform: 'youtube' }, 'No active live broadcast found');
                         throw Object.assign(
                             new Error('Sin Live activo'),
                             { code: 'NO_LIVE_BROADCAST' }
                         );
                     }
 
-                    // Cachear el liveChatId para futuros mensajes
                     connection.chatroomId = liveChatId;
                     await connection.save();
-                    logger.info({ userId, liveChatId }, 'Cached YouTube liveChatId for future messages');
                 }
 
                 const messageId = await this.youtubeService.sendChatMessage(accessToken, liveChatId, message);
