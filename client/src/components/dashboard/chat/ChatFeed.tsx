@@ -79,11 +79,13 @@ const ChatFeed = memo(({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Conectado al servidor</h3>
-            <p className="text-gray-400 max-w-xs mx-auto">
+            <h3 className="text-xl font-bold text-white mb-2">
+                {isConnected ? "¡Todo listo para empezar!" : "Conecta tus plataformas"}
+            </h3>
+            <p className="text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
                 {isConnected
-                    ? "Esperando mensajes..."
-                    : "Conectando..."}
+                    ? "Aún no hay mensajes por aquí. ¡Anima a tu comunidad a romper el hielo!"
+                    : "Vincula tus cuentas para empezar a recibir los mensajes de tu comunidad aquí mismo."}
             </p>
         </div>
     ), [isConnected]);
