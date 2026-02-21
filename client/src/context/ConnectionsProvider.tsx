@@ -17,6 +17,7 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         connectionsStatus,  // Optimized
         connectionsStats,   // Optimized
         lastFollower,       // Último seguidor
+        lastRaid,           // Último raid
         updateConnection,
         disconnectPlatform,
         refetch: refetchConnections,
@@ -68,8 +69,9 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
     const statsValue = useMemo(() => ({
         connectionsStats,
         updateConnectionStats: (p: string, u: Partial<ConnectionStats>) => updateConnection(p, u),
-        lastFollower
-    }), [connectionsStats, updateConnection, lastFollower]);
+        lastFollower,
+        lastRaid
+    }), [connectionsStats, updateConnection, lastFollower, lastRaid]);
 
     // 3. Valor LEGADO (Cambia siempre)
     const legacyValue = useMemo(() => ({

@@ -113,9 +113,25 @@ export class TwitchWebhookProcessor {
                 case 'channel.subscribe':
                     chatMessage = this.transformer.transformEventSubSubscription(event as TwitchSubEventSub);
                     break;
-                case 'channel.raid':
-                    chatMessage = this.transformer.transformEventSubRaid(event as TwitchRaidEventSub);
+                case 'channel.raid': {
+                    const raidEvent = event as TwitchRaidEventSub;
+                    chatMessage = this.transformer.transformEventSubRaid(raidEvent);
+
+                    // Actualizar analíticas de último raid
+                    AnalyticsService.updateLastRaid(connection.userId, 'twitch', raidEvent.from_broadcaster_user_name, raidEvent.viewers)
+                        .then(updated => {
+                            if (updated) {
+                                SafeSocketEmitter.emitLastRaidUpdate(this.io, connection.userId, {
+                                    name: updated.lastRaidName,
+                                    platform: updated.lastRaidPlatform,
+                                    viewers: updated.lastRaidViewers,
+                                    at: updated.lastRaidAt
+                                });
+                            }
+                        })
+                        .catch(err => logger.error({ err, userId: connection.userId }, 'Error procesando analytics de raid en Twitch'));
                     break;
+                }
                 case 'stream.online':
                     SafeSocketEmitter.emitConnectionStatus(this.io, connection.userId, 'twitch', 'connected', 'En vivo', true);
                     return;

@@ -19,7 +19,7 @@ interface SidebarProps {
 
 const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
     const { connectionsStatus, searchStream } = useConnectionsStatus();
-    const { connectionsStats, lastFollower } = useConnectionsStats();
+    const { connectionsStats, lastFollower, lastRaid } = useConnectionsStats();
 
     // 1. Calcular espectadores totales (Solo depende de stats)
     const totalViewers = useMemo(
@@ -114,7 +114,7 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
                 <div className="grid grid-cols-1 gap-3">
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Espectadores Totales</span>
-                        <span className="text-base font-black text-white">{formatViewers(totalViewers)}</span>
+                        <span className="text-base text-white">{formatViewers(totalViewers)}</span>
                     </div>
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tendencia</span>
@@ -122,7 +122,7 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
                     </div>
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tiempo al Aire</span>
-                        <span className="text-base font-black text-white">
+                        <span className="text-base text-white">
                             {timerData.sessionStartTime ? (
                                 <SimpleTimer startTime={timerData.sessionStartTime} serverTime={timerData.latestServerTime} />
                             ) : (
@@ -142,8 +142,30 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
                                 {lastFollower.platform === 'tiktok' && <FaTiktok size={16} />}
                                 {lastFollower.platform === 'kick' && <SiKick size={16} />}
                             </span>
-                            <span className="text-base font-black text-white truncate" title={lastFollower.name}>
+                            <span className={`text-white truncate min-w-0 ${lastFollower.name.length > 18 ? 'text-xs' :
+                                lastFollower.name.length > 12 ? 'text-sm' :
+                                    'text-base'
+                                }`} title={lastFollower.name}>
                                 {lastFollower.name}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Ultimo Raid */}
+                {lastRaid && (
+                    <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Raid</span>
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                            <span className={`shrink-0 ${lastRaid.platform === 'twitch' ? 'text-[#9146FF]' : 'text-[#53FC18]'}`}>
+                                {lastRaid.platform === 'twitch' && <FaTwitch size={16} />}
+                                {lastRaid.platform === 'kick' && <SiKick size={16} />}
+                            </span>
+                            <span className={`text-white truncate min-w-0 ${lastRaid.name.length > 18 ? 'text-xs' :
+                                lastRaid.name.length > 10 ? 'text-sm' :
+                                    'text-base'
+                                }`} title={lastRaid.name}>
+                                {lastRaid.name}
                             </span>
                         </div>
                     </div>

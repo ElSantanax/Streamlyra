@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 export type EngagementState = 'up' | 'down' | 'stable' | 'calculating';
 
@@ -19,23 +19,27 @@ export const useEngagementTrend = (
         latestViewsRef.current = currentViews;
     }, [currentViews]);
 
-    if (currentViews === 0 && history.length > 0) {
-        setHistory([]);
-    }
+    const isHistoryEmpty = history.length === 0;
 
     useEffect(() => {
-        setHistory(prev => {
-            if (prev.length === 0 && latestViewsRef.current > 0) {
-                return [{ timestamp: Date.now(), views: latestViewsRef.current }];
+        const timerId = setTimeout(() => {
+            if (currentViews === 0) {
+                setHistory(prev => (prev.length > 0 ? [] : prev));
+            } else if (isHistoryEmpty) {
+                setHistory([{ timestamp: Date.now(), views: currentViews }]);
             }
-            return prev;
-        });
+        }, 0);
 
+        return () => clearTimeout(timerId);
+    }, [currentViews, isHistoryEmpty]);
+
+    useEffect(() => {
         const timerId = setInterval(() => {
             const now = Date.now();
+            const current = latestViewsRef.current;
+
             setHistory(prev => {
-                const current = latestViewsRef.current;
-                if (current === 0) return [];
+                if (current === 0) return prev.length > 0 ? [] : prev;
 
                 const windowStart = now - historyWindowMs;
                 const newHistory = [...prev, { timestamp: now, views: current }];
@@ -47,29 +51,33 @@ export const useEngagementTrend = (
         return () => clearInterval(timerId);
     }, [intervalMs, historyWindowMs]);
 
-    let trend: EngagementState = 'calculating';
-    let percentageChange = 0;
+    const result = useMemo(() => {
+        let trend: EngagementState = 'calculating';
+        let percentageChange = 0;
 
-    if (currentViews > 0 && history.length >= 2) {
-        const sum = history.reduce((acc, curr) => acc + curr.views, 0);
-        const average = sum / history.length;
+        if (currentViews > 0 && history.length >= 2) {
+            const sum = history.reduce((acc, curr) => acc + curr.views, 0);
+            const average = sum / history.length;
 
-        if (average === 0) {
-            trend = 'up';
-            percentageChange = 100;
-        } else {
-            const diff = currentViews - average;
-            percentageChange = (diff / average) * 100;
-
-            if (percentageChange >= 5) {
+            if (average === 0) {
                 trend = 'up';
-            } else if (percentageChange <= -5) {
-                trend = 'down';
+                percentageChange = 100;
             } else {
-                trend = 'stable';
+                const diff = currentViews - average;
+                percentageChange = (diff / average) * 100;
+
+                if (percentageChange >= 5) {
+                    trend = 'up';
+                } else if (percentageChange <= -5) {
+                    trend = 'down';
+                } else {
+                    trend = 'stable';
+                }
             }
         }
-    }
 
-    return { trend, percentageChange };
+        return { trend, percentageChange };
+    }, [currentViews, history]);
+
+    return result;
 };

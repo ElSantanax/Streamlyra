@@ -12,14 +12,14 @@ export class ConnectionSocketHandler {
     async setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
         this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
 
-        // Enviar último seguidor guardado en DB (si existe y no ha expirado)
-        AnalyticsService.getLastFollower(authenticatedUserId)
-            .then(follower => {
-                if (follower) {
-                    SafeSocketEmitter.emitLastFollowerUpdate(io, authenticatedUserId, follower);
-                }
-            })
-            .catch(err => logger.error({ err, userId: authenticatedUserId }, 'Error enviando analíticas iniciales al conectar'));
+        // Enviar analíticas guardadas en DB (si existen y no han expirado)
+        Promise.all([
+            AnalyticsService.getLastFollower(authenticatedUserId),
+            AnalyticsService.getLastRaid(authenticatedUserId)
+        ]).then(([follower, raid]) => {
+            if (follower) SafeSocketEmitter.emitLastFollowerUpdate(io, authenticatedUserId, follower);
+            if (raid) SafeSocketEmitter.emitLastRaidUpdate(io, authenticatedUserId, raid);
+        }).catch(err => logger.error({ err, userId: authenticatedUserId }, 'Error enviando analíticas iniciales al conectar'));
 
         socket.on('identify', async () => {
             await this.connectionManager.handleIdentify(authenticatedUserId, socket, io);

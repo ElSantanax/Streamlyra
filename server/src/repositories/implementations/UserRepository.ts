@@ -12,7 +12,7 @@ export class UserRepository implements IUserRepository {
         return User.findByPk(id, {
             include: [
                 { model: Connection, attributes: ['provider', 'providerUsername'] },
-                { model: UserAnalytics, attributes: ['lastFollowerName', 'lastFollowerPlatform', 'lastFollowerAt'] }
+                { model: UserAnalytics, attributes: ['userId', 'lastFollowerName', 'lastFollowerPlatform', 'lastFollowerAt', 'lastRaidName', 'lastRaidPlatform', 'lastRaidViewers', 'lastRaidAt'] }
             ],
             transaction
         }) as Promise<User | null>;

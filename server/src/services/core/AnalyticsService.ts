@@ -36,7 +36,6 @@ export class AnalyticsService {
                 return null;
             }
 
-            // Lógica de 7 días: 7 * 24 * 60 * 60 * 1000 ms
             const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
             const now = new Date();
             const elapsed = now.getTime() - new Date(analytics.lastFollowerAt).getTime();
@@ -53,6 +52,61 @@ export class AnalyticsService {
             };
         } catch (error) {
             logger.error({ err: error, userId }, 'Error obteniendo analytics del último seguidor');
+            return null;
+        }
+    }
+
+    /**
+     * Actualiza el último raid de un usuario
+     */
+    static async updateLastRaid(userId: string, platform: string, raiderName: string, viewers: number): Promise<UserAnalytics | null> {
+        try {
+            const now = new Date();
+
+            const [analytics] = await UserAnalytics.upsert({
+                userId,
+                lastRaidName: raiderName,
+                lastRaidPlatform: platform,
+                lastRaidViewers: viewers,
+                lastRaidAt: now
+            });
+
+            logger.debug({ userId, platform, raiderName, viewers }, 'Analíticas de raid actualizadas');
+            return analytics;
+        } catch (error) {
+            logger.error({ err: error, userId }, 'Error actualizando analytics del último raid');
+            return null;
+        }
+    }
+
+    /**
+     * Obtiene el último raid del usuario con lógica de expiración
+     */
+    static async getLastRaid(userId: string): Promise<{ name: string; platform: string; viewers: number; at: Date } | null> {
+        try {
+            const analytics = await UserAnalytics.findByPk(userId);
+
+            if (!analytics || !analytics.lastRaidName || !analytics.lastRaidAt) {
+                return null;
+            }
+
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+            const now = new Date();
+            const elapsed = now.getTime() - new Date(analytics.lastRaidAt).getTime();
+
+            if (elapsed > SEVEN_DAYS_MS) {
+                logger.debug({ userId }, 'El último raid ha expirado (más de 7 días)');
+                return null;
+            }
+
+            return {
+                name: analytics.lastRaidName,
+                platform: analytics.lastRaidPlatform,
+                viewers: Number(analytics.lastRaidViewers),
+                at: analytics.lastRaidAt
+            };
+        } catch (error) {
+            logger.error({ err: error, userId }, 'Error obteniendo analytics del último raid');
             return null;
         }
     }

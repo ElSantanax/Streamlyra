@@ -29,6 +29,30 @@ export class UserAnalytics extends Model {
     })
     declare lastFollowerAt: Date;
 
+    @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare lastRaidName: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare lastRaidPlatform: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare lastRaidViewers: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true
+    })
+    declare lastRaidAt: Date;
+
     @BelongsTo(() => User)
     declare user: User;
 }

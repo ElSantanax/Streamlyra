@@ -219,4 +219,16 @@ export class SafeSocketEmitter {
             data: followerData
         });
     }
+
+    static emitLastRaidUpdate(
+        io: Server,
+        userId: string,
+        raidData: { name: string; platform: string; viewers: number; at: Date } | null
+    ): boolean {
+        return this.emit(io, {
+            userId,
+            event: 'last_raid_update',
+            data: raidData
+        });
+    }
 }
