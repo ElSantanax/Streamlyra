@@ -17,6 +17,7 @@ export interface AuthResponse {
 export interface MeResponse {
   user: User;
   connections: Record<string, ConnectionInfo>;
+  lastFollower?: LastFollower | null;
 }
 
 export interface ConnectionStatus {
@@ -34,4 +35,10 @@ export interface ConnectionStats {
 }
 
 export interface ConnectionInfo extends ConnectionStatus, ConnectionStats { }
+
+export interface LastFollower {
+  name: string;
+  platform: string;
+  at: string;
+}
 

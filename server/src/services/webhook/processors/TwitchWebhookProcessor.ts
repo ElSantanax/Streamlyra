@@ -12,6 +12,7 @@ import { TwitchEventTransformer } from '../../chat/transformers/TwitchEventTrans
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { WebhookCache } from '../WebhookCache';
+import { AnalyticsService } from '../../core/AnalyticsService';
 
 export class TwitchWebhookProcessor {
 
@@ -91,9 +92,24 @@ export class TwitchWebhookProcessor {
                 case 'channel.chat.message':
                     chatMessage = this.transformer.transformEventSubChatMessage(event as TwitchChatMessageEventSub);
                     break;
-                case 'channel.follow':
-                    chatMessage = this.transformer.transformEventSubFollow(event as TwitchFollowEventSub);
+                case 'channel.follow': {
+                    const followEvent = event as TwitchFollowEventSub;
+                    chatMessage = this.transformer.transformEventSubFollow(followEvent);
+
+                    // Actualizar analíticas de último seguidor de forma asíncrona (fuego y olvido)
+                    AnalyticsService.updateLastFollower(connection.userId, 'twitch', chatMessage.user)
+                        .then(updated => {
+                            if (updated) {
+                                SafeSocketEmitter.emitLastFollowerUpdate(this.io, connection.userId, {
+                                    name: updated.lastFollowerName,
+                                    platform: updated.lastFollowerPlatform,
+                                    at: updated.lastFollowerAt
+                                });
+                            }
+                        })
+                        .catch(err => logger.error({ err, userId: connection.userId }, 'Error procesando analytics de seguidor en Twitch'));
                     break;
+                }
                 case 'channel.subscribe':
                     chatMessage = this.transformer.transformEventSubSubscription(event as TwitchSubEventSub);
                     break;

@@ -8,7 +8,6 @@ import {
 } from '../hooks/useConnectionsContext';
 import type { ConnectionInfo, ConnectionStats } from '../types';
 
-
 export const ConnectionsProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
     const connectionsRef = useRef<Record<string, ConnectionInfo>>({});
@@ -17,6 +16,7 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         connections,        // Legacy
         connectionsStatus,  // Optimized
         connectionsStats,   // Optimized
+        lastFollower,       // Último seguidor
         updateConnection,
         disconnectPlatform,
         refetch: refetchConnections,
@@ -67,8 +67,9 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
     // 2. Valor para STATS (Frecuente)
     const statsValue = useMemo(() => ({
         connectionsStats,
-        updateConnectionStats: (p: string, u: Partial<ConnectionStats>) => updateConnection(p, u)
-    }), [connectionsStats, updateConnection]);
+        updateConnectionStats: (p: string, u: Partial<ConnectionStats>) => updateConnection(p, u),
+        lastFollower
+    }), [connectionsStats, updateConnection, lastFollower]);
 
     // 3. Valor LEGADO (Cambia siempre)
     const legacyValue = useMemo(() => ({

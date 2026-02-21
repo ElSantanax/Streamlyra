@@ -1,8 +1,9 @@
 /**
  * Modelo de User - Representa usuarios del sistema
  */
-import { Table, Column, Model, DataType, Default, PrimaryKey, HasMany, Unique } from "sequelize-typescript";
+import { Table, Column, Model, DataType, Default, PrimaryKey, HasMany, HasOne, Unique } from "sequelize-typescript";
 import { Connection } from "./Connection.model";
+import { UserAnalytics } from "./UserAnalytics.model";
 
 @Table({
     tableName: "users",
@@ -41,4 +42,7 @@ export class User extends Model {
 
     @HasMany(() => Connection)
     declare connections: Connection[];
+
+    @HasOne(() => UserAnalytics)
+    declare analytics: UserAnalytics;
 }

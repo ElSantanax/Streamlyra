@@ -49,7 +49,7 @@ export const setupSocketHandlers = (
     // Setup authentication middleware
     io.use(createAuthMiddleware());
 
-    io.on('connection', (socket: Socket) => {
+    io.on('connection', async (socket: Socket) => {
         const authenticatedUserId = (socket.data as { userId?: string }).userId;
 
         if (!authenticatedUserId) {
@@ -62,7 +62,7 @@ export const setupSocketHandlers = (
         // Setup all handlers
         messageHandler.setupHandler(socket, io, authenticatedUserId);
         moderationHandler.setupHandler(socket, authenticatedUserId);
-        connectionHandler.setupHandler(socket, io, authenticatedUserId);
+        await connectionHandler.setupHandler(socket, io, authenticatedUserId);
     });
 
     logger.info({}, 'Manejadores de Socket.io configurados');

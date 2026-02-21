@@ -1,11 +1,13 @@
 import { useMemo, memo } from 'react';
-import { FaPlus, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaTwitch, FaTiktok } from 'react-icons/fa';
+import { SiKick } from 'react-icons/si';
 import { MdDeleteSweep } from 'react-icons/md';
 import type { PlatformKey } from '../../../constants/platforms';
 import { formatViewers } from '../../../lib/formatters';
 import { ConnectionItem } from '../connections/ConnectionItem';
 import { SimpleTimer } from '../../common/SimpleTimer';
 import { useConnectionsStatus, useConnectionsStats } from '../../../hooks/useConnectionsContext';
+import { EngagementIndicator } from '../analytics/EngagementIndicator';
 
 interface SidebarProps {
     onMobileClose?: () => void;
@@ -17,11 +19,11 @@ interface SidebarProps {
 
 const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStream, onClearChat }: SidebarProps) => {
     const { connectionsStatus, searchStream } = useConnectionsStatus();
-    const { connectionsStats } = useConnectionsStats();
+    const { connectionsStats, lastFollower } = useConnectionsStats();
 
     // 1. Calcular espectadores totales (Solo depende de stats)
     const totalViewers = useMemo(
-        () => Object.values(connectionsStats).reduce((acc, curr) => acc + (curr.viewers || 0), 0),
+        () => Object.values(connectionsStats).reduce((acc, curr: { viewers?: number }) => acc + (curr.viewers || 0), 0),
         [connectionsStats]
     );
 
@@ -115,6 +117,10 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
                         <span className="text-base font-black text-white">{formatViewers(totalViewers)}</span>
                     </div>
                     <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tendencia</span>
+                        <EngagementIndicator currentViews={totalViewers} />
+                    </div>
+                    <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tiempo al Aire</span>
                         <span className="text-base font-black text-white">
                             {timerData.sessionStartTime ? (
@@ -125,6 +131,23 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
                         </span>
                     </div>
                 </div>
+
+                {/* Ultimo Seguidor */}
+                {lastFollower && (
+                    <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Seguidor</span>
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                            <span className={`shrink-0 ${lastFollower.platform === 'twitch' ? 'text-[#9146FF]' : lastFollower.platform === 'tiktok' ? 'text-white' : 'text-[#53FC18]'}`}>
+                                {lastFollower.platform === 'twitch' && <FaTwitch size={16} />}
+                                {lastFollower.platform === 'tiktok' && <FaTiktok size={16} />}
+                                {lastFollower.platform === 'kick' && <SiKick size={16} />}
+                            </span>
+                            <span className="text-base font-black text-white truncate" title={lastFollower.name}>
+                                {lastFollower.name}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Acciones Rápidas */}
@@ -146,4 +169,3 @@ const Sidebar = memo(({ onMobileClose, onAddPlatform, onDisconnect, onSearchStre
 Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;
-

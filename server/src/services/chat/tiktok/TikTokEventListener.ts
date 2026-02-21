@@ -4,6 +4,7 @@ import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
 import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent, TikTokConnection } from '../../../types/tiktok.types';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
+import { AnalyticsService } from '../../core/AnalyticsService';
 
 export class TikTokEventListener {
     private streamConfirmed: Set<string> = new Set();
@@ -49,6 +50,18 @@ export class TikTokEventListener {
 
             const normalizedMessage = this.transformer.transformFollow(data);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
+
+            AnalyticsService.updateLastFollower(userId, 'tiktok', normalizedMessage.user)
+                .then(updated => {
+                    if (updated) {
+                        SafeSocketEmitter.emitLastFollowerUpdate(io, userId, {
+                            name: updated.lastFollowerName,
+                            platform: updated.lastFollowerPlatform,
+                            at: updated.lastFollowerAt
+                        });
+                    }
+                })
+                .catch(err => logger.error({ err, userId }, 'Error procesando analytics de seguidor en TikTok'));
         });
 
         conn.on('roomUser', (info: { viewerCount: number }) => {

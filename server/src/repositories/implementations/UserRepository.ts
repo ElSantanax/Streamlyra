@@ -1,5 +1,6 @@
 import { User } from '../../models/User.model';
 import { Connection } from '../../models/Connection.model';
+import { UserAnalytics } from '../../models/UserAnalytics.model';
 import { IUserRepository } from '../interfaces/IUserRepository';
 import { Transaction } from 'sequelize';
 
@@ -9,7 +10,10 @@ import { Transaction } from 'sequelize';
 export class UserRepository implements IUserRepository {
     async findByIdWithConnections(id: string, transaction?: Transaction): Promise<User | null> {
         return User.findByPk(id, {
-            include: [{ model: Connection, attributes: ['provider', 'providerUsername'] }],
+            include: [
+                { model: Connection, attributes: ['provider', 'providerUsername'] },
+                { model: UserAnalytics, attributes: ['lastFollowerName', 'lastFollowerPlatform', 'lastFollowerAt'] }
+            ],
             transaction
         }) as Promise<User | null>;
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authService } from '../services/api/auth.service';
-import type { ConnectionInfo, ConnectionStatus, ConnectionStats, ConnectionStatusUpdate, ViewersUpdate } from '../types';
+import type { ConnectionInfo, ConnectionStatus, ConnectionStats, ConnectionStatusUpdate, ViewersUpdate, LastFollower } from '../types';
 import type { PlatformKey } from '../constants/platforms';
 import { socket } from '../services/socket';
 
@@ -34,6 +34,7 @@ export const invalidateConnectionsCache = () => {
 export const useConnections = (shouldFetch = true) => {
   const [status, setStatus] = useState<Record<string, ConnectionStatus>>(initialStatus);
   const [stats, setStats] = useState<Record<string, ConnectionStats>>(initialStats);
+  const [lastFollower, setLastFollower] = useState<LastFollower | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +82,11 @@ export const useConnections = (shouldFetch = true) => {
 
     if (statusChanged) setStatus(newStatus);
     if (statsChanged) setStats(newStats);
+
+    // Inicializar lastFollower desde la respuesta del /me (si existe, con lógica de 7 días ya aplicada en el servidor)
+    if (data.lastFollower) {
+      setLastFollower(data.lastFollower);
+    }
   }, []);
 
   const fetchConnections = useCallback(async (force = false) => {
@@ -194,12 +200,18 @@ export const useConnections = (shouldFetch = true) => {
       }
     };
 
+    const onLastFollowerUpdate = (data: LastFollower) => {
+      setLastFollower(data);
+    };
+
     socket.on('connection_status', onConnectionStatus);
     socket.on('viewers_update', onViewersUpdate);
+    socket.on('last_follower_update', onLastFollowerUpdate);
 
     return () => {
       socket.off('connection_status', onConnectionStatus);
       socket.off('viewers_update', onViewersUpdate);
+      socket.off('last_follower_update', onLastFollowerUpdate);
     };
   }, [updateStatus, updateStats, fetchConnections]);
 
@@ -213,6 +225,7 @@ export const useConnections = (shouldFetch = true) => {
     connections: mergedConnections, // Mantener por compatibilidad inicial
     connectionsStatus: status,
     connectionsStats: stats,
+    lastFollower,
     isLoading,
     error,
     updateConnection: (p: string, u: Partial<ConnectionInfo>) => {

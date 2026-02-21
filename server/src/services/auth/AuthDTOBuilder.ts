@@ -13,10 +13,19 @@ export interface AuthResponse {
     activationReason: string;
 }
 
+export interface LastFollowerDTO {
+    name: string;
+    platform: string;
+    at: string;
+}
+
 export interface UserProfileResponse {
     user: UserDTO;
     connections: Record<string, ConnectionInfo>;
+    lastFollower: LastFollowerDTO | null;
 }
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export class AuthDTOBuilder {
     buildAuthResponse(
@@ -57,9 +66,24 @@ export class AuthDTOBuilder {
             });
         }
 
+        // Resolver lastFollower desde las analíticas ya cargadas en el JOIN (sin query extra)
+        let lastFollower: LastFollowerDTO | null = null;
+        const analytics = user.analytics;
+        if (analytics?.lastFollowerName && analytics?.lastFollowerAt) {
+            const elapsed = Date.now() - new Date(analytics.lastFollowerAt).getTime();
+            if (elapsed <= SEVEN_DAYS_MS) {
+                lastFollower = {
+                    name: analytics.lastFollowerName,
+                    platform: analytics.lastFollowerPlatform,
+                    at: new Date(analytics.lastFollowerAt).toISOString()
+                };
+            }
+        }
+
         return {
             user: buildUserDTO(user),
-            connections: connections_map
+            connections: connections_map,
+            lastFollower
         };
     }
 }

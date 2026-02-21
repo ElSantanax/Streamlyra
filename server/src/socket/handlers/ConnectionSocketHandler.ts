@@ -1,14 +1,25 @@
 import { Server, Socket } from 'socket.io';
 import { logger } from '../../utils/logger';
 import { SocketConnectionManager } from '../services/SocketConnectionManager';
+import { AnalyticsService } from '../../services/core/AnalyticsService';
+import { SafeSocketEmitter } from '../../utils/SafeSocketEmitter';
 
 export class ConnectionSocketHandler {
     constructor(
         private connectionManager: SocketConnectionManager
     ) { }
 
-    setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
+    async setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
         this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
+
+        // Enviar último seguidor guardado en DB (si existe y no ha expirado)
+        AnalyticsService.getLastFollower(authenticatedUserId)
+            .then(follower => {
+                if (follower) {
+                    SafeSocketEmitter.emitLastFollowerUpdate(io, authenticatedUserId, follower);
+                }
+            })
+            .catch(err => logger.error({ err, userId: authenticatedUserId }, 'Error enviando analíticas iniciales al conectar'));
 
         socket.on('identify', async () => {
             await this.connectionManager.handleIdentify(authenticatedUserId, socket, io);

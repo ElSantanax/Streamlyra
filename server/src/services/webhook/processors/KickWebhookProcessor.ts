@@ -6,6 +6,7 @@ import { KickEventTransformer } from '../../chat/transformers/KickEventTransform
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { WebhookCache } from '../WebhookCache';
+import { AnalyticsService } from '../../core/AnalyticsService';
 
 export class KickWebhookProcessor {
     private transformer: KickEventTransformer;
@@ -76,7 +77,21 @@ export class KickWebhookProcessor {
             } else if (eventType === 'channel.subscription.gifts') {
                 chatMessage = this.transformer.transformGift(data as KickGiftEvent);
             } else if (eventType === 'channel.followed') {
-                chatMessage = this.transformer.transformFollow(data as KickFollowEvent);
+                const followEvent = data as KickFollowEvent;
+                chatMessage = this.transformer.transformFollow(followEvent);
+
+                // Actualizar analíticas de último seguidor
+                AnalyticsService.updateLastFollower(connection.userId, 'kick', chatMessage.user)
+                    .then(updated => {
+                        if (updated) {
+                            SafeSocketEmitter.emitLastFollowerUpdate(this.io, connection.userId, {
+                                name: updated.lastFollowerName,
+                                platform: updated.lastFollowerPlatform,
+                                at: updated.lastFollowerAt
+                            });
+                        }
+                    })
+                    .catch(err => logger.error({ err, userId: connection.userId }, 'Error procesando analytics de seguidor en Kick'));
             } else if (eventType === 'livestream.status.updated') {
                 chatMessage = null;
             } else {

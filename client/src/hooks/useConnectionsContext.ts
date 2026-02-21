@@ -1,5 +1,5 @@
 import { useContext, createContext } from 'react';
-import type { ConnectionStatus, ConnectionStats, ConnectionInfo } from '../types';
+import type { ConnectionStatus, ConnectionStats, ConnectionInfo, LastFollower } from '../types';
 import type { PlatformKey } from '../constants/platforms';
 
 /**
@@ -18,11 +18,12 @@ export interface ConnectionsStatusContextValue {
 }
 
 /**
- * Contexto para estadísticas de alta frecuencia (Viewers, Timers)
+ * Contexto para estadísticas de alta frecuencia (Viewers, Timers, Último Seguidor)
  */
 export interface ConnectionsStatsContextValue {
     connectionsStats: Record<string, ConnectionStats>;
     updateConnectionStats: (platform: string, updates: Partial<ConnectionStats>) => void;
+    lastFollower: LastFollower | null;
 }
 
 /**

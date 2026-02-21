@@ -207,4 +207,16 @@ export class SafeSocketEmitter {
             platform
         });
     }
+
+    static emitLastFollowerUpdate(
+        io: Server,
+        userId: string,
+        followerData: { name: string; platform: string; at: Date } | null
+    ): boolean {
+        return this.emit(io, {
+            userId,
+            event: 'last_follower_update',
+            data: followerData
+        });
+    }
 }

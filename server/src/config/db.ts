@@ -2,6 +2,7 @@ import { Sequelize } from "sequelize-typescript";
 import { config } from "./index";
 import { User } from "../models/User.model";
 import { Connection } from "../models/Connection.model";
+import { UserAnalytics } from "../models/UserAnalytics.model";
 import { KickWebhook } from "../models/KickWebhook.model";
 import { TwitchWebhook } from "../models/TwitchWebhook.model";
 import { YouTubeSubscription } from "../models/YouTubeSubscription.model";
@@ -11,7 +12,7 @@ import { YouTubeStreamContext } from "../models/YouTubeStreamContext.model";
 const db = new Sequelize(config.databaseUrl, {
     dialect: "postgres",
     logging: false,
-    models: [User, Connection, KickWebhook, TwitchWebhook, YouTubeSubscription, YouTubeQuota, YouTubeStreamContext],
+    models: [User, Connection, UserAnalytics, KickWebhook, TwitchWebhook, YouTubeSubscription, YouTubeQuota, YouTubeStreamContext],
     pool: {
         max: 20,          // Máximo de conexiones en el pool
         min: 2,           // Mínimo de conexiones mantenidas
