@@ -37,7 +37,7 @@ export const EngagementIndicator = memo(({ currentViews }: EngagementIndicatorPr
     return (
         <div className={`flex items-center gap-2 ${currentConfig.color}`}>
             <span>{currentConfig.icon}</span>
-            <span className="text-[13px] font-black">{currentConfig.label}</span>
+            <span className="text-[13px]">{currentConfig.label}</span>
         </div>
     );
 });

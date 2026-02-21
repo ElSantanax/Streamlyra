@@ -65,13 +65,17 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         getConnectedPlatforms
     ]);
 
+    const updateConnectionStats = useCallback((p: string, u: Partial<ConnectionStats>) => {
+        updateConnection(p, u);
+    }, [updateConnection]);
+
     // 2. Valor para STATS (Frecuente)
     const statsValue = useMemo(() => ({
         connectionsStats,
-        updateConnectionStats: (p: string, u: Partial<ConnectionStats>) => updateConnection(p, u),
+        updateConnectionStats,
         lastFollower,
         lastRaid
-    }), [connectionsStats, updateConnection, lastFollower, lastRaid]);
+    }), [connectionsStats, updateConnectionStats, lastFollower, lastRaid]);
 
     // 3. Valor LEGADO (Cambia siempre)
     const legacyValue = useMemo(() => ({

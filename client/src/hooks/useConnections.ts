@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { authService } from '../services/api/auth.service';
 import type { ConnectionInfo, ConnectionStatus, ConnectionStats, ConnectionStatusUpdate, ViewersUpdate, LastFollower, LastRaid, MeResponse } from '../types';
 import type { PlatformKey } from '../constants/platforms';
@@ -210,10 +210,25 @@ export const useConnections = (shouldFetch = true) => {
     };
   }, [updateStatus, updateStats, fetchConnections]);
 
-  const mergedConnections = Object.keys(status).reduce((acc, platform) => {
-    acc[platform] = { ...status[platform], ...stats[platform] } as ConnectionInfo;
-    return acc;
-  }, {} as Record<string, ConnectionInfo>);
+  const updateConnection = useCallback((p: string, u: Partial<ConnectionInfo>) => {
+    const { viewers, sessionStartTime, serverTime, ...statusUpdates } = u;
+    if (Object.keys(statusUpdates).length > 0) updateStatus(p, statusUpdates);
+    if (viewers !== undefined || sessionStartTime || serverTime) {
+      updateStats(p, { viewers, sessionStartTime, serverTime });
+    }
+  }, [updateStatus, updateStats]);
+
+  const searchStream = useCallback((platform: PlatformKey) => {
+    if (platform === 'youtube') socket.emit('youtube_boost_discovery');
+    else if (platform === 'tiktok') socket.emit('tiktok_boost_discovery');
+  }, []);
+
+  const mergedConnections = useMemo(() => {
+    return Object.keys(status).reduce((acc, platform) => {
+      acc[platform] = { ...status[platform], ...stats[platform] } as ConnectionInfo;
+      return acc;
+    }, {} as Record<string, ConnectionInfo>);
+  }, [status, stats]);
 
   return {
     connections: mergedConnections,
@@ -223,18 +238,9 @@ export const useConnections = (shouldFetch = true) => {
     lastRaid,
     isLoading,
     error,
-    updateConnection: (p: string, u: Partial<ConnectionInfo>) => {
-      const { viewers, sessionStartTime, serverTime, ...statusUpdates } = u;
-      if (Object.keys(statusUpdates).length > 0) updateStatus(p, statusUpdates);
-      if (viewers !== undefined || sessionStartTime || serverTime) {
-        updateStats(p, { viewers, sessionStartTime, serverTime });
-      }
-    },
+    updateConnection,
     disconnectPlatform,
     refetch: fetchConnections,
-    searchStream: (platform: PlatformKey) => {
-      if (platform === 'youtube') socket.emit('youtube_boost_discovery');
-      else if (platform === 'tiktok') socket.emit('tiktok_boost_discovery');
-    }
+    searchStream
   };
 };

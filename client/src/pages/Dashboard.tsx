@@ -102,6 +102,15 @@ const DashboardContent = () => {
         connectionHash,
     });
 
+    const handleOpenSidebar = useCallback(() => toggleSidebar(true), [toggleSidebar]);
+    const handleCloseSidebar = useCallback(() => toggleSidebar(false), [toggleSidebar]);
+    const handleOpenAddPlatform = useCallback(() => toggleAddPlatform(true), [toggleAddPlatform]);
+    const handleCloseAddPlatform = useCallback(() => toggleAddPlatform(false), [toggleAddPlatform]);
+
+    const handleConnectionSuccess = useCallback(() => {
+        refetchConnections(true);
+    }, [refetchConnections]);
+
     // No renderizar hasta que se verifique autenticación
     if (!isAuthenticated) {
         return null;
@@ -110,8 +119,8 @@ const DashboardContent = () => {
     return (
         <div className="page-base h-screen overflow-hidden">
             <DashboardHeader
-                onMenuClick={() => toggleSidebar(true)}
-                onAddPlatform={() => toggleAddPlatform(true)}
+                onMenuClick={handleOpenSidebar}
+                onAddPlatform={handleOpenAddPlatform}
                 isConnected={isConnected}
             />
 
@@ -120,13 +129,13 @@ const DashboardContent = () => {
                 {isAddPlatformOpen && (
                     <div
                         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
-                        onClick={() => toggleAddPlatform(false)}
+                        onClick={handleCloseAddPlatform}
                     />
                 )}
                 {isSidebarOpen && (
                     <div
                         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 lg:hidden"
-                        onClick={() => toggleSidebar(false)}
+                        onClick={handleCloseSidebar}
                     />
                 )}
 
@@ -146,7 +155,7 @@ const DashboardContent = () => {
                             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                         `}>
                             <Sidebar
-                                onMobileClose={() => toggleSidebar(false)}
+                                onMobileClose={handleCloseSidebar}
                                 onAddPlatform={handleAddPlatformFromSidebar}
                                 onDisconnect={handleDisconnectPlatform}
                                 onSearchStream={searchStream}
@@ -189,8 +198,8 @@ const DashboardContent = () => {
                     <Suspense fallback={null}>
                         <AddPlatformModal
                             isOpen={isAddPlatformOpen}
-                            onClose={() => toggleAddPlatform(false)}
-                            onConnectionSuccess={() => refetchConnections(true)}
+                            onClose={handleCloseAddPlatform}
+                            onConnectionSuccess={handleConnectionSuccess}
                         />
                     </Suspense>
                 </LocalErrorBoundary>
