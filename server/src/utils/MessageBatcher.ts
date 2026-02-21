@@ -38,11 +38,14 @@ export class MessageBatcher {
         if (this.queue.size === 0 || !this.io) return;
 
         for (const [userId, messages] of this.queue.entries()) {
-            if (messages.length === 0) continue;
+            if (messages.length === 0) {
+                this.queue.delete(userId);
+                continue;
+            }
 
             try {
                 this.io.to(userId).emit('chat_message', messages.length === 1 ? messages[0] : messages);
-                this.queue.set(userId, []);
+                this.queue.delete(userId);
             } catch (error) {
                 logger.error({ err: error, userId }, 'Error volcando lote de mensajes');
             }

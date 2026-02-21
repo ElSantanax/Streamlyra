@@ -27,9 +27,11 @@ export class TwitchManager {
 
             const callbackUrl = `${config.appUrl}/api/webhooks/twitch`;
 
-            for (const event of this.EVENT_TYPES) {
-                await this.ensureSubscription(userId, broadcasterId, event.type, event.version, callbackUrl);
-            }
+            const registrationPromises = this.EVENT_TYPES.map(event =>
+                this.ensureSubscription(userId, broadcasterId, event.type, event.version, callbackUrl)
+            );
+
+            await Promise.all(registrationPromises);
         } catch (error) {
             logger.error({ err: error, userId, broadcasterId }, 'Twitch Webhooks: Error crítico durante el registro masivo');
         }
@@ -189,12 +191,14 @@ export class TwitchManager {
                 where: { broadcasterId }
             });
 
-            for (const webhook of webhooks) {
-                if (webhook.subscriptionId) {
-                    await TwitchEventSubClient.deleteSubscription(webhook.subscriptionId)
-                        .catch(err => logger.error({ err, id: webhook.subscriptionId }, 'Error eliminando suscripción en Twitch API'));
-                }
-            }
+            const deletePromises = webhooks
+                .filter(w => w.subscriptionId)
+                .map(webhook =>
+                    TwitchEventSubClient.deleteSubscription(webhook.subscriptionId!)
+                        .catch(err => logger.error({ err, id: webhook.subscriptionId }, 'Error eliminando suscripción en Twitch API'))
+                );
+
+            await Promise.allSettled(deletePromises);
 
             await TwitchWebhook.destroy({
                 where: { broadcasterId }
@@ -220,10 +224,15 @@ export class TwitchManager {
             let validCount = 0;
             let deletedCount = 0;
 
+            const subIds = twitchSubs.map(s => s.id);
+            const dbWebhooks = await TwitchWebhook.findAll({
+                where: { subscriptionId: subIds }
+            });
+
+            const dbWebhookMap = new Map(dbWebhooks.map(w => [w.subscriptionId, w]));
+
             for (const sub of twitchSubs) {
-                const existingDbWebhook = await TwitchWebhook.findOne({
-                    where: { subscriptionId: sub.id }
-                });
+                const existingDbWebhook = dbWebhookMap.get(sub.id);
 
                 if (!existingDbWebhook) {
                     logger.info({ id: sub.id, type: sub.type }, 'Twitch Sync: Borrando suscripción huérfana (sin secreto local)');

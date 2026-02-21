@@ -53,8 +53,7 @@ export class SafeSocketEmitter {
                         event,
                         platform,
                         hasRoom: !!sockets,
-                        socketCount: sockets?.size || 0,
-                        allRooms: Array.from(io.sockets.adapter.rooms.keys()).slice(0, 10)
+                        socketCount: sockets?.size || 0
                     },
                     'SafeSocketEmitter: Verificando room del usuario'
                 );
