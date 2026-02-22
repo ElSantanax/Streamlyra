@@ -23,7 +23,7 @@ export class MessageSenderService {
     async sendMessage(request: SendMessageRequest): Promise<SendMessageResponse> {
         const { userId, message, platforms } = request;
 
-        logger.info(
+        logger.debug(
             { userId, platforms, messageLength: message.length },
             'Starting message send to multiple platforms'
         );
@@ -48,7 +48,7 @@ export class MessageSenderService {
         const results = await Promise.all(sendPromises);
         const success = results.some(r => r.success);
 
-        logger.info(
+        logger.debug(
             {
                 userId,
                 success,

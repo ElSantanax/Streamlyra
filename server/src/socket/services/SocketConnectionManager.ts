@@ -11,7 +11,6 @@ const CONNECTION_TIMEOUT_MS = 10000;
 export class SocketConnectionManager {
     private registry = new SocketRegistry();
     private lockManager = new SocketLockManager();
-    private connectedUsers = new Set<string>();
 
     constructor(private chatManager: ChatManager) {
     }
@@ -30,54 +29,50 @@ export class SocketConnectionManager {
             return;
         }
 
+        const uid = userId as string;
         try {
-            logger.debug({ userId, socketId: socket.id }, 'Iniciando identificación de usuario');
+            logger.debug({ userId: uid, socketId: socket.id }, 'Iniciando identificación de usuario');
 
-            if (this.registry.hasUser(userId as string) && this.connectedUsers.has(userId as string)) {
-                this.registry.register(socket.id, userId as string);
-                socket.join(userId as string);
+            const { isFirstSocket } = this.registry.register(socket.id, uid);
+            socket.join(uid);
 
-                logger.debug({ userId }, 'Usuario ya conectado (Hot Path), omitiendo inicialización pesada');
-                socket.emit('identified', { userId, message: 'Sesión activa restaurada' });
+            let connectionPromise = this.lockManager.getLock(uid);
+
+            if (!isFirstSocket && !connectionPromise) {
+                logger.debug({ userId: uid }, 'Usuario ya conectado (Hot Path), omitiendo inicialización pesada');
+                socket.emit('identified', { userId: uid, message: 'Sesión activa restaurada' });
                 return;
             }
 
-            const { isFirstSocket } = this.registry.register(socket.id, userId as string);
-            socket.join(userId as string);
-
-            let connectionPromise = this.lockManager.getLock(userId);
-
             if (isFirstSocket && !connectionPromise) {
-                logger.info({ userId }, 'Primer socket: Iniciando conexión a plataformas');
+                logger.info({ userId: uid }, 'Primer socket: Iniciando conexión a plataformas');
 
                 connectionPromise = (async () => {
                     try {
-                        const connectPromise = this.chatManager.connectUser(userId);
+                        const connectPromise = this.chatManager.connectUser(uid);
                         const timeoutPromise = new Promise<void>((_, reject) =>
                             setTimeout(() => reject(new Error('Connection timeout')), CONNECTION_TIMEOUT_MS)
                         );
                         await Promise.race([connectPromise, timeoutPromise]);
-                        logger.info({ userId }, 'Conexión a plataformas completada exitosamente');
+                        logger.info({ userId: uid }, 'Conexión a plataformas completada exitosamente');
                     } catch (error) {
-                        logger.error({ err: error, userId }, 'Error durante la conexión inicial a plataformas');
+                        logger.error({ err: error, userId: uid }, 'Error durante la conexión inicial a plataformas');
                         throw error;
                     } finally {
-                        this.lockManager.releaseLock(userId as string);
+                        this.lockManager.releaseLock(uid);
                     }
                 })();
 
-                this.lockManager.setLock(userId as string, connectionPromise);
+                this.lockManager.setLock(uid, connectionPromise);
             }
 
             if (connectionPromise) {
-                logger.debug({ userId, socketId: socket.id }, 'Esperando a que termine la conexión en curso...');
+                logger.debug({ userId: uid, socketId: socket.id }, 'Esperando a que termine la conexión en curso...');
                 await connectionPromise;
             }
 
-            this.connectedUsers.add(userId as string);
-
-            logger.info({ userId, socketId: socket.id }, 'Usuario identificado y verificado');
-            socket.emit('identified', { userId, message: 'Conectado a plataformas' });
+            logger.info({ userId: uid, socketId: socket.id }, 'Usuario identificado y verificado');
+            socket.emit('identified', { userId: uid, message: 'Conectado a plataformas' });
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -105,8 +100,6 @@ export class SocketConnectionManager {
 
         if (isLastSocket) {
             logger.info({ userId, socketId }, 'Último socket desconectado: Preparando limpieza');
-
-            this.connectedUsers.delete(userId);
 
             const existingLock = this.lockManager.getLock(userId);
             if (existingLock) {

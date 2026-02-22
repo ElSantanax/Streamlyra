@@ -7,7 +7,6 @@ import { config } from '../../../config';
 import { encryptionService } from '../../security/EncryptionService';
 
 class YouTubePubSubService {
-    private readonly encryptionService = encryptionService;
     private readonly HUB_URL = 'https://pubsubhubbub.appspot.com/subscribe';
     private readonly TOPIC_BASE = 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=';
     private readonly LEASE_SECONDS = 432000;
@@ -46,7 +45,7 @@ class YouTubePubSubService {
             });
 
             if (subscription && (subscription.status === 'verified' || subscription.status === 'pending')) {
-                logger.info({ userId, channelId, status: subscription.status }, 'Ya existe una suscripción activa/pendiente para este canal');
+                logger.debug({ userId, channelId, status: subscription.status }, 'Ya existe una suscripción activa/pendiente para este canal');
                 return;
             }
 
@@ -68,7 +67,7 @@ class YouTubePubSubService {
             );
 
             if (response.status === 202 || response.status === 204) {
-                const encryptedSecret = this.encryptionService.encrypt(secret);
+                const encryptedSecret = encryptionService.encrypt(secret);
                 if (subscription) {
                     await subscription.update({
                         topicUrl,
@@ -78,7 +77,7 @@ class YouTubePubSubService {
                         expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
                         registeredAt: new Date()
                     });
-                    logger.info({ userId, channelId }, 'Registro de suscripción previo actualizado a pending');
+                    logger.debug({ userId, channelId }, 'Registro de suscripción previo actualizado a pending');
                 } else {
                     await YouTubeSubscription.create({
                         userId,
@@ -90,7 +89,7 @@ class YouTubePubSubService {
                         expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
                         registeredAt: new Date()
                     });
-                    logger.info({ userId, channelId }, 'Nuevo registro de suscripción creado');
+                    logger.debug({ userId, channelId }, 'Nuevo registro de suscripción creado');
                 }
 
                 logger.info({ userId, channelId, status: response.status }, 'Suscripción a YouTube PubSubHubbub solicitada exitosamente');
@@ -164,7 +163,7 @@ class YouTubePubSubService {
                 }
             );
 
-            logger.info({ channelId }, 'Suscripción de YouTube verificada exitosamente');
+            logger.debug({ channelId }, 'Suscripción de YouTube verificada exitosamente');
         } else if (mode === 'unsubscribe') {
             await YouTubeSubscription.update(
                 { status: 'expired' },
@@ -173,7 +172,7 @@ class YouTubePubSubService {
                 }
             );
 
-            logger.info({ channelId }, 'Desuscripción de YouTube confirmada');
+            logger.debug({ channelId }, 'Desuscripción de YouTube confirmada');
         }
 
         return challenge;
@@ -210,8 +209,8 @@ class YouTubePubSubService {
             let plainSecret = subscription.secret;
             const context = `YouTubeSubscription:${subscription.id}:Renewal`;
 
-            if (this.encryptionService.isEncrypted(plainSecret)) {
-                plainSecret = this.encryptionService.decrypt(plainSecret, context);
+            if (encryptionService.isEncrypted(plainSecret)) {
+                plainSecret = encryptionService.decrypt(plainSecret, context);
             }
 
             const response = await axios.post(
@@ -232,7 +231,7 @@ class YouTubePubSubService {
             );
 
             if (response.status === 202 || response.status === 204) {
-                const encryptedSecret = this.encryptionService.encrypt(plainSecret);
+                const encryptedSecret = encryptionService.encrypt(plainSecret);
                 await subscription.update({
                     expirationDate: new Date(Date.now() + this.LEASE_SECONDS * 1000),
                     status: 'pending',

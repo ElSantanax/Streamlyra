@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import crypto from 'crypto';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { TikTokConnection } from '../../../types/tiktok.types';
 import { TikTokConnectionManager } from './TikTokConnectionManager';
@@ -9,11 +10,9 @@ import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { Connection } from '../../../models/Connection.model';
 import { retryWithIntervalAndLimit } from '../../../utils/retryWithInterval';
 import { logger } from '../../../utils/logger';
+import { TikTokPollingConfig } from '../../../config/tiktok.polling.config';
 
 export class TikTokDiscoveryManager {
-    public static readonly MAX_AUTO_ATTEMPTS = 12;
-    public static readonly AUTO_DISCOVERY_INTERVAL_MS = 15000;
-    public static readonly RECONNECTION_DELAY_MS = 5000;
 
     constructor(
         private readonly connectionManager: TikTokConnectionManager,
@@ -31,11 +30,11 @@ export class TikTokDiscoveryManager {
         };
 
         const cleanup = retryWithIntervalAndLimit(tryConnect, {
-            intervalMs: TikTokDiscoveryManager.AUTO_DISCOVERY_INTERVAL_MS,
-            maxAttempts: TikTokDiscoveryManager.MAX_AUTO_ATTEMPTS,
+            intervalMs: TikTokPollingConfig.AUTO_DISCOVERY_INTERVAL_MS,
+            maxAttempts: TikTokPollingConfig.AUTO_DISCOVERY_MAX_ATTEMPTS,
             onRetry: () => {
                 const attempt = this.stateManager.getAutoAttempts(userId);
-                logger.info({ userId, username, attempt }, `TikTok: Retrying discovery (${attempt}/${TikTokDiscoveryManager.MAX_AUTO_ATTEMPTS})`);
+                logger.info({ userId, username, attempt }, `TikTok: Retrying discovery (${attempt}/${TikTokPollingConfig.AUTO_DISCOVERY_MAX_ATTEMPTS})`);
             },
             onError: (err) => this.handleDiscoveryError(err, userId, username, io),
             onMaxAttemptsReached: () => this.handleAutoDiscoveryExhausted(userId, io)
@@ -88,7 +87,7 @@ export class TikTokDiscoveryManager {
             return;
         }
 
-        this.stateManager.setDiscoveryCleanup(userId, () => { });
+        this.stateManager.stopDiscoveryLoop(userId);
         this.stateManager.setActiveConnection(userId, tiktokConnection);
         this.stateManager.setConnecting(userId, false);
 
@@ -148,14 +147,14 @@ export class TikTokDiscoveryManager {
             if (connectionRecord) {
                 const currentUsername = connectionRecord.providerUsername.replace(/^@+/, '');
                 if (currentUsername === username) {
-                    setTimeout(onReconnect, TikTokDiscoveryManager.RECONNECTION_DELAY_MS);
+                    setTimeout(onReconnect, TikTokPollingConfig.RECONNECTION_DELAY_MS);
                 }
             }
         });
     }
 
     private generateFlowId(): string {
-        return Math.random().toString(36).substring(7);
+        return crypto.randomUUID();
     }
 
     private isFlowValid(userId: string, flowId: string): boolean {

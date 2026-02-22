@@ -7,11 +7,7 @@ import { WebhookCache } from '../../services/webhook/WebhookCache';
 import { encryptionService } from '../../services/security/EncryptionService';
 import { logger } from '../../utils/logger';
 
-/**
- * Repositorio de conexiones con encriptación transparente y caché de tokens en memoria.
- */
 export class ConnectionRepository implements IConnectionRepository {
-    private encryptionService = encryptionService;
     private cache: WebhookCache;
 
     // Caché estática para evitar desencriptaciones costosas en un mismo ciclo de ejecución
@@ -24,9 +20,6 @@ export class ConnectionRepository implements IConnectionRepository {
         this.cache = WebhookCache.getInstance();
     }
 
-    /**
-     * Desencripta tokens y gestiona la auto-migración de datos legacy a formato encriptado.
-     */
     private async decryptAndSyncConnection(connection: Connection | null, transaction?: Transaction): Promise<Connection | null> {
         if (!connection) return null;
 
@@ -43,22 +36,22 @@ export class ConnectionRepository implements IConnectionRepository {
         let plainRefreshToken = connection.refreshToken;
 
         if (connection.accessToken) {
-            if (!this.encryptionService.isEncrypted(connection.accessToken)) {
+            if (!encryptionService.isEncrypted(connection.accessToken)) {
                 needsUpdate = true;
-                connection.accessToken = this.encryptionService.encrypt(plainAccessToken);
+                connection.accessToken = encryptionService.encrypt(plainAccessToken);
                 logger.info({ context }, 'Auto-migrating legacy accessToken');
             } else {
-                plainAccessToken = this.encryptionService.decrypt(connection.accessToken, context);
+                plainAccessToken = encryptionService.decrypt(connection.accessToken, context);
             }
         }
 
         if (connection.refreshToken) {
-            if (!this.encryptionService.isEncrypted(connection.refreshToken)) {
+            if (!encryptionService.isEncrypted(connection.refreshToken)) {
                 needsUpdate = true;
-                connection.refreshToken = this.encryptionService.encrypt(plainRefreshToken);
+                connection.refreshToken = encryptionService.encrypt(plainRefreshToken);
                 logger.info({ context }, 'Auto-migrating legacy refreshToken');
             } else {
-                plainRefreshToken = this.encryptionService.decrypt(connection.refreshToken, context);
+                plainRefreshToken = encryptionService.decrypt(connection.refreshToken, context);
             }
         }
 
@@ -123,9 +116,9 @@ export class ConnectionRepository implements IConnectionRepository {
     ): Promise<Connection> {
         let connection = await Connection.findOne({ where: { provider, providerId }, transaction });
 
-        const encryptedAccess = this.encryptionService.encrypt(tokens.access_token);
+        const encryptedAccess = encryptionService.encrypt(tokens.access_token);
         const encryptedRefresh = tokens.refresh_token
-            ? this.encryptionService.encrypt(tokens.refresh_token)
+            ? encryptionService.encrypt(tokens.refresh_token)
             : undefined;
 
         if (connection) {
@@ -172,9 +165,9 @@ export class ConnectionRepository implements IConnectionRepository {
         const connection = await Connection.findByPk(connectionId, { transaction });
         if (!connection) return null;
 
-        connection.accessToken = this.encryptionService.encrypt(tokens.access_token);
+        connection.accessToken = encryptionService.encrypt(tokens.access_token);
         if (tokens.refresh_token) {
-            connection.refreshToken = this.encryptionService.encrypt(tokens.refresh_token);
+            connection.refreshToken = encryptionService.encrypt(tokens.refresh_token);
         }
         connection.expiryDate = calculateTokenExpiry(tokens.expires_in);
 

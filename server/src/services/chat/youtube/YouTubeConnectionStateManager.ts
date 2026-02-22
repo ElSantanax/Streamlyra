@@ -78,6 +78,14 @@ export class YouTubeConnectionStateManager {
         state.cleanup = cleanup;
     }
 
+    stopDiscoveryLoop(userId: string): void {
+        const state = this.states.get(userId);
+        if (state?.cleanup) {
+            state.cleanup();
+            state.cleanup = undefined;
+        }
+    }
+
     markAsConnected(userId: string): void {
         const state = this.getOrCreateState(userId);
         state.isActive = true;

@@ -138,7 +138,7 @@ export class YouTubeDiscoveryLoop {
         this.stateManager.setWaitingMode(userId);
         this.notifyStatus(io, userId, 'waiting_stream', 'Esperando directo...', false);
 
-        const STANDBY_INTERVAL = 5 * 60 * 1000;
+        const STANDBY_INTERVAL = YouTubePollingConfig.AUTO_DISCOVERY_STANDBY_INTERVAL;
         let standbyTimer: NodeJS.Timeout | null = null;
         let isStandbyStopped = false;
 

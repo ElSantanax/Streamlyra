@@ -10,11 +10,11 @@ export class TokenRefreshService {
 
     constructor(private connectionRepository: IConnectionRepository) { }
 
-    async getValidAccessToken(userId: string, platform: Platform): Promise<string | null> {
-        const connection = await this.connectionRepository.findByUserAndProvider(userId, platform);
+    async getValidAccessToken(userId: string, platform: Platform, existingConnection?: Connection): Promise<string | null> {
+        const connection = existingConnection || await this.connectionRepository.findByUserAndProvider(userId, platform);
 
         if (!connection) {
-            logger.debug({ userId, platform }, 'No connection found');
+            logger.debug({ userId, platform }, 'TokenRefreshService: No connection found');
             return null;
         }
 

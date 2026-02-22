@@ -141,9 +141,7 @@ export class YouTubeChatProvider implements ChatProvider {
             }
         }
 
-        this.stateManager.setDiscoveryCleanup(userId, () => {
-            // No cleanup needed for YouTube discovered streams at the moments
-        });
+        this.stateManager.stopDiscoveryLoop(userId);
 
         await this.connectionService.updateChatroomId(userId, 'youtube', liveChatId)
             .catch(err => logger.error({ err, userId }, 'Failed to persist YouTube chatroomId'));
@@ -177,7 +175,7 @@ export class YouTubeChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
-        logger.info({ userId }, 'YouTube: Disconnecting and cleaning state');
+        logger.debug({ userId }, 'YouTube: Disconnecting and cleaning state');
         try {
             this.stateManager.clearState(userId);
         } catch (error) {

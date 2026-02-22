@@ -5,6 +5,9 @@ import { PollingManager } from '../shared/PollingManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { config } from '../../../config';
+import { WebhookCache } from '../../webhook/WebhookCache';
+
+import { KickPollingConfig } from '../../../config/kick.polling.config';
 
 export class KickManager {
     private poller: PollingManager = new PollingManager();
@@ -29,7 +32,7 @@ export class KickManager {
 
             const isLive = !!channel.stream?.is_live;
 
-            logger.info(
+            logger.debug(
                 {
                     userId,
                     slug,
@@ -63,7 +66,7 @@ export class KickManager {
             } catch (error) {
                 logger.error({ err: error, userId }, 'Kick viewer polling error');
             }
-        }, 30000);
+        }, KickPollingConfig.VIEWER_POLLING_INTERVAL_MS);
     }
 
     stopViewerPolling(userId: string): void {
@@ -118,6 +121,8 @@ export class KickManager {
                 });
                 logger.info({ userId, broadcasterId }, 'Kick Webhooks: Nuevo webhook creado y suscrito');
             }
+
+            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('kick', broadcasterId));
         } catch (error) {
             logger.error({ err: error, userId, broadcasterId }, 'Kick Webhooks: Error crítico durante el registro');
         }
@@ -130,6 +135,8 @@ export class KickManager {
                 { where: { broadcasterId, isActive: true } }
             );
             logger.info({ broadcasterId }, 'Webhook de Kick marcado como inactivo');
+
+            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('kick', broadcasterId));
         } catch (error) {
             logger.error({ err: error, broadcasterId }, 'Error desactivando webhook de Kick');
         }

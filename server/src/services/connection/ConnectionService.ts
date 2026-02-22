@@ -37,8 +37,8 @@ export class ConnectionService {
         return this.connectionRepository.removeByUserAndProvider(userId, provider);
     }
 
-    async getValidAccessToken(userId: string, platform: Platform): Promise<string | null> {
-        return this.tokenRefreshService.getValidAccessToken(userId, platform);
+    async getValidAccessToken(userId: string, platform: Platform, existingConnection?: Connection): Promise<string | null> {
+        return this.tokenRefreshService.getValidAccessToken(userId, platform, existingConnection);
     }
 
     async forceTokenRefresh(userId: string, platform: Platform): Promise<string | null> {

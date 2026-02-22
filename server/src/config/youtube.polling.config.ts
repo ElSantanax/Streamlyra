@@ -7,6 +7,7 @@ export const YouTubePollingConfig = {
     VIEWER_POLLING_INTERVAL: 180000, // Aumentado a 3 min (métrica secundaria)
     AUTO_DISCOVERY_INTERVAL: 90000,  // 90s para cumplir "3 intentos en 3 min"
     AUTO_DISCOVERY_MAX_ATTEMPTS: 3,  // Máximo 3 intentos de búsqueda automática
+    AUTO_DISCOVERY_STANDBY_INTERVAL: 300000, // 5 minutos en modo espera
     QUOTA_PERSIST_INTERVAL_MS: 30000, // Persistir en DB cada 30 segundos
     DAILY_QUOTA_LIMIT: 10000,
     OPERATION_COSTS: {

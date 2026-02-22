@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
-import { TikTokChatEvent, TikTokGiftEvent, TikTokLikeEvent, TikTokFollowEvent, TikTokConnection } from '../../../types/tiktok.types';
+import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent, TikTokConnection } from '../../../types/tiktok.types';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { AnalyticsService } from '../../core/AnalyticsService';
@@ -36,9 +36,6 @@ export class TikTokEventListener {
 
             const normalizedMessage = this.transformer.transformGift(data);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
-        });
-
-        conn.on('like', (_data: TikTokLikeEvent) => {
         });
 
         conn.on('follow', (data: TikTokFollowEvent) => {

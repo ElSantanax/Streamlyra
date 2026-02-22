@@ -8,7 +8,6 @@ import { config } from '../../../config';
 import { encryptionService } from '../../security/EncryptionService';
 
 export class TwitchManager {
-    private encryptionService = encryptionService;
     private readonly EVENT_TYPES = [
         { type: 'channel.follow', version: '2' },
         { type: 'channel.subscribe', version: '1' },
@@ -93,7 +92,7 @@ export class TwitchManager {
             );
 
             const subscriptionId = subscription.data?.[0]?.id || null;
-            const encryptedSecret = this.encryptionService.encrypt(secret);
+            const encryptedSecret = encryptionService.encrypt(secret);
 
             if (existingWebhook) {
                 await existingWebhook.update({
@@ -144,7 +143,7 @@ export class TwitchManager {
                     }
 
                     const newSecret = TwitchWebhookService.generateSecret();
-                    const encryptedRetrySecret = this.encryptionService.encrypt(newSecret);
+                    const encryptedRetrySecret = encryptionService.encrypt(newSecret);
 
                     await new Promise(resolve => setTimeout(resolve, 3000));
 

@@ -8,11 +8,18 @@ interface CacheEntry<T> {
 export class WebhookCache {
     private static instance: WebhookCache;
     private cache: Map<string, CacheEntry<unknown>> = new Map();
-
+    private cleanupInterval: NodeJS.Timeout | null = null;
     private readonly DEFAULT_TTL = 5 * 60 * 1000;
 
     private constructor() {
-        setInterval(() => this.cleanup(), 60 * 1000);
+        this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 1000);
+    }
+
+    public destroy(): void {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
     }
 
     public static getInstance(): WebhookCache {

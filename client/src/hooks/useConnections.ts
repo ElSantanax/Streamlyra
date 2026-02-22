@@ -45,45 +45,58 @@ export const useConnections = (shouldFetch = true) => {
   }, [status, stats]);
 
   const processData = useCallback((data: MeResponse) => {
-    const newStatus: Record<string, ConnectionStatus> = {};
-    const newStats: Record<string, ConnectionStats> = {};
-    let statusChanged = false;
-    let statsChanged = false;
+    if (!data || !data.connections) return;
 
-    Object.keys(data.connections).forEach(platform => {
-      const fetched = data.connections[platform];
+    setStatus(prev => {
+      const next = { ...prev };
+      let changed = false;
 
-      newStatus[platform] = {
-        connected: fetched.connected,
-        username: fetched.username,
-        status: statusRef.current[platform]?.status,
-        statusMessage: statusRef.current[platform]?.statusMessage,
-        isLive: fetched.isLive
-      };
+      Object.keys(initialStatus).forEach(platform => {
+        const fetched = data.connections[platform];
+        if (!fetched) return;
 
-      newStats[platform] = {
-        viewers: fetched.viewers ?? 0,
-        sessionStartTime: fetched.sessionStartTime,
-        serverTime: fetched.serverTime
-      };
+        const updated: ConnectionStatus = {
+          connected: fetched.connected,
+          username: fetched.username,
+          status: prev[platform]?.status,
+          statusMessage: prev[platform]?.statusMessage,
+          isLive: fetched.isLive
+        };
 
-      if (JSON.stringify(newStatus[platform]) !== JSON.stringify(statusRef.current[platform])) {
-        statusChanged = true;
-      }
-      if (JSON.stringify(newStats[platform]) !== JSON.stringify(statsRef.current[platform])) {
-        statsChanged = true;
-      }
+        if (JSON.stringify(updated) !== JSON.stringify(prev[platform])) {
+          next[platform] = updated;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
     });
 
-    if (statusChanged) setStatus(newStatus);
-    if (statsChanged) setStats(newStats);
+    setStats(prev => {
+      const next = { ...prev };
+      let changed = false;
 
-    if (data.lastFollower) {
-      setLastFollower(data.lastFollower);
-    }
-    if (data.lastRaid) {
-      setLastRaid(data.lastRaid);
-    }
+      Object.keys(initialStatus).forEach(platform => {
+        const fetched = data.connections[platform];
+        if (!fetched) return;
+
+        const updated: ConnectionStats = {
+          viewers: fetched.viewers ?? 0,
+          sessionStartTime: fetched.sessionStartTime,
+          serverTime: fetched.serverTime
+        };
+
+        if (JSON.stringify(updated) !== JSON.stringify(prev[platform])) {
+          next[platform] = updated;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+
+    if (data.lastFollower) setLastFollower(data.lastFollower);
+    if (data.lastRaid) setLastRaid(data.lastRaid);
   }, []);
 
   const fetchConnections = useCallback(async (force = false) => {
@@ -155,7 +168,16 @@ export const useConnections = (shouldFetch = true) => {
   }, [updateStatus, updateStats]);
 
   useEffect(() => {
-    if (shouldFetch) fetchConnections();
+    if (shouldFetch) {
+      fetchConnections();
+    } else {
+      // Limpiar estado cuando se pierde la autenticación
+      setStatus(initialStatus);
+      setStats(initialStats);
+      setLastFollower(null);
+      setLastRaid(null);
+      invalidateConnectionsCache();
+    }
   }, [shouldFetch, fetchConnections]);
 
   useEffect(() => {
@@ -208,7 +230,7 @@ export const useConnections = (shouldFetch = true) => {
       socket.off('last_follower_update', onLastFollowerUpdate);
       socket.off('last_raid_update', onLastRaidUpdate);
     };
-  }, [updateStatus, updateStats, fetchConnections]);
+  }, [updateStatus, updateStats]);
 
   const updateConnection = useCallback((p: string, u: Partial<ConnectionInfo>) => {
     const { viewers, sessionStartTime, serverTime, ...statusUpdates } = u;

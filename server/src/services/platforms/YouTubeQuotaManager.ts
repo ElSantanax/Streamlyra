@@ -9,6 +9,7 @@ export class YouTubeQuotaManager {
     private isExhausted: boolean = false;
     private exhaustedUntil: number = 0;
     private initialized: boolean = false;
+    private initializationPromise: Promise<void> | null = null;
     private isDirty: boolean = false;
     private persistTimer: NodeJS.Timeout | null = null;
     private persistedUnits: number = 0;
@@ -24,10 +25,22 @@ export class YouTubeQuotaManager {
         return YouTubeQuotaManager.instance;
     }
 
-    private async initialize(): Promise<void> {
-        if (this.initialized) return;
-
+    private async ensureInitialized(): Promise<void> {
         const today = this.getTodayDate();
+
+        if (!this.initialized) {
+            if (!this.initializationPromise) {
+                this.initializationPromise = this.initialize(today);
+            }
+            await this.initializationPromise;
+        }
+
+        if (this.lastResetDate !== today) {
+            await this.checkAndResetDaily(today);
+        }
+    }
+
+    private async initialize(today: string): Promise<void> {
         const quota = await YouTubeQuota.findOne({ where: { date: today } });
 
         if (quota) {
@@ -35,6 +48,7 @@ export class YouTubeQuotaManager {
             this.persistedUnits = quota.unitsUsed;
             this.isExhausted = quota.isExhausted;
             this.exhaustedUntil = quota.exhaustedUntil ? quota.exhaustedUntil.getTime() : 0;
+            this.lastResetDate = today;
 
             logger.info({
                 date: today,
@@ -50,10 +64,12 @@ export class YouTubeQuotaManager {
                 lastReset: new Date()
             });
 
+            this.lastResetDate = today;
             logger.info({ date: today }, 'Nuevo registro de cuota de YouTube creado');
         }
 
         this.initialized = true;
+        this.initializationPromise = null;
     }
 
     private async persistState(): Promise<void> {
@@ -94,8 +110,7 @@ export class YouTubeQuotaManager {
     }
 
     public async hasQuota(requestedUnits: number = 1): Promise<boolean> {
-        await this.initialize();
-        await this.checkAndResetDaily();
+        await this.ensureInitialized();
 
         const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
         if (isDev) return true;
@@ -111,8 +126,7 @@ export class YouTubeQuotaManager {
     }
 
     public async consumeQuota(units: number): Promise<void> {
-        await this.initialize();
-        await this.checkAndResetDaily();
+        await this.ensureInitialized();
 
         this.unitsUsed += units;
 
@@ -130,7 +144,7 @@ export class YouTubeQuotaManager {
     }
 
     public async markAsExhausted(isDailyLimit: boolean = false): Promise<void> {
-        await this.initialize();
+        await this.ensureInitialized();
 
         const blockDuration = isDailyLimit ? 60 * 60 * 1000 : 15 * 60 * 1000;
         this.isExhausted = true;
@@ -149,8 +163,7 @@ export class YouTubeQuotaManager {
     }
 
     public async getStatus() {
-        await this.initialize();
-        await this.checkAndResetDaily();
+        await this.ensureInitialized();
 
         const percentUsed = (this.unitsUsed / YouTubePollingConfig.DAILY_QUOTA_LIMIT) * 100;
         return {
@@ -182,9 +195,7 @@ export class YouTubeQuotaManager {
         return new Date().toISOString().split('T')[0];
     }
 
-    private async checkAndResetDaily(): Promise<void> {
-        const today = this.getTodayDate();
-
+    private async checkAndResetDaily(today: string): Promise<void> {
         if (this.lastResetDate !== today) {
             logger.info({ previousUnits: this.unitsUsed, date: today }, 'Restableciendo cuota diaria de YouTube');
 

@@ -2,6 +2,12 @@ import { UserAnalytics } from '../../models/UserAnalytics.model';
 import { logger } from '../../utils/logger';
 
 export class AnalyticsService {
+    private static readonly EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+    private static isExpired(at: Date): boolean {
+        return (Date.now() - new Date(at).getTime()) > this.EXPIRATION_MS;
+    }
+
     /**
      * Actualiza el último seguidor de un usuario (Upsert)
      */
@@ -9,7 +15,6 @@ export class AnalyticsService {
         try {
             const now = new Date();
 
-            // Usamos una consulta UPSERT nativa (ON DUPLICATE KEY UPDATE). Atomicidad real y 50% de operaciones de red mitigadas.
             const [analytics] = await UserAnalytics.upsert({
                 userId,
                 lastFollowerName: followerName,
@@ -36,11 +41,7 @@ export class AnalyticsService {
                 return null;
             }
 
-            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-            const now = new Date();
-            const elapsed = now.getTime() - new Date(analytics.lastFollowerAt).getTime();
-
-            if (elapsed > SEVEN_DAYS_MS) {
+            if (this.isExpired(analytics.lastFollowerAt)) {
                 logger.debug({ userId }, 'El último seguidor ha expirado (más de 7 días)');
                 return null;
             }
@@ -90,11 +91,7 @@ export class AnalyticsService {
                 return null;
             }
 
-            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-            const now = new Date();
-            const elapsed = now.getTime() - new Date(analytics.lastRaidAt).getTime();
-
-            if (elapsed > SEVEN_DAYS_MS) {
+            if (this.isExpired(analytics.lastRaidAt)) {
                 logger.debug({ userId }, 'El último raid ha expirado (más de 7 días)');
                 return null;
             }

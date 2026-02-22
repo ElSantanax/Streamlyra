@@ -41,7 +41,7 @@ export class StreamSessionManager {
             }
         } else {
             session.livePlatforms.delete(platform);
-            if (session.livePlatforms.size === 0) {
+            if (session.livePlatforms.size === 0 && session.startTime) {
                 logger.info({ userId, platform }, 'Stream session ended (all platforms offline)');
                 session.startTime = null;
             }

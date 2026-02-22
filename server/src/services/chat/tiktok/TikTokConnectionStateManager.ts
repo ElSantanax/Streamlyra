@@ -80,6 +80,14 @@ export class TikTokConnectionStateManager {
         state.cleanup = cleanup;
     }
 
+    stopDiscoveryLoop(userId: string): void {
+        const state = this.states.get(userId);
+        if (state?.cleanup) {
+            state.cleanup();
+            state.cleanup = undefined;
+        }
+    }
+
     getFlowId(userId: string): string | undefined {
         return this.states.get(userId)?.flowId;
     }

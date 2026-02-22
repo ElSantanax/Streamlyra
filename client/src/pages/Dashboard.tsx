@@ -10,7 +10,6 @@ import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
 import { toast } from '../lib/notifications';
-import { ConnectionsProvider } from '../context/ConnectionsProvider';
 import { useConnectionsStatus } from '../hooks/useConnectionsContext';
 import type { PlatformKey } from '../constants/platforms';
 
@@ -71,10 +70,12 @@ const DashboardContent = () => {
         if (chatAreaRef.current) {
             toast.setTargetElement(chatAreaRef.current);
         }
+        refetchConnections(true);
+
         return () => {
             toast.setTargetElement(null);
         };
-    }, []);
+    }, [refetchConnections]);
 
     // Proteger ruta - usar useEffect para navegación
     useEffect(() => {
@@ -209,11 +210,7 @@ const DashboardContent = () => {
 };
 
 const Dashboard = () => {
-    return (
-        <ConnectionsProvider>
-            <DashboardContent />
-        </ConnectionsProvider>
-    );
+    return <DashboardContent />;
 };
 
 export default Dashboard;

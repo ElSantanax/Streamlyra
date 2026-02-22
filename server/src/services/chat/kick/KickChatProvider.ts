@@ -4,8 +4,6 @@ import { Server } from 'socket.io';
 import { ChatProvider } from '../shared/ChatProvider';
 import { KickManager } from './KickManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
-import { Connection } from '../../../models/Connection.model';
-import { User } from '../../../models/User.model';
 import { ConnectionService } from '../../connection/ConnectionService';
 import { logger } from '../../../utils/logger';
 
@@ -33,18 +31,15 @@ export class KickChatProvider implements ChatProvider {
         }
 
         try {
-            const connection = await Connection.findOne({
-                where: { userId: String(userId), provider: 'kick' },
-                include: [User]
-            });
+            const connection = await this.connectionService.getAccount(userId, 'kick');
 
-            if (!connection || !connection.user) {
+            if (!connection) {
                 logger.debug({ userId }, 'No Kick connection found');
                 this.connectingUsers.delete(userId);
                 return;
             }
 
-            const accessToken = await this.connectionService.getValidAccessToken(userId, 'kick');
+            const accessToken = await this.connectionService.getValidAccessToken(userId, 'kick', connection);
 
             if (!accessToken) {
                 logger.error({ userId }, 'No Kick access token');
@@ -73,7 +68,7 @@ export class KickChatProvider implements ChatProvider {
             logger.info({ slug, userId }, 'Connected to Kick chat');
             SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', channelInfo.isLive);
 
-            void this.manager.registerWebhook(userId, accessToken, broadcasterId);
+            await this.manager.registerWebhook(userId, accessToken, broadcasterId);
 
         } catch (error) {
             logger.error({ err: error, userId }, 'Error connecting to Kick');
@@ -91,9 +86,7 @@ export class KickChatProvider implements ChatProvider {
 
         // Obtener el broadcasterId del usuario para desactivar el webhook
         try {
-            const connection = await Connection.findOne({
-                where: { userId: String(userId), provider: 'kick' }
-            });
+            const connection = await this.connectionService.getAccount(userId, 'kick');
 
             if (connection?.providerId) {
                 logger.debug({ userId, broadcasterId: connection.providerId }, 'KickChatProvider: Deactivating webhook');
@@ -111,9 +104,7 @@ export class KickChatProvider implements ChatProvider {
     async onAccountDeleted(userId: string): Promise<void> {
         logger.info({ userId }, 'KickChatProvider: Permanent account deletion cleanup');
         try {
-            const connection = await Connection.findOne({
-                where: { userId: String(userId), provider: 'kick' }
-            });
+            const connection = await this.connectionService.getAccount(userId, 'kick');
 
             if (connection?.providerId) {
                 // Desactivar webhook y limpiar registros

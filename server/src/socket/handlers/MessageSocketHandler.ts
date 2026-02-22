@@ -11,7 +11,7 @@ export class MessageSocketHandler {
 
     setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
         socket.on('send_message', async (payload: unknown) => {
-            logger.info({ socketId: socket.id }, 'Received send_message event');
+            logger.debug({ socketId: socket.id }, 'Received send_message event');
 
             try {
                 if (!isValidSendMessagePayload(payload)) {
@@ -37,14 +37,12 @@ export class MessageSocketHandler {
                     return;
                 }
 
-                const sessionUserId = authenticatedUserId as string;
-
-                logger.debug({ socketId: socket.id, userId: sessionUserId }, 'Authorization validation passed');
+                logger.debug({ socketId: socket.id, userId: authenticatedUserId }, 'Authorization validation passed');
 
                 const filteredPlatforms = platforms.filter(p => p !== 'tiktok');
 
-                logger.info(
-                    { userId: sessionUserId, platforms: filteredPlatforms, messageLength: message.length },
+                logger.debug(
+                    { userId: authenticatedUserId, platforms: filteredPlatforms, messageLength: message.length },
                     'Processing send_message request'
                 );
 
@@ -72,10 +70,10 @@ export class MessageSocketHandler {
                     status: 'sending'
                 };
 
-                io.to(sessionUserId).emit('chat_message', chatMessage);
+                io.to(authenticatedUserId).emit('chat_message', chatMessage);
 
                 const result = await this.messageSenderService.sendMessage({
-                    userId: sessionUserId,
+                    userId: authenticatedUserId,
                     message,
                     platforms: filteredPlatforms
                 });
@@ -101,7 +99,7 @@ export class MessageSocketHandler {
                     if (r.messageId) platformIds[r.platform] = r.messageId;
                 });
 
-                io.to(sessionUserId).emit('message_status_update', {
+                io.to(authenticatedUserId).emit('message_status_update', {
                     messageId,
                     status: finalStatus,
                     errorMessage,
@@ -110,8 +108,8 @@ export class MessageSocketHandler {
 
                 socket.emit('message_sent_result', result);
 
-                logger.info(
-                    { userId: sessionUserId, success: result.success, platformCount: result.results.length },
+                logger.debug(
+                    { userId: authenticatedUserId, success: result.success, platformCount: result.results.length },
                     'Message send completed'
                 );
 
