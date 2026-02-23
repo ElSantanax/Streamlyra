@@ -3,7 +3,7 @@ import Logo from '../common/Logo';
 
 const Footer = () => {
     return (
-        <footer className="border-t border-gray-200 dark:border-surface-border py-8 md:py-12 px-6 lg:px-40 bg-white dark:bg-background-dark text-slate-600 dark:text-slate-400">
+        <footer className="border-t border-surface-border py-8 md:py-12 px-6 lg:px-40 bg-background-dark text-slate-400">
             <div className="mx-auto flex max-w-300 flex-col md:flex-row justify-between items-center gap-8">
                 <Link to="/" className="flex items-center gap-3">
                     <Logo textSize="text-lg" />

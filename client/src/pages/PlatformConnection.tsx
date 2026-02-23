@@ -42,23 +42,23 @@ const PlatformConnection = () => {
 
                 <LocalErrorBoundary section="Platform Connection Form">
                     {/* Centered Card */}
-                    <div className="relative z-10 w-full max-w-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-800 shadow-2xl rounded-3xl overflow-hidden">
+                    <div className="relative z-10 w-full max-w-lg bg-card-dark border border-gray-800 shadow-2xl rounded-3xl overflow-hidden">
                         {/* Card Header */}
                         <div className="px-8 pt-12 pb-6 text-center flex flex-col items-center">
-                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mb-2">
+                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-200 mb-2">
                                 Conecta tu comunidad
                             </h1>
-                            <p className="text-slate-600 dark:text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
+                            <p className="text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
                                 Unifica todos tus chats de streaming en una sola pantalla
                             </p>
                         </div>
 
                         {/* Content Container */}
                         <div className="p-8 pt-0 flex flex-col gap-8">
-                            <div className="w-full border-t border-gray-100 dark:border-gray-800/50"></div>
+                            <div className="w-full border-t border-gray-800/50"></div>
 
                             <div className="text-center">
-                                <p className="text-slate-600 dark:text-slate-300 font-medium mb-6">
+                                <p className="text-slate-300 font-medium mb-6">
                                     Para comenzar, conecta tu cuenta principal de Twitch:
                                 </p>
 
@@ -73,7 +73,7 @@ const PlatformConnection = () => {
                             </div>
 
                             <div className="text-center">
-                                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                                <p className="text-slate-400 text-sm leading-relaxed">
                                     Tu cuenta de Twitch será tu identidad en Streamlyra. Podrás agregar YouTube, Kick y TikTok después.
                                 </p>
                             </div>
@@ -85,7 +85,7 @@ const PlatformConnection = () => {
 
                 {/* Bottom Help */}
                 <div className="mt-8 text-center relative z-10">
-                    <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 text-sm font-medium">
+                    <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-medium">
                         <span>¿Necesitas ayuda? <a className="text-primary hover:underline font-bold" href="#">Lee la guía</a></span>
                         <FaQuestionCircle className="text-primary" />
                     </div>

@@ -1,93 +1,49 @@
 import { FaTwitch, FaYoutube, FaTiktok } from "react-icons/fa";
 import { SiKick } from "react-icons/si";
-import { MdDashboard, MdChat, MdAnalytics } from "react-icons/md";
 
 const Hero = () => {
     return (
-        <section className="relative pt-12 pb-16 md:pt-16 md:pb-24 px-6 lg:px-40 overflow-hidden">
+        <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 px-6 lg:px-8 overflow-hidden flex flex-col items-center">
             {/* Background Gradient Effect */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-                <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-250 h-150 bg-primary/10 rounded-full blur-[120px]"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 flex justify-center pointer-events-none">
+                <div className="absolute top-[-20%] w-200 h-150 bg-primary/20 rounded-full blur-[120px]"></div>
             </div>
 
-            <div className="mx-auto flex max-w-300 flex-col lg:flex-row items-center gap-12">
-                <div className="flex flex-col gap-8 flex-1 text-center lg:text-left">
-                    <h1 className="text-slate-900 dark:text-white text-5xl md:text-7xl font-black leading-[1.1] tracking-[-0.04em] font-display">
-                        Un chat.
-                        <span className="text-primary"> Múltiples plataformas.</span>
-                    </h1>
-                    <div className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-150 mx-auto lg:mx-0 font-body flex flex-wrap items-center justify-center lg:justify-start gap-x-2 gap-y-1">
-                        <span className="inline-flex items-center gap-1.5 text-[#772CE8] dark:text-[#A970FF] font-semibold">
-                            <FaTwitch className="size-5" /> Twitch,
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-[#CD201F] dark:text-[#FF4B4B] font-semibold">
-                            <FaYoutube className="size-5" /> YouTube,
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-[#1A7A08] dark:text-[#53FC18] font-semibold">
-                            <SiKick className="size-5" /> Kick
-                        </span>
-                        <span>y</span>
-                        <span className="inline-flex items-center gap-1.5 text-slate-900 dark:text-white font-semibold">
-                            <FaTiktok className="size-5" /> TikTok
-                        </span>
+            <div className="mx-auto flex flex-col items-center text-center max-w-4xl gap-8 z-10">
+                <h1 className="text-white text-5xl md:text-7xl font-black leading-tight tracking-tight font-display">
+                    Un chat.
+                    <br />
+                    <span className="text-primary">Múltiples plataformas.</span>
+                </h1>
+
+                <p className="text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-2xl font-body flex gap-3 flex-wrap justify-center">
+                    <span className="text-[#A970FF] font-semibold inline-flex items-center gap-1"><FaTwitch className="size-5" /> Twitch</span>
+                    <span className="text-[#FF4B4B] font-semibold inline-flex items-center gap-1"><FaYoutube className="size-5" /> YouTube</span>
+                    <span className="text-[#53FC18] font-semibold inline-flex items-center gap-1"><SiKick className="size-5" /> Kick</span>
+                    <span className="text-white font-semibold inline-flex items-center gap-1"><FaTiktok className="size-5" /> TikTok</span>
+                </p>
+            </div>
+
+            <div className="mt-16 md:mt-24 w-full max-w-6xl mx-auto relative z-10 px-4">
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] bg-[#0A0A0A]/50 backdrop-blur-sm">
+                    {/* Mockup Top Bar like Kiro */}
+                    <div className="h-10 bg-black/80 border-b border-white/10 flex items-center px-4 gap-2 backdrop-blur-md">
+                        <div className="size-3 rounded-full bg-[#FF5F56] border border-[#E0443E]"></div>
+                        <div className="size-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]"></div>
+                        <div className="size-3 rounded-full bg-[#27C93F] border border-[#1AAB29]"></div>
+                    </div>
+                    {/* Image */}
+                    <div className="w-full bg-surface-dark overflow-hidden">
+                        <img
+                            src="/hero.png"
+                            alt="Streamlyra Dashboard Preview"
+                            className="w-full h-auto object-cover block"
+                        />
                     </div>
                 </div>
 
-                <div className="flex-1 w-full max-w-150 lg:max-w-none relative">
-                    <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-2xl bg-white/70 dark:bg-surface-dark/70 backdrop-blur-xl group">
-                        <div className="absolute inset-0 bg-linear-to-tr from-primary/10 to-transparent pointer-events-none"></div>
-                        <div className="w-full aspect-4/3 bg-white dark:bg-surface-dark flex flex-col">
-                            {/* Mockup Top Bar */}
-                            <div className="h-8 bg-gray-100 dark:bg-black/40 border-b border-gray-200 dark:border-white/5 flex items-center px-4 gap-2">
-                                <div className="size-2 rounded-full bg-red-500/50"></div>
-                                <div className="size-2 rounded-full bg-yellow-500/50"></div>
-                                <div className="size-2 rounded-full bg-green-500/50"></div>
-                            </div>
-                            {/* Mockup Content */}
-                            <div className="flex flex-1 overflow-hidden">
-                                <div className="w-12 border-r border-gray-200 dark:border-white/5 flex flex-col items-center py-4 gap-4">
-                                    <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                                        <MdDashboard className="text-sm" />
-                                    </div>
-                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                        <MdChat className="text-sm" />
-                                    </div>
-                                    <div className="size-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                        <MdAnalytics className="text-sm" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 p-4 flex flex-col gap-4">
-                                    <div className="h-8 w-1/3 bg-gray-100 dark:bg-white/5 rounded-lg"></div>
-                                    <div className="grid grid-cols-2 gap-4 flex-1">
-                                        <div className="rounded-lg bg-gray-100 dark:bg-white/5 p-3 flex flex-col gap-2">
-                                            <div className="flex justify-between items-center">
-                                                <div className="h-3 w-12 bg-primary/30 rounded"></div>
-                                                <div className="size-2 rounded-full bg-primary"></div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="h-2 w-full bg-gray-200 dark:bg-white/5 rounded"></div>
-                                                <div className="h-2 w-4/5 bg-gray-200 dark:bg-white/5 rounded"></div>
-                                            </div>
-                                        </div>
-                                        <div className="rounded-lg bg-gray-100 dark:bg-white/5 p-3 flex flex-col gap-2">
-                                            <div className="flex justify-between items-center">
-                                                <div className="h-3 w-12 bg-red-500/30 rounded"></div>
-                                                <div className="size-2 rounded-full bg-red-500"></div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="h-2 w-full bg-gray-200 dark:bg-white/5 rounded"></div>
-                                                <div className="h-2 w-4/5 bg-gray-200 dark:bg-white/5 rounded"></div>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2 rounded-lg bg-primary/5 border border-primary/20 p-4">
-                                            <div className="h-20 bg-linear-to-r from-primary/20 to-transparent rounded"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Background glow for the image */}
+                <div className="absolute -inset-4 bg-primary/20 blur-[100px] -z-10 rounded-[3rem] opacity-0 md:opacity-70"></div>
             </div>
         </section>
     );

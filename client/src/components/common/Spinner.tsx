@@ -23,7 +23,7 @@ const Spinner = ({
         <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
             <div className={`${sizeClasses[size]} border-primary/20 border-t-primary rounded-full animate-spin`}></div>
             {text && (
-                <p className="text-sm font-medium animate-pulse text-slate-600 dark:text-slate-400">
+                <p className="text-sm font-medium animate-pulse text-slate-400">
                     {text}
                 </p>
             )}
@@ -32,7 +32,7 @@ const Spinner = ({
 
     if (fullScreen) {
         return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-background-dark text-white font-display">
                 {spinner}
             </div>
         );

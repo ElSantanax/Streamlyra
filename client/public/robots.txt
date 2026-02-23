@@ -4,4 +4,4 @@ Disallow: /auth/
 Disallow: /dashboard
 Disallow: /connect
 
-Sitemap: https://streamlyra.com/sitemap.xml
+Sitemap: https://streamlyra.vercel.app/sitemap.xml

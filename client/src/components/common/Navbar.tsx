@@ -60,7 +60,7 @@ const Navbar = () => {
 
     return (
         <>
-            <header className="sticky top-0 z-50 w-full border-b border-solid border-gray-200 dark:border-surface-border bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-40 py-3">
+            <header className="sticky top-0 z-50 w-full border-b border-solid border-surface-border bg-background-dark/80 backdrop-blur-md px-6 lg:px-40 py-3">
                 <div className="mx-auto flex max-w-300 items-center justify-between whitespace-nowrap">
                     <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-80 relative z-50">
                         <Logo textSize="text-xl" />
@@ -69,7 +69,7 @@ const Navbar = () => {
                     <div className="flex items-center gap-4 md:hidden">
                         <button
                             onClick={toggleMenu}
-                            className="p-2 text-slate-600 dark:text-white/80 hover:text-primary transition-colors relative z-50"
+                            className="p-2 text-white/80 hover:text-primary transition-colors relative z-50"
                             aria-label="Menu"
                         >
                             {isMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
@@ -81,7 +81,7 @@ const Navbar = () => {
                             {navLinks}
                         </nav>
 
-                        <div className="h-4 w-px bg-gray-200 dark:bg-surface-border hidden sm:block"></div>
+                        <div className="h-4 w-px bg-surface-border hidden sm:block"></div>
 
                         <div className="flex items-center gap-6">
                             <button

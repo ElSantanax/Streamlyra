@@ -13,23 +13,23 @@ export const UserBadge: FC<UserBadgeProps> = ({ type, isYouTube = false, classNa
             label: isYouTube ? 'Miembro' : 'Sub',
             Icon: FaStar,
             color: isYouTube
-                ? 'bg-[#00E5FF]/10 text-[#00E5FF] dark:bg-[#00E5FF]/15 dark:text-[#00E5FF]'
-                : 'bg-[#772CE8]/10 text-[#772CE8] dark:bg-[#A970FF]/15 dark:text-[#A970FF]'
+                ? 'bg-[#00E5FF]/15 text-[#00E5FF]'
+                : 'bg-[#A970FF]/15 text-[#A970FF]'
         },
         mod: {
             label: 'MOD',
             Icon: FaShieldAlt,
-            color: 'bg-[#00AD03]/10 text-[#00AD03] dark:bg-[#00AD03]/15 dark:text-[#00AD03]'
+            color: 'bg-[#00AD03]/15 text-[#00AD03]'
         },
         vip: {
             label: isYouTube ? 'Verificado' : 'VIP',
             Icon: isYouTube ? FaCheckCircle : FaGem,
-            color: 'bg-[#FF4081]/10 text-[#FF4081] dark:bg-[#FF4081]/15 dark:text-[#FF4081]'
+            color: 'bg-[#FF4081]/15 text-[#FF4081]'
         },
         streamer: {
             label: 'Streamer',
             Icon: FaCrown,
-            color: 'bg-[#FF0000]/10 text-[#FF0000] dark:bg-[#FF0000]/15 dark:text-[#FF0000]'
+            color: 'bg-[#FF0000]/15 text-[#FF0000]'
         }
     };
 
