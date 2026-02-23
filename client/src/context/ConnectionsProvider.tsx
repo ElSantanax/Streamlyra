@@ -1,35 +1,27 @@
-import { useMemo, useRef, useEffect, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useConnections } from '../hooks/useConnections';
 import { useAuth } from '../hooks/useAuth';
 import {
     ConnectionsStatusContext,
-    ConnectionsStatsContext,
-    ConnectionsContext
+    ConnectionsStatsContext
 } from '../hooks/useConnectionsContext';
-import type { ConnectionInfo, ConnectionStats } from '../types';
+import type { ConnectionStats } from '../types';
 
 export const ConnectionsProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
-    const connectionsRef = useRef<Record<string, ConnectionInfo>>({});
 
     const {
-        connections,        // Legacy
         connectionsStatus,  // Optimized
         connectionsStats,   // Optimized
         lastFollower,       // Último seguidor
         lastRaid,           // Último raid
-        updateConnection,
+        updateStats,
         disconnectPlatform,
         refetch: refetchConnections,
         searchStream,
         isLoading: isLoadingConnections,
         error: connectionsError
     } = useConnections(isAuthenticated);
-
-    // Sincronizar la ref para getConnectedPlatforms
-    useEffect(() => {
-        connectionsRef.current = connections;
-    }, [connections]);
 
     // Hash estructural
     const connectionHash = useMemo(() => {
@@ -66,8 +58,8 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
     ]);
 
     const updateConnectionStats = useCallback((p: string, u: Partial<ConnectionStats>) => {
-        updateConnection(p, u);
-    }, [updateConnection]);
+        updateStats(p, u);
+    }, [updateStats]);
 
     // 2. Valor para STATS (Frecuente)
     const statsValue = useMemo(() => ({
@@ -77,19 +69,10 @@ export const ConnectionsProvider = ({ children }: { children: React.ReactNode })
         lastRaid
     }), [connectionsStats, updateConnectionStats, lastFollower, lastRaid]);
 
-    // 3. Valor LEGADO (Cambia siempre)
-    const legacyValue = useMemo(() => ({
-        ...statusValue,
-        connections,
-        updateConnection
-    }), [statusValue, connections, updateConnection]);
-
     return (
         <ConnectionsStatusContext.Provider value={statusValue}>
             <ConnectionsStatsContext.Provider value={statsValue}>
-                <ConnectionsContext.Provider value={legacyValue}>
-                    {children}
-                </ConnectionsContext.Provider>
+                {children}
             </ConnectionsStatsContext.Provider>
         </ConnectionsStatusContext.Provider>
     );

@@ -4,7 +4,6 @@ import { TwitchWebhookService } from '../../services/chat/twitch/TwitchWebhookSe
 import { TwitchWebhook } from '../../models/TwitchWebhook.model';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
-import { WebhookCache } from '../../services/webhook/WebhookCache';
 import { RequestWithWebhookData, validateTimestamp } from './utils';
 import { encryptionService } from '../../services/security/EncryptionService';
 
@@ -63,45 +62,21 @@ export const validateTwitchWebhook = async (
             throw new AppError('Missing broadcaster ID in payload', 400);
         }
 
-        // Búsqueda en Caché Multinivel
-        let dbWebhookData: TwitchWebhook | null = null;
-        const cache = WebhookCache.getInstance();
+        // Consulta directa a la DB para validar el registro
+        const orFilters: Record<string, unknown>[] = [];
+        if (subscriptionId) orFilters.push({ subscriptionId });
 
-        if (subscriptionId) {
-            dbWebhookData = cache.get<TwitchWebhook>(WebhookCache.keys.twitchSub(subscriptionId));
-        }
+        const fallback: Record<string, unknown> = {
+            broadcasterId,
+            status: { [Op.in]: ['enabled', 'verification_pending', 'revoked'] }
+        };
+        if (type) fallback.type = type;
+        orFilters.push(fallback);
 
-        if (!dbWebhookData) {
-            const legacyKey = WebhookCache.keys.webhook('twitch', broadcasterId, type) + ':full';
-            dbWebhookData = cache.get<TwitchWebhook>(legacyKey);
-        }
-
-        // Fallback a DB y actualización de caché
-        if (!dbWebhookData) {
-            const orFilters: Record<string, unknown>[] = [];
-            if (subscriptionId) orFilters.push({ subscriptionId });
-
-            const fallback: Record<string, unknown> = {
-                broadcasterId,
-                status: { [Op.in]: ['enabled', 'verification_pending', 'revoked'] }
-            };
-            if (type) fallback.type = type;
-            orFilters.push(fallback);
-
-            dbWebhookData = await TwitchWebhook.findOne({
-                where: { [Op.or]: orFilters },
-                order: [['createdAt', 'DESC']]
-            });
-
-            if (dbWebhookData) {
-                if (dbWebhookData.subscriptionId) {
-                    cache.set(WebhookCache.keys.twitchSub(dbWebhookData.subscriptionId), dbWebhookData);
-                }
-                const legacyKey = WebhookCache.keys.webhook('twitch', broadcasterId, dbWebhookData.type);
-                cache.set(legacyKey + ':full', dbWebhookData);
-                cache.set(legacyKey, dbWebhookData.status === 'enabled');
-            }
-        }
+        const dbWebhookData = await TwitchWebhook.findOne({
+            where: { [Op.or]: orFilters },
+            order: [['createdAt', 'DESC']]
+        });
 
         if (!dbWebhookData) {
             throw new AppError('Webhook not registered', 404);

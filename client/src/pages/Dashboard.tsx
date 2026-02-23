@@ -70,7 +70,7 @@ const DashboardContent = () => {
         if (chatAreaRef.current) {
             toast.setTargetElement(chatAreaRef.current);
         }
-        refetchConnections(true);
+        refetchConnections(false);
 
         return () => {
             toast.setTargetElement(null);

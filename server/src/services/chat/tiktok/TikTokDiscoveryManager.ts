@@ -7,7 +7,7 @@ import { TikTokConnectionStateManager } from './TikTokConnectionStateManager';
 import { TikTokErrorHandler } from './TikTokErrorHandler';
 import { TikTokEventListener } from './TikTokEventListener';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
-import { Connection } from '../../../models/Connection.model';
+import { ConnectionService } from '../../connection/ConnectionService';
 import { retryWithIntervalAndLimit } from '../../../utils/retryWithInterval';
 import { logger } from '../../../utils/logger';
 import { TikTokPollingConfig } from '../../../config/tiktok.polling.config';
@@ -18,7 +18,8 @@ export class TikTokDiscoveryManager {
         private readonly connectionManager: TikTokConnectionManager,
         private readonly stateManager: TikTokConnectionStateManager,
         private readonly errorHandler: TikTokErrorHandler,
-        private readonly eventListener: TikTokEventListener
+        private readonly eventListener: TikTokEventListener,
+        private readonly connectionService: ConnectionService
     ) { }
 
     async setupAutoDiscovery(userId: string, username: string, io: Server, onReconnect: () => void): Promise<void> {
@@ -140,11 +141,9 @@ export class TikTokDiscoveryManager {
             logger.info({ userId }, 'TikTok: Connection lost');
             this.stateManager.removeActiveConnection(userId);
 
-            const connectionRecord = await Connection.findOne({
-                where: { userId: String(userId), provider: 'tiktok' }
-            });
+            const connectionRecord = await this.connectionService.getAccount(userId, 'tiktok');
 
-            if (connectionRecord) {
+            if (connectionRecord?.providerUsername) {
                 const currentUsername = connectionRecord.providerUsername.replace(/^@+/, '');
                 if (currentUsername === username) {
                     setTimeout(onReconnect, TikTokPollingConfig.RECONNECTION_DELAY_MS);
@@ -167,9 +166,7 @@ export class TikTokDiscoveryManager {
         flowId: string,
         expectedUsername: string
     ): Promise<boolean> {
-        const currentConnection = await Connection.findOne({
-            where: { userId: String(userId), provider: 'tiktok' }
-        });
+        const currentConnection = await this.connectionService.getAccount(userId, 'tiktok');
 
         const currentBoundUsername = currentConnection?.providerUsername
             ? currentConnection.providerUsername.replace(/^@+/, '')

@@ -61,12 +61,12 @@ export const ConnectionItem = memo(({
                                 ) : (
                                     <span className="text-xs text-green-400">Conectado</span>
                                 )}
-                                {viewers && (
+                                {isLive && (
                                     <>
                                         <span className="text-[10px] text-gray-600">•</span>
                                         <div className="flex items-center gap-1 text-gray-400">
                                             <MdOutlineVisibility size={12} />
-                                            <span className="text-xs">{viewers}</span>
+                                            <span className="text-xs">{viewers || '0'}</span>
                                         </div>
                                     </>
                                 )}

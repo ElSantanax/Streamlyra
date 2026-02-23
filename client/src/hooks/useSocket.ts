@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { socket } from '../services/socket';
 import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionStatus } from '../types';
 
-
 interface UseSocketOptions {
   userId?: string;
   onChatMessage?: (message: ChatMessage) => void;
@@ -140,6 +139,7 @@ export const useSocket = ({
         }
 
         if (m.platform && !connectionsRef.current[m.platform]?.connected) {
+          console.warn(`[Socket] Mensaje omitido: ${m.platform} no está conectado en el cliente`, m);
           return;
         }
         onChatMessageRef.current?.(m);

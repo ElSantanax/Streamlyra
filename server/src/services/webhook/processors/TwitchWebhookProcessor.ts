@@ -11,17 +11,14 @@ import {
 import { TwitchEventTransformer } from '../../chat/transformers/TwitchEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
-import { WebhookCache } from '../WebhookCache';
 import { AnalyticsService } from '../../core/AnalyticsService';
 
 export class TwitchWebhookProcessor {
 
     private transformer: TwitchEventTransformer;
-    private cache: WebhookCache;
 
     constructor(private io: Server) {
         this.transformer = new TwitchEventTransformer();
-        this.cache = WebhookCache.getInstance();
     }
 
     async process(payload: TwitchEventSubNotificationPayload, eventType: string): Promise<void> {
@@ -37,40 +34,24 @@ export class TwitchWebhookProcessor {
                 return;
             }
 
-            const connCacheKey = WebhookCache.keys.connection('twitch', broadcasterId);
-            let connection = this.cache.get<Connection>(connCacheKey);
-
-            if (!connection) {
-                connection = await Connection.findOne({
-                    where: { provider: 'twitch', providerId: broadcasterId }
-                });
-
-                if (connection) {
-                    this.cache.set(connCacheKey, connection);
-                }
-            }
+            const connection = await Connection.findOne({
+                where: { provider: 'twitch', providerId: broadcasterId }
+            });
 
             if (!connection) {
                 logger.debug({ broadcasterId }, 'No connection found for Twitch broadcaster');
                 return;
             }
 
-            const whCacheKey = WebhookCache.keys.webhook('twitch', broadcasterId, eventType);
-            let isEnabled = this.cache.get<boolean>(whCacheKey);
+            const webhook = await TwitchWebhook.findOne({
+                where: {
+                    broadcasterId: broadcasterId,
+                    type: eventType,
+                    status: 'enabled'
+                }
+            });
 
-            if (isEnabled === null) {
-                const webhook = await TwitchWebhook.findOne({
-                    where: {
-                        broadcasterId: broadcasterId,
-                        type: eventType,
-                        status: 'enabled'
-                    }
-                });
-                isEnabled = !!webhook;
-                this.cache.set(whCacheKey, isEnabled);
-            }
-
-            if (!isEnabled) {
+            if (!webhook) {
                 logger.debug(
                     { userId: connection.userId, broadcasterId, eventType },
                     'Twitch webhook ignorado: Suscripción no activa en DB para este tipo de evento'

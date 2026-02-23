@@ -5,7 +5,7 @@ import { ConnectionService } from './connection/ConnectionService';
 import { TwitchService, YouTubeService, KickService } from './platforms';
 import { MessageSenderService } from './message/MessageSenderService';
 import { ChatManager } from './core/ChatManager';
-import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider } from './chat';
+import { TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider, ChatProvider, TwitchManager } from './chat';
 import { UserService } from './user/UserService';
 import { AuthDTOBuilder } from './auth/AuthDTOBuilder';
 import { PlatformAuthHandler } from './auth/core/PlatformAuthHandler';
@@ -39,10 +39,11 @@ export function createContainer(io: Server) {
     );
 
     // Chat Management
-    const twitchChatProvider = new TwitchChatProvider(connectionService);
+    const twitchManager = new TwitchManager();
+    const twitchChatProvider = new TwitchChatProvider(connectionService, twitchManager);
     const youtubeChatProvider = new YouTubeChatProvider(connectionService);
     const kickChatProvider = new KickChatProvider(connectionService);
-    const tiktokChatProvider = new TikTokChatProvider();
+    const tiktokChatProvider = new TikTokChatProvider(connectionService);
 
     const chatManager = new ChatManager(io, connectionService);
     chatManager.setProviders(new Map<Platform, ChatProvider>([
@@ -83,6 +84,7 @@ export function createContainer(io: Server) {
         connectionService,
         youtubeService,
         authController,
-        webhookController
+        webhookController,
+        twitchManager
     };
 }

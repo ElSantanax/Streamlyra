@@ -9,7 +9,6 @@ import { youtubePubSubService } from './YouTubePubSubService';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 import { YouTubeDiscoveryLoop } from './YouTubeDiscoveryLoop';
 import { YouTubeBroadcast } from '../../../types/youtube.types';
-import { WebhookCache } from '../../webhook/WebhookCache';
 
 export class YouTubeChatProvider implements ChatProvider {
     private stateManager: YouTubeConnectionStateManager;
@@ -196,8 +195,6 @@ export class YouTubeChatProvider implements ChatProvider {
 
                 await youtubePubSubService.unsubscribe(userId, channelId)
                     .catch((e: unknown) => logger.error({ err: e, channelId }, 'Failed to unsubscribe from YouTube PubSub'));
-
-                WebhookCache.getInstance().invalidate(WebhookCache.keys.connection('youtube', channelId));
 
                 await YouTubeStreamContext.destroy({
                     where: { channelId }

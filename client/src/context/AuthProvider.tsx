@@ -110,7 +110,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (!isProtected) {
-      if (status !== 'unauthenticated') setStatus('unauthenticated');
+      // Si hay usuario, mantenemos el estado de autenticado aunque esté en una ruta pública
+      if (user && status !== 'authenticated') {
+        setStatus('authenticated');
+      } else if (!user && status !== 'unauthenticated') {
+        setStatus('unauthenticated');
+      }
       lastBootstrapPathRef.current = null;
       return;
     }

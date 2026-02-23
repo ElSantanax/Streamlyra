@@ -82,7 +82,13 @@ export class KickService extends BasePlatformService {
                 headers: KickService.getAuthHeaders(accessToken),
                 timeout: KickService.TIMEOUT
             });
-            return userResponse.data.data[0];
+
+            const users = userResponse.data?.data;
+            if (!users || users.length === 0) {
+                throw new Error('Kick API response missing user profile data.');
+            }
+
+            return users[0];
         } catch (error) {
             this.handleKickApiError(error, 'fetchUserProfile');
         }
@@ -112,7 +118,7 @@ export class KickService extends BasePlatformService {
         }
     }
 
-    static async subscribeToWebhook(accessToken: string, broadcasterUserId: string) {
+    static async subscribeToWebhook(accessToken: string, broadcasterUserId: string, callbackUrl: string) {
         try {
             return await axios.post(
                 KickService.EVENTS_URL,
@@ -126,7 +132,8 @@ export class KickService extends BasePlatformService {
                         { name: 'channel.subscription.gifts', version: 1 },
                         { name: 'livestream.status.updated', version: 1 }
                     ],
-                    method: 'webhook'
+                    method: 'webhook',
+                    webhook_url: callbackUrl
                 },
                 {
                     headers: KickService.getAuthHeaders(accessToken),

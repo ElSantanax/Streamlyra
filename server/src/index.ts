@@ -1,8 +1,14 @@
 /** Punto de entrada principal del servidor */
 
-import server, { connectToDatabase } from './server';
+import server, { connectToDatabase, gracefulShutdown } from './server';
 import { logger } from './utils/logger';
 import { config } from './config';
+import { emitConfigWarnings } from './config/validation';
+
+emitConfigWarnings(logger);
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 async function startServer() {
     try {

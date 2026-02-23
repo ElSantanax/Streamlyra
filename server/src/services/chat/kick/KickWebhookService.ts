@@ -9,21 +9,33 @@ export class KickWebhookService {
     private static publicKey: string | null = null;
     private static lastKeyFetch: number = 0;
 
+    private static fetchPromise: Promise<string | null> | null = null;
+
     private static async getPublicKey(): Promise<string | null> {
         const now = Date.now();
-        if (this.publicKey && (now - this.lastKeyFetch < 3600000)) {
+        if (this.publicKey && (now - this.lastKeyFetch < 600000)) {
             return this.publicKey;
         }
 
-        try {
-            const response = await axios.get<KickApiResponse<{ public_key: string }>>('https://api.kick.com/public/v1/public-key', { timeout: 10000 });
-            this.publicKey = response.data.data.public_key;
-            this.lastKeyFetch = now;
-            return this.publicKey;
-        } catch (error) {
-            logger.error({ err: error }, 'Error obteniendo clave pública de Kick');
-            return null;
+        if (this.fetchPromise) {
+            return this.fetchPromise;
         }
+
+        this.fetchPromise = (async () => {
+            try {
+                const response = await axios.get<KickApiResponse<{ public_key: string }>>('https://api.kick.com/public/v1/public-key', { timeout: 10000 });
+                this.publicKey = response.data.data.public_key;
+                this.lastKeyFetch = Date.now();
+                return this.publicKey;
+            } catch (error) {
+                logger.error({ err: error }, 'Error obteniendo clave pública de Kick');
+                return null;
+            } finally {
+                this.fetchPromise = null;
+            }
+        })();
+
+        return this.fetchPromise;
     }
 
     static async verifySignature(
@@ -44,20 +56,26 @@ export class KickWebhookService {
 
         try {
             const signaturePayload = `${messageId}.${timestamp}.${rawBody}`;
-            logger.debug(
-                {
-                    messageId,
-                    timestamp,
-                    payloadPart: signaturePayload.substring(0, 50) + '...'
-                },
-                'Verificando firma de Kick'
-            );
 
             const verifier = crypto.createVerify('RSA-SHA256');
             verifier.update(signaturePayload);
             verifier.end();
 
-            const isValid = verifier.verify(key, Buffer.from(signature, 'base64'));
+            let isValid = verifier.verify(key, Buffer.from(signature, 'base64'));
+
+            // Si no es válido, intentamos refrescar la llave una vez si no es muy reciente (evitar loop infinito)
+            if (!isValid && (Date.now() - this.lastKeyFetch > 60000)) {
+                logger.debug({ messageId }, 'Firma inválida, reintentando tras refrescar llave pública de Kick');
+                this.publicKey = null; // Forzar refresco
+                const newKey = await this.getPublicKey();
+                if (newKey) {
+                    const retryVerifier = crypto.createVerify('RSA-SHA256');
+                    retryVerifier.update(signaturePayload);
+                    retryVerifier.end();
+                    isValid = retryVerifier.verify(newKey, Buffer.from(signature, 'base64'));
+                }
+            }
+
             logger.debug({ isValid, messageId }, 'Resultado de verificación de firma de Kick');
             return isValid;
         } catch (error) {

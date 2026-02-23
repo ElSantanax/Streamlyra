@@ -7,6 +7,7 @@ import { TikTokConnectionStateManager } from './TikTokConnectionStateManager';
 import { TikTokErrorHandler } from './TikTokErrorHandler';
 import { TikTokDiscoveryManager } from './TikTokDiscoveryManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
+import { ConnectionService } from '../../connection/ConnectionService';
 import { Connection } from '../../../models/Connection.model';
 import { logger } from '../../../utils/logger';
 
@@ -17,7 +18,7 @@ export class TikTokChatProvider implements ChatProvider {
     private readonly errorHandler: TikTokErrorHandler;
     private readonly discovery: TikTokDiscoveryManager;
 
-    constructor() {
+    constructor(private readonly connectionService: ConnectionService) {
         const transformer = new TikTokEventTransformer();
         this.connectionManager = new TikTokConnectionManager();
         this.eventListener = new TikTokEventListener(transformer);
@@ -28,7 +29,8 @@ export class TikTokChatProvider implements ChatProvider {
             this.connectionManager,
             this.stateManager,
             this.errorHandler,
-            this.eventListener
+            this.eventListener,
+            this.connectionService
         );
     }
 
@@ -103,9 +105,7 @@ export class TikTokChatProvider implements ChatProvider {
     }
 
     private async getConnection(userId: string): Promise<Connection | null> {
-        return await Connection.findOne({
-            where: { userId: String(userId), provider: 'tiktok' }
-        });
+        return this.connectionService.getAccount(userId, 'tiktok');
     }
 
     private normalizeUsername(username: string): string {

@@ -1,17 +1,12 @@
 import { logger } from '../../../utils/logger';
 import { YouTubePubSubParser } from '../../chat/youtube/YouTubePubSubParser';
 import { Connection } from '../../../models/Connection.model';
-import { WebhookCache } from '../WebhookCache';
 import { ChatManager } from '../../core/ChatManager';
 
 export class YouTubeWebhookProcessor {
-    private cache: WebhookCache;
-
     constructor(
         private chatManager: ChatManager
-    ) {
-        this.cache = WebhookCache.getInstance();
-    }
+    ) { }
 
     async process(payload: { channelId: string, xmlBody: string }): Promise<void> {
         const { channelId, xmlBody } = payload;
@@ -51,16 +46,8 @@ export class YouTubeWebhookProcessor {
     }
 
     private async getChannelConnections(channelId: string): Promise<Connection[]> {
-        const cacheKey = WebhookCache.keys.connection('youtube', channelId);
-        let connections = this.cache.get<Connection[]>(cacheKey);
-
-        if (!connections) {
-            connections = await Connection.findAll({
-                where: { provider: 'youtube', providerId: channelId }
-            });
-            this.cache.set(cacheKey, connections);
-        }
-
-        return connections;
+        return await Connection.findAll({
+            where: { provider: 'youtube', providerId: channelId }
+        });
     }
 }

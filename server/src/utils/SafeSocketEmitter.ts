@@ -2,11 +2,9 @@
 
 import { Server } from 'socket.io';
 import { logger } from './logger';
-import { sentMessageCache } from './SentMessageCache';
 import { config } from '../config';
 import { StreamSessionManager } from '../services/core/StreamSessionManager';
-import { MessageBatcher } from './MessageBatcher';
-import { NormalizedChatMessage } from '../services/chat/transformers/EventTransformer';
+import { sentMessageCache } from './SentMessageCache';
 
 interface EmitOptions {
     userId: string;
@@ -112,24 +110,18 @@ export class SafeSocketEmitter {
                 isOwner: msg?.isOwner,
                 messagePreview: typeof msg?.message === 'string' ? msg.message.substring(0, 50) : undefined
             },
-            'SafeSocketEmitter: emitChatMessage called'
+            'SafeSocketEmitter: emitChatMessage - Emisión inmediata activada'
         );
 
-        // Prevenir eco: Si es mensaje del streamer Y fue enviado desde el dashboard
         if (msg && typeof msg === 'object' && msg.isOwner && typeof msg.message === 'string') {
             if (sentMessageCache.wasSentFromDashboard(userId, msg.message)) {
-                logger.debug(
-                    { userId, platform, message: msg.message.substring(0, 30) },
-                    'SafeSocketEmitter: Eco detectado y bloqueado (mensaje proveniente del Dashboard)'
-                );
+                logger.debug({ userId, platform, message: msg.message }, 'SafeSocketEmitter: Echo prevented');
                 return false;
             }
         }
 
-        // Delegar al Batcher para optimización
-        const batcher = MessageBatcher.getInstance();
-        batcher.setIo(io);
-        batcher.add(userId, message as NormalizedChatMessage);
+        // EMISIÓN DIRECTA: Sin batching, sin esperas.
+        io.to(userId).emit('chat_message', message);
 
         return true;
     }

@@ -3,14 +3,13 @@ import { Server } from 'socket.io';
 import { config } from './config';
 import { logger } from './utils/logger';
 
-import { connectToDatabase } from './config/database';
+import { connectToDatabase } from './config/db';
 import { createContainer } from './services/container';
 import { createApp } from './app';
 
 import { setupSocketHandlers } from './socket/socket.handler';
 import { YouTubeSubscriptionRenewer } from './services/cron/YouTubeSubscriptionRenewer';
-import { MessageBatcher } from './utils/MessageBatcher';
-import { TwitchManager } from './services/chat';
+import { ConnectionRepository } from './repositories/implementations/ConnectionRepository';
 
 const io = new Server({
     cors: {
@@ -27,7 +26,8 @@ const {
     connectionService,
     youtubeService,
     authController,
-    webhookController
+    webhookController,
+    twitchManager
 } = container;
 
 const app = createApp(authController, webhookController);
@@ -37,14 +37,26 @@ io.attach(server);
 
 setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService);
 
-MessageBatcher.getInstance().setIo(io);
-
 const youtubeSubscriptionRenewer = new YouTubeSubscriptionRenewer();
 youtubeSubscriptionRenewer.start();
 
+let isShuttingDown = false;
+
+export function gracefulShutdown(): void {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    logger.info('Iniciando cierre ordenado del servidor');
+    youtubeSubscriptionRenewer.stop();
+    ConnectionRepository.stopCleanup();
+    server.close(() => {
+        logger.info('Servidor HTTP cerrado');
+        process.exit(0);
+    });
+}
+
 (async () => {
     try {
-        const twitchManager = new TwitchManager();
         await twitchManager.syncSubscriptionsOnStartup();
     } catch (err) {
         logger.error({ err }, 'Twitch Startup: Error fatal en la sincronización inicial');

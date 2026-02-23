@@ -61,7 +61,9 @@ export class KickChatProvider implements ChatProvider {
             const { broadcasterId, slug } = channelInfo;
             logger.info({ slug, broadcasterId, userId }, 'Kick channel found');
 
-            await this.disconnect(userId);
+            // Solo detener el polling previo al reconectar, sin desactivar el webhook
+            // en BD (evita la ventana donde mensajes son descartados silenciosamente)
+            this.manager.stopViewerPolling(userId);
 
             this.manager.startViewerPolling(userId, accessToken, io);
 
@@ -79,26 +81,11 @@ export class KickChatProvider implements ChatProvider {
     }
 
     async disconnect(userId: string): Promise<void> {
-        logger.info({ userId }, 'KickChatProvider: Starting disconnect');
+        logger.info({ userId }, 'KickChatProvider: Deteniendo polling de espectadores');
 
         this.manager.stopViewerPolling(userId);
-        logger.debug({ userId }, 'KickChatProvider: Viewer polling stopped');
 
-        // Obtener el broadcasterId del usuario para desactivar el webhook
-        try {
-            const connection = await this.connectionService.getAccount(userId, 'kick');
-
-            if (connection?.providerId) {
-                logger.debug({ userId, broadcasterId: connection.providerId }, 'KickChatProvider: Deactivating webhook');
-                await this.manager.deactivateWebhook(connection.providerId);
-            } else {
-                logger.debug({ userId }, 'KickChatProvider: No connection found, skipping webhook deactivation');
-            }
-        } catch (error) {
-            logger.error({ err: error, userId }, 'Error desactivando webhook de Kick');
-        }
-
-        logger.info({ userId }, 'KickChatProvider: Disconnect completed');
+        logger.info({ userId }, 'KickChatProvider: Disconnect completed (webhook remains active)');
     }
 
     async onAccountDeleted(userId: string): Promise<void> {

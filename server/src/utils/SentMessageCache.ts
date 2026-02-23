@@ -1,6 +1,6 @@
 export class SentMessageCache {
     private cache = new Map<string, Map<string, NodeJS.Timeout>>();
-    private readonly TTL_MS = 8000;
+    private readonly TTL_MS = 4000;
     private readonly MAX_ENTRIES = 1000;
 
     markAsSent(userId: string, message: string): void {

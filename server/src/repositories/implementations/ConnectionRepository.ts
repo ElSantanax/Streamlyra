@@ -3,21 +3,50 @@ import { IConnectionRepository } from '../interfaces/IConnectionRepository';
 import { AuthTokens } from '../../types/index';
 import { calculateTokenExpiry } from '../../utils/tokenUtils';
 import { Transaction } from 'sequelize';
-import { WebhookCache } from '../../services/webhook/WebhookCache';
 import { encryptionService } from '../../services/security/EncryptionService';
 import { logger } from '../../utils/logger';
 
-export class ConnectionRepository implements IConnectionRepository {
-    private cache: WebhookCache;
+const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+const TOKEN_CACHE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
-    // Caché estática para evitar desencriptaciones costosas en un mismo ciclo de ejecución
-    private static tokenCache = new Map<string, {
-        accessToken: string,
-        refreshToken: string | null,
-    }>();
+interface TokenCacheEntry {
+    accessToken: string;
+    refreshToken: string | null;
+    expiry: number;
+}
+
+export class ConnectionRepository implements IConnectionRepository {
+    private static tokenCache = new Map<string, TokenCacheEntry>();
+    private static cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
     constructor() {
-        this.cache = WebhookCache.getInstance();
+        if (!ConnectionRepository.cleanupInterval) {
+            ConnectionRepository.cleanupInterval = setInterval(
+                () => ConnectionRepository.evictExpiredTokens(),
+                TOKEN_CACHE_CLEANUP_INTERVAL_MS
+            );
+        }
+    }
+
+    static stopCleanup(): void {
+        if (ConnectionRepository.cleanupInterval) {
+            clearInterval(ConnectionRepository.cleanupInterval);
+            ConnectionRepository.cleanupInterval = null;
+        }
+    }
+
+    private static evictExpiredTokens(): void {
+        const now = Date.now();
+        let evicted = 0;
+        for (const [id, entry] of ConnectionRepository.tokenCache.entries()) {
+            if (now > entry.expiry) {
+                ConnectionRepository.tokenCache.delete(id);
+                evicted++;
+            }
+        }
+        if (evicted > 0) {
+            logger.debug({ evicted }, 'TokenCache: entradas expiradas eliminadas');
+        }
     }
 
     private async decryptAndSyncConnection(connection: Connection | null, transaction?: Transaction): Promise<Connection | null> {
@@ -25,9 +54,13 @@ export class ConnectionRepository implements IConnectionRepository {
 
         const cached = ConnectionRepository.tokenCache.get(connection.id);
         if (cached) {
-            connection.accessToken = cached.accessToken;
-            if (cached.refreshToken) connection.refreshToken = cached.refreshToken;
-            return connection;
+            if (Date.now() > cached.expiry) {
+                ConnectionRepository.tokenCache.delete(connection.id);
+            } else {
+                connection.accessToken = cached.accessToken;
+                if (cached.refreshToken) connection.refreshToken = cached.refreshToken;
+                return connection;
+            }
         }
 
         let needsUpdate = false;
@@ -66,7 +99,8 @@ export class ConnectionRepository implements IConnectionRepository {
 
         ConnectionRepository.tokenCache.set(connection.id, {
             accessToken: plainAccessToken,
-            refreshToken: plainRefreshToken
+            refreshToken: plainRefreshToken,
+            expiry: Date.now() + TOKEN_CACHE_TTL_MS
         });
 
         connection.accessToken = plainAccessToken;
@@ -148,14 +182,13 @@ export class ConnectionRepository implements IConnectionRepository {
         connection.accessToken = tokens.access_token;
         if (tokens.refresh_token) connection.refreshToken = tokens.refresh_token;
 
-        this.cache.invalidate(WebhookCache.keys.connection(provider, providerId));
+        // Invalidation removed
         return connection;
     }
 
     async removeByUserAndProvider(userId: string, provider: string, transaction?: Transaction): Promise<number> {
         const connection = await Connection.findOne({ where: { userId, provider }, transaction });
         if (connection) {
-            this.cache.invalidate(WebhookCache.keys.connection(provider, connection.providerId));
             ConnectionRepository.tokenCache.delete(connection.id);
         }
         return Connection.destroy({ where: { userId, provider }, transaction });

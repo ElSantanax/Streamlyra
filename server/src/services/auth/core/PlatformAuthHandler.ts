@@ -6,7 +6,6 @@ import { logger } from '../../../utils/logger';
 import db from '../../../config/db';
 import { UniqueConstraintError } from 'sequelize';
 import { IConnectionRepository } from '../../../repositories/interfaces/IConnectionRepository';
-import { WebhookCache } from '../../webhook/WebhookCache';
 
 /**
  * PlatformAuthHandler: Maneja la autenticación y vinculación de perfiles de plataformas externas.
@@ -50,9 +49,6 @@ export class PlatformAuthHandler {
                                 tokens,
                                 transaction
                             );
-
-                            // Invalidar caché de webhooks para este proveedor/ID para asegurar que se reconozca de inmediato
-                            WebhookCache.getInstance().invalidate(WebhookCache.keys.connection(profile.provider, profile.providerId));
                         } catch (error) {
                             if (error instanceof UniqueConstraintError || (error instanceof Error && (error as { code?: string }).code === '23505')) {
                                 logger.info('Recovered from unique constraint error in connection creation');

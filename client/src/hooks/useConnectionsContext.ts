@@ -1,5 +1,5 @@
 import { useContext, createContext } from 'react';
-import type { ConnectionStatus, ConnectionStats, ConnectionInfo, LastFollower, LastRaid } from '../types';
+import type { ConnectionStatus, ConnectionStats, LastFollower, LastRaid } from '../types';
 import type { PlatformKey } from '../constants/platforms';
 
 export interface ConnectionsStatusContextValue {
@@ -20,14 +20,8 @@ export interface ConnectionsStatsContextValue {
     lastRaid: LastRaid | null;
 }
 
-export interface LegacyConnectionsContextValue extends ConnectionsStatusContextValue {
-    connections: Record<string, ConnectionInfo>;
-    updateConnection: (platform: string, updates: Partial<ConnectionInfo>) => void;
-}
-
 export const ConnectionsStatusContext = createContext<ConnectionsStatusContextValue | undefined>(undefined);
 export const ConnectionsStatsContext = createContext<ConnectionsStatsContextValue | undefined>(undefined);
-export const ConnectionsContext = createContext<LegacyConnectionsContextValue | undefined>(undefined);
 
 export const useConnectionsStatus = () => {
     const ctx = useContext(ConnectionsStatusContext);
@@ -38,11 +32,5 @@ export const useConnectionsStatus = () => {
 export const useConnectionsStats = () => {
     const ctx = useContext(ConnectionsStatsContext);
     if (!ctx) throw new Error('useConnectionsStats debe usarse dentro de <ConnectionsProvider>');
-    return ctx;
-};
-
-export const useConnectionsContext = () => {
-    const ctx = useContext(ConnectionsContext);
-    if (!ctx) throw new Error('useConnectionsContext debe usarse dentro de <ConnectionsProvider>');
     return ctx;
 };

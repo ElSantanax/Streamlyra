@@ -20,11 +20,11 @@ export class TwitchChatProvider implements ChatProvider {
     private eventListener: TwitchEventListener;
     private twitchManager: TwitchManager;
 
-    constructor(connectionService: ConnectionService) {
+    constructor(connectionService: ConnectionService, twitchManager: TwitchManager) {
         this.transformer = new TwitchEventTransformer();
         this.connectionManager = new TwitchConnectionManager(connectionService);
         this.eventListener = new TwitchEventListener(this.transformer);
-        this.twitchManager = new TwitchManager();
+        this.twitchManager = twitchManager;
     }
 
     async connect(userId: string, io: Server): Promise<void> {

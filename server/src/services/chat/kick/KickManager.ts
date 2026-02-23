@@ -5,7 +5,6 @@ import { PollingManager } from '../shared/PollingManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { config } from '../../../config';
-import { WebhookCache } from '../../webhook/WebhookCache';
 
 import { KickPollingConfig } from '../../../config/kick.polling.config';
 
@@ -100,7 +99,7 @@ export class KickManager {
                 'Kick Webhooks: Suscribiendo/Actualizando webhook en la plataforma'
             );
 
-            await KickService.subscribeToWebhook(accessToken, broadcasterId);
+            await KickService.subscribeToWebhook(accessToken, broadcasterId, callbackUrl);
 
             if (existingWebhook) {
                 await existingWebhook.update({
@@ -121,8 +120,6 @@ export class KickManager {
                 });
                 logger.info({ userId, broadcasterId }, 'Kick Webhooks: Nuevo webhook creado y suscrito');
             }
-
-            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('kick', broadcasterId));
         } catch (error) {
             logger.error({ err: error, userId, broadcasterId }, 'Kick Webhooks: Error crítico durante el registro');
         }
@@ -135,8 +132,6 @@ export class KickManager {
                 { where: { broadcasterId, isActive: true } }
             );
             logger.info({ broadcasterId }, 'Webhook de Kick marcado como inactivo');
-
-            WebhookCache.getInstance().invalidate(WebhookCache.keys.webhook('kick', broadcasterId));
         } catch (error) {
             logger.error({ err: error, broadcasterId }, 'Error desactivando webhook de Kick');
         }

@@ -1,5 +1,6 @@
 import { Sequelize } from "sequelize-typescript";
 import { config } from "./index";
+import { logger } from "../utils/logger";
 import { User } from "../models/User.model";
 import { Connection } from "../models/Connection.model";
 import { UserAnalytics } from "../models/UserAnalytics.model";
@@ -20,5 +21,29 @@ const db = new Sequelize(config.databaseUrl, {
         idle: 20000       // Tiempo máximo (ms) que una conexión puede estar idle antes de ser liberada
     }
 });
+
+export async function connectToDatabase(retries = 5, interval = 5000): Promise<void> {
+    while (retries > 0) {
+        try {
+            await db.authenticate();
+            await db.sync();
+            logger.info('Conexión exitosa a la base de datos.');
+            return;
+        } catch (error) {
+            retries--;
+            logger.error(
+                { err: error, remainingRetries: retries },
+                `Error al conectar a la base de datos. Reintentando en ${interval / 1000}s...`
+            );
+
+            if (retries === 0) {
+                logger.fatal('No se pudo establecer conexión con la base de datos tras varios intentos. Saliendo...');
+                process.exit(1);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, interval));
+        }
+    }
+}
 
 export default db;

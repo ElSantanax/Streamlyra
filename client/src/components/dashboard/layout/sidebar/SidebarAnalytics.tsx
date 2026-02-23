@@ -11,13 +11,18 @@ export const SidebarAnalytics = memo(() => {
     const { connectionsStatus } = useConnectionsStatus();
     const { connectionsStats, lastFollower, lastRaid } = useConnectionsStats();
 
-    // 1. Calcular espectadores totales
-    const totalViewers = useMemo(
-        () => Object.values(connectionsStats).reduce((acc, curr: { viewers?: number }) => acc + (curr.viewers || 0), 0),
-        [connectionsStats]
-    );
+    // 1. Calcular espectadores totales (solo de plataformas en vivo)
+    const totalViewers = useMemo(() => {
+        return Object.keys(connectionsStats).reduce((acc, platform) => {
+            // Solo sumar si la plataforma está marcada como en vivo
+            if (connectionsStatus[platform]?.isLive) {
+                return acc + (connectionsStats[platform].viewers || 0);
+            }
+            return acc;
+        }, 0);
+    }, [connectionsStats, connectionsStatus]);
 
-    // 2. Calcular tiempo al aire
+    // 2. Calcular tiempo al aire de forma robusta
     const timerData = useMemo(() => {
         const activePlatforms = Object.keys(connectionsStatus).filter(p => connectionsStatus[p].isLive);
         if (activePlatforms.length === 0) return { sessionStartTime: undefined, latestServerTime: undefined };
@@ -29,11 +34,19 @@ export const SidebarAnalytics = memo(() => {
         const serverTimes = activePlatforms
             .map(p => connectionsStats[p]?.serverTime)
             .filter((s): s is string => !!s)
-            .map(s => new Date(s).getTime());
+            .map(s => new Date(s).getTime())
+            .filter(t => !isNaN(t)); // Evitar que NaNs rompan Math.max
+
+        if (serverTimes.length === 0) {
+            return {
+                sessionStartTime: starts.length > 0 ? starts[0] : undefined,
+                latestServerTime: undefined
+            };
+        }
 
         return {
             sessionStartTime: starts.length > 0 ? starts[0] : undefined,
-            latestServerTime: serverTimes.length > 0 ? new Date(Math.max(...serverTimes)).toISOString() : undefined
+            latestServerTime: new Date(Math.max(...serverTimes)).toISOString()
         };
     }, [connectionsStatus, connectionsStats]);
 

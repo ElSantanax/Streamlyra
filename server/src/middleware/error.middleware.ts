@@ -6,7 +6,6 @@ import { logger } from '../utils/logger';
 interface ErrorResponse {
     error: string;
     stack?: string;
-    details?: unknown;
 }
 
 /**

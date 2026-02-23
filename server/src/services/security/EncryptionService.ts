@@ -6,6 +6,8 @@ import { logger } from '../../utils/logger';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 
+const ENCRYPTED_PATTERN = /^[0-9a-fA-F]{32}:[0-9a-fA-F]{32}:[0-9a-fA-F]*$/;
+
 export class EncryptionService {
     private readonly key: Buffer;
 
@@ -33,7 +35,7 @@ export class EncryptionService {
 
     public isEncrypted(text: string): boolean {
         if (!text) return false;
-        return text.split(':').length === 3;
+        return ENCRYPTED_PATTERN.test(text);
     }
 
     public decrypt(text: string, context?: string): string {

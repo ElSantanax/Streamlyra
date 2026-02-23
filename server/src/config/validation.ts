@@ -42,12 +42,14 @@ export function validateConfig(): void {
         );
     }
 
-    if (process.env.NODE_ENV === 'production' && process.env.KICK_WEBHOOK_SKIP_SIGNATURE === 'true') {
-        console.warn('ADVERTENCIA DE SEGURIDAD: KICK_WEBHOOK_SKIP_SIGNATURE está en true en producción. La verificación de firmas webhooks se forzará a activada por seguridad.');
-    }
-
     const encryptionKey = process.env.ENCRYPTION_KEY || '';
     if (encryptionKey && !/^[0-9a-fA-F]{64}$/.test(encryptionKey)) {
         throw new Error('Invalid ENCRYPTION_KEY. Must be a 64-character hex string (32 bytes).');
+    }
+}
+
+export function emitConfigWarnings(log: { warn: (msgOrObj: string | object, msg?: string) => void }): void {
+    if (process.env.NODE_ENV === 'production' && process.env.KICK_WEBHOOK_SKIP_SIGNATURE === 'true') {
+        log.warn('ADVERTENCIA DE SEGURIDAD: KICK_WEBHOOK_SKIP_SIGNATURE está en true en producción. La verificación de firmas webhooks se forzará a activada por seguridad.');
     }
 }

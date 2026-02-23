@@ -1,4 +1,4 @@
-import { useMemo, memo } from 'react';
+import { useMemo, memo, useCallback } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import type { PlatformKey } from '../../../../constants/platforms';
 import { formatViewers } from '../../../../lib/formatters';
@@ -12,38 +12,86 @@ interface SidebarConnectionsProps {
     onSearchStream?: (platform: PlatformKey) => void;
 }
 
+const ConnectedPlatformItem = memo(({
+    platformKey,
+    isConnected,
+    isLive,
+    viewers,
+    statusMessage,
+    platformStatus,
+    onDisconnect,
+    onSearchStream,
+    searchStream
+}: {
+    platformKey: PlatformKey,
+    isConnected: boolean,
+    isLive: boolean,
+    viewers?: number,
+    statusMessage?: string,
+    platformStatus?: string,
+    onDisconnect: (p: PlatformKey) => void,
+    onSearchStream?: (p: PlatformKey) => void,
+    searchStream: (p: PlatformKey) => void
+}) => {
+    // Callbacks estables
+    const handleDisconnect = useCallback(() => {
+        onDisconnect(platformKey);
+    }, [onDisconnect, platformKey]);
+
+    const handleSearch = useCallback(() => {
+        (onSearchStream || searchStream)?.(platformKey);
+    }, [onSearchStream, searchStream, platformKey]);
+
+    return (
+        <ConnectionItem
+            platformKey={platformKey}
+            status={(platformStatus || (isConnected ? 'connected' : 'disconnected')) as 'connected' | 'disconnected' | 'connecting' | 'waiting_stream' | 'error'}
+            viewers={viewers !== undefined ? formatViewers(viewers) : undefined}
+            statusMessage={statusMessage}
+            isLive={isLive}
+            onDisconnect={handleDisconnect}
+            onSearchStream={handleSearch}
+        />
+    );
+});
+
+ConnectedPlatformItem.displayName = 'ConnectedPlatformItem';
+
 export const SidebarConnections = memo(({
     onAddPlatform,
     onDisconnect,
     onSearchStream
 }: SidebarConnectionsProps) => {
-    const { connectionsStatus, searchStream, isLoadingConnections } = useConnectionsStatus();
+    // Consumimos ambos contextos aquí
+    const { connectionsStatus, isLoadingConnections, searchStream } = useConnectionsStatus();
     const { connectionsStats } = useConnectionsStats();
 
     const activePlatforms = useMemo(() => {
         return Object.keys(connectionsStatus).filter(p =>
             connectionsStatus[p].connected ||
             ['connecting', 'error', 'waiting_stream'].includes(connectionsStatus[p].status || '')
-        );
+        ) as PlatformKey[];
     }, [connectionsStatus]);
 
     return (
         <SidebarSection title="Conexiones">
             {activePlatforms.length > 0 ? (
                 activePlatforms.map((key) => {
-                    const s = connectionsStatus[key];
-                    const st = connectionsStats[key];
+                    const status = connectionsStatus[key];
+                    const stats = connectionsStats[key];
 
                     return (
-                        <ConnectionItem
+                        <ConnectedPlatformItem
                             key={key}
-                            platformKey={key as PlatformKey}
-                            status={s.status || (s.connected ? 'connected' : 'disconnected')}
-                            viewers={st.viewers !== undefined ? formatViewers(st.viewers) : undefined}
-                            statusMessage={s.statusMessage}
-                            isLive={s.isLive}
-                            onDisconnect={() => onDisconnect(key as PlatformKey)}
-                            onSearchStream={() => (onSearchStream || searchStream)?.(key as PlatformKey)}
+                            platformKey={key}
+                            isConnected={status.connected}
+                            isLive={status.isLive || false}
+                            viewers={stats?.viewers}
+                            statusMessage={status.statusMessage}
+                            platformStatus={status.status}
+                            onDisconnect={onDisconnect}
+                            onSearchStream={onSearchStream}
+                            searchStream={searchStream}
                         />
                     );
                 })
@@ -53,7 +101,7 @@ export const SidebarConnections = memo(({
                 </div>
             )}
 
-            {activePlatforms.length < Object.keys(connectionsStatus).length && (
+            {!isLoadingConnections && activePlatforms.length < Object.keys(connectionsStatus).length && (
                 <button
                     onClick={onAddPlatform}
                     className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group"
