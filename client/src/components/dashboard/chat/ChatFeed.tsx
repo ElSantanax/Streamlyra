@@ -114,9 +114,9 @@ const ChatFeed = memo(({
                         data={messages}
                         itemContent={itemContent}
                         firstItemIndex={firstItemIndex}
-                        computeItemKey={(_index, msg) => msg.id || `msg-${_index}`}
+                        computeItemKey={(_index, msg) => msg.id ? `${msg.id}-${msg.platform}` : `msg-${_index}`}
                         alignToBottom={true}
-                        followOutput={'auto'}
+                        followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
                         className="absolute inset-0 custom-scrollbar"
                         atBottomStateChange={setIsAtBottom}
                         atBottomThreshold={100}
@@ -130,8 +130,8 @@ const ChatFeed = memo(({
                         <button
                             onClick={scrollToBottom}
                             className={`bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white shadow-2xl shadow-black/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in slide-in-from-bottom-2 fade-in hover:bg-surface-light group-hover:opacity-100 ${unreadCount > 0
-                                    ? 'px-4 py-2 rounded-full gap-2'
-                                    : 'w-10 h-10 rounded-full'
+                                ? 'px-4 py-2 rounded-full gap-2'
+                                : 'w-10 h-10 rounded-full'
                                 }`}
                             title="Volver abajo"
                         >
