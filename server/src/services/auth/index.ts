@@ -6,5 +6,4 @@ export { AuthDTOBuilder } from './AuthDTOBuilder';
 export { TokenService } from './TokenService';
 
 // Core services
-export { PlatformAuthHandler } from './core/PlatformAuthHandler';
-export { UserProfileService } from './core/UserProfileService';
+export * from './core';
