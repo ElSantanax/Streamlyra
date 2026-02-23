@@ -38,6 +38,9 @@ const Hero = () => {
                             src="/hero.png"
                             alt="Streamlyra Dashboard Preview"
                             className="w-full h-auto object-cover block"
+                            width={1920}
+                            height={1080}
+                            fetchPriority="high"
                         />
                     </div>
                 </div>

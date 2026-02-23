@@ -14,6 +14,8 @@ const UserMenuHeader = ({ user, isConnected }: UserMenuHeaderProps) => (
                     src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"}
                     alt="User Avatar"
                     className="size-full object-cover"
+                    width={40}
+                    height={40}
                 />
             </div>
             <div className="flex flex-col min-w-0">

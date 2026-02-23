@@ -55,6 +55,8 @@ const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false 
                                 src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"}
                                 alt="User Avatar"
                                 className="size-full object-cover"
+                                width={36}
+                                height={36}
                             />
                         </button>
                     }
