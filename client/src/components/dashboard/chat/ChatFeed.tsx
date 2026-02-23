@@ -25,6 +25,8 @@ const ChatFeed = memo(({
 }: ChatFeedProps) => {
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const prevMessagesLengthRef = useRef(messages.length);
 
     const scrollToBottom = useCallback(() => {
         if (virtuosoRef.current) {
@@ -32,6 +34,7 @@ const ChatFeed = memo(({
                 index: messages.length - 1 + firstItemIndex,
                 behavior: 'smooth'
             });
+            setUnreadCount(0);
         }
     }, [messages.length, firstItemIndex]);
 
@@ -39,6 +42,18 @@ const ChatFeed = memo(({
     const onReplyRef = useRef(onReply);
     const onDeleteRef = useRef(onDelete);
     const onBanRef = useRef(onBan);
+
+    useEffect(() => {
+        if (isAtBottom) {
+            setUnreadCount(0);
+        } else {
+            const added = messages.length - prevMessagesLengthRef.current;
+            if (added > 0) {
+                setUnreadCount((prev) => prev + added);
+            }
+        }
+        prevMessagesLengthRef.current = messages.length;
+    }, [messages.length, isAtBottom]);
 
     useEffect(() => {
         onReplyRef.current = onReply;
@@ -114,9 +129,17 @@ const ChatFeed = memo(({
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
                         <button
                             onClick={scrollToBottom}
-                            className="bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white px-4 py-2 rounded-full shadow-2xl shadow-black/50 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in slide-in-from-bottom-2 fade-in hover:bg-surface-light group-hover:opacity-100"
+                            className={`bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white shadow-2xl shadow-black/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in slide-in-from-bottom-2 fade-in hover:bg-surface-light group-hover:opacity-100 ${unreadCount > 0
+                                    ? 'px-4 py-2 rounded-full gap-2'
+                                    : 'w-10 h-10 rounded-full'
+                                }`}
+                            title="Volver abajo"
                         >
-                            <span className="text-primary font-bold">Ver mensajes nuevos</span>
+                            {unreadCount > 0 && (
+                                <span className="text-primary font-bold text-xs">
+                                    {unreadCount === 1 ? '1 mensaje nuevo' : `${unreadCount} mensajes nuevos`}
+                                </span>
+                            )}
                             <MdArrowDownward size={16} className="text-primary" />
                         </button>
                     </div>
