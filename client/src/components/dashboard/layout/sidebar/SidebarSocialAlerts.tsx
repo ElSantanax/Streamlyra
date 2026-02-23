@@ -24,10 +24,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
                             {lastFollower.platform === 'tiktok' && <FaTiktok size={16} />}
                             {lastFollower.platform === 'kick' && <SiKick size={16} />}
                         </span>
-                        <span className={`text-white truncate min-w-0 ${lastFollower.name.length > 18 ? 'text-xs' :
-                            lastFollower.name.length > 12 ? 'text-sm' :
-                                'text-base'
-                            }`} title={lastFollower.name}>
+                        <span className="text-base text-white font-bold truncate min-w-0" title={lastFollower.name}>
                             {lastFollower.name}
                         </span>
                     </div>
@@ -43,10 +40,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
                             {lastRaid.platform === 'twitch' && <FaTwitch size={16} />}
                             {lastRaid.platform === 'kick' && <SiKick size={16} />}
                         </span>
-                        <span className={`text-white truncate min-w-0 ${lastRaid.name.length > 18 ? 'text-xs' :
-                            lastRaid.name.length > 10 ? 'text-sm' :
-                                'text-base'
-                            }`} title={lastRaid.name}>
+                        <span className="text-base text-white font-bold truncate min-w-0" title={lastRaid.name}>
                             {lastRaid.name}
                         </span>
                     </div>
