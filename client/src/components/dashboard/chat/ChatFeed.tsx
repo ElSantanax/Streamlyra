@@ -8,7 +8,6 @@ import type { PlatformKey } from '../../../constants/platforms';
 
 interface ChatFeedProps {
     messages: ChatMessageData[];
-    firstItemIndex: number;
     isConnected: boolean;
     onReply: (username: string) => void;
     onDelete: (messageId: string, platform: PlatformKey, platformIds?: Record<string, string>) => void;
@@ -17,7 +16,6 @@ interface ChatFeedProps {
 
 const ChatFeed = memo(({
     messages,
-    firstItemIndex,
     isConnected,
     onReply,
     onDelete,
@@ -26,34 +24,36 @@ const ChatFeed = memo(({
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
-    const prevMessagesLengthRef = useRef(messages.length);
+    const [prevMessagesLength, setPrevMessagesLength] = useState(messages.length);
 
     const scrollToBottom = useCallback(() => {
         if (virtuosoRef.current) {
             virtuosoRef.current.scrollToIndex({
-                index: messages.length - 1 + firstItemIndex,
+                index: 'LAST',
                 behavior: 'smooth'
             });
             setUnreadCount(0);
         }
-    }, [messages.length, firstItemIndex]);
+    }, []);
 
-    // Refs para mantener los handlers actualizados sin romper la memoización de los items
     const onReplyRef = useRef(onReply);
     const onDeleteRef = useRef(onDelete);
     const onBanRef = useRef(onBan);
 
-    useEffect(() => {
-        if (isAtBottom) {
-            setUnreadCount(0);
-        } else {
-            const added = messages.length - prevMessagesLengthRef.current;
-            if (added > 0) {
-                setUnreadCount((prev) => prev + added);
-            }
+    if (isAtBottom && unreadCount > 0) {
+        setUnreadCount(0);
+    }
+
+    if (!isAtBottom) {
+        if (messages.length > prevMessagesLength) {
+            setUnreadCount(prev => prev + (messages.length - prevMessagesLength));
+            setPrevMessagesLength(messages.length);
+        } else if (messages.length < prevMessagesLength) {
+            setPrevMessagesLength(messages.length);
         }
-        prevMessagesLengthRef.current = messages.length;
-    }, [messages.length, isAtBottom]);
+    } else if (messages.length !== prevMessagesLength) {
+        setPrevMessagesLength(messages.length);
+    }
 
     useEffect(() => {
         onReplyRef.current = onReply;
@@ -61,7 +61,6 @@ const ChatFeed = memo(({
         onBanRef.current = onBan;
     }, [onReply, onDelete, onBan]);
 
-    // Handlers estables que nunca cambian de referencia
     const handleReplyStable = useCallback((username: string) => {
         onReplyRef.current?.(username);
     }, []);
@@ -74,8 +73,6 @@ const ChatFeed = memo(({
         onBanRef.current?.(userId, username, platform);
     }, []);
 
-    // Renderizado de cada mensaje individual dentro de la lista virtualizada
-    // Al usar handlers estables, itemContent no cambia NUNCA, optimizando Virtuoso al máximo
     const itemContent = useCallback((_index: number, msg: ChatMessageData) => (
         <div className="pb-2 px-4 md:px-2">
             <ChatMessage
@@ -113,14 +110,16 @@ const ChatFeed = memo(({
                         ref={virtuosoRef}
                         data={messages}
                         itemContent={itemContent}
-                        firstItemIndex={firstItemIndex}
-                        computeItemKey={(_index, msg) => msg.id ? `${msg.id}-${msg.platform}` : `msg-${_index}`}
+                        computeItemKey={(_index, msg) => msg.id ? `${msg.id}-${msg.platform}` : `msg-${Math.random()}`}
                         alignToBottom={true}
-                        followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
+                        followOutput="auto"
                         className="absolute inset-0 custom-scrollbar"
-                        atBottomStateChange={setIsAtBottom}
-                        atBottomThreshold={100}
-                        increaseViewportBy={500}
+                        atBottomStateChange={(bottom) => {
+                            setIsAtBottom(bottom);
+                        }}
+                        initialTopMostItemIndex={messages.length - 1}
+                        atBottomThreshold={150}
+                        increaseViewportBy={1000}
                         style={{ height: '100%', width: '100%', overflowAnchor: 'none' }}
                     />
                 ) : emptyState}

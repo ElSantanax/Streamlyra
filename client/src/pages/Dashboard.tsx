@@ -33,7 +33,6 @@ const DashboardContent = () => {
 
     const {
         messages,
-        firstItemIndex,
         addMessage,
         updateMessageStatus,
         removeMessage,
@@ -178,7 +177,6 @@ const DashboardContent = () => {
                     }>
                         <ChatFeed
                             messages={messages}
-                            firstItemIndex={firstItemIndex}
                             isConnected={isConnected}
                             onReply={replyToUser}
                             onDelete={deleteMessage}

@@ -130,7 +130,8 @@ export class KickService extends BasePlatformService {
                         { name: 'channel.subscription.new', version: 1 },
                         { name: 'channel.subscription.renewal', version: 1 },
                         { name: 'channel.subscription.gifts', version: 1 },
-                        { name: 'livestream.status.updated', version: 1 }
+                        { name: 'livestream.status.updated', version: 1 },
+                        { name: 'channel.reward.redemption.updated', version: 1 }
                     ],
                     method: 'webhook',
                     webhook_url: callbackUrl

@@ -1,4 +1,4 @@
-import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickRewardRedemptionEvent } from '../../../types/kick.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -128,5 +128,23 @@ export class KickEventTransformer extends BaseEventTransformer {
 
     transformSpecialEvent(_data: unknown): NormalizedChatMessage {
         throw new Error('Method not implemented.');
+    }
+
+    transformRewardRedemption(event: KickRewardRedemptionEvent): NormalizedChatMessage {
+        const reward = event.reward;
+        const redeemer = event.redeemer;
+        const userInput = event.user_input?.trim() ? ` → "${event.user_input.trim()}"` : '';
+        const points = reward.cost ? ` (${reward.cost.toLocaleString()} puntos)` : '';
+
+        return {
+            id: `kick-redemption-${event.id || Date.now()}`,
+            platform: 'kick',
+            user: redeemer.username,
+            message: '',
+            specialMessage: `🎁 CANJEÓ "${reward.title}"${points}${userInput}`,
+            time: this.formatTime(new Date()),
+            color: '#53fc18',
+            isSpecial: true
+        };
     }
 }

@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { Connection } from '../../../models/Connection.model';
 import { KickWebhook } from '../../../models/KickWebhook.model';
-import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickWebhookPayload, KickLivestreamStatusEvent } from '../../../types/kick.types';
+import { KickChatMessagePayload, KickGiftEvent, KickSubscriptionEvent, KickFollowEvent, KickWebhookPayload, KickLivestreamStatusEvent, KickRewardRedemptionEvent } from '../../../types/kick.types';
 import { KickEventTransformer } from '../../chat/transformers/KickEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
@@ -83,6 +83,8 @@ export class KickWebhookProcessor {
                         }
                     })
                     .catch(err => logger.error({ err, userId: connection.userId }, 'Error procesando analytics de seguidor en Kick'));
+            } else if (eventType === 'channel.reward.redemption.updated') {
+                chatMessage = this.transformer.transformRewardRedemption(data as unknown as KickRewardRedemptionEvent);
             } else if (eventType === 'livestream.status.updated') {
                 chatMessage = null;
             } else {

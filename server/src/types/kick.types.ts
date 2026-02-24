@@ -108,4 +108,19 @@ export interface KickLivestreamStatusEvent {
     ended_at?: string;
 }
 
-export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent | KickFollowEvent | KickLivestreamStatusEvent;
+export interface KickRewardRedemptionEvent {
+    id: string;
+    broadcaster_user_id: number;
+    redeemer: KickUser;
+    reward: {
+        id: string;
+        title: string;
+        cost: number;
+        description: string;
+    };
+    user_input?: string;
+    status: string;
+    created_at: string;
+}
+
+export type KickWebhookPayload = KickChatMessagePayload | KickSubscriptionEvent | KickGiftEvent | KickFollowEvent | KickLivestreamStatusEvent | KickRewardRedemptionEvent;

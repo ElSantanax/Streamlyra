@@ -28,7 +28,7 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
         kick: {
             clientId: import.meta.env.VITE_KICK_CLIENT_ID as string,
             authUrl: 'https://id.kick.com/oauth/authorize',
-            scope: 'user:read channel:read chat:write events:subscribe moderation:chat_message:manage moderation:ban',
+            scope: 'user:read channel:read chat:write events:subscribe moderation:chat_message:manage moderation:ban channel:rewards:write',
             state: 'kick'
         }
     };

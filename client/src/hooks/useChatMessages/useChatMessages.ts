@@ -35,9 +35,8 @@ const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatM
 };
 
 export const useChatMessages = () => {
-  const [chatState, setChatState] = useState<{ data: ChatMessage[], index: number }>({
-    data: [],
-    index: 0
+  const [chatState, setChatState] = useState<{ data: ChatMessage[] }>({
+    data: []
   });
 
   const pendingMessagesRef = useRef<ChatMessage[]>([]);
@@ -50,14 +49,12 @@ export const useChatMessages = () => {
       const LIMIT = MAX_MESSAGES + CHUNK_SIZE;
 
       if (nextData.length > LIMIT) {
-        // En lugar de borrar 1 a 1, borramos un bloque de 50 (estilo Twitch)
-        // Esto reduce los saltos de índice y mejora la estabilidad del scroll
+        const excessCount = nextData.length - MAX_MESSAGES;
         return {
-          data: nextData.slice(CHUNK_SIZE),
-          index: prev.index + CHUNK_SIZE
+          data: nextData.slice(excessCount)
         };
       }
-      return { ...prev, data: nextData };
+      return { data: nextData };
     });
   }, []);
 
@@ -130,12 +127,11 @@ export const useChatMessages = () => {
       clearTimeout(flushTimeoutRef.current);
       flushTimeoutRef.current = null;
     }
-    setChatState({ data: [], index: 0 });
+    setChatState({ data: [] });
   }, []);
 
   return {
     messages: chatState.data,
-    firstItemIndex: chatState.index,
     addMessage,
     updateMessageStatus,
     removeMessage,
