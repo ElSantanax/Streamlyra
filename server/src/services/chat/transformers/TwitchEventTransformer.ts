@@ -1,4 +1,4 @@
-import { TwitchFollowEventSub, TwitchSubEventSub, TwitchRaidEventSub, TwitchChatMessageEventSub } from '../../../types/twitch.types';
+import { TwitchFollowEventSub, TwitchSubEventSub, TwitchRaidEventSub, TwitchChatMessageEventSub, TwitchRewardRedemptionEventSub } from '../../../types/twitch.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 
@@ -120,6 +120,23 @@ export class TwitchEventTransformer extends BaseEventTransformer {
             color: '#9146FF',
             isSpecial: true,
             userId: event.from_broadcaster_user_id
+        };
+    }
+
+    transformEventSubRewardRedemption(event: TwitchRewardRedemptionEventSub): NormalizedChatMessage {
+        const points = event.reward.cost.toLocaleString();
+        const userInput = event.user_input?.trim() ? ` → "${event.user_input.trim()}"` : '';
+
+        return {
+            id: `twitch-reward-${event.id}`,
+            platform: 'twitch',
+            user: event.user_name,
+            message: '',
+            specialMessage: `🎁 CANJEÓ "${event.reward.title}" (${points} puntos)${userInput}`,
+            time: this.formatTime(new Date(event.redeemed_at)),
+            color: '#9146FF',
+            isSpecial: true,
+            userId: event.user_id
         };
     }
 

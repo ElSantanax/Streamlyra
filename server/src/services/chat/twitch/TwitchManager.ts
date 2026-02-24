@@ -14,7 +14,8 @@ export class TwitchManager {
         { type: 'channel.raid', version: '1' },
         { type: 'channel.chat.message', version: '1' },
         { type: 'stream.online', version: '1' },
-        { type: 'stream.offline', version: '1' }
+        { type: 'stream.offline', version: '1' },
+        { type: 'channel.channel_points_custom_reward_redemption.add', version: '1' }
     ];
 
     async registerWebhooks(userId: string, broadcasterId: string): Promise<void> {

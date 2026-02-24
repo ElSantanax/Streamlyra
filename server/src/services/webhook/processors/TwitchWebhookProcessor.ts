@@ -6,7 +6,8 @@ import {
     TwitchFollowEventSub,
     TwitchSubEventSub,
     TwitchRaidEventSub,
-    TwitchChatMessageEventSub
+    TwitchChatMessageEventSub,
+    TwitchRewardRedemptionEventSub
 } from '../../../types/twitch.types';
 import { TwitchEventTransformer } from '../../chat/transformers/TwitchEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
@@ -113,6 +114,11 @@ export class TwitchWebhookProcessor {
                         .catch(err => logger.error({ err, userId: connection.userId }, 'Error procesando analytics de raid en Twitch'));
                     break;
                 }
+                case 'channel.channel_points_custom_reward_redemption.add':
+                    chatMessage = this.transformer.transformEventSubRewardRedemption(event as TwitchRewardRedemptionEventSub);
+                    break;
+                case 'channel.channel_points_custom_reward_redemption.update':
+                    return;
                 case 'stream.online':
                     SafeSocketEmitter.emitConnectionStatus(this.io, connection.userId, 'twitch', 'connected', 'En vivo', true);
                     return;

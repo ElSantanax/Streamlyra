@@ -120,6 +120,25 @@ export interface TwitchRaidEventSub {
     viewers: number;
 }
 
+export interface TwitchRewardRedemptionEventSub {
+    id: string;
+    broadcaster_user_id: string;
+    broadcaster_user_login: string;
+    broadcaster_user_name: string;
+    user_id: string;
+    user_login: string;
+    user_name: string;
+    user_input: string;
+    status: string;
+    redeemed_at: string;
+    reward: {
+        id: string;
+        title: string;
+        cost: number;
+        prompt: string;
+    };
+}
+
 export interface TwitchChatMessageEventSub {
     broadcaster_user_id: string;
     broadcaster_user_login: string;
