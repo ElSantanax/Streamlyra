@@ -1,0 +1,180 @@
+{
+  "navbar": {
+    "backToHome": "Volver al Inicio",
+    "goToDashboard": "Ir al Panel",
+    "login": "Iniciar Sesión",
+    "githubLabel": "Repositorio de GitHub",
+    "language": "Idioma"
+  },
+  "mobileMenu": {
+    "menu": "Menú",
+    "explore": "Explorar",
+    "customization": "Personalización",
+    "language": "Idioma"
+  },
+  "hero": {
+    "headline_1": "Un chat.",
+    "headline_2": "Múltiples plataformas."
+  },
+  "features": {
+    "title": "Centraliza la interacción con tu comunidad",
+    "subtitle": "Todo lo que necesitas para leer y moderar tus chats sin cambiar de pestaña.",
+    "unifiedChat": {
+      "title": "Chat Unificado",
+      "desc": "Gestiona mensajes de múltiples plataformas en una sola columna optimizada."
+    },
+    "realtimeMetrics": {
+      "title": "Métricas en Tiempo Real",
+      "desc": "Visualiza el flujo de actividad y el estado de tus conexiones al instante."
+    },
+    "simplifiedUI": {
+      "title": "Interfaz Simplificada",
+      "desc": "Un entorno libre de distracciones diseñado para no interrumpir tu flujo de trabajo."
+    }
+  },
+  "footer": {
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "license": "Código abierto bajo licencia MIT."
+  },
+  "platformConnection": {
+    "title": "Conecta tu comunidad",
+    "subtitle": "Unifica todos tus chats de streaming en una sola pantalla",
+    "connectTwitch": "Para comenzar, conecta tu cuenta principal de Twitch:",
+    "loginWithTwitch": "Iniciar Sesión con Twitch",
+    "infoText": "Tu cuenta de Twitch será tu identidad en Streamlyra. Podrás agregar YouTube, Kick y TikTok después.",
+    "helpText": "¿Necesitas ayuda?",
+    "helpLink": "Lee la guía"
+  },
+  "common": {
+    "loading": "Preparando tu experiencia..."
+  },
+  "dashboard": {
+    "header": {
+      "manageConnections": "Gestionar Conexiones",
+      "changeLanguage": "Cambiar Idioma",
+      "helpAndSupport": "Ayuda y Soporte",
+      "logout": "Cerrar Sesión",
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "user": "Usuario"
+    },
+    "sidebar": {
+      "analytics": {
+        "title": "Analíticas en Vivo",
+        "totalViewers": "Espectadores Totales",
+        "trend": "Tendencia",
+        "airtime": "Tiempo al Aire",
+        "latestFollower": "Último Follower",
+        "noFollowers": "Aún no hay followers",
+        "recentRaid": "Raid Reciente",
+        "noRaid": "Aún no hay raids",
+        "viewers": "{{count}} espectadores"
+      },
+      "connections": {
+        "title": "Conexiones",
+        "noPlatforms": "No hay plataformas conectadas",
+        "addPlatform": "Agregar plataforma"
+      },
+      "integrations": {
+        "title": "Integración OBS",
+        "copyUrl": "Copiar link",
+        "copied": "Link del chat para OBS copiado",
+        "openSource": "Abrir",
+        "obsChatTitle": "Chat para OBS",
+        "regenerateBtn": "Regenerar Link",
+        "regenerateConfirmTitle": "Regenerar Token",
+        "regenerateConfirmDesc": "¿Estás seguro de que quieres regenerar el token? El link actual dejará de funcionar en OBS.",
+        "regenerateConfirm": "Regenerar",
+        "regenerateCancel": "Cancelar",
+        "regenerateSuccess": "Link de chat actualizado correctamente",
+        "regenerateError": "No se pudo regenerar el token",
+        "hide": "Ocultar",
+        "show": "Mostrar",
+        "helperText": "Pega este link en una \"Fuente de Navegador\" en OBS. Usa fondo transparente y tamaño 500x800 para mejores resultados."
+      },
+      "quickActions": {
+        "title": "Acciones Rápidas",
+        "clearChat": "Limpiar Chat"
+      }
+    },
+    "chat": {
+      "inputPlaceholder": "Escribe un mensaje...",
+      "replyingTo": "Respondiendo a",
+      "cancel": "Cancelar",
+      "send": "Enviar",
+      "modMode": "Modo Moderación",
+      "actions": {
+        "reply": "Responder",
+        "delete": "Borrar Mensaje",
+        "ban": "Banear Usuario"
+      },
+      "empty": {
+        "readyTitle": "¡Todo listo para empezar!",
+        "connectTitle": "Conecta tus plataformas",
+        "readyDesc": "Aún no hay mensajes por aquí. ¡Anima a tu comunidad a romper el hielo!",
+        "connectDesc": "Vincula tus cuentas para empezar a recibir los mensajes de tu comunidad aquí mismo."
+      },
+      "emojiLoading": "Cargando emojis...",
+      "emojiSearch": "Buscar emoji...",
+      "emojiFaces": "Rostros",
+      "scrollDown": "Volver abajo",
+      "newMessages_one": "1 mensaje nuevo",
+      "newMessages_other": "{{count}} mensajes nuevos"
+    },
+    "addPlatformModal": {
+      "title": "Agregar Plataforma",
+      "invalidUsername": "Nombre de usuario inválido",
+      "orAddUser": "O agrega usuario",
+      "connect": "Conectar {{platform}}",
+      "connected": "{{platform}} Conectado",
+      "connecting": "Conectando {{platform}}...",
+      "errorIn": "Error en {{platform}}",
+      "linkedSuccessfully": "Cuenta vinculada exitosamente",
+      "linkYourAccount": "Vincula tu cuenta de {{platform}}",
+      "tiktokPlaceholder": "@usuario",
+      "tiktokHelper": "Usa tu @usuario (no tu nombre visible)"
+    },
+    "connectionItem": {
+      "searching": "Buscando...",
+      "waitingStream": "Esperando stream...",
+      "live": "En Vivo",
+      "disconnected": "Desconectado",
+      "searchStreamNow": "Buscar stream ahora",
+      "cancelConnectionTitle": "Cancelar conexión",
+      "disconnectTitle": "Desconectar",
+      "confirmAction": "Confirmar {{action}}",
+      "areYouSure": "¿Estás seguro de {{action}} {{name}}?"
+    },
+    "authCallback": {
+      "connecting": "Conectando con {{platform}}...",
+      "verifying": "Estamos verificando tus credenciales en {{platform}}"
+    }
+  },
+  "errors": {
+    "unexpected": "Ha ocurrido un error inesperado",
+    "status": {
+      "400": "Los datos enviados no son válidos",
+      "401": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente",
+      "403": "No tienes permisos para realizar esta acción",
+      "404": "El recurso solicitado no existe",
+      "409": "Ya existe un recurso con estos datos",
+      "429": "Demasiadas solicitudes. Por favor, espera un momento",
+      "500": "Error del servidor. Por favor, intenta más tarde",
+      "503": "El servicio no está disponible temporalmente"
+    }
+  },
+  "validation": {
+    "usernameRequired": "El nombre de usuario es requerido",
+    "usernameEmpty": "El nombre de usuario no puede estar vacío",
+    "usernameLength": "El nombre de usuario debe tener entre 2 y 24 caracteres",
+    "usernameFormat": "Solo se permiten letras, números, puntos y guiones bajos",
+    "messageEmpty": "El mensaje no puede estar vacío",
+    "noServerConnection": "No hay conexión con el servidor",
+    "unauthenticated": "Usuario no autenticado",
+    "noPlatformsConnected": "No hay plataformas conectadas para enviar el mensaje",
+    "unknownError": "Error desconocido",
+    "partialSuccess": "Mensaje enviado a {{success}}. Falló en: {{failed}}",
+    "sendError": "Error al enviar mensaje. {{details}}"
+  }
+}

@@ -1,0 +1,180 @@
+{
+    "navbar": {
+        "backToHome": "Back to Home",
+        "goToDashboard": "Go to Dashboard",
+        "login": "Log In",
+        "githubLabel": "GitHub Repository",
+        "language": "Language"
+    },
+    "mobileMenu": {
+        "menu": "Menu",
+        "explore": "Explore",
+        "customization": "Customization",
+        "language": "Language"
+    },
+    "hero": {
+        "headline_1": "One chat.",
+        "headline_2": "Multiple platforms."
+    },
+    "features": {
+        "title": "Centralize interaction with your community",
+        "subtitle": "Everything you need to read and moderate your chats without switching tabs.",
+        "unifiedChat": {
+            "title": "Unified Chat",
+            "desc": "Manage messages from multiple platforms in a single optimized column."
+        },
+        "realtimeMetrics": {
+            "title": "Real-Time Metrics",
+            "desc": "Visualize the activity flow and the status of your connections instantly."
+        },
+        "simplifiedUI": {
+            "title": "Simplified Interface",
+            "desc": "A distraction-free environment designed not to interrupt your workflow."
+        }
+    },
+    "footer": {
+        "terms": "Terms",
+        "privacy": "Privacy",
+        "license": "Open source under MIT license."
+    },
+    "platformConnection": {
+        "title": "Connect your community",
+        "subtitle": "Unify all your streaming chats in a single screen",
+        "connectTwitch": "To get started, connect your main Twitch account:",
+        "loginWithTwitch": "Log In with Twitch",
+        "infoText": "Your Twitch account will be your identity in Streamlyra. You can add YouTube, Kick and TikTok later.",
+        "helpText": "Need help?",
+        "helpLink": "Read the guide"
+    },
+    "common": {
+        "loading": "Preparing your experience..."
+    },
+    "dashboard": {
+        "header": {
+            "manageConnections": "Manage Connections",
+            "changeLanguage": "Change Language",
+            "helpAndSupport": "Help & Support",
+            "logout": "Log Out",
+            "online": "ONLINE",
+            "offline": "OFFLINE",
+            "user": "User"
+        },
+        "sidebar": {
+            "analytics": {
+                "title": "Live Analytics",
+                "totalViewers": "Total Viewers",
+                "trend": "Trend",
+                "airtime": "Airtime",
+                "latestFollower": "Latest Follower",
+                "noFollowers": "No followers yet",
+                "recentRaid": "Recent Raid",
+                "noRaid": "No raids yet",
+                "viewers": "{{count}} viewers"
+            },
+            "connections": {
+                "title": "Connections",
+                "noPlatforms": "No platforms connected",
+                "addPlatform": "Add platform"
+            },
+            "integrations": {
+                "title": "OBS Integration",
+                "copyUrl": "Copy URL",
+                "copied": "OBS chat link copied",
+                "openSource": "Open",
+                "obsChatTitle": "Chat for OBS",
+                "regenerateBtn": "Regenerate Link",
+                "regenerateConfirmTitle": "Regenerate Token",
+                "regenerateConfirmDesc": "Are you sure you want to regenerate the token? The current link will stop working in OBS.",
+                "regenerateConfirm": "Regenerate",
+                "regenerateCancel": "Cancel",
+                "regenerateSuccess": "Chat link successfully updated",
+                "regenerateError": "Could not regenerate the token",
+                "hide": "Hide",
+                "show": "Show",
+                "helperText": "Paste this link in a \"Browser Source\" in OBS. Use transparent background and size 500x800 for best results."
+            },
+            "quickActions": {
+                "title": "Quick Actions",
+                "clearChat": "Clear Chat"
+            }
+        },
+        "chat": {
+            "inputPlaceholder": "Type a message...",
+            "replyingTo": "Replying to",
+            "cancel": "Cancel",
+            "send": "Send",
+            "modMode": "Mod Mode",
+            "actions": {
+                "reply": "Reply",
+                "delete": "Delete Message",
+                "ban": "Ban User"
+            },
+            "empty": {
+                "readyTitle": "Ready to go!",
+                "connectTitle": "Connect your platforms",
+                "readyDesc": "No messages here yet. Encourage your community to break the ice!",
+                "connectDesc": "Link your accounts to start receiving your community's messages right here."
+            },
+            "emojiLoading": "Loading emojis...",
+            "emojiSearch": "Search emoji...",
+            "emojiFaces": "Faces",
+            "scrollDown": "Scroll down",
+            "newMessages_one": "1 new message",
+            "newMessages_other": "{{count}} new messages"
+        },
+        "addPlatformModal": {
+            "title": "Add Platform",
+            "invalidUsername": "Invalid username",
+            "orAddUser": "Or add user",
+            "connect": "Connect {{platform}}",
+            "connected": "{{platform}} Connected",
+            "connecting": "Connecting {{platform}}...",
+            "errorIn": "Error connecting {{platform}}",
+            "linkedSuccessfully": "Account successfully linked",
+            "linkYourAccount": "Link your {{platform}} account",
+            "tiktokPlaceholder": "@username",
+            "tiktokHelper": "Use your @username (not your display name)"
+        },
+        "connectionItem": {
+            "searching": "Searching...",
+            "waitingStream": "Waiting for stream...",
+            "live": "Live",
+            "disconnected": "Disconnected",
+            "searchStreamNow": "Search stream now",
+            "cancelConnectionTitle": "Cancel connection",
+            "disconnectTitle": "Disconnect",
+            "confirmAction": "Confirm {{action}}",
+            "areYouSure": "Are you sure you want to {{action}} {{name}}?"
+        },
+        "authCallback": {
+            "connecting": "Connecting with {{platform}}...",
+            "verifying": "We are verifying your credentials on {{platform}}"
+        }
+    },
+    "errors": {
+        "unexpected": "An unexpected error occurred",
+        "status": {
+            "400": "The submitted data is invalid",
+            "401": "Your session has expired. Please log in again",
+            "403": "You do not have permission to perform this action",
+            "404": "The requested resource does not exist",
+            "409": "A resource with this data already exists",
+            "429": "Too many requests. Please wait a moment",
+            "500": "Server error. Please try again later",
+            "503": "The service is temporarily unavailable"
+        }
+    },
+    "validation": {
+        "usernameRequired": "Username is required",
+        "usernameEmpty": "Username cannot be empty",
+        "usernameLength": "Username must be between 2 and 24 characters",
+        "usernameFormat": "Only letters, numbers, periods, and underscores are allowed",
+        "messageEmpty": "Message cannot be empty",
+        "noServerConnection": "No connection to the server",
+        "unauthenticated": "Unauthenticated user",
+        "noPlatformsConnected": "No connected platforms to send the message",
+        "unknownError": "Unknown error",
+        "partialSuccess": "Message sent to {{success}}. Failed on: {{failed}}",
+        "sendError": "Error sending message. {{details}}"
+    }
+}

@@ -1,6 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaGlobe, FaBars, FaTimes, FaGithub } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
 import { Button } from '../ui';
 import { useToggle } from '../../hooks';
@@ -11,11 +12,18 @@ const MobileMenu = lazy(() => import('./MobileMenu'));
 const Navbar = () => {
     const { pathname } = useLocation();
     const { isAuthenticated } = useAuth();
+    const { t, i18n } = useTranslation();
+
     const isAuthPage = pathname === '/register' || pathname === '/connect' || pathname === '/login';
-    const [lang, setLang] = useState<'es' | 'en'>('es');
+    const currentLang = i18n.language?.startsWith('en') ? 'en' : 'es';
+
     const [isMenuOpen, toggleMenu, , closeMenu] = useToggle(false);
 
-    // Close menu on resize to desktop and prevent scroll when open
+    const handleLanguageToggle = () => {
+        const nextLang = currentLang === 'es' ? 'en' : 'es';
+        void i18n.changeLanguage(nextLang);
+    };
+
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 768) closeMenu();
@@ -36,7 +44,7 @@ const Navbar = () => {
                 href="https://github.com/ElSantanax/Streamlyra"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Repositorio de GitHub"
+                aria-label={t('navbar.githubLabel')}
                 className="flex items-center gap-2 text-white hover:text-primary text-sm font-medium transition-colors"
             >
                 <FaGithub className="size-4" />
@@ -47,13 +55,13 @@ const Navbar = () => {
     const actionButton = isAuthPage ? (
         <Link to="/" className="w-full md:w-auto">
             <Button variant="primary" fullWidth className="md:min-w-32">
-                Volver al Inicio
+                {t('navbar.backToHome')}
             </Button>
         </Link>
     ) : (
         <Link to={isAuthenticated ? "/dashboard" : "/login"} className="w-full md:w-auto">
             <Button variant="primary" fullWidth className="md:min-w-32">
-                {isAuthenticated ? 'Ir al Panel' : 'Iniciar Sesión'}
+                {isAuthenticated ? t('navbar.goToDashboard') : t('navbar.login')}
             </Button>
         </Link>
     );
@@ -85,10 +93,10 @@ const Navbar = () => {
 
                         <div className="flex items-center gap-6">
                             <button
-                                onClick={() => setLang(prev => prev === 'es' ? 'en' : 'es')}
+                                onClick={handleLanguageToggle}
                                 className="flex items-center gap-2 text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer"
                             >
-                                <span className="font-bold">{lang === 'es' ? 'EN' : 'ES'}</span>
+                                <span className="font-bold">{currentLang === 'es' ? 'EN' : 'ES'}</span>
                                 <FaGlobe className="size-4" />
                             </button>
                             {actionButton}
@@ -104,8 +112,8 @@ const Navbar = () => {
                     onClose={closeMenu}
                     isAuthenticated={isAuthenticated}
                     isAuthPage={isAuthPage}
-                    lang={lang}
-                    onLanguageToggle={() => setLang(prev => prev === 'es' ? 'en' : 'es')}
+                    lang={currentLang}
+                    onLanguageToggle={handleLanguageToggle}
                 />
             </Suspense>
         </>

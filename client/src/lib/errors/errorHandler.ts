@@ -4,6 +4,7 @@
  */
 
 import { ApiError } from '../../services/api/client';
+import i18n from '../../config/i18n';
 
 export interface ErrorInfo {
   message: string;
@@ -34,7 +35,7 @@ export function normalizeError(error: unknown): ErrorInfo {
 
   // Error desconocido
   return {
-    message: typeof error === 'string' ? error : 'Ha ocurrido un error inesperado',
+    message: typeof error === 'string' ? error : i18n.t('errors.unexpected', 'Ha ocurrido un error inesperado'),
   };
 }
 
@@ -46,18 +47,10 @@ export function getUserFriendlyMessage(error: unknown): string {
 
   // Mensajes específicos por código de estado HTTP
   if (normalized.status) {
-    const statusMessages: Record<number, string> = {
-      400: 'Los datos enviados no son válidos',
-      401: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente',
-      403: 'No tienes permisos para realizar esta acción',
-      404: 'El recurso solicitado no existe',
-      409: 'Ya existe un recurso con estos datos',
-      429: 'Demasiadas solicitudes. Por favor, espera un momento',
-      500: 'Error del servidor. Por favor, intenta más tarde',
-      503: 'El servicio no está disponible temporalmente',
-    };
-
-    return statusMessages[normalized.status] || normalized.message;
+    const translationKey = `errors.status.${normalized.status}`;
+    if (i18n.exists(translationKey)) {
+      return i18n.t(translationKey) as string;
+    }
   }
 
   return normalized.message;

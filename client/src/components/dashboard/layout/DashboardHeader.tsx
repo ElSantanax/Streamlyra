@@ -1,6 +1,7 @@
-import { useState, memo } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { MdLink, MdHelpOutline, MdLogout, MdMenu } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 import Logo from '../../common/Logo';
 import { Dropdown, DropdownItem, DropdownDivider } from '../../ui';
 import { useToggle, useAuth } from '../../../hooks';
@@ -16,7 +17,12 @@ interface DashboardHeaderProps {
 const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
     const [isMenuOpen, , openMenu, closeMenu] = useToggle(false);
     const { user, logout } = useAuth();
-    const [currentLanguage, setCurrentLanguage] = useState('es');
+    const { t, i18n } = useTranslation();
+    const currentLanguage = i18n.language?.startsWith('en') ? 'en' : 'es';
+
+    const handleLanguageChange = (lang: string) => {
+        void i18n.changeLanguage(lang);
+    };
 
     const handleLogout = async () => {
         await logout();
@@ -70,17 +76,17 @@ const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false 
                             closeMenu();
                         }}
                     >
-                        Gestionar Conexiones
+                        {t('dashboard.header.manageConnections')}
                     </DropdownItem>
 
                     <LanguageSelector
                         currentLanguage={currentLanguage}
-                        onLanguageChange={setCurrentLanguage}
+                        onLanguageChange={handleLanguageChange}
                         onClose={closeMenu}
                     />
 
                     <DropdownItem icon={<MdHelpOutline size={18} />}>
-                        Ayuda y Soporte
+                        {t('dashboard.header.helpAndSupport')}
                     </DropdownItem>
 
                     <DropdownDivider />
@@ -91,7 +97,7 @@ const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false 
                         variant="danger"
                         data-cy="logout-button"
                     >
-                        Cerrar Sesión
+                        {t('dashboard.header.logout')}
                     </DropdownItem>
                 </Dropdown>
             </div>

@@ -5,12 +5,14 @@ import Spinner from '../components/common/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from '../lib/notifications';
 import { invalidateConnectionsCache } from '../hooks/useConnections';
+import { useTranslation } from 'react-i18next';
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const calledRef = useRef(false);
     const { login } = useAuth();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const code = searchParams.get('code');
@@ -142,10 +144,10 @@ const AuthCallback = () => {
         <div className="h-screen bg-background-dark flex flex-col items-center justify-center p-4">
             <Spinner size="lg" />
             <p className="mt-6 text-xl text-slate-300 animate-pulse font-medium">
-                Conectando con {platformName}...
+                {t('dashboard.authCallback.connecting', { platform: platformName })}
             </p>
             <p className="mt-2 text-sm text-slate-500">
-                Estamos verificando tus credenciales en {platformName}
+                {t('dashboard.authCallback.verifying', { platform: platformName })}
             </p>
         </div>
     );

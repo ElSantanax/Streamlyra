@@ -1,5 +1,6 @@
 import { useMemo, memo } from 'react';
 import { MdGroups, MdAccessTime } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 import { formatViewers } from '../../../../lib/formatters';
 import { SimpleTimer } from '../../../common/SimpleTimer';
 import { EngagementIndicator } from '../../analytics/EngagementIndicator';
@@ -8,6 +9,7 @@ import { SidebarSocialAlerts } from './SidebarSocialAlerts';
 import { useConnectionsStatus, useConnectionsStats } from '../../../../hooks/useConnectionsContext';
 
 export const SidebarAnalytics = memo(() => {
+    const { t } = useTranslation();
     const { connectionsStatus } = useConnectionsStatus();
     const { connectionsStats, lastFollower, lastRaid } = useConnectionsStats();
 
@@ -51,10 +53,10 @@ export const SidebarAnalytics = memo(() => {
     }, [connectionsStatus, connectionsStats]);
 
     return (
-        <SidebarSection title="Analíticas en Vivo">
+        <SidebarSection title={t('dashboard.sidebar.analytics.title')}>
             <div className="grid grid-cols-1 gap-3">
                 <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Espectadores Totales</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">{t('dashboard.sidebar.analytics.totalViewers')}</span>
                     <div className="flex items-center gap-2 text-gray-400">
                         <MdGroups size={20} />
                         <span className="text-base text-white font-bold">{formatViewers(totalViewers)}</span>
@@ -62,12 +64,12 @@ export const SidebarAnalytics = memo(() => {
                 </div>
 
                 <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Tendencia</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">{t('dashboard.sidebar.analytics.trend')}</span>
                     <EngagementIndicator currentViews={totalViewers} />
                 </div>
 
                 <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Tiempo al Aire</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">{t('dashboard.sidebar.analytics.airtime')}</span>
                     <div className="flex items-center gap-2 text-gray-400">
                         <MdAccessTime size={20} />
                         <span className="text-base text-white font-mono font-bold">

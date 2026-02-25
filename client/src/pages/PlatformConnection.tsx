@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
 import Navbar from '../components/common/Navbar';
@@ -13,6 +14,7 @@ const PlatformConnection = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
+    const { t } = useTranslation();
 
     // Prevenir acceso a páginas de auth cuando ya está autenticado
     useEffect(() => {
@@ -46,10 +48,10 @@ const PlatformConnection = () => {
                         {/* Card Header */}
                         <div className="px-8 pt-12 pb-6 text-center flex flex-col items-center">
                             <h1 className="text-3xl font-extrabold tracking-tight text-slate-200 mb-2">
-                                Conecta tu comunidad
+                                {t('platformConnection.title')}
                             </h1>
                             <p className="text-slate-400 text-base font-medium leading-relaxed max-w-sm mx-auto">
-                                Unifica todos tus chats de streaming en una sola pantalla
+                                {t('platformConnection.subtitle')}
                             </p>
                         </div>
 
@@ -59,11 +61,11 @@ const PlatformConnection = () => {
 
                             <div className="text-center">
                                 <p className="text-slate-300 font-medium mb-6">
-                                    Para comenzar, conecta tu cuenta principal de Twitch:
+                                    {t('platformConnection.connectTwitch')}
                                 </p>
 
                                 <PlatformButton
-                                    label="Iniciar Sesión con Twitch"
+                                    label={t('platformConnection.loginWithTwitch')}
                                     Icon={FaTwitch}
                                     iconColor="#9146FF"
                                     onClick={handleTwitchLogin}
@@ -74,11 +76,9 @@ const PlatformConnection = () => {
 
                             <div className="text-center">
                                 <p className="text-slate-400 text-sm leading-relaxed">
-                                    Tu cuenta de Twitch será tu identidad en Streamlyra. Podrás agregar YouTube, Kick y TikTok después.
+                                    {t('platformConnection.infoText')}
                                 </p>
                             </div>
-
-
                         </div>
                     </div>
                 </LocalErrorBoundary>
@@ -86,7 +86,12 @@ const PlatformConnection = () => {
                 {/* Bottom Help */}
                 <div className="mt-8 text-center relative z-10">
                     <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-medium">
-                        <span>¿Necesitas ayuda? <a className="text-primary hover:underline font-bold" href="#">Lee la guía</a></span>
+                        <span>
+                            {t('platformConnection.helpText')}{' '}
+                            <a className="text-primary hover:underline font-bold" href="#">
+                                {t('platformConnection.helpLink')}
+                            </a>
+                        </span>
                         <FaQuestionCircle className="text-primary" />
                     </div>
                 </div>

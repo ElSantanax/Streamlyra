@@ -1,9 +1,9 @@
 import { memo } from 'react';
 import { MdDeleteOutline, MdOutlineVisibility, MdSearch } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 import { PLATFORMS } from '../../../constants/platforms';
 import type { PlatformKey } from '../../../constants/platforms';
 import Spinner from '../../common/Spinner';
-import { dialog } from '../../../lib/dialog';
 
 export interface ConnectionItemProps {
     platformKey: PlatformKey;
@@ -24,6 +24,7 @@ export const ConnectionItem = memo(({
     onDisconnect,
     onSearchStream
 }: ConnectionItemProps) => {
+    const { t } = useTranslation();
     const { name, Icon, color, iconColor } = PLATFORMS[platformKey];
     const isConnected = status === 'connected';
     const isConnecting = status === 'connecting';
@@ -46,9 +47,9 @@ export const ConnectionItem = memo(({
                     </div>
                     <div className="flex items-center gap-1.5 mt-1">
                         {isConnecting ? (
-                            <span className="text-xs text-blue-400">Buscando...</span>
+                            <span className="text-xs text-blue-400">{t('dashboard.connectionItem.searching')}</span>
                         ) : isWaitingStream ? (
-                            <span className="text-xs text-yellow-400">Esperando stream...</span>
+                            <span className="text-xs text-yellow-400">{t('dashboard.connectionItem.waitingStream')}</span>
                         ) : isError ? (
                             <span className="text-xs text-yellow-400">{statusMessage || 'Error'}</span>
                         ) : isConnected ? (
@@ -56,10 +57,10 @@ export const ConnectionItem = memo(({
                                 {isLive ? (
                                     <div className="flex items-center gap-1.5">
                                         <div className="size-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                                        <span className="text-xs text-green-400">En Vivo</span>
+                                        <span className="text-xs text-green-400">{t('dashboard.connectionItem.live')}</span>
                                     </div>
                                 ) : (
-                                    <span className="text-xs text-green-400">Conectado</span>
+                                    <span className="text-xs text-green-400">{t('dashboard.addPlatformModal.connected', { platform: '' }).replace(' ', '')}</span>
                                 )}
                                 {isLive && (
                                     <>
@@ -72,7 +73,7 @@ export const ConnectionItem = memo(({
                                 )}
                             </>
                         ) : (
-                            <span className="text-xs text-red-400">Desconectado</span>
+                            <span className="text-xs text-red-400">{t('dashboard.connectionItem.disconnected')}</span>
                         )}
                     </div>
                 </div>
@@ -87,27 +88,18 @@ export const ConnectionItem = memo(({
                                 onSearchStream?.();
                             }}
                             className="flex items-center justify-center p-1.5 hover:bg-blue-500/10 text-gray-500 hover:text-blue-500 rounded-lg transition-all duration-200 cursor-pointer"
-                            title="Buscar stream ahora"
+                            title={t('dashboard.connectionItem.searchStreamNow')}
                         >
                             <MdSearch size={18} />
                         </button>
                     )}
                     <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                             e.stopPropagation();
-                            const action = isConnecting || isWaitingStream ? 'cancelar' : 'desconectar';
-                            const confirmed = await dialog.warning(
-                                `¿Estás seguro de ${action} ${name}?`,
-                                {
-                                    title: `Confirmar ${action}`
-                                }
-                            );
-                            if (confirmed) {
-                                onDisconnect?.();
-                            }
+                            onDisconnect?.();
                         }}
                         className="flex items-center justify-center p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg transition-all duration-200 cursor-pointer"
-                        title={isConnecting || isWaitingStream ? "Cancelar conexión" : "Desconectar"}
+                        title={isConnecting || isWaitingStream ? t('dashboard.connectionItem.cancelConnectionTitle') : t('dashboard.connectionItem.disconnectTitle')}
                     >
                         <MdDeleteOutline size={18} />
                     </button>

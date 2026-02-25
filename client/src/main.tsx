@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// i18n debe importarse antes que cualquier componente para que esté listo al primer render
+import './config/i18n'
 import './index.css'
 import App from './App.tsx'
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary'

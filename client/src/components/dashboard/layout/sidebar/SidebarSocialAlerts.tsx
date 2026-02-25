@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { FaTwitch, FaTiktok } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import { SiKick } from 'react-icons/si';
 
 import type { LastFollower, LastRaid } from '../../../../types';
@@ -10,6 +11,8 @@ interface SidebarSocialAlertsProps {
 }
 
 export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSocialAlertsProps) => {
+    const { t } = useTranslation();
+
     if (!lastFollower && !lastRaid) return null;
 
     return (
@@ -17,7 +20,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
             {/* Ultimo Seguidor */}
             {lastFollower && (
                 <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Seguidor</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">{t('dashboard.sidebar.analytics.latestFollower')}</span>
                     <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                         <span className={`shrink-0 ${lastFollower.platform === 'twitch' ? 'text-[#9146FF]' : lastFollower.platform === 'tiktok' ? 'text-white' : 'text-[#53FC18]'}`}>
                             {lastFollower.platform === 'twitch' && <FaTwitch size={16} />}
@@ -34,7 +37,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
             {/* Ultimo Raid */}
             {lastRaid && (
                 <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Raid</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">{t('dashboard.sidebar.analytics.recentRaid')}</span>
                     <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                         <span className={`shrink-0 ${lastRaid.platform === 'twitch' ? 'text-[#9146FF]' : 'text-[#53FC18]'}`}>
                             {lastRaid.platform === 'twitch' && <FaTwitch size={16} />}

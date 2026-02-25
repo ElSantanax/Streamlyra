@@ -5,6 +5,7 @@ import { socket } from '../../../../../services/socket';
 import { toast } from '../../../../../lib/notifications/toast';
 import { validateMessage } from '../utils/messageValidation';
 import { useConnectionsStatus } from '../../../../../hooks/useConnectionsContext';
+import { useTranslation } from 'react-i18next';
 
 export const useMessageSender = (
     user: User | null,
@@ -12,6 +13,7 @@ export const useMessageSender = (
     clearMessage: () => void,
     focusInput: () => void
 ) => {
+    const { t } = useTranslation();
     const [isSending, setIsSending] = useState(false);
     const { getConnectedPlatforms } = useConnectionsStatus();
 
@@ -28,14 +30,14 @@ export const useMessageSender = (
             } else if (successfulPlatforms.length > 0) {
                 const successNames = successfulPlatforms.map(r => r.platform).join(', ');
                 const failedDetails = failedPlatforms
-                    .map(r => `${r.platform}: ${r.error || 'Error desconocido'}`)
+                    .map(r => `${r.platform}: ${r.error || t('validation.unknownError', 'Error desconocido')}`)
                     .join(', ');
-                toast.warning(`Mensaje enviado a ${successNames}. Falló en: ${failedDetails}`);
+                toast.warning(t('validation.partialSuccess', { success: successNames, failed: failedDetails }));
             } else {
                 const errorDetails = failedPlatforms
-                    .map(r => `${r.platform}: ${r.error || 'Error desconocido'}`)
+                    .map(r => `${r.platform}: ${r.error || t('validation.unknownError', 'Error desconocido')}`)
                     .join(', ');
-                toast.error(`Error al enviar mensaje. ${errorDetails}`);
+                toast.error(t('validation.sendError', { details: errorDetails }));
             }
         };
 
@@ -44,7 +46,7 @@ export const useMessageSender = (
         return () => {
             socket.off('message_sent_result', handleMessageSentResult);
         };
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         const handleMessageSendError = (error: { code: string; message: string }) => {
@@ -61,17 +63,17 @@ export const useMessageSender = (
 
     const handleSendMessage = () => {
         if (!validateMessage(message)) {
-            toast.error('El mensaje no puede estar vacío');
+            toast.error(t('validation.messageEmpty', 'El mensaje no puede estar vacío'));
             return;
         }
 
         if (!socket.connected) {
-            toast.error('No hay conexión con el servidor');
+            toast.error(t('validation.noServerConnection', 'No hay conexión con el servidor'));
             return;
         }
 
         if (!user?.id) {
-            toast.error('Usuario no autenticado');
+            toast.error(t('validation.unauthenticated', 'Usuario no autenticado'));
             return;
         }
 
@@ -79,7 +81,7 @@ export const useMessageSender = (
         const connectedPlatforms = getConnectedPlatforms();
 
         if (connectedPlatforms.length === 0) {
-            toast.error('No hay plataformas conectadas para enviar el mensaje');
+            toast.error(t('validation.noPlatformsConnected', 'No hay plataformas conectadas para enviar el mensaje'));
             return;
         }
 

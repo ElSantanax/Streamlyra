@@ -1,7 +1,10 @@
 import { FaTwitch, FaYoutube, FaTiktok } from "react-icons/fa";
 import { SiKick } from "react-icons/si";
+import { useTranslation } from "react-i18next";
 
 const Hero = () => {
+    const { t } = useTranslation();
+
     return (
         <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 px-6 lg:px-8 overflow-hidden flex flex-col items-center">
             {/* Background Gradient Effect */}
@@ -11,9 +14,9 @@ const Hero = () => {
 
             <div className="mx-auto flex flex-col items-center text-center max-w-4xl gap-8 z-10">
                 <h1 className="text-white text-5xl md:text-7xl font-black leading-tight tracking-tight font-display">
-                    Un chat.
+                    {t('hero.headline_1')}
                     <br />
-                    <span className="text-primary">Múltiples plataformas.</span>
+                    <span className="text-primary">{t('hero.headline_2')}</span>
                 </h1>
 
                 <p className="text-slate-400 text-lg md:text-xl font-normal leading-relaxed max-w-2xl font-body flex gap-3 flex-wrap justify-center">

@@ -1,5 +1,6 @@
 import { memo, useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
+import { useTranslation } from 'react-i18next';
 import { LocalErrorBoundary } from '../../common/LocalErrorBoundary';
 import { MdArrowDownward } from 'react-icons/md';
 import ChatMessage from './ChatMessage';
@@ -21,6 +22,7 @@ const ChatFeed = memo(({
     onDelete,
     onBan
 }: ChatFeedProps) => {
+    const { t } = useTranslation();
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -92,15 +94,15 @@ const ChatFeed = memo(({
                 </svg>
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-                {isConnected ? "¡Todo listo para empezar!" : "Conecta tus plataformas"}
+                {isConnected ? t('dashboard.chat.empty.readyTitle') : t('dashboard.chat.empty.connectTitle')}
             </h3>
             <p className="text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
                 {isConnected
-                    ? "Aún no hay mensajes por aquí. ¡Anima a tu comunidad a romper el hielo!"
-                    : "Vincula tus cuentas para empezar a recibir los mensajes de tu comunidad aquí mismo."}
+                    ? t('dashboard.chat.empty.readyDesc')
+                    : t('dashboard.chat.empty.connectDesc')}
             </p>
         </div>
-    ), [isConnected]);
+    ), [isConnected, t]);
 
     return (
         <LocalErrorBoundary section="Chat Feed">
@@ -132,11 +134,11 @@ const ChatFeed = memo(({
                                 ? 'px-4 py-2 rounded-full gap-2'
                                 : 'w-10 h-10 rounded-full'
                                 }`}
-                            title="Volver abajo"
+                            title={t('dashboard.chat.scrollDown')}
                         >
                             {unreadCount > 0 && (
                                 <span className="text-primary font-bold text-xs">
-                                    {unreadCount === 1 ? '1 mensaje nuevo' : `${unreadCount} mensajes nuevos`}
+                                    {unreadCount === 1 ? t('dashboard.chat.newMessages_one') : t('dashboard.chat.newMessages_other', { count: unreadCount })}
                                 </span>
                             )}
                             <MdArrowDownward size={16} className="text-primary" />

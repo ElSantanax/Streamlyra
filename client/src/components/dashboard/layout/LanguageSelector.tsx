@@ -1,4 +1,5 @@
 import { MdLanguage, MdKeyboardArrowDown, MdCheck } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 import { useToggle } from '../../../hooks';
 
 interface LanguageSelectorProps {
@@ -13,6 +14,7 @@ const LanguageSelector = ({
     onClose
 }: LanguageSelectorProps) => {
     const [isOpen, toggleOpen] = useToggle(false);
+    const { t } = useTranslation();
 
     const languages = [
         { code: 'es', label: 'Español' },
@@ -27,7 +29,7 @@ const LanguageSelector = ({
             >
                 <div className="flex items-center gap-3">
                     <MdLanguage size={18} />
-                    <span>Cambiar Idioma</span>
+                    <span>{t('dashboard.header.changeLanguage')}</span>
                 </div>
                 <MdKeyboardArrowDown
                     size={16}

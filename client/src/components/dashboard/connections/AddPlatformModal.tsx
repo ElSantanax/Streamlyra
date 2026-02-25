@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PLATFORMS } from '../../../constants/platforms';
 import PlatformButton from '../../connection/PlatformButton';
 import PlatformInput from '../../connection/PlatformInput';
@@ -21,6 +22,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     onClose,
     onConnectionSuccess
 }) => {
+    const { t } = useTranslation();
     const { connectionsStatus: connections = {} } = useConnectionsStatus();
     const [tiktokUsername, setTiktokUsername] = useState('');
     const [tiktokError, setTiktokError] = useState<string | undefined>();
@@ -49,7 +51,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 
         if (!validation.isValid) {
             setTiktokError(validation.error);
-            toast.error(validation.error || 'Nombre de usuario inválido');
+            toast.error(validation.error || t('dashboard.addPlatformModal.invalidUsername'));
             return;
         }
 
@@ -69,7 +71,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Agregar Plataforma"
+            title={t('dashboard.addPlatformModal.title')}
             size="md"
         >
             <div className="flex flex-col gap-4">
@@ -80,15 +82,15 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                         const isConnected = !!conn?.connected;
                         const status = conn?.status;
 
-                        let label = isConnected ? `${platform.name} Conectado` : `Conectar ${platform.name}`;
-                        if (status === 'connecting') label = `Conectando ${platform.name}...`;
-                        if (status === 'error') label = `Error en ${platform.name}`;
+                        let label = isConnected ? t('dashboard.addPlatformModal.connected', { platform: platform.name }) : t('dashboard.addPlatformModal.connect', { platform: platform.name });
+                        if (status === 'connecting') label = t('dashboard.addPlatformModal.connecting', { platform: platform.name });
+                        if (status === 'error') label = t('dashboard.addPlatformModal.errorIn', { platform: platform.name });
 
                         return (
                             <PlatformButton
                                 key={key}
                                 label={label}
-                                subtext={isConnected ? "Cuenta vinculada exitosamente" : `Vincula tu cuenta de ${platform.name}`}
+                                subtext={isConnected ? t('dashboard.addPlatformModal.linkedSuccessfully') : t('dashboard.addPlatformModal.linkYourAccount', { platform: platform.name })}
                                 Icon={platform.Icon}
                                 iconColor={platform.brandColor}
                                 onClick={() => !isConnected && initiateOAuth(key as 'twitch' | 'youtube' | 'kick')}
@@ -103,14 +105,14 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                         <div className="w-full border-t border-surface-border"></div>
                     </div>
                     <div className="relative flex justify-center">
-                        <span className="px-2 bg-card-dark text-xs text-gray-500 uppercase font-medium tracking-wider">O agrega usuario</span>
+                        <span className="px-2 bg-card-dark text-xs text-gray-500 uppercase font-medium tracking-wider">{t('dashboard.addPlatformModal.orAddUser')}</span>
                     </div>
                 </div>
 
                 <PlatformInput
                     id="tiktok-username"
                     label="TikTok"
-                    placeholder="@usuario"
+                    placeholder={t('dashboard.addPlatformModal.tiktokPlaceholder')}
                     Icon={PLATFORMS.tiktok.Icon}
                     iconColor={PLATFORMS.tiktok.brandColor}
                     value={tiktokUsername}
@@ -118,7 +120,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
                     onConnect={handleTiktokConnect}
                     isConnected={isTiktokConnected || tiktokStatus === 'connecting'}
                     error={tiktokError}
-                    helperText="Usa tu @usuario (no tu nombre visible)"
+                    helperText={t('dashboard.addPlatformModal.tiktokHelper')}
                 />
             </div>
         </Modal>

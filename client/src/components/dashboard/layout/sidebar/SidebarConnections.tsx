@@ -1,5 +1,6 @@
 import { useMemo, memo, useCallback } from 'react';
 import { FaPlus } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import type { PlatformKey } from '../../../../constants/platforms';
 import { formatViewers } from '../../../../lib/formatters';
 import { ConnectionItem } from '../../connections/ConnectionItem';
@@ -62,7 +63,7 @@ export const SidebarConnections = memo(({
     onDisconnect,
     onSearchStream
 }: SidebarConnectionsProps) => {
-    // Consumimos ambos contextos aquí
+    const { t } = useTranslation();
     const { connectionsStatus, isLoadingConnections, searchStream } = useConnectionsStatus();
     const { connectionsStats } = useConnectionsStats();
 
@@ -74,7 +75,7 @@ export const SidebarConnections = memo(({
     }, [connectionsStatus]);
 
     return (
-        <SidebarSection title="Conexiones">
+        <SidebarSection title={t('dashboard.sidebar.connections.title')}>
             {activePlatforms.length > 0 ? (
                 activePlatforms.map((key) => {
                     const status = connectionsStatus[key];
@@ -97,7 +98,7 @@ export const SidebarConnections = memo(({
                 })
             ) : !isLoadingConnections && (
                 <div className="min-h-16.5 px-4 flex items-center justify-center border border-dashed border-surface-border rounded-lg bg-surface-dark/30">
-                    <p className="text-xs text-gray-500">No hay plataformas conectadas</p>
+                    <p className="text-xs text-gray-500">{t('dashboard.sidebar.connections.noPlatforms')}</p>
                 </div>
             )}
 
@@ -109,7 +110,7 @@ export const SidebarConnections = memo(({
                     <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <FaPlus size={12} />
                     </div>
-                    <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Agregar plataforma</span>
+                    <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">{t('dashboard.sidebar.connections.addPlatform')}</span>
                 </button>
             )}
         </SidebarSection>

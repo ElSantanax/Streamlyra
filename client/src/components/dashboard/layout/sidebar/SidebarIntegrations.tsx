@@ -1,5 +1,6 @@
 import { memo, useState, useCallback } from 'react';
 import { MdLink, MdContentCopy, MdRefresh, MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 import { SidebarSection } from './SidebarSection';
 import { useAuth } from '../../../../hooks';
 import { authService } from '../../../../services/api/auth.service';
@@ -8,6 +9,7 @@ import { dialog } from '../../../../lib/dialog/dialog.service';
 
 export const SidebarIntegrations = memo(() => {
     const { user, login } = useAuth();
+    const { t } = useTranslation();
     const [showToken, setShowToken] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
 
@@ -18,18 +20,18 @@ export const SidebarIntegrations = memo(() => {
     const copyToClipboard = useCallback(() => {
         if (!overlayUrl) return;
         navigator.clipboard.writeText(overlayUrl);
-        toast.success('Link del chat para OBS copiado');
-    }, [overlayUrl]);
+        toast.success(t('dashboard.sidebar.integrations.copied'));
+    }, [overlayUrl, t]);
 
     const regenerateToken = useCallback(async () => {
         if (!user) return;
 
         const confirmed = await dialog.warning(
-            '¿Estás seguro de que quieres regenerar el token? El link actual dejará de funcionar en OBS.',
+            t('dashboard.sidebar.integrations.regenerateConfirmDesc'),
             {
-                title: 'Regenerar Token',
-                confirmText: 'Regenerar',
-                cancelText: 'Cancelar'
+                title: t('dashboard.sidebar.integrations.regenerateConfirmTitle'),
+                confirmText: t('dashboard.sidebar.integrations.regenerateConfirm'),
+                cancelText: t('dashboard.sidebar.integrations.regenerateCancel')
             }
         );
         if (!confirmed) return;
@@ -38,24 +40,24 @@ export const SidebarIntegrations = memo(() => {
         try {
             const { overlayToken } = await authService.regenerateOverlayToken();
             login({ ...user, overlayToken });
-            toast.success('Link de chat actualizado correctamente');
+            toast.success(t('dashboard.sidebar.integrations.regenerateSuccess'));
         } catch (error) {
             console.error('Error regenerating token:', error);
-            toast.error('No se pudo regenerar el token');
+            toast.error(t('dashboard.sidebar.integrations.regenerateError'));
         } finally {
             setIsRegenerating(false);
         }
-    }, [user, login]);
+    }, [user, login, t]);
 
     if (!user) return null;
 
     return (
-        <SidebarSection title="Integraciones (OBS)">
+        <SidebarSection title={t('dashboard.sidebar.integrations.title')}>
             <div className="flex flex-col gap-3">
                 <div className="bg-surface-dark border border-surface-border rounded-lg p-3 flex flex-col gap-2.5">
                     <div className="flex items-center gap-2 text-gray-400">
                         <MdLink size={18} className="text-primary" />
-                        <span className="text-xs font-bold uppercase tracking-tight">Chat para OBS</span>
+                        <span className="text-xs font-bold uppercase tracking-tight">{t('dashboard.sidebar.integrations.obsChatTitle')}</span>
                     </div>
 
                     <div className="relative group">
@@ -69,14 +71,14 @@ export const SidebarIntegrations = memo(() => {
                             <button
                                 onClick={() => setShowToken(!showToken)}
                                 className="p-1.5 hover:bg-white/10 text-gray-400 rounded-md transition-colors"
-                                title={showToken ? "Ocultar" : "Mostrar"}
+                                title={showToken ? t('dashboard.sidebar.integrations.hide') : t('dashboard.sidebar.integrations.show')}
                             >
                                 {showToken ? <MdVisibilityOff size={16} /> : <MdVisibility size={16} />}
                             </button>
                             <button
                                 onClick={copyToClipboard}
                                 className="p-1.5 hover:bg-white/10 text-primary rounded-md transition-colors"
-                                title="Copiar link"
+                                title={t('dashboard.sidebar.integrations.copyUrl')}
                             >
                                 <MdContentCopy size={16} />
                             </button>
@@ -89,12 +91,12 @@ export const SidebarIntegrations = memo(() => {
                         className="w-full mt-1 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-gray-300 text-xs font-bold py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 border border-white/5 cursor-pointer active:scale-[0.98]"
                     >
                         <MdRefresh size={16} className={isRegenerating ? 'animate-spin' : ''} />
-                        Regenerar Link
+                        {t('dashboard.sidebar.integrations.regenerateBtn')}
                     </button>
                 </div>
 
                 <p className="text-[10px] text-gray-500 leading-normal px-1">
-                    Pega este link en una "Fuente de Navegador" en OBS. Usa fondo transparente y tamaño 500x800 para mejores resultados.
+                    {t('dashboard.sidebar.integrations.helperText')}
                 </p>
             </div>
         </SidebarSection>

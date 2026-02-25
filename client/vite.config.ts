@@ -24,8 +24,7 @@ export default defineConfig({
             if (id.includes('emoji-picker-react')) return 'vendor-emoji';
             if (id.includes('react-icons')) return 'vendor-icons';
             if (id.includes('react-virtuoso') || id.includes('react-window') || id.includes('react-virtualized-auto-sizer')) return 'vendor-virt';
-            if (id.includes('react') || id.includes('scheduler')) return 'vendor-react';
-            return 'vendor-others';
+            if (id.includes('react') || id.includes('scheduler') || id.includes('i18next')) return 'vendor-react';
           }
         }
       }

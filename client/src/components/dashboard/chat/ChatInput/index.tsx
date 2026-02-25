@@ -1,5 +1,6 @@
 import { lazy, Suspense, memo } from 'react';
 import type { Theme } from 'emoji-picker-react';
+import { useTranslation } from 'react-i18next';
 import { Categories } from 'emoji-picker-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useChatInput } from './hooks/useChatInput';
@@ -13,6 +14,7 @@ import SendButton from './components/SendButton';
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 const ChatInput = memo(() => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const chatInput = useChatInput();
     const { message, setMessage, inputRef, clearMessage, focusInput } = chatInput;
@@ -39,7 +41,7 @@ const ChatInput = memo(() => {
                             <div className="w-87.5 h-112.5 bg-surface-dark border border-surface-border rounded-lg flex items-center justify-center">
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    <span className="text-sm text-gray-400">Cargando emojis...</span>
+                                    <span className="text-sm text-gray-400">{t('dashboard.chat.emojiLoading')}</span>
                                 </div>
                             </div>
                         }>
@@ -48,9 +50,9 @@ const ChatInput = memo(() => {
                                 theme={'dark' as Theme}
                                 width={350}
                                 height={450}
-                                searchPlaceHolder="Buscar emoji..."
+                                searchPlaceHolder={t('dashboard.chat.emojiSearch')}
                                 categories={[
-                                    { category: Categories.SMILEYS_PEOPLE, name: 'Rostros' }
+                                    { category: Categories.SMILEYS_PEOPLE, name: t('dashboard.chat.emojiFaces') }
                                 ]}
                                 skinTonesDisabled
                                 previewConfig={{
@@ -64,7 +66,7 @@ const ChatInput = memo(() => {
                 <input
                     ref={inputRef}
                     className="w-full bg-surface-dark border border-surface-border rounded-lg pl-10 pr-32 py-3 text-sm text-white placeholder-gray-500 focus:outline-none transition-all shadow-sm"
-                    placeholder="Enviar un mensaje"
+                    placeholder={t('dashboard.chat.inputPlaceholder')}
                     type="text"
                     id="chat-message-input"
                     value={message}

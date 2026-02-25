@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Spinner from './components/common/Spinner';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { AuthProvider } from './context/AuthProvider';
@@ -13,12 +14,14 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const OverlayChat = lazy(() => import('./pages/OverlayChat'));
 
 function App() {
+  const { t } = useTranslation();
+
   return (
     <BrowserRouter>
       <AuthProvider>
         <DialogProvider />
         <ConnectionsProvider>
-          <Suspense fallback={<Spinner fullScreen text="Preparando tu experiencia..." size="lg" />}>
+          <Suspense fallback={<Spinner fullScreen text={t('common.loading')} size="lg" />}>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
