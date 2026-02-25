@@ -10,10 +10,18 @@ import { YouTubeSubscription } from "../models/YouTubeSubscription.model";
 import { YouTubeQuota } from "../models/YouTubeQuota.model";
 import { YouTubeStreamContext } from "../models/YouTubeStreamContext.model";
 
+const isProduction = config.nodeEnv === 'production';
+
 const db = new Sequelize(config.databaseUrl, {
     dialect: "postgres",
     logging: false,
     models: [User, Connection, UserAnalytics, KickWebhook, TwitchWebhook, YouTubeSubscription, YouTubeQuota, YouTubeStreamContext],
+    dialectOptions: isProduction ? {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false // Generalmente necesario para Neon/Render/Supabase
+        }
+    } : {},
     pool: {
         max: 20,          // Máximo de conexiones en el pool
         min: 2,           // Mínimo de conexiones mantenidas

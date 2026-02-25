@@ -5,25 +5,46 @@ import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { Transaction } from 'sequelize';
 import { logger } from '../../utils/logger';
+import crypto from 'crypto';
+import { hashToken } from '../../utils/tokenUtils';
+import { encryptionService } from '../security/EncryptionService';
 
+/**
+ * Servicio de Usuario - Maneja la lógica de negocio relacionada con usuarios
+ */
 export class UserService {
     constructor(
         private userRepository: IUserRepository,
         private connectionRepository: IConnectionRepository
     ) { }
 
+    private decryptOverlayToken(user: User | null): User | null {
+        if (user && user.overlayToken && encryptionService.isEncrypted(user.overlayToken)) {
+            try {
+                user.overlayToken = encryptionService.decrypt(user.overlayToken, `User:${user.id} overlayToken`);
+            } catch (err) {
+                logger.error({ err, userId: user.id }, 'Failed to decrypt overlayToken for user');
+                user.overlayToken = '';
+            }
+        }
+        return user;
+    }
+
     async getById(id: string) {
-        return this.userRepository.findByIdWithConnections(id);
+        const user = await this.userRepository.findByIdWithConnections(id);
+        return this.decryptOverlayToken(user);
     }
 
     async findByPlatformId(provider: string, providerId: string, transaction?: Transaction): Promise<User | null> {
         const connection = await this.connectionRepository.findByProvider(provider, providerId, transaction);
         if (!connection) return null;
-        return this.userRepository.findById(connection.userId, transaction);
+        const user = await this.userRepository.findById(connection.userId, transaction);
+        return this.decryptOverlayToken(user);
     }
 
     async findByEmail(email: string, transaction?: Transaction): Promise<User | null> {
-        return this.userRepository.findByEmail(email, transaction);
+        const user = await this.userRepository.findByEmail(email, transaction);
+        return this.decryptOverlayToken(user);
     }
 
     async findOrCreateFromPlatform(
@@ -67,11 +88,17 @@ export class UserService {
             username = `${baseUsername}${suffix++}`;
         }
 
+        const rawToken = crypto.randomUUID();
+        const encryptedToken = encryptionService.encrypt(rawToken);
+        const tokenHash = hashToken(rawToken);
+
         return this.userRepository.create({
             username,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
-            email: profile.email
+            email: profile.email,
+            overlayToken: encryptedToken,
+            overlayTokenHash: tokenHash
         }, transaction);
     }
 
@@ -90,5 +117,24 @@ export class UserService {
             await this.userRepository.update(user.id, updates, transaction);
             logger.debug({ userId: user.id }, 'Profile data updated');
         }
+    }
+
+    async regenerateOverlayToken(userId: string): Promise<string> {
+        const rawToken = crypto.randomUUID();
+        const encryptedToken = encryptionService.encrypt(rawToken);
+        const tokenHash = hashToken(rawToken);
+
+        await this.userRepository.update(userId, {
+            overlayToken: encryptedToken,
+            overlayTokenHash: tokenHash
+        });
+
+        return rawToken;
+    }
+
+    async findByOverlayToken(rawToken: string) {
+        const tokenHash = hashToken(rawToken);
+        const user = await this.userRepository.findByOverlayTokenHash(tokenHash);
+        return this.decryptOverlayToken(user);
     }
 }

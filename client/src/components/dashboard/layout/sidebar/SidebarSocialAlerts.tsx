@@ -16,7 +16,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
         <div className="flex flex-col gap-3">
             {/* Ultimo Seguidor */}
             {lastFollower && (
-                <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
+                <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Seguidor</span>
                     <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                         <span className={`shrink-0 ${lastFollower.platform === 'twitch' ? 'text-[#9146FF]' : lastFollower.platform === 'tiktok' ? 'text-white' : 'text-[#53FC18]'}`}>
@@ -33,7 +33,7 @@ export const SidebarSocialAlerts = memo(({ lastFollower, lastRaid }: SidebarSoci
 
             {/* Ultimo Raid */}
             {lastRaid && (
-                <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
+                <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 overflow-hidden">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Último Raid</span>
                     <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                         <span className={`shrink-0 ${lastRaid.platform === 'twitch' ? 'text-[#9146FF]' : 'text-[#53FC18]'}`}>

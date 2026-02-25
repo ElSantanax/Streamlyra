@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: streamlyra-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Aquí puedes añadir otras variables de entorno que necesites
+      # - key: FRONTEND_URL
+      #   value: "https://tu-frontend-en-vercel.vercel.app"

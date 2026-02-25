@@ -140,7 +140,7 @@ const DashboardContent = () => {
                 )}
 
                 <Suspense fallback={
-                    <aside className="hidden lg:flex w-80 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto">
+                    <aside className="hidden lg:flex w-150 flex-col border-r border-surface-border bg-background-dark p-4 gap-6 overflow-y-auto">
                         <div className="h-4 w-24 bg-gray-700/50 rounded mb-6"></div>
                         <div className="space-y-3">
                             {[1, 2, 3, 4].map(i => (
@@ -151,7 +151,7 @@ const DashboardContent = () => {
                 }>
                     <LocalErrorBoundary section="Sidebar">
                         <div className={`
-                            fixed inset-y-0 left-0 w-80 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0
+                            fixed inset-y-0 left-0 w-80 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0 lg:w-150
                             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                         `}>
                             <Sidebar

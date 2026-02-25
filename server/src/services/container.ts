@@ -71,7 +71,7 @@ export function createContainer(io: Server) {
         authDTOBuilder
     );
 
-    const authService = new AuthService(authFlowProcessor, userProfileService);
+    const authService = new AuthService(authFlowProcessor, userProfileService, userServiceInst);
     const webhookProcessor = new WebhookProcessor(io, connectionService, chatManager);
 
     // Controllers
@@ -85,6 +85,7 @@ export function createContainer(io: Server) {
         youtubeService,
         authController,
         webhookController,
-        twitchManager
+        twitchManager,
+        userService: userServiceInst
     };
 }

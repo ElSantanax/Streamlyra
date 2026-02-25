@@ -15,7 +15,7 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
         twitch: {
             clientId: import.meta.env.VITE_TWITCH_CLIENT_ID as string,
             authUrl: 'https://id.twitch.tv/oauth2/authorize',
-            scope: 'user:read:email chat:read user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:read:followers channel:read:subscriptions user:read:chat user:bot channel:bot',
+            scope: 'user:read:email chat:read user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:read:followers channel:read:subscriptions user:read:chat user:bot channel:bot channel:read:redemptions',
             state: 'twitch'
         },
         youtube: {
@@ -28,7 +28,7 @@ export const initiateOAuth = async (platform: 'twitch' | 'youtube' | 'kick', red
         kick: {
             clientId: import.meta.env.VITE_KICK_CLIENT_ID as string,
             authUrl: 'https://id.kick.com/oauth/authorize',
-            scope: 'user:read channel:read chat:write events:subscribe moderation:chat_message:manage moderation:ban channel:rewards:write',
+            scope: 'user:read channel:read chat:write events:subscribe moderation:chat_message:manage moderation:ban channel:rewards:write channel:rewards:read',
             state: 'kick'
         }
     };

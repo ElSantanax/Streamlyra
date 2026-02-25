@@ -55,4 +55,11 @@ export const authService = {
   async logout(): Promise<void> {
     return apiClient.post(endpoints.auth.logout, {}, true);
   },
+
+  /**
+   * Regenerar token de overlay
+   */
+  async regenerateOverlayToken(): Promise<{ overlayToken: string }> {
+    return apiClient.post<{ overlayToken: string }>(endpoints.auth.regenerateOverlayToken, {}, true);
+  },
 };

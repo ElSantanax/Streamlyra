@@ -2,12 +2,18 @@ import { AuthFlowProcessor } from './AuthFlowProcessor';
 import { UserProfileService } from './core/UserProfileService';
 import { Platform } from '../../constants/platforms';
 import { AuthResponse } from './AuthDTOBuilder';
+import { UserService } from '../user/UserService';
 
 export class AuthService {
     constructor(
         private flowProcessor: AuthFlowProcessor,
-        private userProfileService: UserProfileService
+        private userProfileService: UserProfileService,
+        private userService: UserService
     ) { }
+
+    async regenerateOverlayToken(userId: string): Promise<string> {
+        return this.userService.regenerateOverlayToken(userId);
+    }
 
     async handleOAuthAuth(
         platform: Platform,

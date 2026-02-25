@@ -96,7 +96,7 @@ export const SidebarConnections = memo(({
                     );
                 })
             ) : !isLoadingConnections && (
-                <div className="p-4 text-center border border-dashed border-surface-border rounded-lg bg-surface-dark/30">
+                <div className="min-h-16.5 px-4 flex items-center justify-center border border-dashed border-surface-border rounded-lg bg-surface-dark/30">
                     <p className="text-xs text-gray-500">No hay plataformas conectadas</p>
                 </div>
             )}
@@ -104,10 +104,10 @@ export const SidebarConnections = memo(({
             {!isLoadingConnections && activePlatforms.length < Object.keys(connectionsStatus).length && (
                 <button
                     onClick={onAddPlatform}
-                    className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group"
+                    className="flex items-center gap-3 w-full min-h-16.5 px-4 py-2.5 rounded-lg bg-surface-dark/50 border border-dashed border-surface-border hover:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer group active:scale-[0.98]"
                 >
-                    <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <FaPlus size={14} />
+                    <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <FaPlus size={12} />
                     </div>
                     <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Agregar plataforma</span>
                 </button>

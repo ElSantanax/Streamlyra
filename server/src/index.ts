@@ -1,6 +1,6 @@
 /** Punto de entrada principal del servidor */
 
-import server, { connectToDatabase, gracefulShutdown } from './server';
+import server, { connectToDatabase, gracefulShutdown, runStartupTasks } from './server';
 import { logger } from './utils/logger';
 import { config } from './config';
 import { emitConfigWarnings } from './config/validation';
@@ -13,6 +13,7 @@ process.on('SIGINT', gracefulShutdown);
 async function startServer() {
     try {
         await connectToDatabase();
+        await runStartupTasks();
 
         const PORT = config.port;
 

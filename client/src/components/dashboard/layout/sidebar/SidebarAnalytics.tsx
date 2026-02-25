@@ -53,23 +53,23 @@ export const SidebarAnalytics = memo(() => {
     return (
         <SidebarSection title="Analíticas en Vivo">
             <div className="grid grid-cols-1 gap-3">
-                <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
+                <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Espectadores Totales</span>
                     <div className="flex items-center gap-2 text-gray-400">
-                        <MdGroups size={18} />
+                        <MdGroups size={20} />
                         <span className="text-base text-white font-bold">{formatViewers(totalViewers)}</span>
                     </div>
                 </div>
 
-                <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
+                <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Tendencia</span>
                     <EngagementIndicator currentViews={totalViewers} />
                 </div>
 
-                <div className="p-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
+                <div className="min-h-16.5 px-4 py-3 rounded-lg bg-surface-dark border border-surface-border flex items-center justify-between gap-3 box-base transition-colors hover:bg-surface-light group/stat">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Tiempo al Aire</span>
                     <div className="flex items-center gap-2 text-gray-400">
-                        <MdAccessTime size={18} />
+                        <MdAccessTime size={20} />
                         <span className="text-base text-white font-mono font-bold">
                             {timerData.sessionStartTime ? (
                                 <SimpleTimer startTime={timerData.sessionStartTime} serverTime={timerData.latestServerTime} />

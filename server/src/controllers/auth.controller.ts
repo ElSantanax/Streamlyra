@@ -131,4 +131,13 @@ export class AuthController {
         });
         res.json({ success: true, message: 'Sesión cerrada exitosamente' });
     };
+
+    regenerateOverlayToken = async (req: AuthRequest, res: Response): Promise<void> => {
+        if (!req.user) {
+            throw new AppError('No autorizado', 401);
+        }
+
+        const newToken = await this.authService.regenerateOverlayToken(req.user.id);
+        res.json({ success: true, overlayToken: newToken });
+    };
 }

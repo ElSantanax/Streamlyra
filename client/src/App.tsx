@@ -10,6 +10,7 @@ const Landing = lazy(() => import('./pages/Landing'));
 const PlatformConnection = lazy(() => import('./pages/PlatformConnection'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const OverlayChat = lazy(() => import('./pages/OverlayChat'));
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/login" element={<PlatformConnection />} />
               <Route path="/register" element={<PlatformConnection />} />
+              <Route path="/overlay/chat/:token" element={<OverlayChat />} />
 
               {/* Rutas protegidas */}
               <Route

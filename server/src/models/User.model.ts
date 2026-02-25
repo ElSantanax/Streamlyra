@@ -45,4 +45,12 @@ export class User extends Model {
 
     @HasOne(() => UserAnalytics)
     declare analytics: UserAnalytics;
+
+    @Unique
+    @Column(DataType.TEXT)
+    declare overlayToken: string;
+
+    @Unique
+    @Column(DataType.STRING)
+    declare overlayTokenHash: string;
 }

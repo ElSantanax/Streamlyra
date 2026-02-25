@@ -12,6 +12,7 @@ export const endpoints = {
     tiktok: '/auth/tiktok',
     platform: '/auth/platform',
     logout: '/auth/logout',
+    regenerateOverlayToken: '/auth/overlay-token/regenerate',
   },
 
   oauth: {

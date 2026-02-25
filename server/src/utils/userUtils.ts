@@ -7,6 +7,7 @@ export interface UserDTO {
     username: string;
     displayName: string;
     avatar: string;
+    overlayToken?: string;
 }
 
 /**
@@ -17,6 +18,7 @@ export function buildUserDTO(user: User): UserDTO {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
-        avatar: user.avatarUrl
+        avatar: user.avatarUrl,
+        overlayToken: user.overlayToken
     };
 }

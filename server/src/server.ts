@@ -10,6 +10,11 @@ import { createApp } from './app';
 import { setupSocketHandlers } from './socket/socket.handler';
 import { YouTubeSubscriptionRenewer } from './services/cron/YouTubeSubscriptionRenewer';
 import { ConnectionRepository } from './repositories/implementations/ConnectionRepository';
+import { User } from './models/User.model';
+import crypto from 'crypto';
+import { hashToken } from './utils/tokenUtils';
+import { encryptionService } from './services/security/EncryptionService';
+import { Op } from 'sequelize';
 
 const io = new Server({
     cors: {
@@ -27,7 +32,8 @@ const {
     youtubeService,
     authController,
     webhookController,
-    twitchManager
+    twitchManager,
+    userService
 } = container;
 
 const app = createApp(authController, webhookController);
@@ -35,7 +41,7 @@ const app = createApp(authController, webhookController);
 const server = http.createServer(app);
 io.attach(server);
 
-setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService);
+setupSocketHandlers(io, chatManager, messageSenderService, connectionService, youtubeService, userService);
 
 const youtubeSubscriptionRenewer = new YouTubeSubscriptionRenewer();
 youtubeSubscriptionRenewer.start();
@@ -55,13 +61,38 @@ export function gracefulShutdown(): void {
     });
 }
 
-(async () => {
+export async function runStartupTasks(): Promise<void> {
     try {
         await twitchManager.syncSubscriptionsOnStartup();
+
+        // Asegurar que todos los usuarios tengan un overlayToken y su Hash
+        const usersToUpdate = await User.findAll({
+            where: {
+                [Op.or]: [
+                    { overlayTokenHash: null },
+                    { overlayToken: null }
+                ]
+            }
+        });
+
+        for (const user of usersToUpdate) {
+            const rawToken = user.overlayToken || crypto.randomUUID();
+            const encryptedToken = encryptionService.isEncrypted(rawToken)
+                ? rawToken
+                : encryptionService.encrypt(rawToken);
+            const tokenHash = hashToken(encryptionService.isEncrypted(rawToken)
+                ? encryptionService.decrypt(rawToken, `Startup migration for user ${user.id}`)
+                : rawToken);
+
+            user.overlayToken = encryptedToken;
+            user.overlayTokenHash = tokenHash;
+            await user.save();
+            logger.info({ userId: user.id }, 'Generated/Updated overlayToken and Hash for user');
+        }
     } catch (err) {
-        logger.error({ err }, 'Twitch Startup: Error fatal en la sincronización inicial');
+        logger.error({ err }, 'Startup Tasks: Error during initial synchronization');
     }
-})();
+}
 
 export { app, io, chatManager, connectToDatabase };
 export default server;

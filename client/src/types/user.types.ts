@@ -7,6 +7,7 @@ export interface User {
   username: string;
   displayName: string;
   avatar: string;
+  overlayToken?: string;
 }
 
 export interface AuthResponse {

@@ -7,13 +7,14 @@ interface SidebarQuickActionsProps {
 }
 
 export const SidebarQuickActions = memo(({ onClearChat }: SidebarQuickActionsProps) => (
-    <SidebarSection title="Acciones Rápidas" className="mt-auto">
+    <SidebarSection title="Acciones Rápidas">
         <div className="flex flex-col gap-2">
             <button
                 onClick={onClearChat}
-                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-red-500/5 hover:bg-red-500/10 text-red-500 border border-red-500/10 px-3 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
             >
-                <MdDeleteSweep size={20} /> Limpiar Chat
+                <MdDeleteSweep size={18} className="opacity-80" />
+                <span>Limpiar Chat</span>
             </button>
         </div>
     </SidebarSection>

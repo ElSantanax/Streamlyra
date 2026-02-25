@@ -35,6 +35,8 @@ export class UserRepository implements IUserRepository {
         displayName?: string;
         email?: string;
         avatarUrl?: string;
+        overlayToken?: string;
+        overlayTokenHash?: string;
     }, transaction?: Transaction): Promise<User> {
         return User.create(data, { transaction }) as Promise<User>;
     }
@@ -46,6 +48,8 @@ export class UserRepository implements IUserRepository {
             displayName: string;
             email: string;
             avatarUrl: string;
+            overlayToken: string;
+            overlayTokenHash: string;
         }>,
         transaction?: Transaction
     ): Promise<User | null> {
@@ -57,5 +61,9 @@ export class UserRepository implements IUserRepository {
     async usernameExists(username: string, transaction?: Transaction): Promise<boolean> {
         const user = await this.findByUsername(username, transaction);
         return user !== null;
+    }
+
+    async findByOverlayTokenHash(hash: string, transaction?: Transaction): Promise<User | null> {
+        return User.findOne({ where: { overlayTokenHash: hash }, transaction }) as Promise<User | null>;
     }
 }

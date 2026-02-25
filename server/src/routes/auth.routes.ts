@@ -29,6 +29,8 @@ export const createAuthRoutes = (authController: AuthController) => {
 
     router.post('/logout', authenticateToken, authController.logout);
 
+    router.post('/overlay-token/regenerate', authenticateToken, authController.regenerateOverlayToken);
+
     return router;
 };
 

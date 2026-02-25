@@ -18,6 +18,8 @@ export interface IUserRepository {
         displayName?: string;
         email?: string;
         avatarUrl?: string;
+        overlayToken?: string;
+        overlayTokenHash?: string;
     }, transaction?: Transaction): Promise<User>;
 
     update(id: string, data: Partial<{
@@ -25,7 +27,11 @@ export interface IUserRepository {
         displayName: string;
         email: string;
         avatarUrl: string;
+        overlayToken: string;
+        overlayTokenHash: string;
     }>, transaction?: Transaction): Promise<User | null>;
 
     usernameExists(username: string, transaction?: Transaction): Promise<boolean>;
+
+    findByOverlayTokenHash(hash: string, transaction?: Transaction): Promise<User | null>;
 }

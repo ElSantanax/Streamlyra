@@ -34,7 +34,7 @@ export const ConnectionItem = memo(({
     const showSearchButton = (isYouTube || isTikTok) && isWaitingStream;
 
     return (
-        <div className={`flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting && !isWaitingStream ? 'opacity-60' : ''}`}>
+        <div className={`flex items-center justify-between min-h-16.5 px-4 py-2.5 rounded-lg bg-surface-dark border border-surface-border ${!isConnected && !isConnecting && !isWaitingStream ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center size-8 rounded-full ${color} ${iconColor}`}>
                     <Icon size={platformKey === 'tiktok' ? 14 : 16} />

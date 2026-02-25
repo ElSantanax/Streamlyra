@@ -13,6 +13,7 @@ import { createAuthMiddleware } from './middleware/SocketAuthMiddleware';
 import { MessageSocketHandler } from './handlers/MessageSocketHandler';
 import { ModerationSocketHandler } from './handlers/ModerationSocketHandler';
 import { ConnectionSocketHandler } from './handlers/ConnectionSocketHandler';
+import { UserService } from '../services/user/UserService';
 
 declare module 'socket.io' {
     interface SocketData {
@@ -25,7 +26,8 @@ export const setupSocketHandlers = (
     chatManager: ChatManager,
     messageSenderService: MessageSenderService,
     connectionService: ConnectionService,
-    youtubeService: YouTubeService
+    youtubeService: YouTubeService,
+    userService: UserService
 ) => {
     logger.info({}, 'Configurando manejadores de Socket.io');
 
@@ -47,7 +49,7 @@ export const setupSocketHandlers = (
     const connectionHandler = new ConnectionSocketHandler(connectionManager);
 
     // Setup authentication middleware
-    io.use(createAuthMiddleware());
+    io.use(createAuthMiddleware(userService));
 
     io.on('connection', async (socket: Socket) => {
         const authenticatedUserId = (socket.data as { userId?: string }).userId;
