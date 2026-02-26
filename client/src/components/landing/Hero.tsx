@@ -27,7 +27,7 @@ const Hero = () => {
                 </p>
             </div>
 
-            <div className="mt-16 md:mt-24 w-full max-w-6xl mx-auto relative z-10 px-4">
+            <div className="mt-16 md:mt-24 w-full max-w-screen-2xl mx-auto relative z-10 px-4 lg:px-6">
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] bg-[#0A0A0A]/50 backdrop-blur-sm">
                     {/* Mockup Top Bar like Kiro */}
                     <div className="h-10 bg-black/80 border-b border-white/10 flex items-center px-4 gap-2 backdrop-blur-md">
@@ -38,7 +38,7 @@ const Hero = () => {
                     {/* Image */}
                     <div className="w-full bg-surface-dark overflow-hidden">
                         <img
-                            src="/hero.png"
+                            src="/img/hero.png"
                             alt="Streamlyra Dashboard Preview"
                             className="w-full h-auto object-cover block"
                             width={1920}
