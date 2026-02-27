@@ -14,20 +14,24 @@
 | ✅ **CRÍTICA** | **Validación** | `validation.ts` | 100% | Validación de inputs - completado |
 | ✅ **CRÍTICA** | **Validación** | `zod.middleware.ts` | 100% | Sanitización de datos - completado |
 | ✅ **CRÍTICA** | **Validación** | `ModerationValidator.ts` | 100% | Validación de moderación - completado |
-| 🟡 **ALTA** | **Core Business** | `ChatManager.ts` | 0% | Orquestación de chat multi-plataforma |
-| 🟡 **ALTA** | **Core Business** | `ConnectionService.ts` | 0% | Gestión de conexiones |
-| 🟡 **ALTA** | **Core Business** | `MessageSenderService.ts` | 0% | Envío de mensajes crítico |
-| 🟡 **ALTA** | **Repositorios** | `ConnectionRepository.ts` | 0% | Acceso a datos principal |
-| 🟡 **ALTA** | **Repositorios** | `UserRepository.ts` | 0% | Operaciones de usuario |
-| 🟡 **ALTA** | **Transformers** | `KickEventTransformer.ts` | 0% | Normalización de eventos |
-| 🟡 **ALTA** | **Transformers** | `TwitchEventTransformer.ts` | 0% | Normalización de eventos |
-| 🟡 **ALTA** | **Transformers** | `YouTubeEventTransformer.ts` | 0% | Normalización de eventos |
-| 🟡 **ALTA** | **Error Handling** | `error.middleware.ts` | 0% | Manejo centralizado de errores |
-| 🟡 **ALTA** | **Error Handling** | `errorHandling.ts` | 0% | Utils de error handling |
+| ✅ **CRÍTICA** | **Validación** | `ModerationValidator.ts` | 100% | Validación de moderación - completado |
+
+| ✅ **ALTA** | **Core Business** | `ChatManager.ts` | 0% | Orquestación de chat multi-plataforma |
+| ✅ **ALTA** | **Core Business** | `ConnectionService.ts` | 0% | Gestión de conexiones |
+| ✅ **ALTA** | **Core Business** | `MessageSenderService.ts` | 0% | Envío de mensajes crítico |
+| ✅ **ALTA** | **Repositorios** | `ConnectionRepository.ts` | 0% | Acceso a datos principal |
+| ✅ **ALTA** | **Repositorios** | `UserRepository.ts` | 0% | Operaciones de usuario |
+| ✅ **ALTA** | **Transformers** | `KickEventTransformer.ts` | 0% | Normalización de eventos |
+| ✅ **ALTA** | **Transformers** | `TwitchEventTransformer.ts` | 0% | Normalización de eventos |
+| ✅ **ALTA** | **Transformers** | `YouTubeEventTransformer.ts` | 0% | Normalización de eventos |
+| ✅ **ALTA** | **Error Handling** | `error.middleware.ts` | 0% | Manejo centralizado de errores |
+| ✅ **ALTA** | **Error Handling** | `errorHandling.ts` | 0% | Utils de error handling |
+
 | 🟢 **MEDIA** | **Controllers** | `auth.controller.ts` | 0% | Endpoints HTTP (menos crítico) |
 | 🟢 **MEDIA** | **Controllers** | `webhook.controller.ts` | 0% | Webhooks de plataformas |
 | 🟢 **MEDIA** | **Moderation** | `*ModerationService.ts` | 0% | Servicios de moderación |
 | 🟢 **MEDIA** | **Platform Services** | `*Service.ts` | 0% | Integraciones con APIs |
+
 | ⚪ **BAJA** | **Config** | `db.ts` | 0% | Configuración de DB |
 | ⚪ **BAJA** | **Models** | `*.model.ts` | 0% | Schemas de Mongoose |
 | ⚪ **BAJA** | **Constants** | `platforms.ts`, `*-emotes.ts` | 0% | Datos estáticos |
