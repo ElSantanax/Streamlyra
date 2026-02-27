@@ -1,15 +1,4 @@
-<pre style="font-family: monospace; line-height: 1; letter-spacing: 0;">
-                     _____ _                            _                     
-                    / ____| |                          | |                    
-                   | (___ | |_ _ __ ___  __ _ _ __ ___ | |    _   _ _ __ __ _ 
-                    \___ \| __| '__/ _ \/ _` | '_ ` _ \| |   | | | | '__/ _` |
-                    ____) | |_| | |  __/ (_| | | | | | | |___| |_| | | | (_| |
-                   |_____/ \__|_|  \___|\__,_|_| |_| |_|______\__, |_|  \__,_|
-                                                               __/ |          
-                                                              |___/           
-</pre>
-
-<img width="1486" height="836" alt="hero" src="https://github.com/user-attachments/assets/089a943c-4cdf-471b-86ca-d455b30fab03" />
+<img width="1920" height="1080" alt="streamlyra" src="https://github.com/user-attachments/assets/5f663de3-f07d-49b9-bd25-0c18831f97b6" />
 
 Es una solución moderna para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
 
