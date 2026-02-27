@@ -27,10 +27,10 @@
 | ✅ **ALTA** | **Error Handling** | `error.middleware.ts` | 0% | Manejo centralizado de errores |
 | ✅ **ALTA** | **Error Handling** | `errorHandling.ts` | 0% | Utils de error handling |
 
-| 🟢 **MEDIA** | **Controllers** | `auth.controller.ts` | 0% | Endpoints HTTP (menos crítico) |
-| 🟢 **MEDIA** | **Controllers** | `webhook.controller.ts` | 0% | Webhooks de plataformas |
-| 🟢 **MEDIA** | **Moderation** | `*ModerationService.ts` | 0% | Servicios de moderación |
-| 🟢 **MEDIA** | **Platform Services** | `*Service.ts` | 0% | Integraciones con APIs |
+| ✅ **MEDIA** | **Controllers** | `auth.controller.ts` | 0% | Endpoints HTTP (menos crítico) |
+| ✅ **MEDIA** | **Controllers** | `webhook.controller.ts` | 0% | Webhooks de plataformas |
+| ✅ **MEDIA** | **Moderation** | `*ModerationService.ts` | 0% | Servicios de moderación |
+| ✅ **MEDIA** | **Platform Services** | `*Service.ts` | 0% | Integraciones con APIs |
 
 | ⚪ **BAJA** | **Config** | `db.ts` | 0% | Configuración de DB |
 | ⚪ **BAJA** | **Models** | `*.model.ts` | 0% | Schemas de Mongoose |

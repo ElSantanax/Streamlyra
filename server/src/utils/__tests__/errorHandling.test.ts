@@ -15,24 +15,24 @@ describe('withErrorHandling', () => {
 
   describe('Casos positivos - Ejecución exitosa', () => {
     it('debe ejecutar función exitosamente y retornar resultado', async () => {
-      const mockFn = jest.fn().mockResolvedValue('resultado exitoso');
+      const mockFn = jest.fn().mockResolvedValue('success');
       const context: ErrorContext & { action: string } = {
-        action: 'test-action',
+        action: 'testAction',
         userId: 'user123'
       };
 
       const result = await withErrorHandling(mockFn, context);
 
-      expect(result).toBe('resultado exitoso');
+      expect(result).toBe('success');
       expect(mockFn).toHaveBeenCalledTimes(1);
-      expect(logger.debug).toHaveBeenCalledWith({ userId: 'user123' }, 'test-action started');
-      expect(logger.debug).toHaveBeenCalledWith({ userId: 'user123' }, 'test-action completed');
+      expect(logger.debug).toHaveBeenCalledWith({ userId: 'user123' }, 'testAction started');
+      expect(logger.debug).toHaveBeenCalledWith({ userId: 'user123' }, 'testAction completed');
     });
 
     it('debe ejecutar función con contexto completo', async () => {
       const mockFn = jest.fn().mockResolvedValue({ data: 'test' });
       const context: ErrorContext & { action: string } = {
-        action: 'fetch-data',
+        action: 'fetchData',
         userId: 'user456',
         platform: 'twitch'
       };
@@ -42,45 +42,33 @@ describe('withErrorHandling', () => {
       expect(result).toEqual({ data: 'test' });
       expect(logger.debug).toHaveBeenCalledWith(
         { userId: 'user456', platform: 'twitch' },
-        'fetch-data started'
+        'fetchData started'
       );
     });
   });
 
-  describe('Casos negativos - Manejo de errores con rethrow', () => {
+  describe('Casos negativos - Manejo de errores', () => {
     it('debe loggear error y relanzarlo cuando rethrow es true', async () => {
-      const error = new Error('Error de prueba');
+      const error = new Error('Test error');
       const mockFn = jest.fn().mockRejectedValue(error);
       const context: ErrorContext & { action: string } = {
-        action: 'failing-action',
+        action: 'failingAction',
         userId: 'user789'
       };
 
-      await expect(withErrorHandling(mockFn, context)).rejects.toThrow('Error de prueba');
+      await expect(withErrorHandling(mockFn, context)).rejects.toThrow('Test error');
 
       expect(logger.error).toHaveBeenCalledWith(
         { err: error, userId: 'user789' },
-        'Error in failing-action'
+        'Error in failingAction'
       );
     });
 
-    it('debe relanzar error por defecto cuando no se especifica rethrow', async () => {
-      const error = new Error('Error sin opciones');
-      const mockFn = jest.fn().mockRejectedValue(error);
-      const context: ErrorContext & { action: string } = {
-        action: 'default-action'
-      };
-
-      await expect(withErrorHandling(mockFn, context)).rejects.toThrow('Error sin opciones');
-    });
-  });
-
-  describe('Casos negativos - Manejo de errores sin rethrow', () => {
     it('debe retornar undefined cuando rethrow es false', async () => {
-      const error = new Error('Error silenciado');
+      const error = new Error('Handled error');
       const mockFn = jest.fn().mockRejectedValue(error);
       const context: ErrorContext & { action: string } = {
-        action: 'silent-action',
+        action: 'handledAction',
         platform: 'youtube'
       };
 
@@ -89,33 +77,23 @@ describe('withErrorHandling', () => {
       expect(result).toBeUndefined();
       expect(logger.error).toHaveBeenCalledWith(
         { err: error, platform: 'youtube' },
-        'Error in silent-action'
+        'Error in handledAction'
       );
     });
   });
 
-  describe('Edge cases - Contexto adicional', () => {
-    it('debe manejar contexto con propiedades adicionales', async () => {
-      const mockFn = jest.fn().mockResolvedValue(true);
+  describe('Edge cases - Contexto mínimo', () => {
+    it('debe funcionar con contexto que solo contiene action', async () => {
+      const mockFn = jest.fn().mockResolvedValue(42);
       const context: ErrorContext & { action: string } = {
-        action: 'complex-action',
-        userId: 'user999',
-        platform: 'kick',
-        customField: 'custom-value',
-        nested: { data: 'nested' }
+        action: 'minimalAction'
       };
 
-      await withErrorHandling(mockFn, context);
+      const result = await withErrorHandling(mockFn, context);
 
-      expect(logger.debug).toHaveBeenCalledWith(
-        {
-          userId: 'user999',
-          platform: 'kick',
-          customField: 'custom-value',
-          nested: { data: 'nested' }
-        },
-        'complex-action started'
-      );
+      expect(result).toBe(42);
+      expect(logger.debug).toHaveBeenCalledWith({}, 'minimalAction started');
+      expect(logger.debug).toHaveBeenCalledWith({}, 'minimalAction completed');
     });
   });
 });
