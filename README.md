@@ -9,6 +9,8 @@
                                                               |___/           
 </pre>
 
+<img width="1486" height="836" alt="hero" src="https://github.com/user-attachments/assets/089a943c-4cdf-471b-86ca-d455b30fab03" />
+
 Es una solución moderna para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
 
 ## Capacidades por Plataforma
