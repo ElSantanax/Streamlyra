@@ -61,8 +61,6 @@ export class KickChatProvider implements ChatProvider {
             const { broadcasterId, slug } = channelInfo;
             logger.info({ slug, broadcasterId, userId }, 'Kick channel found');
 
-            // Solo detener el polling previo al reconectar, sin desactivar el webhook
-            // en BD (evita la ventana donde mensajes son descartados silenciosamente)
             this.manager.stopViewerPolling(userId);
 
             this.manager.startViewerPolling(userId, accessToken, io);
