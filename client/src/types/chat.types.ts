@@ -42,7 +42,6 @@ export interface ViewersUpdate {
   serverTime?: string;
 }
 
-
 export interface ConnectionStatusUpdate {
   platform: string;
   status: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';

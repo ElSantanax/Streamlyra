@@ -146,7 +146,6 @@ export const useSocket = ({
       });
     };
 
-
     const handleMessageStatusUpdate = (data: {
       messageId: string;
       status: 'sending' | 'sent' | 'error';

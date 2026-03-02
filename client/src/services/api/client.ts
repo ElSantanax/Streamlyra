@@ -58,8 +58,6 @@ class HttpClient {
 
       // Manejar sesión expirada (401) SOLAMENTE si requiere auth
       if (response.status === 401 && requiresAuth) {
-        // En una implementación más compleja podríamos leer el body aquí para confirmar
-        // que es un error de "token expired", pero por ahora confiamos en el status y requiresAuth
         const path = window.location.pathname;
         const isPublicAuthRoute = path === '/login' || path === '/register' || path === '/auth/callback';
         if (!isPublicAuthRoute) {
