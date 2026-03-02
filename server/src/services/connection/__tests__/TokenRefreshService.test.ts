@@ -216,6 +216,23 @@ describe('TokenRefreshService', () => {
             expect(mockService.refreshAccessToken).toHaveBeenCalledTimes(3);
         });
 
+        it('no debe reintentar cuando el error no es un objeto', async () => {
+            const connection = createMockConnection({
+                expiryDate: new Date(Date.now() + 2 * 60 * 1000)
+            });
+
+            mockRepository.findByUserAndProvider.mockResolvedValue(connection);
+            const mockService = {
+                refreshAccessToken: jest.fn().mockRejectedValue('string error')
+            };
+            (PlatformServiceFactory.getService as jest.Mock).mockReturnValue(mockService);
+
+            const result = await service.getValidAccessToken('user-123', 'twitch');
+
+            expect(result).toBeNull();
+            expect(mockService.refreshAccessToken).toHaveBeenCalledTimes(1);
+        });
+
         it('debe limpiar tokens cuando refresh token es inválido', async () => {
             const connection = createMockConnection({
                 expiryDate: new Date(Date.now() + 2 * 60 * 1000)
@@ -228,6 +245,26 @@ describe('TokenRefreshService', () => {
             };
             (PlatformServiceFactory.getService as jest.Mock).mockReturnValue(mockService);
             mockRepository.clearTokens.mockResolvedValue();
+
+            const result = await service.getValidAccessToken('user-123', 'twitch');
+
+            expect(result).toBeNull();
+            expect(mockRepository.clearTokens).toHaveBeenCalledWith('conn-123');
+        });
+
+        it('debe manejar error al intentar limpiar tokens inválidos', async () => {
+            const connection = createMockConnection({
+                expiryDate: new Date(Date.now() + 2 * 60 * 1000)
+            });
+            const invalidGrantError = new Error('invalid_grant');
+            const clearError = new Error('Database error');
+
+            mockRepository.findByUserAndProvider.mockResolvedValue(connection);
+            const mockService = {
+                refreshAccessToken: jest.fn().mockRejectedValue(invalidGrantError)
+            };
+            (PlatformServiceFactory.getService as jest.Mock).mockReturnValue(mockService);
+            mockRepository.clearTokens.mockRejectedValue(clearError);
 
             const result = await service.getValidAccessToken('user-123', 'twitch');
 

@@ -46,24 +46,24 @@
 
 ---
 
-### 3. Core Business Logic (6-36% → 70%+)
+### ✅ 3. Core Business Logic (COMPLETADO - 92%+)
 
 **Stream y Analytics**
 ```
-src/services/core/StreamSessionManager.ts          (6.89%)
-src/services/core/AnalyticsService.ts              (0%)
-src/services/core/ChatManager.ts                   (100% ✓ mantener)
+✓ src/services/core/StreamSessionManager.ts          (100% - 10 tests)
+✓ src/services/core/AnalyticsService.ts              (89.74% - 10 tests)
+✓ src/services/core/ChatManager.ts                   (100% ✓ mantener)
 ```
 
 **Gestión de Conexiones**
 ```
-src/services/connection/ConnectionService.ts        (100% ✓)
-src/services/connection/TokenRefreshService.ts      (92.77% - mejorar edges)
+✓ src/services/connection/ConnectionService.ts        (100% ✓)
+✓ src/services/connection/TokenRefreshService.ts      (95.18% - 15 tests, mejorado desde 92.77%)
 ```
 
-**Justificación**: Corazón de la aplicación. Alta complejidad lógica.  
-**Tipo de tests**: Unit con mocks de servicios externos  
-**Estimación**: 3-4 días
+**Estado**: COMPLETADO - 35 tests creados  
+**Coverage**: 92.85% statements, 94.56% branches  
+**Tipo de tests**: Unit con mocks tipados
 
 ---
 
@@ -271,13 +271,16 @@ src/index.ts
 - ✅ Servicios de socket (70%+)
 - **Resultado**: 46 tests creados, coverage crítico 70%+
 
-### Sprint 2 (Semana 3-4): Core Business
-- ✅ StreamSessionManager
-- ✅ AnalyticsService
-- ✅ Webhook processors
-- **Objetivo**: 45% coverage global
+### ✅ Sprint 2 (COMPLETADO): Core Business
+- ✅ StreamSessionManager (100%)
+- ✅ AnalyticsService (89.74%)
+- ✅ TokenRefreshService (95.18%)
+- **Resultado**: 35 tests creados, coverage 92%+
 
-### Sprint 3 (Semana 5-6): Platform Integration
+### Sprint 3 (Semana 3-4): Webhook & Platform Integration
+- ⏳ Webhook processors
+- ⏳ Platform services (Twitch, Kick, YouTube)
+- **Objetivo**: 45% coverage global
 - ✅ Platform services (Twitch, Kick, YouTube)
 - ✅ Chat providers
 - **Objetivo**: 55% coverage global
