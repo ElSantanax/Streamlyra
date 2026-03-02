@@ -38,5 +38,12 @@ export default tseslint.config(
             "no-console": "off",
             "prefer-const": "error",
         },
+    },
+    {
+        files: ["**/__tests__/**/*.ts", "**/*.test.ts", "**/*.spec.ts"],
+        rules: {
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+        },
     }
 );

@@ -16,6 +16,23 @@ Los archivos de prueba se encuentran junto al código que prueban, dentro de car
 - **Routes/Controllers**: Ubicados en `src/routes/__tests__`. Validan que los endpoints respondan correctamente y manejen errores.
 - **Sockets**: Prueban la emisión y recepción de eventos en tiempo real.
 
+## Calidad de Código y Linting en Tests
+
+Para mantener un equilibrio entre seguridad tipográfica y agilidad en el desarrollo de pruebas, la configuración de ESLint en `server/eslint.config.mjs` incluye excepciones específicas para archivos de test (`*.test.ts`, `*.spec.ts`, `**/__tests__/**/*.ts`).
+
+### Reglas Relajadas en Tests
+
+Se han desactivado las siguientes reglas en el entorno de pruebas:
+
+- `@typescript-eslint/no-unsafe-assignment`
+- `@typescript-eslint/no-unsafe-member-access`
+
+**¿Por qué?**
+Los matchers de Jest como `expect.objectContaining()`, `expect.any()`, y los mocks creados con `jest.fn()` o `jest.spyOn()` a menudo retornan tipos que TypeScript infiere como `any`. Forzar el tipado estricto en estas líneas genera "falsos positivos" que no representan un riesgo real para la estabilidad, sino que dificultan la lectura de los tests.
+
+> [!TIP]
+> **Mejor Práctica**: Evita usar `// eslint-disable-next-line` dentro de los archivos de test para estas reglas, ya que la configuración global ya las gestiona. Si encuentras un warning persistente de otro tipo, considera si debe ajustarse globalmente antes de silenciarlo localmente.
+
 ## Comandos Útiles
 
 Desde el directorio `server/`:
