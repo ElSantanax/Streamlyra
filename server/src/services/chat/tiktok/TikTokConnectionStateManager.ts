@@ -59,10 +59,8 @@ export class TikTokConnectionStateManager {
     }
 
     incrementAutoAttempts(userId: string): void {
-        const state = this.states.get(userId);
-        if (state) {
-            state.autoAttempts++;
-        }
+        const state = this.getOrCreateState(userId);
+        state.autoAttempts++;
     }
 
     isManualMode(userId: string): boolean {

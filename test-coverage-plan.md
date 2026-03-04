@@ -124,8 +124,8 @@
 
 ```
 ✓ src/middleware/webhooks/kick.middleware.ts             (100% Statements, 100% Branches)
-✓ src/middleware/webhooks/twitch.middleware.ts           (88.33% Statements, 65.11% Branches)
-✓ src/middleware/webhooks/youtube.middleware.ts          (83.07% Statements, 77.41% Branches)
+✓ src/middleware/webhooks/twitch.middleware.ts           (98.33% Statements, 90.69% Branches)
+✓ src/middleware/webhooks/youtube.middleware.ts          (96.92% Statements, 93.54% Branches)
 ✓ src/middleware/webhooks/utils.ts                       (100% Statements, 100% Branches)
 ```
 
@@ -140,30 +140,30 @@
 **Twitch**
 
 ```
-src/services/chat/twitch/TwitchChatProvider.ts
-src/services/chat/twitch/TwitchConnectionManager.ts
-src/services/chat/twitch/TwitchEventListener.ts
-src/services/chat/twitch/TwitchManager.ts
-src/services/chat/twitch/TwitchWebhookService.ts
+✓ src/services/chat/twitch/TwitchChatProvider.ts         (100% Statements, 91.66% Branches)
+✓ src/services/chat/twitch/TwitchConnectionManager.ts    (100% Statements, 100% Branches)
+✓ src/services/chat/twitch/TwitchEventListener.ts        (100% Statements, 100% Branches)
+✓ src/services/chat/twitch/TwitchManager.ts              (96.58% Statements, 86.66% Branches)
+✓ src/services/chat/twitch/TwitchWebhookService.ts       (100% Statements, 95.65% Branches)
 ```
 
 **Kick**
 
 ```
-src/services/chat/kick/KickChatProvider.ts
-src/services/chat/kick/KickManager.ts
-src/services/chat/kick/KickWebhookService.ts
+✓ src/services/chat/kick/KickChatProvider.ts         (100% Statements, 100% Branches)
+✓ src/services/chat/kick/KickManager.ts              (98.24% Statements, 90.90% Branches)
+✓ src/services/chat/kick/KickWebhookService.ts       (97.91% Statements, 89.47% Branches)
 ```
 
 **TikTok**
 
 ```
-src/services/chat/tiktok/TikTokChatProvider.ts
-src/services/chat/tiktok/TikTokConnectionManager.ts
-src/services/chat/tiktok/TikTokConnectionStateManager.ts
-src/services/chat/tiktok/TikTokDiscoveryManager.ts
-src/services/chat/tiktok/TikTokErrorHandler.ts
-src/services/chat/tiktok/TikTokEventListener.ts
+✓ src/services/chat/tiktok/TikTokChatProvider.ts         (97.14% Statements, 90% Branches)
+✓ src/services/chat/tiktok/TikTokConnectionManager.ts    (100% Statements, 92.3% Branches)
+✓ src/services/chat/tiktok/TikTokConnectionStateManager.ts (100% Statements, 81.25% Branches)
+✓ src/services/chat/tiktok/TikTokDiscoveryManager.ts     (94.36% Statements, 80% Branches)
+✓ src/services/chat/tiktok/TikTokErrorHandler.ts        (100% Statements, 100% Branches)
+✓ src/services/chat/tiktok/TikTokEventListener.ts       (100% Statements, 66.66% Branches)
 ```
 
 **YouTube**

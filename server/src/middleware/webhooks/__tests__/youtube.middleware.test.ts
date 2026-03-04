@@ -81,6 +81,15 @@ describe('YouTube Webhook Middleware', () => {
             const error = (mockNext as jest.Mock).mock.calls[0][0] as AppError;
             expect(error.statusCode).toBe(404);
         });
+
+        it('debe lanzar error 400 si el topic no contiene el channel_id', async () => {
+            mockReq.query!['hub.topic'] = 'https://www.youtube.com/xml/feeds/videos.xml';
+            await validateYouTubeWebhook(mockReq as RequestWithYouTubeWebhookData, mockRes as Response, mockNext);
+            expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+            const error = (mockNext as jest.Mock).mock.calls[0][0] as AppError;
+            expect(error.statusCode).toBe(400);
+            expect(error.message).toBe('Invalid topic URL');
+        });
     });
 
     describe('POST (Notificación)', () => {
@@ -133,6 +142,40 @@ describe('YouTube Webhook Middleware', () => {
                 channelId: 'ch123',
                 body: mockReq.rawBody
             });
+        });
+
+        it('debe lanzar error 404 si la suscripción verificada no existe', async () => {
+            (YouTubeSubscription.findOne as jest.Mock).mockResolvedValue(null);
+            await validateYouTubeWebhook(mockReq as RequestWithYouTubeWebhookData, mockRes as Response, mockNext);
+            expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+            const error = (mockNext as jest.Mock).mock.calls[0][0] as AppError;
+            expect(error.statusCode).toBe(404);
+            expect(error.message).toBe('Subscription not found');
+        });
+
+        it('debe lanzar error 500 si ocurre una excepción no manejada', async () => {
+            (YouTubeSubscription.findOne as jest.Mock).mockRejectedValue(new Error('Fatal DB Error'));
+            await validateYouTubeWebhook(mockReq as RequestWithYouTubeWebhookData, mockRes as Response, mockNext);
+            expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+            const error = (mockNext as jest.Mock).mock.calls[0][0] as AppError;
+            expect(error.statusCode).toBe(500);
+            expect(error.message).toBe('YouTube validation failed');
+        });
+
+        it('debe realizar la migración del secreto si este no está encriptado en POST', async () => {
+            const updateMock = jest.fn().mockResolvedValue({});
+            const mockSubscription = { id: 1, channelId: 'ch123', secret: 'plain-secret', status: 'verified', update: updateMock };
+            (YouTubeSubscription.findOne as jest.Mock).mockResolvedValue(mockSubscription);
+            (encryptionService.isEncrypted as jest.Mock).mockReturnValue(false);
+            (encryptionService.encrypt as jest.Mock).mockReturnValue('migrated-secret');
+            (youtubePubSubService.verifySignature as jest.Mock).mockReturnValue(true);
+            (youtubePubSubService.updateLastNotification as jest.Mock).mockResolvedValue({});
+
+            await validateYouTubeWebhook(mockReq as RequestWithYouTubeWebhookData, mockRes as Response, mockNext);
+
+            expect(encryptionService.encrypt).toHaveBeenCalledWith('plain-secret');
+            expect(updateMock).toHaveBeenCalledWith({ secret: 'migrated-secret' });
+            expect(mockNext).toHaveBeenCalledWith();
         });
     });
 });
