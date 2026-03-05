@@ -7,6 +7,7 @@ import { PlatformSendHelper } from '../PlatformSendHelper';
 import { sentMessageCache } from '../../../utils/SentMessageCache';
 import { SendMessageRequest, PlatformResult } from '../../../types/message.types';
 import { Connection } from '../../../models/Connection.model';
+import { Platform } from '../../../constants/platforms';
 
 jest.mock('../PlatformSendHelper');
 jest.mock('../../../utils/SentMessageCache', () => ({
@@ -184,6 +185,97 @@ describe('MessageSenderService', () => {
             await messageSenderService.sendMessage(request);
 
             expect(sentMessageCache.markAsSent).toHaveBeenCalledWith('user-123', 'Test message');
+        });
+
+        it('debe ejecutar los servicios de plataforma correctos a través del helper', async () => {
+            mockTwitchService.sendChatMessage = jest.fn().mockResolvedValue('t1');
+            mockKickService.sendChatMessage = jest.fn().mockResolvedValue('k1');
+
+            mockHelper.sendWithRetry.mockImplementation(async (plat, _, fn) => {
+                const res = await fn('token', { providerId: 'pid' } as unknown as Connection);
+                return { platform: plat, success: true, ...res };
+            });
+
+            await messageSenderService.sendMessage({
+                userId: 'u1', message: 'm1', platforms: ['twitch', 'kick']
+            });
+
+            expect(mockTwitchService.sendChatMessage).toHaveBeenCalled();
+            expect(mockKickService.sendChatMessage).toHaveBeenCalled();
+        });
+
+        it('debe manejar la lógica de YouTube (obtener liveChatId si falta)', async () => {
+            mockYouTubeService.getActiveLiveChatId = jest.fn().mockResolvedValue('chat-id');
+            mockYouTubeService.sendChatMessage = jest.fn().mockResolvedValue('y1');
+
+            const mockConnection = {
+                providerId: 'yt-pid',
+                chatroomId: null,
+                save: jest.fn().mockResolvedValue(undefined)
+            };
+
+            mockHelper.sendWithRetry.mockImplementation(async (plat, _, fn) => {
+                const res = await fn('token', mockConnection as unknown as Connection);
+                return { platform: plat, success: true, ...res };
+            });
+
+            await messageSenderService.sendMessage({
+                userId: 'u1', message: 'm1', platforms: ['youtube']
+            });
+
+            expect(mockYouTubeService.getActiveLiveChatId).toHaveBeenCalled();
+            expect(mockYouTubeService.sendChatMessage).toHaveBeenCalledWith('token', 'chat-id', 'm1');
+            expect(mockConnection.save).toHaveBeenCalled();
+        });
+
+        it('debe manejar errores en YouTube al intentar obtener el liveChatId', async () => {
+            mockYouTubeService.getActiveLiveChatId = jest.fn().mockRejectedValue(new Error('API Error'));
+
+            const mockConnection = { providerId: 'yt-pid', chatroomId: null };
+
+            mockHelper.sendWithRetry.mockImplementation(async (plat, _, fn) => {
+                try {
+                    await fn('token', mockConnection as unknown as Connection);
+                    return { platform: plat, success: true };
+                } catch (e: unknown) {
+                    return { platform: plat, success: false, error: (e as Error).message };
+                }
+            });
+
+            const response = await messageSenderService.sendMessage({
+                userId: 'u1', message: 'm1', platforms: ['youtube']
+            });
+
+            expect(response.results[0].error).toBe('No se pudo verificar el estado del directo en YouTube.');
+        });
+
+        it('debe manejar errores de cuota en YouTube', async () => {
+            mockYouTubeService.getActiveLiveChatId = jest.fn().mockRejectedValue(new Error('cuota excedida'));
+
+            const mockConnection = { providerId: 'yt-pid', chatroomId: null };
+
+            mockHelper.sendWithRetry.mockImplementation(async (plat, _, fn) => {
+                try {
+                    await fn('token', mockConnection as unknown as Connection);
+                    return { platform: plat, success: true };
+                } catch (e: unknown) {
+                    return { platform: plat, success: false, error: (e as Error).message };
+                }
+            });
+
+            const response = await messageSenderService.sendMessage({
+                userId: 'u1', message: 'm1', platforms: ['youtube']
+            });
+
+            expect(response.results[0].error).toBe('cuota excedida');
+        });
+
+        it('debe manejar plataforma no soportada', async () => {
+            const response = await messageSenderService.sendMessage({
+                userId: 'u1', message: 'm1', platforms: ['unknown' as unknown as Platform]
+            });
+
+            expect(response.results[0].errorCode).toBe('UNSUPPORTED_PLATFORM');
         });
     });
 });

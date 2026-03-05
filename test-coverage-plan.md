@@ -169,20 +169,23 @@
 **YouTube**
 
 ```
-src/services/chat/youtube/YouTubeChatProvider.ts
-src/services/chat/youtube/YouTubeBroadcastDiscovery.ts
-src/services/chat/youtube/YouTubeChatPoller.ts
-src/services/chat/youtube/YouTubeConnectionStateManager.ts
-src/services/chat/youtube/YouTubeDiscoveryLoop.ts
-src/services/chat/youtube/YouTubePubSubParser.ts
-src/services/chat/youtube/YouTubePubSubService.ts
-src/services/chat/youtube/YouTubeViewerPoller.ts
+| Archivo | Tipo de Test | Coverage | Estado |
+|---|---|---|---|
+| src/services/chat/youtube/YouTubeChatProvider.ts | Unit (Jest) | 88% | ✅ Completo |
+| src/services/chat/youtube/YouTubeConnectionStateManager.ts | Unit (Jest) | 95% | ✅ Completo |
+| src/services/chat/youtube/YouTubeDiscoveryLoop.ts | Unit (Jest) | 71% | ✅ Completo |
+| src/services/chat/youtube/YouTubeChatPoller.ts | Unit (Jest) | 98% | ✅ Completo |
+| src/services/chat/youtube/YouTubeViewerPoller.ts | Unit (Jest) | 89% | ✅ Completo |
+| src/services/chat/youtube/YouTubeBroadcastDiscovery.ts | Unit (Jest) | 97% | ✅ Completo |
+| src/services/chat/youtube/YouTubeError.ts | Unit (Jest) | 100% | ✅ Completo |
+| src/services/chat/youtube/YouTubePubSubParser.ts | Unit (Jest) | 100% | ✅ Completo |
+| src/services/chat/youtube/YouTubePubSubService.ts | Unit (Jest) | 90% | ✅ Completo |
 ```
 
 **Shared**
 
 ```
-src/services/chat/shared/PollingManager.ts
+✓ src/services/chat/shared/PollingManager.ts          (97% - 9 tests)
 ```
 
 **Justificación**: Core de streaming. Múltiples estados y conexiones.  
@@ -194,8 +197,8 @@ src/services/chat/shared/PollingManager.ts
 ### 7. Message Sending (35% → 70%+)
 
 ```
-src/services/message/MessageSenderService.ts       (62.5%)
-src/services/message/PlatformSendHelper.ts         (8%)
+✓ src/services/message/MessageSenderService.ts       (100% - 14 tests)
+✓ src/services/message/PlatformSendHelper.ts         (100% - 14 tests)
 ```
 
 **Justificación**: Funcionalidad crítica de usuario. Manejo de errores importante.  
@@ -209,9 +212,9 @@ src/services/message/PlatformSendHelper.ts         (8%)
 ### 8. Transformers (60% → 80%+)
 
 ```
-src/services/chat/transformers/BaseEventTransformer.ts      (33.33%)
-src/services/chat/transformers/KickEventTransformer.ts      (97.43% ✓)
-src/services/chat/transformers/TikTokEventTransformer.ts    (0%)
+✓ src/services/chat/transformers/BaseEventTransformer.ts      (100% - 5 tests)
+✓ src/services/chat/transformers/KickEventTransformer.ts      (97.43% ✓)
+✓ src/services/chat/transformers/TikTokEventTransformer.ts    (100% - 19 tests)
 src/services/chat/transformers/TwitchEventTransformer.ts    (95.23% ✓)
 src/services/chat/transformers/YouTubeEventTransformer.ts   (95.65% ✓)
 ```
@@ -224,10 +227,10 @@ src/services/chat/transformers/YouTubeEventTransformer.ts   (95.65% ✓)
 ### 9. User & Auth Services (7-62% → 60%+)
 
 ```
-src/services/user/UserService.ts                           (7.24%)
-src/services/auth/AuthDTOBuilder.ts                        (0%)
-src/services/auth/core/PlatformAuthHandler.ts              (15.15%)
-src/services/auth/core/UserProfileService.ts               (14.28%)
+✓ src/services/user/UserService.ts                    (100% - 14 tests)
+✓ src/services/auth/AuthDTOBuilder.ts                  (100% - 6 tests)
+✓ src/services/auth/core/PlatformAuthHandler.ts        (100% - 7 tests)
+✓ src/services/auth/core/UserProfileService.ts         (100% - 2 tests)
 ```
 
 **Justificación**: Algunos componentes auth ya tienen buen coverage (AuthService 100%).  

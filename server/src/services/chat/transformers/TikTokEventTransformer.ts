@@ -61,15 +61,15 @@ export class TikTokEventTransformer extends BaseEventTransformer {
 
         let message = data.comment || '';
 
-        const parsedNativeEmotes = parseTikTokEmotes(message);
-        const parsedCustomEmotes = this.parseEmotes(data.emotes, message);
-        const allEmotes = [...parsedNativeEmotes, ...parsedCustomEmotes];
-
         if (!message || message.trim() === '') {
             if (data.emotes && data.emotes.length > 0) {
                 message = '☺️';
             }
         }
+
+        const parsedNativeEmotes = parseTikTokEmotes(message);
+        const parsedCustomEmotes = this.parseEmotes(data.emotes, message);
+        const allEmotes = [...parsedNativeEmotes, ...parsedCustomEmotes];
 
         return {
             id: eventData.common?.msgId || data.msgId || `tk_chat_${Date.now()}_${userId}`,

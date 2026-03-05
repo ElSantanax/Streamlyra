@@ -20,10 +20,15 @@ class YouTubePubSubService {
         const hmac = crypto.createHmac('sha1', secret);
         hmac.update(body);
         const expectedSignature = 'sha1=' + hmac.digest('hex');
-        return crypto.timingSafeEqual(
-            Buffer.from(expectedSignature),
-            Buffer.from(signature)
-        );
+
+        const expectedBuffer = Buffer.from(expectedSignature);
+        const signatureBuffer = Buffer.from(signature);
+
+        if (expectedBuffer.length !== signatureBuffer.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
     }
 
     async subscribe(
