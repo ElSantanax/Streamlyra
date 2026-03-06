@@ -16,7 +16,7 @@ Es una solución moderna para streamers y creadores de contenido que necesitan g
 > **Nota sobre TikTok**: Actualmente en modo solo lectura (listener). Soporta lectura de chat, regalos y follows.
 > **Nota sobre YouTube**: La API de YouTube no permite monitorear nuevos suscriptores en tiempo real de manera eficiente sin consumir cuotas excesivas. Solo se notifican "Nuevos Miembros" (Pago).
 
-### ⚡ Twitch Real-Time Followers (Smart Polling)
+### Twitch Real-Time Followers (Smart Polling)
 
 Como la API de Chat (IRC) de Twitch no envía eventos de "Nuevo Seguidor", Streamlyra implementa un sistema inteligente de **Smart Polling** con las siguientes características:
 
@@ -24,7 +24,7 @@ Como la API de Chat (IRC) de Twitch no envía eventos de "Nuevo Seguidor", Strea
 - **Seguridad**: Consume solo ~7.5% de la cuota de API permitida por usuario (60 pts/min vs 800 pts/min disponibles).
 - **Robustez**: Sistema de **Auto-Refresh** de tokens integrado. Permite sesiones de streaming de duración infinita (24/7) sin cortes por expiración de credenciales.
 
-## 🎨 Sistema de Eventos Unificado
+## Sistema de Eventos Unificado
 
 Streamlyra implementa un sistema visual unificado para eventos especiales (alertas) directamente en el chat, eliminando la necesidad de overlays externos complejos para la moderación básica.
 
@@ -52,20 +52,19 @@ Este es un proyecto de código abierto creado para resolver una necesidad real d
 
 ## Stack Tecnológico
 
-**Frontend**: 
+**Frontend**:
 
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
-
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101) ![i18next](https://img.shields.io/badge/i18next-26A69A?style=for-the-badge&logo=i18next&logoColor=white)
 
 **Backend**:
 
-![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101) ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) ![Sequelize](https://img.shields.io/badge/Sequelize-52B0E7?style=for-the-badge&logo=Sequelize&logoColor=white)
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101) ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) ![Sequelize](https://img.shields.io/badge/Sequelize-52B0E7?style=for-the-badge&logo=Sequelize&logoColor=white) ![Zod](https://img.shields.io/badge/zod-%233068b7.svg?style=for-the-badge&logo=zod&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
 
-**Testing**: 
+**Testing**:
 
-![Vitest](https://img.shields.io/badge/-Vitest-252529?style=for-the-badge&logo=vitest&logoColor=FCC72B) ![Cypress](https://img.shields.io/badge/-cypress-%23E5E5E5?style=for-the-badge&logo=cypress&logoColor=058a5e) ![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)
+![Vitest](https://img.shields.io/badge/-Vitest-252529?style=for-the-badge&logo=vitest&logoColor=FCC72B) ![Cypress](https://img.shields.io/badge/-cypress-%23E5E5E5?style=for-the-badge&logo=cypress&logoColor=058a5e) ![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white) ![Testing Library](https://img.shields.io/badge/-Testing%20Library-%23E33332?style=for-the-badge&logo=testing-library&logoColor=white)
 
-**Integraciones**: TMI.js (Twitch) · YouTube Data API · TikTok Live Connector · OAuth2
+**Integraciones**: TMI.js (Twitch) · YouTube Data API · TikTok Live Connector · Pusher (Kick Webhooks) · OAuth2
 
 ## Inicio Rápido
 
@@ -79,7 +78,7 @@ Este es un proyecto de código abierto creado para resolver una necesidad real d
 
 ```bash
 # Clonar el repositorio
-git clone <repository-url>
+git clone https://github.com/ElSantanax/Streamlyra.git
 cd Streamlyra
 
 # Instalar dependencias del cliente
@@ -89,8 +88,8 @@ cd client && npm install
 cd ../server && npm install
 
 # Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales de plataformas
+cp server/.env.example server/.env
+# Editar server/.env con tus credenciales de plataformas
 ```
 
 ### Desarrollo
@@ -105,16 +104,18 @@ cd client && npm run dev
 
 Accede a la aplicación en `http://localhost:5173`
 
-## 🤝 Contribuir
+## Contribuir
 
 ¿Interesado en contribuir a Streamlyra? Revisa nuestra [Guía de Contribución](./CONTRIBUTING.md) para saber cómo puedes participar, sin importar tu nivel de experiencia.
 
 ## Documentación Adicional
 
-- [Client README](./client/README.md) - Documentación detallada del frontend
-- [Server README](./server/README.md) - Documentación detallada del backend
+- [Introducción](./docs/introduccion.md) - ¿Qué es Streamlyra y cómo funciona?
+- [Instalación](./docs/instalacion.md) - Guía detallada de setup local
+- [Variables de Entorno](./docs/configuracion-variables.md) - Referencia de configuración
+- [Referencias](./docs/referencias.md) - APIs y recursos externos utilizados
 
-## 📝 Licencia
+## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](./LICENSE) para más detalles.
 
