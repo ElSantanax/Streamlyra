@@ -238,17 +238,18 @@ src/services/chat/transformers/YouTubeEventTransformer.ts   (95.65% ✓)
 
 ---
 
-### 10. Utils y Helpers
+### ✅ 10. Utils y Helpers (COMPLETADO)
 
 ```
-src/utils/SafeSocketEmitter.ts          (9.25%)
-src/utils/SentMessageCache.ts           (10.63%)
-src/utils/oauth.utils.ts                (12.5%)
-src/utils/retryWithInterval.ts          (0%)
+✓ src/utils/SafeSocketEmitter.ts          (100% Statements, 95% Branches - 19 tests)
+✓ src/utils/SentMessageCache.ts           (100% Statements, 79.16% Branches - 8 tests)
+✓ src/utils/oauth.utils.ts                (100% Statements, 100% Branches - 7 tests)
+✓ src/utils/retryWithInterval.ts          (96.55% Statements, 92.3% Branches - 8 tests)
 ```
 
-**Justificación**: Importante pero menos crítico que lógica de negocio.  
-**Estimación**: 1-2 días
+**Estado**: COMPLETADO - 49 tests (incluyendo errorHandling)  
+**Coverage**: 99.31% statements, 90.8% branches  
+**Tipo de tests**: Unit con mocks tipados, fake timers y mocks de axios
 
 ---
 

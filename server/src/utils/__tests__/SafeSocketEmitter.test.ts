@@ -53,7 +53,6 @@ describe('SafeSocketEmitter', () => {
         });
 
         it('debería retornar false si el usuario no tiene sockets activos', () => {
-            // Room vacío o inexistente
             expect(SafeSocketEmitter.emit(mockIo, { userId: 'u1', event: 'e', data: {} })).toBe(false);
             expect(logger.debug).toHaveBeenCalledWith(expect.anything(), expect.stringContaining('Usuario sin sockets activos'));
         });
@@ -71,7 +70,6 @@ describe('SafeSocketEmitter', () => {
         it('debería validar serialización en desarrollo', () => {
             (mockIo.sockets.adapter.rooms as Map<string, Set<string>>).set('u1', new Set(['s1']));
 
-            // Objeto circular
             const circular: Record<string, unknown> = {};
             circular.self = circular;
 
@@ -160,6 +158,101 @@ describe('SafeSocketEmitter', () => {
             const data = { name: 'r1', platform: 'twitch', viewers: 50, at: new Date() };
             SafeSocketEmitter.emitLastRaidUpdate(mockIo, 'u1', data);
             expect(mockIo.emit).toHaveBeenCalledWith('last_raid_update', data);
+        });
+    });
+
+    describe('branches adicionales de emit', () => {
+        it('debería emitir si io.sockets.adapter.rooms no existe (sin verificación de room)', () => {
+            const ioSinRooms = {
+                to: jest.fn().mockReturnThis(),
+                emit: jest.fn(),
+                sockets: {
+                    adapter: {
+                        rooms: undefined
+                    }
+                }
+            } as unknown as Server;
+
+            const result = SafeSocketEmitter.emit(ioSinRooms, { userId: 'u1', event: 'e', data: { ok: true } });
+
+            expect(result).toBe(true);
+            expect(ioSinRooms.to).toHaveBeenCalledWith('u1');
+        });
+
+        it('debería emitir si io.sockets.adapter es undefined', () => {
+            const ioSinAdapter = {
+                to: jest.fn().mockReturnThis(),
+                emit: jest.fn(),
+                sockets: {}
+            } as unknown as Server;
+
+            const result = SafeSocketEmitter.emit(ioSinAdapter, { userId: 'u1', event: 'e', data: 42 });
+
+            expect(result).toBe(true);
+        });
+    });
+
+    describe('branches adicionales de emitViewersUpdate y emitConnectionStatus', () => {
+        beforeEach(() => {
+            (mockIo.sockets.adapter.rooms as Map<string, Set<string>>).set('u1', new Set(['s1']));
+        });
+
+        it('emitViewersUpdate sin isLive usa el valor actual de isPlatformLive', () => {
+            (mockSessionManager.isPlatformLive as jest.Mock).mockReturnValue(false);
+
+            SafeSocketEmitter.emitViewersUpdate(mockIo, 'u1', 'kick', 50);
+            expect(mockSessionManager.updateLiveStatus).toHaveBeenCalledWith('u1', 'kick', false);
+            expect(mockIo.emit).toHaveBeenCalledWith('viewers_update', expect.objectContaining({
+                platform: 'kick',
+                count: 50,
+                isLive: false
+            }));
+        });
+
+        it('emitConnectionStatus sin isLive con status connected usa isPlatformLive', () => {
+            (mockSessionManager.isPlatformLive as jest.Mock).mockReturnValue(true);
+
+            SafeSocketEmitter.emitConnectionStatus(mockIo, 'u1', 'youtube', 'connected', 'Conectado');
+            expect(mockIo.emit).toHaveBeenCalledWith('connection_status', expect.objectContaining({
+                status: 'connected',
+                isLive: true
+            }));
+        });
+
+        it('emitConnectionStatus sin isLive con status connecting no activa isLive', () => {
+            (mockSessionManager.isPlatformLive as jest.Mock).mockReturnValue(false);
+
+            SafeSocketEmitter.emitConnectionStatus(mockIo, 'u1', 'twitch', 'connecting', 'Conectando...');
+            expect(mockIo.emit).toHaveBeenCalledWith('connection_status', expect.objectContaining({
+                status: 'connecting',
+                isLive: false
+            }));
+        });
+    });
+
+    describe('emitChatMessage branches adicionales', () => {
+        it('debería emitir si el mensaje es de owner pero no fue enviado desde dashboard', () => {
+            (sentMessageCache.wasSentFromDashboard as jest.Mock).mockReturnValue(false);
+
+            const message = { isOwner: true, message: 'nuevo mensaje' };
+            const result = SafeSocketEmitter.emitChatMessage(mockIo, 'u1', message);
+
+            expect(result).toBe(true);
+            expect(mockIo.emit).toHaveBeenCalledWith('chat_message', message);
+        });
+
+        it('debería emitir si el mensaje no tiene propiedad message (no-string)', () => {
+            const message = { isOwner: true, message: 123 }; // message no es string
+            const result = SafeSocketEmitter.emitChatMessage(mockIo, 'u1', message);
+
+            expect(result).toBe(true);
+            expect(sentMessageCache.wasSentFromDashboard).not.toHaveBeenCalled();
+        });
+
+        it('debería emitir si se pasa null como mensaje', () => {
+            const result = SafeSocketEmitter.emitChatMessage(mockIo, 'u1', null);
+            expect(result).toBe(true);
+            expect(mockIo.emit).toHaveBeenCalledWith('chat_message', null);
         });
     });
 });

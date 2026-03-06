@@ -48,7 +48,6 @@ describe('OAuthUtils', () => {
                 })
             );
 
-            // Probar transformRequest
             const config = mockedAxios.post.mock.calls[0][2];
             const transformers = config?.transformRequest;
             const transformer = Array.isArray(transformers) ? transformers[0] : transformers;
@@ -70,6 +69,60 @@ describe('OAuthUtils', () => {
                     refresh_token: 'rt1',
                     grant_type: 'refresh_token'
                 }),
+                expect.anything()
+            );
+        });
+
+        it('debería usar form-urlencoded si se especifica contentType: form', async () => {
+            mockedAxios.post.mockResolvedValue({ data: { access_token: 'form_at' } });
+
+            await OAuthUtils.refreshTokens('rt2', { ...options, contentType: 'form' });
+
+            expect(mockedAxios.post).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.anything(),
+                expect.objectContaining({
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                })
+            );
+
+            const config = mockedAxios.post.mock.calls[0][2];
+            const transformers = config?.transformRequest;
+            const transformer = Array.isArray(transformers) ? transformers[0] : transformers;
+            const transformed = (transformer as (data: Record<string, string>) => string)({ key: 'val' });
+            expect(transformed).toContain('key=val');
+        });
+
+        it('debería propagar el error de axios', async () => {
+            mockedAxios.post.mockRejectedValue(new Error('network error'));
+
+            await expect(OAuthUtils.refreshTokens('rt_bad', options)).rejects.toThrow('network error');
+        });
+    });
+
+    describe('exchangeCode errores', () => {
+        it('debería propagar el error de axios en exchangeCode', async () => {
+            mockedAxios.post.mockRejectedValue(new Error('axios failure'));
+
+            await expect(
+                OAuthUtils.exchangeCode('bad_code', options)
+            ).rejects.toThrow('axios failure');
+        });
+
+        it('debería omitir redirect_uri si no se pasa en options', async () => {
+            mockedAxios.post.mockResolvedValue({ data: { access_token: 'no_redirect' } });
+
+            const optionsWithoutRedirect = {
+                baseUrl: options.baseUrl,
+                clientId: options.clientId,
+                clientSecret: options.clientSecret
+            };
+
+            await OAuthUtils.exchangeCode('code_no_redirect', optionsWithoutRedirect);
+
+            expect(mockedAxios.post).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.not.objectContaining({ redirect_uri: expect.anything() }),
                 expect.anything()
             );
         });
