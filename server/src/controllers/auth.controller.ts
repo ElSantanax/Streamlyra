@@ -106,7 +106,6 @@ export class AuthController {
 
         this.setCsrfCookie(res);
 
-
         const { token: _token, ...responseData } = result;
         res.json(responseData);
     };
