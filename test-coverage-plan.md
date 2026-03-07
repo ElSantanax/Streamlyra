@@ -253,15 +253,16 @@ src/services/chat/transformers/YouTubeEventTransformer.ts   (95.65% ✓)
 
 ---
 
-### 11. Middleware Faltante (0% → 50%+)
+### ✅ 11. Middleware Faltante (COMPLETADO)
 
 ```
-src/middleware/csrf.middleware.ts
-src/middleware/rateLimit.middleware.ts
+✓ src/middleware/csrf.middleware.ts        (100% Statements, 100% Branches - 14 tests)
+✓ src/middleware/rateLimit.middleware.ts   (71.42% Statements, 100% Branches - 7 tests)
 ```
 
-**Justificación**: Seguridad importante pero menos prioritario que features core.  
-**Estimación**: 1 día
+**Estado**: COMPLETADO - 21 tests  
+**Coverage**: csrf 100%, rateLimit 100% branches (handlers y skip cubiertos con limitadores ad-hoc)  
+**Tipo de tests**: Unit directo (csrf) + supertest con mini-app (rateLimit)
 
 ---
 
