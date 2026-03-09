@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { parseMessageWithEmotes, type EmoteData } from '../emote.formatter';
+import { parseMessageWithEmotes, type EmoteData, type MessagePart } from '../emote.formatter';
 
 describe('emote.formatter', () => {
   describe('parseMessageWithEmotes', () => {
     it('debería retornar el texto como texto plano si no hay emotes ni URLs', () => {
       const message = 'Hola este es un mensaje normal';
-      const result = parseMessageWithEmotes(message);
+      const result: MessagePart[] = parseMessageWithEmotes(message);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({ type: 'text', value: message });
@@ -14,7 +14,7 @@ describe('emote.formatter', () => {
 
     it('debería detectar correctamente una URL segura y un texto', () => {
       const message = 'Mira este link: https://ejemplo.com';
-      const result = parseMessageWithEmotes(message);
+      const result: MessagePart[] = parseMessageWithEmotes(message);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({ type: 'text', value: 'Mira este link: ' });
@@ -23,7 +23,7 @@ describe('emote.formatter', () => {
 
     it('debería devolver texto plano si la URL no es segura o es inválida (ej: javascript:)', () => {
       const message = 'Usa este link: javascript:alert(1)';
-      const result = parseMessageWithEmotes(message);
+      const result: MessagePart[] = parseMessageWithEmotes(message);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({ type: 'text', value: 'Usa este link: javascript:alert(1)' });
@@ -45,7 +45,7 @@ describe('emote.formatter', () => {
         }
       ];
 
-      const result = parseMessageWithEmotes(message, emotes);
+      const result: MessagePart[] = parseMessageWithEmotes(message, emotes);
 
       expect(result).toHaveLength(4);
       expect(result[0]).toEqual({ type: 'text', value: 'Hola ' });
@@ -72,7 +72,7 @@ describe('emote.formatter', () => {
         }
       ];
 
-      const result = parseMessageWithEmotes(message, emotes);
+      const result: MessagePart[] = parseMessageWithEmotes(message, emotes);
 
       expect(result).toHaveLength(3);
       expect(result[0]).toEqual({ type: 'emote', value: 'lul.png', name: 'LUL' });
@@ -92,7 +92,7 @@ describe('emote.formatter', () => {
         }
       ];
 
-      const result = parseMessageWithEmotes(message, emotes);
+      const result: MessagePart[] = parseMessageWithEmotes(message, emotes);
 
       expect(result).toHaveLength(4);
       expect(result[0]).toEqual({ type: 'text', value: 'Mira esto ' });
@@ -105,8 +105,8 @@ describe('emote.formatter', () => {
   describe('Propiedades con fast-check', () => {
     it('nunca debería fallar procesando strings aleatorios y siempre debe retornar al menos un elemento', () => {
       fc.assert(
-        fc.property(fc.string(), (randomText) => {
-          const result = parseMessageWithEmotes(randomText);
+        fc.property(fc.string(), (randomText: string) => {
+          const result: MessagePart[] = parseMessageWithEmotes(randomText);
           expect(Array.isArray(result)).toBe(true);
           expect(result.length).toBeGreaterThanOrEqual(1);
         })
@@ -115,9 +115,9 @@ describe('emote.formatter', () => {
 
     it('el valor de todos los elementos combinados debe reconstruir el string original (si no hay emotes)', () => {
       fc.assert(
-        fc.property(fc.string(), (randomText) => {
-          const result = parseMessageWithEmotes(randomText);
-          const combined = result.map((part) => part.value).join('');
+        fc.property(fc.string(), (randomText: string) => {
+          const result: MessagePart[] = parseMessageWithEmotes(randomText);
+          const combined = result.map((part: MessagePart) => part.value).join('');
           expect(combined).toBe(randomText);
         })
       );

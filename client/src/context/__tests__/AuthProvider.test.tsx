@@ -1,21 +1,21 @@
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './AuthProvider';
-import { useAuthContext } from '../hooks/useAuthContext';
-import { authService } from '../services/api/auth.service';
-import { sessionManager } from '../services/session';
-import type { User, MeResponse } from '../types';
+import { AuthProvider } from '../AuthProvider';
+import { useAuthContext } from '../../hooks/useAuthContext';
+import { authService } from '../../services/api/auth.service';
+import { sessionManager } from '../../services/session';
+import type { User, MeResponse } from '../../types';
 
 // Mock dependencias
-vi.mock('../services/api/auth.service', () => ({
+vi.mock('../../services/api/auth.service', () => ({
   authService: {
     getMe: vi.fn(),
     logout: vi.fn(),
   }
 }));
 
-vi.mock('../services/session', () => ({
+vi.mock('../../services/session', () => ({
   sessionManager: {
     setSessionExpiredHandler: vi.fn(),
     clearLocalSession: vi.fn(),

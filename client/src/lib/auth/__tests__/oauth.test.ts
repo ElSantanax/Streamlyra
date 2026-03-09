@@ -1,15 +1,15 @@
-import { initiateOAuth } from './oauth';
-import { generatePKCE } from './pkce';
-import { dialog } from '../dialog';
+import { initiateOAuth } from '../oauth';
+import { generatePKCE } from '../pkce';
+import { dialog } from '../../dialog';
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 
-vi.mock('../dialog', () => ({
+vi.mock('../../dialog', () => ({
     dialog: {
         alert: vi.fn(),
     }
 }));
 
-vi.mock('./pkce', () => ({
+vi.mock('../pkce', () => ({
     generatePKCE: vi.fn(),
 }));
 

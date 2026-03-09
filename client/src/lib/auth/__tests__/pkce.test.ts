@@ -1,4 +1,4 @@
-import { generatePKCE } from './pkce';
+import { generatePKCE } from '../pkce';
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 
 describe('generatePKCE', () => {

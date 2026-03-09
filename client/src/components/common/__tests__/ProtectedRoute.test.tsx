@@ -2,14 +2,14 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ProtectedRoute } from './ProtectedRoute';
-import { useAuth } from '../../hooks/useAuth';
+import { ProtectedRoute } from '../ProtectedRoute';
+import { useAuth } from '../../../hooks/useAuth';
 
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('../../../hooks/useAuth', () => ({
     useAuth: vi.fn()
 }));
 
-vi.mock('./Spinner', () => ({
+vi.mock('../Spinner', () => ({
     default: ({ text }: { text: string }) => <div data-testid="spinner">{text}</div>
 }));
 

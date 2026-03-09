@@ -1,4 +1,4 @@
-import { sessionManager } from './SessionManager';
+import { sessionManager } from '../SessionManager';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('SessionManager', () => {

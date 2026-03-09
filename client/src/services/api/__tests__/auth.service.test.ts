@@ -1,8 +1,8 @@
-import { authService } from './auth.service';
-import { apiClient } from './client';
+import { authService } from '../auth.service';
+import { apiClient } from '../client';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('./client', () => ({
+vi.mock('../client', () => ({
     apiClient: {
         post: vi.fn(),
         get: vi.fn(),
@@ -10,7 +10,7 @@ vi.mock('./client', () => ({
     }
 }));
 
-vi.mock('../../config/endpoints', () => ({
+vi.mock('../../../config/endpoints', () => ({
     endpoints: {
         auth: {
             twitch: '/auth/twitch',
