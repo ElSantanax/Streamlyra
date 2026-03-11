@@ -38,8 +38,8 @@ Sin OAuth no hay forma nativa de confirmar identidad. Se necesita un mecanismo a
 2. El sistema genera un **código único temporal** (ej. `SLY-A4F2`) con expiración (5 minutos).
 3. La UI muestra el código y le pide al usuario que lo escriba en el chat de su live de TikTok.
 4. El servidor escucha el evento `chat` y valida:
-   - `data.uniqueId === username` ✅
-   - `data.comment` contiene el código ✅
+   - `data.uniqueId === username`
+   - `data.comment` contiene el código
 5. Si pasa la validación → cuenta verificada y guardada.
 
 **Ventajas:**
@@ -118,9 +118,9 @@ Combinar ambas ideas para obtener **doble factor de verificación** dentro del p
 3. Se genera un código aleatorio de 6 chars (ej: SLY-4F2A)
 4. La UI lo muestra con instrucciones: "Escribe este código en tu chat de TikTok"
 5. El servidor escucha el evento `chat` y valida las 3 condiciones:
-   ├── data.uniqueId === username_ingresado  ✅
-   ├── data.isOwner === true                 ✅  (dueño del live)
-   └── data.comment.includes(codigo)        ✅  (escribió el código)
+   ├── data.uniqueId === username_ingresado
+   ├── data.isOwner === true                 (dueño del live)
+   └── data.comment.includes(codigo)        (escribió el código)
 6. Las 3 condiciones verdaderas → cuenta verificada → se guarda en DB
 7. Si expira el tiempo → el código se invalida y hay que reintentar
 ```
@@ -175,11 +175,11 @@ UserMalicioso ingresa @JuanStreamer
   → El estado "pendiente" vive solo en memoria/Redis (con TTL de 5 min)
   → Se le pide escribir el código en el chat de TikTok
   → UserMalicioso no puede escribir en el chat ajeno con isOwner = true
-  → TTL expira → estado pendiente se elimina → nada se guarda en DB ✅
+  → TTL expira → estado pendiente se elimina → nada se guarda en DB
 
 JuanStreamer ingresa su propio @username
   → Escribe el código en su chat → isOwner = true → uniqueId coincide
-  → Verificación exitosa → se guarda en DB ✅
+  → Verificación exitosa → se guarda en DB
 ```
 
 ### Estado "pendiente de verificación" — dónde vive

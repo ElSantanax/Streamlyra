@@ -112,6 +112,24 @@ export default defineConfig({
           { text: 'Errores y Logging', link: '/server/errores-logs' },
           { text: 'Referencias de APIs', link: '/referencias' }
         ]
+      },
+
+      // ─────────────────────────────────────────────
+      // SECCIÓN 8: El Cliente (Frontend)
+      // ─────────────────────────────────────────────
+      {
+        text: 'El Cliente (Frontend)',
+        items: [
+          { text: 'Análisis Profundo (Frontend)', link: '/client/analisis-profundo' },
+          { text: 'Arquitectura del Cliente', link: '/client/arquitectura' },
+          { text: 'Gestión de Estado y Contexto', link: '/client/estado-contexto' },
+          { text: 'Páginas y Rutas', link: '/client/paginas-rutas' },
+          { text: 'Catálogo de Componentes', link: '/client/componentes' },
+          { text: 'Comunicación con Servidor', link: '/client/servicios-api' },
+          { text: 'Estrategias de Testing', link: '/client/testing' },
+          { text: 'Tipos TypeScript del Cliente', link: '/client/tipos-typescript' },
+          { text: 'Diccionario de Archivos', link: '/client/diccionario-archivos' }
+        ]
       }
     ],
 

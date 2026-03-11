@@ -92,9 +92,9 @@ Streamlyra creará automáticamente las tablas en la base de datos en el primer 
 Si el arranque fue exitoso, verás en la consola:
 
 ```
-✅ Base de datos conectada
-✅ Servidor HTTP escuchando en puerto 3000
-✅ Socket.io inicializado
+Base de datos conectada
+Servidor HTTP escuchando en puerto 3000
+Socket.io inicializado
 ```
 
 ---
