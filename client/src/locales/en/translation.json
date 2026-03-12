@@ -180,5 +180,47 @@
         "unknownError": "Unknown error",
         "partialSuccess": "Message sent to {{success}}. Failed on: {{failed}}",
         "sendError": "Error sending message. {{details}}"
+    },
+    "legal": {
+        "terms": {
+            "title": "Terms and Conditions",
+            "lastUpdated": "Last Updated: March 2026",
+            "sections": {
+                "acceptance": {
+                    "title": "1. Acceptance of Terms",
+                    "content": "By accessing and using Streamlyra, you agree to be bound by these Terms and Conditions and all applicable laws and regulations."
+                },
+                "openSource": {
+                    "title": "2. Open Source Software",
+                    "content": "Streamlyra is an open-source project distributed under the MIT license. The software is provided 'as is', without warranty of any kind."
+                },
+                "disclaimer": {
+                    "title": "3. Platform Disclaimer",
+                    "content": "Streamlyra is NOT affiliated, associated, authorized, endorsed by, or in any way officially connected with TikTok, Twitch, YouTube, Kick or any of their subsidiaries or affiliates."
+                },
+                "tiktok": {
+                    "title": "4. TikTok Usage (Unofficial)",
+                    "content": "Streamlyra uses unofficial methods to interact with TikTok services. Use of unofficial third-party tools may violate TikTok's Terms of Service. By using this integration, you acknowledge that you do so at your own risk."
+                }
+            }
+        },
+        "privacy": {
+            "title": "Privacy Policy",
+            "lastUpdated": "Last Updated: March 2026",
+            "sections": {
+                "data": {
+                    "title": "1. Data Processing",
+                    "content": "Streamlyra prioritizes your privacy. Data processing is mainly done locally or through direct connections with the corresponding platform APIs."
+                },
+                "storage": {
+                    "title": "2. Local Storage",
+                    "content": "We use your browser's local storage (localStorage) to keep your session active and remember your preferences. We do not use third-party tracking cookies."
+                },
+                "noSharing": {
+                    "title": "3. No Information Sharing",
+                    "content": "We do not sell, rent, or share your personal information with third parties. As an open-source project, you can audit our code to verify how we handle your data."
+                }
+            }
+        }
     }
 }

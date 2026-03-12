@@ -180,5 +180,47 @@
     "unknownError": "Error desconocido",
     "partialSuccess": "Mensaje enviado a {{success}}. Falló en: {{failed}}",
     "sendError": "Error al enviar mensaje. {{details}}"
+  },
+  "legal": {
+    "terms": {
+      "title": "Términos y Condiciones",
+      "lastUpdated": "Última actualización: Marzo 2026",
+      "sections": {
+        "acceptance": {
+          "title": "1. Aceptación de los Términos",
+          "content": "Al acceder y utilizar Streamlyra, aceptas quedar vinculado por estos Términos y Condiciones y todas las leyes y reglamentos aplicables."
+        },
+        "openSource": {
+          "title": "2. Software de Código Abierto",
+          "content": "Streamlyra es un proyecto de código abierto distribuido bajo la licencia MIT. El software se proporciona 'tal cual', sin garantía de ningún tipo."
+        },
+        "disclaimer": {
+          "title": "3. Descargo de Responsabilidad de Plataformas",
+          "content": "Streamlyra NO está afiliado, asociado, autorizado, respaldado ni conectado oficialmente de ninguna manera con TikTok, Twitch, YouTube, Kick o cualquiera de sus subsidiarias o afiliadas."
+        },
+        "tiktok": {
+          "title": "4. Uso de TikTok (No Oficial)",
+          "content": "Streamlyra utiliza métodos no oficiales para interactuar con los servicios de TikTok. El uso de herramientas de terceros no oficiales puede violar los Términos de Servicio de TikTok. Al utilizar esta integración, usted reconoce que lo hace bajo su propio riesgo."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidad",
+      "lastUpdated": "Última actualización: Marzo 2026",
+      "sections": {
+        "data": {
+          "title": "1. Procesamiento de Datos",
+          "content": "Streamlyra prioriza tu privacidad. El procesamiento de datos se realiza principalmente de forma local o a través de conexiones directas con las APIs correspondientes de las plataformas."
+        },
+        "storage": {
+          "title": "2. Almacenamiento Local",
+          "content": "Utilizamos el almacenamiento local de tu navegador (localStorage) para mantener tu sesión activa y recordar tus preferencias. No utilizamos cookies de rastreo de terceros."
+        },
+        "noSharing": {
+          "title": "3. No compartimos información",
+          "content": "No vendemos, alquilamos ni compartimos tu información personal con terceros. Al ser un proyecto de código abierto, puedes auditar nuestro código para verificar cómo manejamos tus datos."
+        }
+      }
+    }
   }
 }

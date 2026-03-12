@@ -12,8 +12,8 @@ const Footer = () => {
                     <Logo textSize="text-lg" />
                 </Link>
                 <div className="flex gap-8">
-                    <a className="hover:text-primary transition-colors" href="#">{t('footer.terms')}</a>
-                    <a className="hover:text-primary transition-colors" href="#">{t('footer.privacy')}</a>
+                    <Link className="hover:text-primary transition-colors" to="/terms">{t('footer.terms')}</Link>
+                    <Link className="hover:text-primary transition-colors" to="/privacy">{t('footer.privacy')}</Link>
                 </div>
                 <div className="text-sm">
                     © {new Date().getFullYear()} Streamlyra. {t('footer.license')}
