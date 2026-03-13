@@ -30,6 +30,13 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
     const isTiktokConnected = connections.tiktok?.connected ?? false;
     const tiktokStatus = connections.tiktok?.status;
 
+    // Sincronizar el nombre de usuario de TikTok si ya está conectado
+    React.useEffect(() => {
+        if (isTiktokConnected && connections.tiktok?.username && !tiktokUsername) {
+            setTiktokUsername(connections.tiktok.username);
+        }
+    }, [isTiktokConnected, connections.tiktok?.username, tiktokUsername]);
+
     const handleTiktokUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setTiktokUsername(value);
@@ -62,6 +69,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
             setTimeout(() => onClose(), 500);
         } catch (error) {
             const message = getUserFriendlyMessage(error);
+            setTiktokError(message);
             toast.error(message);
             console.error('Error connecting tiktok:', error);
         }
