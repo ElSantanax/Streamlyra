@@ -62,6 +62,10 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
 export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction): void => {
     if (!shouldValidateCsrf(req)) return next();
 
+    if (config.nodeEnv === 'production' && req.headers.origin === config.frontendUrl) {
+        return next();
+    }
+
     const cookieToken = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
     const headerToken = req.headers[CSRF_CONFIG.HEADER_NAME] as string | undefined;
 
