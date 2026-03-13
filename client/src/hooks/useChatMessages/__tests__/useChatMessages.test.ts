@@ -19,23 +19,22 @@ describe('useChatMessages', () => {
 
     it('debería añadir un mensaje después del intervalo de flush', () => {
         const { result } = renderHook(() => useChatMessages());
-        const mockMsg: ChatMessage = { 
-            id: '1', 
-            platform: 'twitch', 
-            message: 'hola', 
-            user: 'user1', 
-            time: '12:00' 
+        const mockMsg: ChatMessage = {
+            id: '1',
+            platform: 'twitch',
+            message: 'hola',
+            user: 'user1',
+            time: '12:00'
         };
 
         act(() => {
             result.current.addMessage(mockMsg);
         });
 
-        // Al principio no debería estar porque hay un delay de 250ms
         expect(result.current.messages).toHaveLength(0);
 
         act(() => {
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(1);
@@ -44,7 +43,7 @@ describe('useChatMessages', () => {
 
     it('debería acumular múltiples mensajes y añadirlos en un solo batch', () => {
         const { result } = renderHook(() => useChatMessages());
-        
+
         act(() => {
             result.current.addMessage({ id: '1', platform: 'twitch' as const, message: 'm1', user: 'u', time: 't' });
             result.current.addMessage({ id: '2', platform: 'twitch' as const, message: 'm2', user: 'u', time: 't' });
@@ -53,7 +52,7 @@ describe('useChatMessages', () => {
         expect(result.current.messages).toHaveLength(0);
 
         act(() => {
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(2);
@@ -65,15 +64,14 @@ describe('useChatMessages', () => {
 
         act(() => {
             result.current.addMessage(msg);
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(1);
 
-        // Intentar añadir el mismo mensaje exacto
         act(() => {
             result.current.addMessage(msg);
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(1);
@@ -85,7 +83,6 @@ describe('useChatMessages', () => {
 
         act(() => {
             result.current.addMessage(msg);
-            // Sin esperar el timer, actualizamos estado
             result.current.updateMessageStatus('1', 'sent');
         });
 
@@ -95,10 +92,10 @@ describe('useChatMessages', () => {
 
     it('debería eliminar un mensaje por ID', () => {
         const { result } = renderHook(() => useChatMessages());
-        
+
         act(() => {
             result.current.addMessage({ id: '1', platform: 'twitch' as const, message: 'm', user: 'u', time: 't' });
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(1);
@@ -112,10 +109,10 @@ describe('useChatMessages', () => {
 
     it('debería vaciar todos los mensajes', () => {
         const { result } = renderHook(() => useChatMessages());
-        
+
         act(() => {
             result.current.addMessage({ id: '1', platform: 'twitch' as const, message: 'm', user: 'u', time: 't' });
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
         expect(result.current.messages).toHaveLength(1);
@@ -129,18 +126,15 @@ describe('useChatMessages', () => {
 
     it('debería truncar mensajes cuando exceden el límite', () => {
         const { result } = renderHook(() => useChatMessages());
-        
-        // El límite es 200 + 50 (CHUNK_SIZE) = 250 antes de truncar a 200
+
         act(() => {
-            for (let i = 0; i < 260; i++) {
+            for (let i = 0; i < 1110; i++) {
                 result.current.addMessage({ id: `id-${i}`, platform: 'twitch' as const, message: 'm', user: 'u', time: 't' });
             }
-            vi.advanceTimersByTime(250);
+            vi.advanceTimersByTime(300);
         });
 
-        // Debería truncar a 200 después de pasar el límite de 250
-        expect(result.current.messages.length).toBe(200);
-        // El primer mensaje debería ser el id-60 (porque se conservan los últimos 200)
-        expect(result.current.messages[0].id).toBe('id-60');
+        expect(result.current.messages.length).toBe(1000);
+        expect(result.current.messages[0].id).toBe('id-110');
     });
 });

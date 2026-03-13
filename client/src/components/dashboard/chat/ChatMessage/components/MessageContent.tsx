@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { parseMessageWithEmotes } from '../../../../../lib/formatters';
 import type { PlatformKey } from '../../../../../constants/platforms';
 
@@ -22,7 +22,7 @@ export const MessageContent = memo(({
     textColor,
     emotes
 }: MessageContentProps) => {
-    const messageParts = parseMessageWithEmotes(message, emotes);
+    const messageParts = useMemo(() => parseMessageWithEmotes(message, emotes), [message, emotes]);
     const isSystem = platform === 'system';
     const isTikTok = platform === 'tiktok';
 

@@ -28,6 +28,18 @@ const ChatFeed = memo(({
     const [unreadCount, setUnreadCount] = useState(0);
     const [prevMessagesLength, setPrevMessagesLength] = useState(messages.length);
 
+    if (messages.length !== prevMessagesLength) {
+        const delta = messages.length - prevMessagesLength;
+        setPrevMessagesLength(messages.length);
+        if (!isAtBottom && delta > 0) {
+            setUnreadCount(prev => prev + delta);
+        }
+    }
+
+    if (isAtBottom && unreadCount !== 0) {
+        setUnreadCount(0);
+    }
+
     const scrollToBottom = useCallback(() => {
         if (virtuosoRef.current) {
             virtuosoRef.current.scrollToIndex({
@@ -41,21 +53,6 @@ const ChatFeed = memo(({
     const onReplyRef = useRef(onReply);
     const onDeleteRef = useRef(onDelete);
     const onBanRef = useRef(onBan);
-
-    if (isAtBottom && unreadCount > 0) {
-        setUnreadCount(0);
-    }
-
-    if (!isAtBottom) {
-        if (messages.length > prevMessagesLength) {
-            setUnreadCount(prev => prev + (messages.length - prevMessagesLength));
-            setPrevMessagesLength(messages.length);
-        } else if (messages.length < prevMessagesLength) {
-            setPrevMessagesLength(messages.length);
-        }
-    } else if (messages.length !== prevMessagesLength) {
-        setPrevMessagesLength(messages.length);
-    }
 
     useEffect(() => {
         onReplyRef.current = onReply;
@@ -112,17 +109,14 @@ const ChatFeed = memo(({
                         ref={virtuosoRef}
                         data={messages}
                         itemContent={itemContent}
-                        computeItemKey={(_index, msg) => msg.id ? `${msg.id}-${msg.platform}` : `msg-${Math.random()}`}
+                        computeItemKey={(_index, msg) => msg.id ? `${msg.id}-${msg.platform}` : `idx-${_index}`}
                         alignToBottom={true}
-                        followOutput="auto"
+                        followOutput={(isAtBottom) => isAtBottom ? 'auto' : false}
                         className="absolute inset-0 custom-scrollbar"
-                        atBottomStateChange={(bottom) => {
-                            setIsAtBottom(bottom);
-                        }}
-                        initialTopMostItemIndex={messages.length - 1}
-                        atBottomThreshold={150}
+                        atBottomStateChange={setIsAtBottom}
+                        atBottomThreshold={60}
                         increaseViewportBy={1000}
-                        style={{ height: '100%', width: '100%', overflowAnchor: 'none' }}
+                        style={{ height: '100%', width: '100%' }}
                     />
                 ) : emptyState}
 

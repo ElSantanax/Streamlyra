@@ -2,8 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, MessageStatus } from '../../types';
 import { ensureMessageId } from './helpers';
 
-const MAX_MESSAGES = 200;
-const FLUSH_INTERVAL_MS = 250;
+const MAX_MESSAGES = 1000;
+const FLUSH_INTERVAL_MS = 300;
 
 const mergePendingMessages = (currentMessages: ChatMessage[], newMessages: ChatMessage[]) => {
   if (newMessages.length === 0) return currentMessages;
@@ -45,7 +45,11 @@ export const useChatMessages = () => {
   const setMessagesWithTruncation = useCallback((updater: (prev: ChatMessage[]) => ChatMessage[]) => {
     setChatState(prev => {
       const nextData = updater(prev.data);
-      const CHUNK_SIZE = 50;
+      
+      // Si la referencia es la misma, no hay cambios (bail out)
+      if (nextData === prev.data) return prev;
+
+      const CHUNK_SIZE = 100;
       const LIMIT = MAX_MESSAGES + CHUNK_SIZE;
 
       if (nextData.length > LIMIT) {
