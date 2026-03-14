@@ -30,10 +30,43 @@ const OverlayChat = () => {
         });
 
         socket.on('chat_message', (msg: ChatMessage | ChatMessage[]) => {
-            const newMessages = Array.isArray(msg) ? msg : [msg];
+            const rawNewMessages = Array.isArray(msg) ? msg : [msg];
+
+            // Garantizar que todos tengan un ID único
+            const newMessages = rawNewMessages.map(m => ({
+                ...m,
+                id: m.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+            }));
 
             setMessages(prev => {
-                const nextMessages = [...prev, ...newMessages.map(m => ({ ...m, visible: true }))];
+                const uniqueNewMessages = newMessages.filter((newMsg, index, self) => {
+                    // Evitar repetir mensajes del streamer (isOwner) en pantalla
+                    if (newMsg.isOwner) {
+                        // 1. Verificar si ya existe en los mensajes previos y aún está visible
+                        const existsInPrev = prev.some(prevMsg => 
+                            prevMsg.isOwner && 
+                            prevMsg.visible && 
+                            prevMsg.message.trim() === newMsg.message.trim()
+                        );
+                        if (existsInPrev) return false;
+
+                        // 2. Verificar si viene duplicado en este mismo lote
+                        const existsInSelf = self.findIndex(m => m.isOwner && m.message.trim() === newMsg.message.trim()) < index;
+                        if (existsInSelf) return false;
+                    }
+
+                    // Deduplicación general por ID y plataforma
+                    const existsById = prev.some(prevMsg => 
+                        prevMsg.id === newMsg.id && prevMsg.platform === newMsg.platform
+                    );
+                    if (existsById) return false;
+
+                    return true;
+                });
+
+                if (uniqueNewMessages.length === 0) return prev;
+
+                const nextMessages = [...prev, ...uniqueNewMessages.map(m => ({ ...m, visible: true }))];
                 // Mantener solo los últimos 50 mensajes para rendimiento
                 if (nextMessages.length > 50) {
                     return nextMessages.slice(nextMessages.length - 50);
