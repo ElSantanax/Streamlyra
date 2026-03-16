@@ -39,15 +39,20 @@ export const SidebarAnalytics = memo(() => {
             .map(s => new Date(s).getTime())
             .filter(t => !isNaN(t)); // Evitar que NaNs rompan Math.max
 
+        const timestampStarts = starts.map(s => new Date(s).getTime()).filter(t => !isNaN(t));
+        const earliestStartTime = timestampStarts.length > 0 
+            ? new Date(Math.min(...timestampStarts)).toISOString() 
+            : undefined;
+
         if (serverTimes.length === 0) {
             return {
-                sessionStartTime: starts.length > 0 ? starts[0] : undefined,
+                sessionStartTime: earliestStartTime,
                 latestServerTime: undefined
             };
         }
 
         return {
-            sessionStartTime: starts.length > 0 ? starts[0] : undefined,
+            sessionStartTime: earliestStartTime,
             latestServerTime: new Date(Math.max(...serverTimes)).toISOString()
         };
     }, [connectionsStatus, connectionsStats]);
