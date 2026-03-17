@@ -4,21 +4,29 @@ import { TokenService } from '../TokenService';
 import { buildUserDTO } from '../../../utils/userUtils';
 import { StreamSessionManager } from '../../core/StreamSessionManager';
 
+import { ChatManager } from '../../core/ChatManager';
+ 
 jest.mock('../TokenService');
 jest.mock('../../../utils/userUtils');
 jest.mock('../../core/StreamSessionManager');
-
+jest.mock('../../core/ChatManager');
+ 
 describe('AuthDTOBuilder', () => {
     let builder: AuthDTOBuilder;
     let mockSessionManager: jest.Mocked<StreamSessionManager>;
-
+    let mockChatManager: jest.Mocked<ChatManager>;
+ 
     beforeEach(() => {
-        builder = new AuthDTOBuilder();
+        mockChatManager = {
+            getPlatformStatus: jest.fn()
+        } as unknown as jest.Mocked<ChatManager>;
+ 
+        builder = new AuthDTOBuilder(mockChatManager);
         mockSessionManager = {
             isPlatformLive: jest.fn(),
             getSession: jest.fn()
         } as unknown as jest.Mocked<StreamSessionManager>;
-
+ 
         (StreamSessionManager.getInstance as jest.Mock).mockReturnValue(mockSessionManager);
         (TokenService.generateToken as jest.Mock).mockReturnValue('fake-jwt');
         (buildUserDTO as jest.Mock).mockImplementation((u) => ({ id: u.id, username: u.username }));
@@ -69,6 +77,8 @@ describe('AuthDTOBuilder', () => {
                 username: 'tw_user',
                 viewers: 0,
                 isLive: true,
+                status: 'connected',
+                statusMessage: undefined,
                 sessionStartTime: '2026-03-05T00:00:00Z'
             });
 
@@ -77,6 +87,8 @@ describe('AuthDTOBuilder', () => {
                 username: 'yt_user',
                 viewers: 0,
                 isLive: false,
+                status: 'waiting_stream',
+                statusMessage: undefined,
                 sessionStartTime: null
             });
         });

@@ -56,6 +56,18 @@ Aplica el **Patrón Factory**: dado el nombre de una plataforma, devuelve el pro
 - Extrae el `broadcasterId` para identificar al usuario.
 - Transforma el payload al formato normalizado de Streamlyra.
 
+## Optimización de Logs y Monitoreo
+
+Para evitar la saturación de la consola del servidor durante directos con mucho tráfico (mensajes de chat constantes), Streamlyra utiliza niveles de log diferenciados:
+
+- **Nivel `info`**: Reservado para eventos estructurales críticos:
+  - Cambio de estado del stream (Online/Offline).
+  - Errores de cuota de API.
+  - Inicio de servicios o tareas programadas.
+- **Nivel `debug`**: Utilizado para el procesamiento individual de cada mensaje de chat.
+  - Permite la trazabilidad total en desarrollo o auditoría (`DEBUG=true`).
+  - Mantiene la consola de producción limpia y legible centrándose solo en la salud del sistema.
+
 ## Tareas Programadas (`src/services/cron/`)
 
 ### `YouTubeSubscriptionRenewer.ts`

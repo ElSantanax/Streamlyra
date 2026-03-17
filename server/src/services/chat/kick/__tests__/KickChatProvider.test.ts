@@ -53,11 +53,12 @@ describe('KickChatProvider', () => {
         it('debe ignorar llamados y retornar status connected si ya está polleando activamente', async () => {
             const internalManager = (provider as unknown as TestableKickChatProvider).manager as jest.Mocked<KickManager>;
             internalManager.isPolling.mockReturnValue(true);
+            internalManager.isLive.mockReturnValue(true);
 
             await provider.connect(userId, mockIo);
 
             expect(logger.debug).toHaveBeenCalledWith({ userId }, 'Kick already connected and polling, returning early');
-            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'kick', 'connected', 'Conectado');
+            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'kick', 'connected', 'Conectado', true);
         });
 
         it('debe devolver error y abortar si no encuentra conexion de kick del usuario', async () => {
@@ -179,6 +180,43 @@ describe('KickChatProvider', () => {
             await provider.onAccountDeleted(userId);
 
             expect(logger.error).toHaveBeenCalledWith(expect.any(Object), 'KickChatProvider: Error during permanent deletion cleanup');
+        });
+    });
+
+    describe('getStatus', () => {
+        const internalManager = () => (provider as unknown as TestableKickChatProvider).manager as jest.Mocked<KickManager>;
+
+        it('debe devolver status connecting si el usuario esta en proceso de conexion', () => {
+            (provider as unknown as TestableKickChatProvider).connectingUsers.add(userId);
+
+            const status = provider.getStatus(userId);
+
+            expect(status).toEqual({
+                status: 'connecting',
+                message: 'Buscando...',
+                isLive: false
+            });
+        });
+
+        it('debe devolver status connected con isLive real si esta polleando', () => {
+            internalManager().isPolling.mockReturnValue(true);
+            internalManager().isLive.mockReturnValue(true);
+
+            const status = provider.getStatus(userId);
+
+            expect(status).toEqual({
+                status: 'connected',
+                message: 'Conectado',
+                isLive: true
+            });
+        });
+
+        it('debe devolver null si no hay actividad para ese usuario', () => {
+            internalManager().isPolling.mockReturnValue(false);
+
+            const status = provider.getStatus(userId);
+
+            expect(status).toBeNull();
         });
     });
 

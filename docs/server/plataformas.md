@@ -18,7 +18,8 @@ Estos servicios actúan como clientes de las APIs oficiales. Se encargan de:
 
 Cada plataforma tiene su propia implementación de un `ChatProvider`. Esta capa normaliza la comunicación en tiempo real:
 
-- **Conexión**: Maneja el ciclo de vida de la conexión (IRC para Twitch, Polling para YouTube, Sockets para Kick).
+- **Conexión**: Maneja el ciclo de vida de la conexión (IRC para Twitch, Polling para YouTube, Sockets para Kick, Connector para TikTok).
+- **Estado Detallado**: Implementan `getStatus()` para informar si el sistema está buscando (`searching`), esperando (`waiting_stream`) o conectado con éxito.
 - **Normalización**: Convierte los mensajes crudos de cada plataforma a un formato estándar de Streamlyra.
 - **Acciones**: Permite enviar mensajes o realizar moderación de forma uniforme.
 

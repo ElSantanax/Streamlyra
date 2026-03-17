@@ -4,7 +4,7 @@ import type { SendMessagePayload, MessageSentResult } from '../../../../../types
 import { socket } from '../../../../../services/socket';
 import { toast } from '../../../../../lib/notifications/toast';
 import { validateMessage } from '../utils/messageValidation';
-import { useConnectionsStatus } from '../../../../../hooks/useConnectionsContext';
+import { useConnectionsStatus } from '../../../../../hooks/useConnections';
 import { useTranslation } from 'react-i18next';
 
 export const useMessageSender = (

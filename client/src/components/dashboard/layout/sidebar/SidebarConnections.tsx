@@ -5,7 +5,7 @@ import type { PlatformKey } from '../../../../constants/platforms';
 import { formatViewers } from '../../../../lib/formatters';
 import { ConnectionItem } from '../../connections/ConnectionItem';
 import { SidebarSection } from './SidebarSection';
-import { useConnectionsStatus, useConnectionsStats } from '../../../../hooks/useConnectionsContext';
+import { useConnectionsStatus, useConnectionsStats } from '../../../../hooks/useConnections';
 
 interface SidebarConnectionsProps {
     onAddPlatform?: () => void;

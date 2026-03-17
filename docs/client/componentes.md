@@ -23,16 +23,16 @@ Componentes específicos del área de administración del streamer.
 
 ### Chat Unificado (`chat/`)
 
-- **ChatFeed**: Orquestador que renderiza la lista de mensajes entrantes. Maneja el scroll automático y la optimización de renderizado.
+- **ChatFeed**: Orquestador que renderiza la lista de mensajes consumiendo del `useChatStore`. Maneja el scroll automático y la optimización de renderizado mediante actualizaciones por lotes (batching).
 - **ChatMessage**: Desglose visual de un mensaje individual. Incluye:
     - `MessageContent`: Procesa el texto para detectar y mostrar emoticonos, enlaces y menciones.
-    - `ChatActions`: Menú contextual para moderación (borrar mensaje, banear usuario).
-- **ChatInput**: Campo de texto para enviar mensajes. Soporta selector de plataforma y gestión de estados de envío.
+    - `ChatActions`: Menú contextual para moderación, sincronizado con las acciones del store.
+- **ChatInput**: Campo de texto para enviar mensajes. Gestiona estados de envío locales y globales.
 
 ### Gestión de Conexiones (`connections/`)
 
 - **AddPlatformModal**: Ventana emergente que guía al usuario para vincular una nueva cuenta de streaming.
-- **ConnectionItem**: Muestra el estado individual de una plataforma conectada (online/offline, número de espectadores, botón de desvincular).
+- **ConnectionItem**: Muestra el estado individual consumiendo del `useConnectionsStore`. Soporta estados detallados como `searching` (buscando en vivo) o `waiting_stream`.
 
 ---
 

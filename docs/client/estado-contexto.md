@@ -1,51 +1,104 @@
-# Gestión del Estado y Contexto
+# Gestión del Estado: Contexto y Zustand
 
-Streamlyra utiliza la API Context de React para gestionar el estado global que debe ser accesible desde cualquier parte de la aplicación, como la información del usuario autenticado y el estado de las conexiones con las plataformas de streaming.
+Streamlyra utiliza una arquitectura híbrida para la gestión del estado, eligiendo la herramienta adecuada según el tipo de datos y la frecuencia de actualización.
 
-## AuthProvider
+## AuthProvider (React Context)
 
-El `AuthProvider` es el encargado de gestionar la sesión del usuario. Utiliza `localStorage` para persistir la información básica del usuario y tokens de sesión.
+El `AuthProvider` gestiona la identidad y sesión del usuario. Dado que los datos de autenticación cambian poco frecuentemente, React Context es ideal por su simplicidad. Utiliza `localStorage` para persistir la sesión.
 
 ### Funcionalidades principales
 
 - **Persistencia**: Mantiene al usuario conectado entre recargas de página.
-- **Validación**: Verifica la validez del token con el servidor al iniciar la aplicación en rutas protegidas.
-- **Redirección Automática**: Maneja el flujo de login y logout, redirigiendo al usuario según su estado de autenticación.
-- **Sincronización**: Detecta cuando una sesión ha expirado y limpia el estado local.
-
-### Hook: `useAuth`
-
-Permite acceder a:
-- `user`: Objeto con los datos del usuario actual.
-- `status`: Estado actual (`authenticated`, `unauthenticated`, `unknown`).
-- `isAuthenticated`: Booleano de conveniencia.
-- `login(userData)` / `logout()`: Funciones para manejar la sesión.
+- **Validación**: Verifica la validez del token con el servidor al iniciar la aplicación.
+- **Hook: `useAuth`**: Provee acceso a `user`, `status`, `isAuthenticated` y funciones de `login`/`logout`.
+- **Integración con Sockets**: Al cerrar sesión, emite un evento `logout` al servidor para limpiar recursos inmediatamente (omitir periodo de gracia).
 
 ---
 
-## ConnectionsProvider
+## Arquitectura de Flujo de Datos
 
-Este proveedor gestiona el estado de las conexiones con las diferentes plataformas (Twitch, YouTube, Kick, TikTok). Está optimizado para separar el estado que cambia poco (si está conectado) del estado que cambia frecuentemente (stats en vivo).
+El siguiente diagrama ilustra cómo fluyen los datos desde el servidor hasta los componentes de la interfaz, pasando por los mecanismos de sincronización y los stores de estado global.
 
-### Contextos Separados
+```mermaid
+graph TD
+    subgraph Servidor [Backend]
+        API[API REST /me]
+        WS[Socket.io Server]
+    end
 
-Para evitar re-renders innecesarios, se divide en dos contextos:
+    subgraph Sync [Capa de Sincronización]
+        useSocket[Hook useSocket]
+        useAuthHook[Hook useAuth]
+    end
 
-1.  **ConnectionsStatusContext**:
-    - `connectionsStatus`: Indica qué plataformas están vinculadas y si están en vivo.
-    - `isLoadingConnections`: Estado de carga inicial.
-    - `disconnectPlatform(platform)`: Función para desvincular una cuenta.
+    subgraph GlobalState [Gestión de Estado]
+        AuthCtx[AuthProvider - Context]
+        ConnStore[useConnectionsStore - Zustand]
+        ChatStore[useChatStore - Zustand]
+    end
 
-2.  **ConnectionsStatsContext**:
-    - `connectionsStats`: Datos en tiempo real como número de espectadores, seguidores, etc.
-    - `lastFollower` / `lastRaid`: Información sobre los últimos eventos recibidos.
+    subgraph UI [Componentes React]
+        Sidebar[Sidebar / Stats]
+        Feed[ChatFeed / Messages]
+        Profile[User Menu / Auth]
+    end
 
-### Lógica de Reconexión
+    %% Flujos de Identidad
+    API -->|1. Validación| useAuthHook
+    useAuthHook -->|2. Identidad| AuthCtx
+    AuthCtx -->|3. Sesión Fija| Profile
 
-El `ConnectionsProvider` utiliza el hook `useConnections` para sincronizar periódicamente el estado de las transmisiones y manejar los eventos de sockets entrantes que actualizan las estadísticas.
+    %% Flujos de Conexiones
+    API -->|1. Carga Inicial| ConnStore
+    WS -->|2. Eventos Real-time| useSocket
+    useSocket -->|3. Actualización Atómica| ConnStore
+    ConnStore -->|4. Re-renders Quirúrgicos| Sidebar
+
+    %% Flujos de Chat
+    WS -->|2. Mensajes Crudos| useSocket
+    useSocket -->|3. Batching & Cleaning| ChatStore
+    ChatStore -->|4. Feed Optimizado| Feed
+
+    style GlobalState fill:#1a1a1a,stroke:#7c3aed,stroke-width:2px
+    style Sync fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px
+    style Servidor fill:#1a1a1a,stroke:#ef4444,stroke-width:2px
+```
+
+---
+
+## Zustand Stores (Alta Frecuencia)
+
+Para datos en tiempo real y componentes que requieren actualizaciones rápidas sin re-renders masivos, hemos migrado a **Zustand**. Estos son los archivos centrales:
+
+### 1. `src/store/useConnectionsStore.ts`
+
+Es el orquestador del estado de las plataformas conectadas.
+
+- **Estado Atómico**: Almacena un mapa de `connectionsStatus` y `connectionsStats` indexados por plataforma.
+- **Selectores Memorizados**: Los componentes usan `useShallow` y selectores granulares para escuchar cambios solo en las propiedades que necesitan (ej: solo el conteo de espectadores de Twitch).
+- **Consistencia de Datos**: Al recibir datos de la API (polling), el store mezcla la información con los eventos de tiempo real del Socket, priorizando los estados transitorios (como `searching`) para evitar que la UI retroceda a estados "Offline" erróneamente.
+- **Hash de Conexión**: Mantiene un `connectionHash` calculado que permite a hooks como `useSocket` reaccionar a cambios estructurales en las conexiones sin depender de la referencia del objeto.
+
+### 2. `src/store/useChatStore.ts`
+
+Gestiona la memoria y el flujo de mensajes simultáneos con alto rendimiento.
+
+- **Mecanismo de Flush/Batching**: Los mensajes se acumulan en un buffer temporal y se "vuelcan" al estado principal cada 300ms. Esto previene que el hilo principal se bloquee durante ráfagas intensas de chat.
+- **Acciones de Moderación Global**: Permite eliminar mensajes o banear usuarios de forma atómica. Al eliminar un mensaje en el store, todos los componentes suscritos reflejan el cambio instantáneamente.
+- **Optimización de Memoria (MAX_MESSAGES)**: Implementa una limpieza automática (trimming) para mantener el arreglo de mensajes dentro de un límite (ej. 1000 mensajes), evitando fugas de memoria en sesiones largas.
+
+---
+
+## Beneficios de la Arquitectura con Zustand
+
+1.  **Rendimiento Extremo**: Eliminación del "Context Hell". Un mensaje de chat ya no provoca que se refresque la barra de herramientas o el buscador.
+2.  **Lógica Desacoplada**: Los hooks como `useConnectionsSocket` envían datos directamente a los stores sin necesidad de pasar por la pirámide de componentes de React.
+3.  **Estado Predictible**: Al centralizar la lógica en stores puramente de TypeScript, el comportamiento ante errores y estados complejos es más fácil de depurar.
 
 ---
 
 ## DialogProvider (lib/dialog)
 
-Aunque no es un contexto tradicional de `src/context`, el `DialogProvider` provee una interfaz imperativa para mostrar diálogos de confirmación y alertas en toda la aplicación sin necesidad de declarar estados de "abierto/cerrado" en cada componente.
+Provee una interfaz imperativa para mostrar diálogos de confirmación en toda la aplicación mediante `dialogService`, evitando la necesidad de declarar estados "open/close" en cada página.
+
+ElSantana

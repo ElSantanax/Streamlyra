@@ -3,14 +3,14 @@
  * Solo coordina hooks y componentes, sin lógica de negocio
  */
 
-import { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/dashboard/layout/DashboardHeader';
 
 import { LocalErrorBoundary } from '../components/common/LocalErrorBoundary';
-import { useAuth, useChatMessages, useSocket, useModeration } from '../hooks';
+import { useAuth, useChatMessages, useSocket, useModeration, useConnectionsStatus } from '../hooks';
+import { useChatStore } from '../store/useChatStore';
 import { toast } from '../lib/notifications';
-import { useConnectionsStatus } from '../hooks/useConnectionsContext';
 import type { PlatformKey } from '../constants/platforms';
 
 import Sidebar from '../components/dashboard/layout/Sidebar';
@@ -22,10 +22,8 @@ const DashboardContent = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
 
-    // Usamos el contexto optimizado de STATUS para el layout principal
+    // Usamos el contexto optimizado para acciones del layout principal
     const {
-        connectionsStatus,
-        connectionHash,
         disconnectPlatform,
         searchStream,
         refetchConnections
@@ -33,21 +31,16 @@ const DashboardContent = () => {
 
     const {
         messages,
-        addMessage,
-        updateMessageStatus,
-        removeMessage,
-        removeMessagesByUserId,
         clearMessages
     } = useChatMessages();
+
+    // Store del chat para inicialización
+    const initChatSocket = useChatStore(state => state.initSocket);
+
     const chatAreaRef = useRef<HTMLElement>(null);
 
-    // Memorizar opciones de moderación de forma persistente
-    const moderationOptions = useMemo(() => ({
-        onMessageDeleted: removeMessage,
-        onUserBanned: removeMessagesByUserId
-    }), [removeMessage, removeMessagesByUserId]);
+    const { deleteMessage, banUser, replyToUser } = useModeration();
 
-    const { deleteMessage, banUser, replyToUser } = useModeration(moderationOptions);
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
@@ -66,6 +59,9 @@ const DashboardContent = () => {
     }, []);
 
     useEffect(() => {
+        // Inicializar listeners globales del chat
+        initChatSocket();
+
         if (chatAreaRef.current) {
             toast.setTargetElement(chatAreaRef.current);
         }
@@ -74,7 +70,7 @@ const DashboardContent = () => {
         return () => {
             toast.setTargetElement(null);
         };
-    }, [refetchConnections]);
+    }, [refetchConnections, initChatSocket]);
 
     // Proteger ruta - usar useEffect para navegación
     useEffect(() => {
@@ -92,14 +88,9 @@ const DashboardContent = () => {
         }
     }, [disconnectPlatform]);
 
-    // Socket connection con callbacks para mensajes
+    // Socket connection (Mantiene la gestión de conexión pero los datos fluyen por los stores)
     const { isConnected } = useSocket({
-        userId: user?.id,
-        onChatMessage: addMessage,
-        onMessageStatusUpdate: updateMessageStatus,
-        connections: connectionsStatus, // useSocket solo usa .connected
-
-        connectionHash,
+        userId: user?.id
     });
 
     const handleOpenSidebar = useCallback(() => toggleSidebar(true), [toggleSidebar]);

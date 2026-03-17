@@ -74,7 +74,7 @@ describe('TwitchChatProvider', () => {
             await provider.connect(userId, mockIo);
 
             expect(logger.debug).toHaveBeenCalledWith({ userId }, 'User already has an active Twitch client, skipping unnecessary DB lookup');
-            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'twitch', 'connected', 'Conectado');
+            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'twitch', 'connected', 'Conectado', false);
         });
 
         it('debe conectar exitosamente, configurar listeners y registrar webhooks', async () => {
@@ -94,7 +94,7 @@ describe('TwitchChatProvider', () => {
             expect(logger.info).toHaveBeenCalledWith({ userId }, 'Connecting to Twitch chat');
             expect(connectionManagerInstance.connect).toHaveBeenCalledWith(userId);
 
-            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'twitch', 'connected', 'Conectado');
+            expect(SafeSocketEmitter.emitConnectionStatus).toHaveBeenCalledWith(mockIo, userId, 'twitch', 'connected', 'Conectado', false);
             expect(eventListenerInstance.setupListeners).toHaveBeenCalledWith(userId, mockClient, mockIo);
 
             expect(mockTwitchManager.registerWebhooks).toHaveBeenCalledWith(userId, 'tw_channel_123');

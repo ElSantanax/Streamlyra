@@ -9,6 +9,7 @@ import { youtubePubSubService } from './YouTubePubSubService';
 import { YouTubeStreamContext } from '../../../models/YouTubeStreamContext.model';
 import { YouTubeDiscoveryLoop } from './YouTubeDiscoveryLoop';
 import { YouTubeBroadcast } from '../../../types/youtube.types';
+import { GlobalConnectionStatus } from '../../../types';
 
 export class YouTubeChatProvider implements ChatProvider {
     private stateManager: YouTubeConnectionStateManager;
@@ -205,5 +206,18 @@ export class YouTubeChatProvider implements ChatProvider {
         } catch (error) {
             logger.error({ err: error, userId }, 'YouTube: Error during permanent deletion cleanup');
         }
+    }
+
+    getStatus(userId: string): { status: GlobalConnectionStatus; message?: string; isLive: boolean } | null {
+        if (this.stateManager.isConnecting(userId)) {
+            return { status: 'connecting', message: 'Buscando...', isLive: false };
+        }
+        if (this.stateManager.hasActiveConnection(userId)) {
+            return { status: 'connected', message: 'Conectado', isLive: true };
+        }
+        if (this.stateManager.isManualMode(userId)) {
+            return { status: 'waiting_stream', message: 'Sin Live', isLive: false };
+        }
+        return null;
     }
 }

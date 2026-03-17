@@ -7,7 +7,7 @@ import Spinner from '../../common/Spinner';
 
 export interface ConnectionItemProps {
     platformKey: PlatformKey;
-    status: 'connected' | 'disconnected' | 'connecting' | 'waiting_stream' | 'error';
+    status: 'connected' | 'disconnected' | 'connecting' | 'searching' | 'waiting_stream' | 'error';
     viewers?: string;
     statusMessage?: string;
     isLive?: boolean;
@@ -27,7 +27,7 @@ export const ConnectionItem = memo(({
     const { t } = useTranslation();
     const { name, Icon, color, iconColor } = PLATFORMS[platformKey];
     const isConnected = status === 'connected';
-    const isConnecting = status === 'connecting';
+    const isConnecting = status === 'connecting' || status === 'searching';
     const isError = status === 'error';
     const isWaitingStream = status === 'waiting_stream';
     const isYouTube = platformKey === 'youtube';

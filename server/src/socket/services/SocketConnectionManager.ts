@@ -1,4 +1,4 @@
-import { Socket, Server } from 'socket.io';
+import { Socket } from 'socket.io';
 import { ChatManager } from '../../services/core/ChatManager';
 import { logger } from '../../utils/logger';
 import { isValidUserId } from '../utils/SocketValidator';
@@ -7,10 +7,13 @@ import { SocketLockManager } from './SocketLockManager';
 import { StreamSessionManager } from '../../services/core/StreamSessionManager';
 
 const CONNECTION_TIMEOUT_MS = 10000;
+const GRACE_PERIOD_MS = 60000;
 
 export class SocketConnectionManager {
     private registry = new SocketRegistry();
     private lockManager = new SocketLockManager();
+    private pendingDisconnections = new Map<string, NodeJS.Timeout>();
+    private loggedOutUsers = new Set<string>();
 
     constructor(private chatManager: ChatManager) {
     }
@@ -19,7 +22,7 @@ export class SocketConnectionManager {
         return this.registry.getUserId(socketId);
     }
 
-    async handleIdentify(userId: unknown, socket: Socket, _io: Server): Promise<void> {
+    async handleIdentify(userId: unknown, socket: Socket): Promise<void> {
         if (!isValidUserId(userId)) {
             logger.warn({ userId, socketId: socket.id }, 'UserId inválido');
             socket.emit('error', {
@@ -32,6 +35,15 @@ export class SocketConnectionManager {
         const uid = userId as string;
         try {
             logger.debug({ userId: uid, socketId: socket.id }, 'Iniciando identificación de usuario');
+
+            this.loggedOutUsers.delete(uid);
+
+            const pending = this.pendingDisconnections.get(uid);
+            if (pending) {
+                clearTimeout(pending);
+                this.pendingDisconnections.delete(uid);
+                logger.info({ userId: uid }, 'Sesión salvada: El usuario regresó antes de expirar el periodo de gracia');
+            }
 
             const { isFirstSocket } = this.registry.register(socket.id, uid);
             socket.join(uid);
@@ -98,24 +110,65 @@ export class SocketConnectionManager {
             return;
         }
 
+        if (isLastSocket && this.loggedOutUsers.has(userId)) {
+            logger.info({ userId }, 'Limpieza final por logout: No se requiere periodo de gracia');
+            this.loggedOutUsers.delete(userId);
+            return;
+        }
+
         if (isLastSocket) {
-            logger.info({ userId, socketId }, 'Último socket desconectado: Preparando limpieza');
+            logger.info({ userId, socketId }, 'Último socket desconectado: Iniciando periodo de gracia (60s)');
 
-            const existingLock = this.lockManager.getLock(userId);
-            if (existingLock) {
-                logger.debug({ userId }, 'Esperando cierre de conexión pendiente antes de desconectar');
-                await existingLock.catch(() => { });
-            }
+            const existingTimeout = this.pendingDisconnections.get(userId);
+            if (existingTimeout) clearTimeout(existingTimeout);
 
-            if (!this.registry.hasUser(userId)) {
-                await this.chatManager.disconnectUser(userId);
-                StreamSessionManager.getInstance().clearSession(userId);
-                logger.info({ userId }, 'Plataformas desconectadas correctamente y sesión limpiada');
-            } else {
-                logger.info({ userId }, 'Nueva conexión detectada durante la limpieza, abortando desconexión');
-            }
+            const timeout = setTimeout(async () => {
+                try {
+                    if (!this.registry.hasUser(userId)) {
+                        logger.info({ userId }, 'Periodo de gracia expirado: Ejecutando limpieza de plataformas');
+
+                        const existingLock = this.lockManager.getLock(userId);
+                        if (existingLock) {
+                            await existingLock.catch(() => { });
+                        }
+
+                        await this.chatManager.disconnectUser(userId);
+                        StreamSessionManager.getInstance().clearSession(userId);
+                        logger.info({ userId }, 'Sesión y plataformas limpiadas exitosamente tras inactividad');
+                    } else {
+                        logger.info({ userId }, 'Limpieza abortada: El usuario reconectó durante el periodo de gracia');
+                    }
+                } catch (error) {
+                    logger.error({ err: error, userId }, 'Error durante la limpieza diferida de plataformas');
+                } finally {
+                    this.pendingDisconnections.delete(userId);
+                }
+            }, GRACE_PERIOD_MS);
+
+            this.pendingDisconnections.set(userId, timeout);
         } else {
             logger.debug({ userId, socketId, remainingSockets: remainingCount }, 'Socket removido, aún quedan sockets activos');
+        }
+    }
+
+    async handleLogout(userId: string): Promise<void> {
+        logger.info({ userId }, 'Logout explícito detectado: Ejecutando desconexión inmediata');
+
+        this.loggedOutUsers.add(userId);
+
+        const pending = this.pendingDisconnections.get(userId);
+        if (pending) {
+            clearTimeout(pending);
+            this.pendingDisconnections.delete(userId);
+        }
+
+        try {
+            await this.chatManager.disconnectUser(userId);
+            StreamSessionManager.getInstance().clearSession(userId);
+            logger.info({ userId }, 'Desconexión por logout completada exitosamente');
+        } catch (error) {
+            logger.error({ err: error, userId }, 'Error durante la desconexión inmediata por logout');
+            this.loggedOutUsers.delete(userId);
         }
     }
 

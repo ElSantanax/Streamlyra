@@ -77,10 +77,10 @@ Definiciones de tablas mediante Sequelize-Typescript.
 
 Este es el directorio más denso (~100 archivos). Se divide en:
 
-- **`auth/`**: Lógica compleja de flujos OAuth y procesamiento de perfiles.
-- **`chat/`**: Implementaciones de `ChatProvider` para cada plataforma y sus decodificadores de eventos (Transformers).
+- **`auth/`**: Lógica de flujos OAuth y procesamiento de perfiles. Incluye el **`AuthDTOBuilder.ts`**, responsable de construir la respuesta de perfil del usuario sincronizando datos de la DB con el estado en tiempo real del `ChatManager`.
+- **`chat/`**: Implementaciones de **`ChatProvider`** para cada plataforma. Tras la refactorización, estos proveedores ahora implementan `getStatus()` para reportar estados granulares (buscando, conectado, sin live) al sistema central.
 - **`platforms/`**: Clientes de API específicos (TwitchHelixClient, YouTubeDataClient).
-- **`core/`**: Gestores de alto nivel como `ChatManager`.
+- **`core/`**: Gestores de nivel orquestador como **`ChatManager.ts`** (estado de chats) y **`StreamSessionManager.ts`** (monitoreo de sesiones en vivo).
 - **`security/`**: Servicios de encriptación y hashing.
 - **`cron/`**: Tareas programadas (ej. renovación de suscripciones de YouTube).
 
@@ -90,6 +90,7 @@ Este es el directorio más denso (~100 archivos). Se divide en:
 
 - **`socket.handler.ts`**: Switch central para eventos de socket.
 - **`handlers/`**: Lógica segregada por dominio (mensajes, moderación, conexiones).
+- **`services/`**: Lógica de soporte del socket. Destaca el `SocketConnectionManager`, encargado de la resiliencia del usuario mediante el Periodo de Gracia ante desconexiones.
 - **`middleware/`**: Autenticación específica para conexiones de WebSocket.
 
 ---

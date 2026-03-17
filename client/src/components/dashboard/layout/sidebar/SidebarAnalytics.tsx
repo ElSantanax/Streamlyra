@@ -6,7 +6,7 @@ import { SimpleTimer } from '../../../common/SimpleTimer';
 import { EngagementIndicator } from '../../analytics/EngagementIndicator';
 import { SidebarSection } from './SidebarSection';
 import { SidebarSocialAlerts } from './SidebarSocialAlerts';
-import { useConnectionsStatus, useConnectionsStats } from '../../../../hooks/useConnectionsContext';
+import { useConnectionsStatus, useConnectionsStats } from '../../../../hooks/useConnections';
 
 export const SidebarAnalytics = memo(() => {
     const { t } = useTranslation();
@@ -40,8 +40,8 @@ export const SidebarAnalytics = memo(() => {
             .filter(t => !isNaN(t)); // Evitar que NaNs rompan Math.max
 
         const timestampStarts = starts.map(s => new Date(s).getTime()).filter(t => !isNaN(t));
-        const earliestStartTime = timestampStarts.length > 0 
-            ? new Date(Math.min(...timestampStarts)).toISOString() 
+        const earliestStartTime = timestampStarts.length > 0
+            ? new Date(Math.min(...timestampStarts)).toISOString()
             : undefined;
 
         if (serverTimes.length === 0) {

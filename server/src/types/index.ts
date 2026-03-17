@@ -44,6 +44,8 @@ export interface ChatMessage {
     isSpecial?: boolean;
 }
 
+export type GlobalConnectionStatus = 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected' | 'searching';
+
 export interface ConnectionStatus {
     platform: Platform;
     status: 'connecting' | 'connected' | 'disconnected' | 'error';
@@ -59,7 +61,7 @@ export interface ConnectionInfo {
     connected: boolean;
     username?: string;
     viewers?: number;
-    status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
+    status?: GlobalConnectionStatus;
     statusMessage?: string;
     isLive?: boolean;
     sessionStartTime?: string | null;

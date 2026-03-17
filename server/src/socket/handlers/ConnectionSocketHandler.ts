@@ -10,7 +10,7 @@ export class ConnectionSocketHandler {
     ) { }
 
     async setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
-        this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
+        this.connectionManager.handleIdentify(authenticatedUserId, socket);
 
         // Enviar analíticas guardadas en DB (si existen y no han expirado)
         Promise.all([
@@ -22,8 +22,12 @@ export class ConnectionSocketHandler {
         }).catch(err => logger.error({ err, userId: authenticatedUserId }, 'Error enviando analíticas iniciales al conectar'));
 
         socket.on('identify', async () => {
-            await this.connectionManager.handleIdentify(authenticatedUserId, socket, io);
+            await this.connectionManager.handleIdentify(authenticatedUserId, socket);
             socket.emit('identified', { userId: authenticatedUserId, message: 'Conectado de forma segura' });
+        });
+
+        socket.on('logout', async () => {
+            await this.connectionManager.handleLogout(authenticatedUserId);
         });
 
         socket.on('youtube_boost_discovery', async () => {

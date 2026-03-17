@@ -125,7 +125,7 @@ socket.on('connection_status', (data) => {})
 // Estructura:
 {
   platform: 'twitch' | 'youtube' | 'kick' | 'tiktok',
-  status: 'connecting' | 'waiting_stream' | 'connected' | 'disconnected' | 'error',
+  status: 'connecting' | 'searching' | 'waiting_stream' | 'connected' | 'disconnected' | 'error',
   message?: string,        // Mensaje legible para el usuario (ej: "Sin Live", "Buscando...")
   isLive: boolean,         // ¿Está el streamer en directo en esta plataforma?
   sessionStartTime: string | null, // ISO timestamp de cuando inició el stream
@@ -136,11 +136,12 @@ socket.on('connection_status', (data) => {})
 **Valores de `status`**:
 | Estado | Significado |
 |-----------------|----------------------------------------------------------|
-| `connecting` | El servidor está intentando conectarse |
-| `waiting_stream`| Conectado pero el streamer no está en vivo |
-| `connected` | Conectado y el streamer está en vivo |
-| `disconnected` | Sin conexión activa |
-| `error` | Ocurrió un error (token inválido, red, etc.) |
+| `connecting` | El servidor está intentando establecer conexión inicial |
+| `searching` | El sistema está buscando activamente una transmisión en vivo |
+| `waiting_stream`| Plataforma vinculada pero no hay directo activo (modo espera) |
+| `connected` | Conectado y recibiendo eventos del chat en vivo |
+| `disconnected` | Cuenta no vinculada o desconexión manual |
+| `error` | Ocurrió un error (token expirado, baneo, fallo de red) |
 
 ### `viewers_update`
 

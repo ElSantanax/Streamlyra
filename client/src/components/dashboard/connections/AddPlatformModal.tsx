@@ -9,7 +9,8 @@ import { validateTikTokUsername } from '../../../lib/validators';
 import { Modal } from '../../ui';
 import { toast } from '../../../lib/notifications';
 import { getUserFriendlyMessage } from '../../../lib/errors';
-import { useConnectionsStatus } from '../../../hooks/useConnectionsContext';
+import { useConnectionsStatus } from '../../../hooks/useConnections';
+import { useConnectionsStore } from '../../../store/useConnectionsStore';
 
 interface AddPlatformModalProps {
     isOpen: boolean;
@@ -24,6 +25,8 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const { connectionsStatus: connections = {} } = useConnectionsStatus();
+    const updatePlatformStatus = useConnectionsStore(state => state.updateStatus);
+
     const [tiktokUsername, setTiktokUsername] = useState('');
     const [tiktokError, setTiktokError] = useState<string | undefined>();
 
@@ -63,11 +66,16 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
         }
 
         try {
+            // Feedback inmediato de conexión
+            updatePlatformStatus('tiktok', { status: 'connecting' });
+
             await authService.connectTikTok(validation.cleaned!);
             setTiktokError(undefined);
             onConnectionSuccess?.();
             setTimeout(() => onClose(), 500);
         } catch (error) {
+            // Revertir estado en caso de error
+            updatePlatformStatus('tiktok', { status: 'error' });
             const message = getUserFriendlyMessage(error);
             setTiktokError(message);
             toast.error(message);
@@ -136,4 +144,3 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
 };
 
 export default AddPlatformModal;
-

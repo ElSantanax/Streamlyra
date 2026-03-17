@@ -12,7 +12,9 @@ export const parseMeResponse = (data: MeResponse | null) => {
                 status[platform] = {
                     connected: fetched.connected,
                     username: fetched.username,
-                    isLive: fetched.isLive
+                    isLive: fetched.isLive,
+                    status: fetched.status,
+                    statusMessage: fetched.statusMessage
                 };
                 stats[platform] = {
                     viewers: fetched.viewers ?? 0,

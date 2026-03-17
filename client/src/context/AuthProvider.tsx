@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { authService } from '../services/api/auth.service';
 import { sessionManager } from '../services/session';
+import { socket } from '../services/socket';
 import { isProtectedRoute, isPublicAuthRoute } from '../config/routes';
 import { AuthContext, type AuthStatus, type AuthContextValue } from '../hooks/useAuthContext';
 import type { User } from '../types';
@@ -66,6 +67,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
+      if (socket.connected) {
+        socket.emit('logout');
+      }
       await authService.logout();
     } catch (error) {
       console.error('Error during logout:', error);

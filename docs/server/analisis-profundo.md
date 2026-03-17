@@ -7,8 +7,9 @@ Esta sección proporciona una visión detallada de los componentes internos más
 El `ChatManager` (`src/services/core/ChatManager.ts`) es el cerebro que coordina los diferentes proveedores de chat. Su responsabilidad es:
 
 - **Gestión de Sesiones**: Conecta y desconecta dinámicamente los proveedores de chat cuando un usuario entra o sale de la plataforma.
-- **Abstracción**: Permite que el resto del sistema interactúe con el chat de forma universal mediante la interfaz `ChatProvider`.
-- **Sincronización**: Utiliza `Promise.allSettled` para manejar conexiones múltiples simultáneamente, garantizando que un fallo en una plataforma (ej. Kick) no impida que las demás (Twitch/YouTube) se conecten.
+- **Abstracción y Estado**: Permite que el resto del sistema interactúe con el chat de forma universal mediante la interfaz `ChatProvider`. Tras la última refactorización, el Manager ahora puede consultar el estado detallado (`status`, `isLive`, `message`) de cada proveedor mediante `getStatus()`.
+- **Sincronización de Perfil**: El sistema utiliza estos estados en tiempo real para construir el perfil del usuario (`AuthDTOBuilder`), asegurando que el Dashboard refleje exactamente lo que el servidor está haciendo (ej: "Buscando Stream").
+- **Resiliencia**: Utiliza `Promise.allSettled` para manejar conexiones múltiples simultáneamente, garantizando que un fallo en una plataforma no bloquee el ecosistema.
 
 ## Estrategias de Comunicación por Plataforma
 
@@ -31,6 +32,14 @@ Implementado en `YouTubeChatPoller`, soluciona las limitaciones de la API de Goo
 ### Kick: Sockets en Tiempo Real
 
 Basado en Websockets (Pusher), permite una respuesta inmediata con una carga mínima para el servidor.
+
+## Precisión de Estado en Vivo (Live Status)
+
+Tras la implementación de mejoras de resiliencia, el sistema garantiza una fidelidad total en el estado "En Vivo":
+
+1. **Kick Direct Status**: `KickManager` ahora mantiene un mapa `liveStatus` que se actualiza mediante sondeo y webhooks simultáneos. Esto corrige errores donde la plataforma aparecía "En vivo" sin haber iniciado el stream realmente.
+2. **Twitch Session Awareness**: Al reconectar sockets durante el periodo de gracia, el `TwitchChatProvider` consulta el `StreamSessionManager` para emitir el estado real del directo inmediatamente, eliminando cualquier "parpadeo" visual en el dashboard del cliente.
+3. **Consistencia Global**: Los proveedores ahora reportan `isLive` de forma imperativa en sus métodos `getStatus()`, permitiendo una sincronización perfecta entre el Dashboard y las APIs externas.
 
 ## Gestión de Datos y Token Cache
 

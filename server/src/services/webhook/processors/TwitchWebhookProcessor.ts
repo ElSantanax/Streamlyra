@@ -132,11 +132,7 @@ export class TwitchWebhookProcessor {
             }
 
             if (chatMessage) {
-                logger.info(
-                    { userId: connection.userId, platform: 'twitch', user: chatMessage.user, eventType },
-                    'Procesando evento de Twitch recibido vía EventSub'
-                );
-
+                logger.debug({ eventType, chatMessage }, 'Emitiendo chatMessage de Twitch');
                 SafeSocketEmitter.emitChatMessage(this.io, connection.userId, chatMessage, 'twitch');
             }
 

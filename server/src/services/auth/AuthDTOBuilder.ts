@@ -3,8 +3,10 @@
 import { User } from '../../models/User.model';
 import { buildUserDTO, UserDTO } from '../../utils/userUtils';
 import { TokenService } from './TokenService';
-import { ConnectionInfo } from '../../types';
+import { Platform } from '../../constants/platforms';
+import { ConnectionInfo, GlobalConnectionStatus } from '../../types';
 import { StreamSessionManager } from '../core/StreamSessionManager';
+import { ChatManager } from '../core/ChatManager';
 
 export interface AuthResponse {
     token: string;
@@ -36,6 +38,8 @@ export interface UserProfileResponse {
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export class AuthDTOBuilder {
+    constructor(private chatManager: ChatManager) {}
+
     buildAuthResponse(
         user: User,
         connectionActive: boolean,
@@ -63,12 +67,17 @@ export class AuthDTOBuilder {
             user.connections.forEach(conn => {
                 const isLive = sessionManager.isPlatformLive(user.id, conn.provider);
                 const session = sessionManager.getSession(user.id);
+                
+                // Obtener estado detallado desde el ChatManager para esta plataforma
+                const platformStatus = this.chatManager.getPlatformStatus(user.id, conn.provider as Platform);
 
                 connections_map[conn.provider] = {
                     connected: true,
                     username: conn.providerUsername,
                     viewers: 0,
-                    isLive,
+                    isLive: platformStatus?.isLive ?? isLive,
+                    status: (platformStatus?.status as GlobalConnectionStatus) || (isLive ? 'connected' : 'waiting_stream'),
+                    statusMessage: platformStatus?.message,
                     sessionStartTime: isLive ? session.startTime : null
                 };
             });

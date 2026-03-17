@@ -55,7 +55,7 @@ export function createContainer(io: Server) {
 
     // Auth & User Services
     const userServiceInst = new UserService(userRepository, connectionRepository);
-    const authDTOBuilder = new AuthDTOBuilder();
+    const authDTOBuilder = new AuthDTOBuilder(chatManager);
     const platformAuthHandler = new PlatformAuthHandler(
         userServiceInst,
         connectionRepository,

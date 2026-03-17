@@ -1,30 +1,27 @@
 import { useEffect } from 'react';
 import { socket } from '../../services/socket';
+import { useConnectionsStore } from '../../store/useConnectionsStore';
 import type {
-    ConnectionStatus,
-    ConnectionStats,
     ConnectionStatusUpdate,
     ViewersUpdate,
     LastFollower,
     LastRaid
 } from '../../types';
 
-interface SocketHandlersProps {
-    statusRef: React.MutableRefObject<Record<string, ConnectionStatus>>;
-    updateStatus: (platform: string, updates: Partial<ConnectionStatus>) => void;
-    updateStats: (platform: string, updates: Partial<ConnectionStats>) => void;
-    setLastFollower: (follower: LastFollower) => void;
-    setLastRaid: (raid: LastRaid) => void;
-}
-
-export const useConnectionsSocket = ({
-    statusRef,
-    updateStatus,
-    updateStats,
-    setLastFollower,
-    setLastRaid
-}: SocketHandlersProps) => {
+/**
+ * Hook para manejar los eventos de WebSocket relacionados con las conexiones.
+ * Ahora se comunica directamente con el store de Zustand para evitar re-renders innecesarios.
+ */
+export const useConnectionsSocket = () => {
     useEffect(() => {
+        // Acciones estables del store
+        const { 
+            updateStatus, 
+            updateStats, 
+            setLastFollower, 
+            setLastRaid 
+        } = useConnectionsStore.getState();
+
         const onConnectionStatus = (data: ConnectionStatusUpdate) => {
             updateStatus(data.platform, {
                 connected: data.status === 'connected' || data.status === 'waiting_stream' || data.status === 'connecting',
@@ -42,7 +39,10 @@ export const useConnectionsSocket = ({
         };
 
         const onViewersUpdate = (data: ViewersUpdate) => {
-            if (!statusRef.current[data.platform]?.connected) return;
+            // Consulta de estado actual sin suscripción
+            const currentStatus = useConnectionsStore.getState().connectionsStatus;
+            
+            if (!currentStatus[data.platform]?.connected) return;
 
             updateStats(data.platform, {
                 viewers: data.count,
@@ -50,7 +50,8 @@ export const useConnectionsSocket = ({
                 serverTime: data.serverTime
             });
 
-            if (data.isLive !== undefined && data.isLive !== statusRef.current[data.platform]?.isLive) {
+            const isLiveChanged = data.isLive !== undefined && data.isLive !== currentStatus[data.platform]?.isLive;
+            if (isLiveChanged) {
                 updateStatus(data.platform, { isLive: data.isLive });
             }
         };
@@ -74,5 +75,6 @@ export const useConnectionsSocket = ({
             socket.off('last_follower_update', onLastFollowerUpdate);
             socket.off('last_raid_update', onLastRaidUpdate);
         };
-    }, [updateStatus, updateStats, setLastFollower, setLastRaid, statusRef]);
+    }, []); // Efecto limpio sin dependencias reactivas ruidosas
 };
+

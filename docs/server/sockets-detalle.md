@@ -65,9 +65,21 @@ Antes de ejecutar, siempre valida:
 
 | Servicio                  | Responsabilidad                                                         |
 | ------------------------- | ----------------------------------------------------------------------- |
-| `SocketConnectionManager` | Registra y elimina sockets de las "rooms" de usuario                    |
+| `SocketConnectionManager` | Registra y gestiona sockets de las "rooms" de usuario                   |
 | `SocketRegistry`          | Mapa en memoria de `socketId → userId` para referencias cruzadas        |
 | `SocketLockManager`       | Previene condiciones de carrera al conectar la misma cuenta en paralelo |
+
+## Resiliencia de Conexión: El Periodo de Gracia
+
+Para evitar que una recarga de página o una breve inestabilidad del internet del usuario desconecte todos sus chats de streaming, Streamlyra implementa un **Periodo de Gracia de 60 segundos**.
+
+### Funcionamiento:
+1. **Desconexión Accidental**: Cuando el último socket de un usuario se desconecta, el `SocketConnectionManager` inicia un temporizador.
+2. **Reconexión Rápida**: Si el usuario vuelve (ej: tras un refresh) y emite un `identify` antes de que pasen los 60s, el temporizador se cancela y las conexiones a los chats (Kick, YouTube, etc.) permanecen intactas.
+3. **Expiración**: Si pasan los 60s sin reconexión, se ejecutan todos los destructores de los proveedores de chat para liberar memoria.
+
+### Logout Explícito:
+Cuando el usuario presiona "Cerrar Sesión", el cliente emite un evento `logout` **antes** de invalidar la sesión. Esto le indica al servidor que debe omitir el periodo de gracia y desconectar todo de forma inmediata por seguridad.
 
 ## Middleware: `SocketAuthMiddleware.ts`
 

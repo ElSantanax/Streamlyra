@@ -69,33 +69,42 @@ interface ChatMessage {
 }
 ```
 
+### `GlobalConnectionStatus`
+
+Tipo centralizado que define todos los estados posibles de una conexión con una plataforma:
+
+```typescript
+type GlobalConnectionStatus = 
+  | 'connecting'      // Buscando stream inicial
+  | 'searching'       // Buscando stream (sinónimo visual)
+  | 'waiting_stream'  // Cuenta vinculada pero sin transmisión activa
+  | 'connected'       // Transmisión activa y chat conectado
+  | 'error'           // Fallo en la conexión o sesión expirada
+  | 'disconnected';   // Cuenta no vinculada
+```
+
 ### `ConnectionStatus`
 
-Estado de la conexión a una plataforma, usado internamente:
+Estado de la conexión a una plataforma, usado internamente en buses de eventos:
 
 ```typescript
 interface ConnectionStatus {
   platform: Platform;
-  status: "connecting" | "connected" | "disconnected" | "error";
+  status: GlobalConnectionStatus;
   message?: string;
 }
 ```
 
 ### `ConnectionInfo`
 
-Información completa de estado enviada al frontend vía Socket:
+Información completa de estado enviada al frontend vía API (`/me`) y Sockets. Permite que el Dashboard sincronice el estado visual exacto del backend:
 
 ```typescript
 interface ConnectionInfo {
   connected: boolean;
   username?: string;
   viewers?: number;
-  status?:
-    | "connecting"
-    | "waiting_stream"
-    | "connected"
-    | "error"
-    | "disconnected";
+  status?: GlobalConnectionStatus;
   statusMessage?: string;
   isLive?: boolean;
   sessionStartTime?: string | null;

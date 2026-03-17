@@ -47,7 +47,7 @@ Construye el objeto de respuesta final (`AuthDTO`) que se envía al frontend tra
 
 ### `AuthDTOBuilder.ts`
 
-Patrón Builder para construir el objeto de respuesta. Garantiza que la estructura del DTO de autenticación sea siempre consistente y tipada.
+Patrón Builder que construye la respuesta final del perfil del usuario. Tras la última actualización, el Builder inyecta el `ChatManager` para consultar el estado real de cada conexión. Esto permite que el objeto devuelto al frontend incluya no solo datos estáticos de la DB, sino también si la plataforma está en estado `searching`, `waiting_stream` o `connected`.
 
 ### `TokenService.ts`
 

@@ -1,30 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { socket } from '../services/socket';
-import type { ChatMessage, ViewersUpdate, ConnectionStatusUpdate, ConnectionStatus } from '../types';
+import { useConnectionsStore } from '../store/useConnectionsStore';
 
 interface UseSocketOptions {
   userId?: string;
-  onChatMessage?: (message: ChatMessage) => void;
-  onMessageStatusUpdate?: (messageId: string, status: 'sending' | 'sent' | 'error', errorMessage?: string, platformIds?: Record<string, string>) => void;
-  onViewersUpdate?: (data: ViewersUpdate) => void;
-  onConnectionStatus?: (data: ConnectionStatusUpdate) => void;
-  connections?: Record<string, ConnectionStatus>;
-
-  connectionHash?: string;
 }
 
-export const useSocket = ({
-  userId,
-  onChatMessage,
-  onMessageStatusUpdate,
-  onViewersUpdate,
-  onConnectionStatus,
-  connections = {},
-  connectionHash = '',
-}: UseSocketOptions) => {
+/**
+ * Hook para gestionar el ciclo de vida de la conexión física del Socket.
+ * Las suscripciones a datos específicos ahora residen en sus respectivos stores de Zustand.
+ */
+export const useSocket = ({ userId }: UseSocketOptions) => {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const hasIdentifiedRef = useRef(false);
   const currentUserIdRef = useRef<string | undefined>(userId);
+  
+  // Consumir estado directamente de Zustand
+  const connections = useConnectionsStore(state => state.connectionsStatus);
+  const connectionHash = useConnectionsStore(state => state.connectionHash);
   const connectionsRef = useRef(connections);
 
   useEffect(() => {
@@ -43,8 +36,8 @@ export const useSocket = ({
     }
   }, []);
 
+  // Control de conexión basado en autenticación y plataformas activas
   useEffect(() => {
-    // Solo conectar si hay usuario autenticado Y plataformas activas
     const hasActivePlatforms = Object.values(connectionsRef.current).some(
       (conn) => conn.connected === true
     );
@@ -55,7 +48,7 @@ export const useSocket = ({
       socket.disconnect();
       hasIdentifiedRef.current = false;
     }
-  }, [connectionHash, userId]); // Depender del Hash y userId
+  }, [connectionHash, userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -92,7 +85,6 @@ export const useSocket = ({
     };
 
     const handleConnectError = (error: Error) => {
-      // Solo loguear si hay usuario autenticado (evitar spam cuando no hay sesión)
       if (userId) {
         console.error('Error de conexión Socket.IO:', error);
       }
@@ -115,77 +107,6 @@ export const useSocket = ({
       socket.off('connect_error', handleConnectError);
     };
   }, [userId]);
-
-  const onChatMessageRef = useRef(onChatMessage);
-  const onMessageStatusUpdateRef = useRef(onMessageStatusUpdate);
-  const onViewersUpdateRef = useRef(onViewersUpdate);
-  const onConnectionStatusRef = useRef(onConnectionStatus);
-
-  useEffect(() => {
-    onChatMessageRef.current = onChatMessage;
-    onMessageStatusUpdateRef.current = onMessageStatusUpdate;
-    onViewersUpdateRef.current = onViewersUpdate;
-    onConnectionStatusRef.current = onConnectionStatus;
-  }, [onChatMessage, onMessageStatusUpdate, onViewersUpdate, onConnectionStatus]);
-
-  useEffect(() => {
-    const handleChatMessage = (msg: ChatMessage | ChatMessage[]) => {
-      const messages = Array.isArray(msg) ? msg : [msg];
-
-      messages.forEach(m => {
-        if (m.platform === 'dashboard') {
-          onChatMessageRef.current?.(m);
-          return;
-        }
-
-        if (m.platform && !connectionsRef.current[m.platform]?.connected) {
-          console.warn(`[Socket] Mensaje omitido: ${m.platform} no está conectado en el cliente`, m);
-          return;
-        }
-        onChatMessageRef.current?.(m);
-      });
-    };
-
-    const handleMessageStatusUpdate = (data: {
-      messageId: string;
-      status: 'sending' | 'sent' | 'error';
-      errorMessage?: string;
-      platformIds?: Record<string, string>;
-    }) => {
-      onMessageStatusUpdateRef.current?.(data.messageId, data.status, data.errorMessage, data.platformIds);
-    };
-
-    const handleViewersUpdate = (data: ViewersUpdate) => {
-      if (!connectionsRef.current[data.platform]?.connected) {
-        return;
-      }
-      onViewersUpdateRef.current?.(data);
-    };
-
-    const handleConnectionStatus = (data: ConnectionStatusUpdate) => {
-      onConnectionStatusRef.current?.(data);
-    };
-
-    if (onChatMessageRef.current) {
-      socket.on('chat_message', handleChatMessage);
-    }
-    if (onMessageStatusUpdateRef.current) {
-      socket.on('message_status_update', handleMessageStatusUpdate);
-    }
-    if (onViewersUpdateRef.current) {
-      socket.on('viewers_update', handleViewersUpdate);
-    }
-    if (onConnectionStatusRef.current) {
-      socket.on('connection_status', handleConnectionStatus);
-    }
-
-    return () => {
-      socket.off('chat_message', handleChatMessage);
-      socket.off('message_status_update', handleMessageStatusUpdate);
-      socket.off('viewers_update', handleViewersUpdate);
-      socket.off('connection_status', handleConnectionStatus);
-    };
-  }, []);
 
   return {
     isConnected,

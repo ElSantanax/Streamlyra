@@ -3,7 +3,7 @@ import { useMessageSender } from '../useMessageSender';
 import { socket } from '../../../../../../services/socket';
 import { toast } from '../../../../../../lib/notifications/toast';
 import { validateMessage } from '../../utils/messageValidation';
-import { useConnectionsStatus } from '../../../../../../hooks/useConnectionsContext';
+import { useConnectionsStatus } from '../../../../../../hooks/useConnections';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { User, MessageSentResult } from '../../../../../../types';
 
@@ -28,7 +28,8 @@ vi.mock('../../utils/messageValidation', () => ({
     validateMessage: vi.fn()
 }));
 
-vi.mock('../../../../../../hooks/useConnectionsContext', () => ({
+// Mockeamos la ruta real desde donde se importa el hook
+vi.mock('../../../../../../hooks/useConnections', () => ({
     useConnectionsStatus: vi.fn()
 }));
 
@@ -55,9 +56,9 @@ describe('useMessageSender', () => {
     it('debería enviar el mensaje correctamente si todas las validaciones pasan', () => {
         vi.mocked(validateMessage).mockReturnValue(true);
         mockGetConnectedPlatforms.mockReturnValue(['twitch']);
-        
+
         const { result } = renderHook(() => useMessageSender(mockUser, 'test message', mockClearMessage, mockFocusInput));
-        
+
         act(() => {
             result.current.handleSendMessage();
         });
@@ -74,9 +75,9 @@ describe('useMessageSender', () => {
 
     it('debería mostrar error si el mensaje no es válido', () => {
         vi.mocked(validateMessage).mockReturnValue(false);
-        
+
         const { result } = renderHook(() => useMessageSender(mockUser, '', mockClearMessage, mockFocusInput));
-        
+
         act(() => {
             result.current.handleSendMessage();
         });
@@ -88,9 +89,9 @@ describe('useMessageSender', () => {
     it('debería mostrar error si el socket está desconectado', () => {
         vi.mocked(validateMessage).mockReturnValue(true);
         (socket as unknown as { connected: boolean }).connected = false;
-        
+
         const { result } = renderHook(() => useMessageSender(mockUser, 'msg', mockClearMessage, mockFocusInput));
-        
+
         act(() => {
             result.current.handleSendMessage();
         });
@@ -100,9 +101,9 @@ describe('useMessageSender', () => {
 
     it('debería manejar el resultado de éxito total del servidor', () => {
         renderHook(() => useMessageSender(mockUser, 'msg', mockClearMessage, mockFocusInput));
-        
+
         const handleResult = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'message_sent_result')?.[1] as (r: MessageSentResult) => void;
-        
+
         act(() => {
             handleResult({
                 success: true,
@@ -117,9 +118,9 @@ describe('useMessageSender', () => {
 
     it('debería manejar éxito parcial del servidor', () => {
         renderHook(() => useMessageSender(mockUser, 'msg', mockClearMessage, mockFocusInput));
-        
+
         const handleResult = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'message_sent_result')?.[1] as (r: MessageSentResult) => void;
-        
+
         act(() => {
             handleResult({
                 success: true,
@@ -135,9 +136,9 @@ describe('useMessageSender', () => {
 
     it('debería manejar error total del servidor', () => {
         renderHook(() => useMessageSender(mockUser, 'msg', mockClearMessage, mockFocusInput));
-        
+
         const handleResult = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'message_sent_result')?.[1] as (r: MessageSentResult) => void;
-        
+
         act(() => {
             handleResult({
                 success: false,

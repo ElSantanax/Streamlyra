@@ -4,6 +4,7 @@ import tmi from 'tmi.js';
 import { Server } from 'socket.io';
 import { ChatProvider } from '../shared/ChatProvider';
 import { TwitchConnectionManager } from './TwitchConnectionManager';
+import { StreamSessionManager } from '../../core/StreamSessionManager';
 import { TwitchEventListener } from './TwitchEventListener';
 import { TwitchEventTransformer } from '../transformers/TwitchEventTransformer';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
@@ -11,6 +12,7 @@ import { Connection } from '../../../models/Connection.model';
 import { ConnectionService } from '../../connection/ConnectionService';
 import { logger } from '../../../utils/logger';
 import { TwitchManager } from './TwitchManager';
+import { GlobalConnectionStatus } from '../../../types';
 
 export class TwitchChatProvider implements ChatProvider {
     private activeClients: Map<string, tmi.Client> = new Map();
@@ -38,7 +40,8 @@ export class TwitchChatProvider implements ChatProvider {
         try {
             if (this.activeClients.has(userId)) {
                 logger.debug({ userId }, 'User already has an active Twitch client, skipping unnecessary DB lookup');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
+                const isLive = StreamSessionManager.getInstance().isPlatformLive(userId, 'twitch');
+                SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado', isLive);
                 this.connectingUsers.delete(userId);
                 return;
             }
@@ -56,7 +59,8 @@ export class TwitchChatProvider implements ChatProvider {
 
             this.activeClients.set(userId, client);
 
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado');
+            const isLive = StreamSessionManager.getInstance().isPlatformLive(userId, 'twitch');
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'twitch', 'connected', 'Conectado', isLive);
             this.eventListener.setupListeners(userId, client, io);
 
             const connection = await Connection.findOne({
@@ -107,5 +111,16 @@ export class TwitchChatProvider implements ChatProvider {
         } catch (error) {
             logger.error({ err: error, userId }, 'TwitchChatProvider: Error during permanent deletion cleanup');
         }
+    }
+
+    getStatus(userId: string): { status: GlobalConnectionStatus; message?: string; isLive: boolean } | null {
+        if (this.connectingUsers.has(userId)) {
+            return { status: 'connecting', message: 'Buscando...', isLive: false };
+        }
+        if (this.activeClients.has(userId)) {
+            const isLive = StreamSessionManager.getInstance().isPlatformLive(userId, 'twitch');
+            return { status: 'connected', message: 'Conectado', isLive };
+        }
+        return null;
     }
 }

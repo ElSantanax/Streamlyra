@@ -1,35 +1,81 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { authService } from '../../services/api/auth.service';
-import { socket } from '../../services/socket';
-import type {
-    ConnectionStatus,
-    ConnectionStats,
-    LastFollower,
-    LastRaid,
-    MeResponse
-} from '../../types';
-import type { PlatformKey } from '../../constants/platforms';
-
-import { initialStatus, initialStats } from './constants';
-import { cachedData, invalidateConnectionsCache, setLastFetchTime } from './cache';
-import { parseMeResponse } from './utils';
-import { useConnectionsApi } from './useConnectionsApi';
+import { useEffect, useRef } from 'react';
+import { useConnectionsStore } from '../../store/useConnectionsStore';
+import { useShallow } from 'zustand/react/shallow';
+import { invalidateConnectionsCache } from './cache';
 import { useConnectionsSocket } from './useConnectionsSocket';
+import type { ConnectionStatus, ConnectionStats, LastFollower, LastRaid } from '../../types';
+import type { PlatformKey } from '../../constants/platforms';
 
 export { invalidateConnectionsCache };
 
-export const useConnections = (shouldFetch = true) => {
-    // 1. Estado centralizado
-    const [status, setStatus] = useState<Record<string, ConnectionStatus>>(() => parseMeResponse(cachedData).status);
-    const [stats, setStats] = useState<Record<string, ConnectionStats>>(() => parseMeResponse(cachedData).stats);
-    const [lastFollower, setLastFollower] = useState<LastFollower | null>(cachedData?.lastFollower || null);
-    const [lastRaid, setLastRaid] = useState<LastRaid | null>(cachedData?.lastRaid || null);
-    const [isLoading, setIsLoading] = useState(shouldFetch && !cachedData);
-    const [error, setError] = useState<string | null>(null);
+// Interfaces para los consumidores del estado
+export interface ConnectionsStatusContextValue {
+    connectionsStatus: Record<string, ConnectionStatus>;
+    isLoadingConnections: boolean;
+    connectionsError: string | null;
+    connectionHash: string;
+    disconnectPlatform: (platform: PlatformKey) => Promise<void>;
+    refetchConnections: (force?: boolean) => Promise<void>;
+    searchStream: (platform: PlatformKey) => void;
+    getConnectedPlatforms: () => string[];
+}
 
-    // 2. Refs para evitar re-renders en handlers
-    const statusRef = useRef(status);
-    const statsRef = useRef(stats);
+export interface ConnectionsStatsContextValue {
+    connectionsStats: Record<string, ConnectionStats>;
+    updateConnectionStats: (platform: string, updates: Partial<ConnectionStats>) => void;
+    lastFollower: LastFollower | null;
+    lastRaid: LastRaid | null;
+}
+
+/**
+ * Hook para acceder al estado de conexión con selectores atómicos.
+ */
+export const useConnectionsStatus = (): ConnectionsStatusContextValue => {
+    return useConnectionsStore(useShallow(state => ({
+        connectionsStatus: state.connectionsStatus,
+        isLoadingConnections: state.isLoading,
+        connectionsError: state.error,
+        connectionHash: state.connectionHash,
+        disconnectPlatform: state.disconnectPlatform,
+        refetchConnections: state.fetchConnections,
+        searchStream: state.searchStream,
+        getConnectedPlatforms: state.getConnectedPlatforms
+    })));
+};
+
+/**
+ * Hook para acceder a estadísticas en tiempo real (Viewers, Followers) con selectores atómicos.
+ */
+export const useConnectionsStats = (): ConnectionsStatsContextValue => {
+    return useConnectionsStore(useShallow(state => ({
+        connectionsStats: state.connectionsStats,
+        updateConnectionStats: state.updateStats,
+        lastFollower: state.lastFollower,
+        lastRaid: state.lastRaid
+    })));
+};
+
+/**
+ * Hook maestro de conexiones que coordina el ciclo de vida inicial.
+ * Mantiene la suscripción a sockets y el fetch inicial, pero toda la lógica
+ * de datos reside en useConnectionsStore.
+ */
+export const useConnections = (shouldFetch = true) => {
+    const {
+        connectionsStatus,
+        connectionsStats,
+        lastFollower,
+        lastRaid,
+        isLoading,
+        error,
+        updateStatus,
+        updateStats,
+        fetchConnections,
+        disconnectPlatform,
+        searchStream,
+        reset
+    } = useConnectionsStore();
+
     const isMounted = useRef(true);
 
     useEffect(() => {
@@ -37,148 +83,22 @@ export const useConnections = (shouldFetch = true) => {
         return () => { isMounted.current = false; };
     }, []);
 
-    useEffect(() => {
-        statusRef.current = status;
-        statsRef.current = stats;
-    }, [status, stats]);
+    // Conecta los eventos de Socket al Store global
+    useConnectionsSocket();
 
-    // 3. Handlers de actualización de estado (compartidos)
-    const updateStatus = useCallback((platform: string, updates: Partial<ConnectionStatus>) => {
-        setStatus(prev => {
-            const next = { ...prev[platform], ...updates };
-            if (JSON.stringify(prev[platform]) === JSON.stringify(next)) return prev;
-            return { ...prev, [platform]: next };
-        });
-    }, []);
-
-    const updateStats = useCallback((platform: string, updates: Partial<ConnectionStats>) => {
-        setStats(prev => {
-            const next = { ...prev[platform], ...updates };
-            if (JSON.stringify(prev[platform]) === JSON.stringify(next)) return prev;
-            return { ...prev, [platform]: next };
-        });
-    }, []);
-
-    const processData = useCallback((data: MeResponse) => {
-        if (!data || !data.connections) return;
-
-        setStatus(prev => {
-            const next = { ...prev };
-            let changed = false;
-
-            Object.keys(initialStatus).forEach(platform => {
-                const fetched = data.connections[platform];
-                if (!fetched) return;
-
-                const updated: ConnectionStatus = {
-                    connected: fetched.connected,
-                    username: fetched.username,
-                    status: prev[platform]?.status,
-                    statusMessage: prev[platform]?.statusMessage,
-                    isLive: fetched.isLive
-                };
-
-                if (JSON.stringify(updated) !== JSON.stringify(prev[platform])) {
-                    next[platform] = updated;
-                    changed = true;
-                }
-            });
-
-            return changed ? next : prev;
-        });
-
-        setStats(prev => {
-            const next = { ...prev };
-            let changed = false;
-
-            Object.keys(initialStatus).forEach(platform => {
-                const fetched = data.connections[platform];
-                if (!fetched) return;
-
-                const updated: ConnectionStats = {
-                    viewers: fetched.viewers ?? 0,
-                    sessionStartTime: fetched.sessionStartTime,
-                    serverTime: fetched.serverTime
-                };
-
-                if (JSON.stringify(updated) !== JSON.stringify(prev[platform])) {
-                    next[platform] = updated;
-                    changed = true;
-                }
-            });
-
-            return changed ? next : prev;
-        });
-
-        if (data.lastFollower) setLastFollower(data.lastFollower);
-        if (data.lastRaid) setLastRaid(data.lastRaid);
-    }, []);
-
-    // 4. Inyección de lógica especializada (Hooks internos)
-    const { fetchConnections } = useConnectionsApi({
-        shouldFetch,
-        isMounted,
-        setIsLoading,
-        setError,
-        processData
-    });
-
-    useConnectionsSocket({
-        statusRef,
-        updateStatus,
-        updateStats,
-        setLastFollower,
-        setLastRaid
-    });
-
-    // 5. Acciones manuales
-    const disconnectPlatform = useCallback(async (platform: PlatformKey) => {
-        try {
-            await authService.disconnectPlatform(platform);
-
-            // Actualización inteligente de caché
-            if (cachedData && cachedData.connections && cachedData.connections[platform]) {
-                cachedData.connections[platform].connected = false;
-                cachedData.connections[platform].isLive = false;
-                cachedData.connections[platform].viewers = 0;
-                // Marcamos como "viejo" para refrescar en background
-                setLastFetchTime(0);
-            } else {
-                invalidateConnectionsCache();
-            }
-
-            updateStatus(platform, { connected: false, isLive: false, status: 'disconnected' });
-            updateStats(platform, { viewers: 0 });
-        } catch (err) {
-            console.error('Error disconnecting platform:', err);
-            throw err;
-        }
-    }, [updateStatus, updateStats]);
-
-    const searchStream = useCallback((platform: PlatformKey) => {
-        if (platform === 'youtube') socket.emit('youtube_boost_discovery');
-        else if (platform === 'tiktok') socket.emit('tiktok_boost_discovery');
-    }, []);
-
-    // 6. Efecto de carga inicial/limpieza
+    // Efecto de carga inicial/limpieza
     useEffect(() => {
         if (shouldFetch) {
             fetchConnections();
         } else {
-            // Evitar cascading renders innecesarios
-            Promise.resolve().then(() => {
-                setStatus(initialStatus);
-                setStats(initialStats);
-                setLastFollower(null);
-                setLastRaid(null);
-                invalidateConnectionsCache();
-            });
+            reset();
+            invalidateConnectionsCache();
         }
-    }, [shouldFetch, fetchConnections]);
+    }, [shouldFetch, fetchConnections, reset]);
 
     return {
-        connectionsStatus: status,
-        connectionsStats: stats,
+        connectionsStatus,
+        connectionsStats,
         lastFollower,
         lastRaid,
         isLoading,

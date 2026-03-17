@@ -1,8 +1,9 @@
 import { renderHook } from '@testing-library/react';
 import { useConnectionsSocket } from '../useConnectionsSocket';
 import { socket } from '../../../services/socket';
+import { useConnectionsStore } from '../../../store/useConnectionsStore';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ConnectionStatusUpdate, ViewersUpdate, ConnectionStatus } from '../../../types';
+import type { ConnectionStatusUpdate, ViewersUpdate } from '../../../types';
 
 vi.mock('../../../services/socket', () => ({
     socket: {
@@ -11,27 +12,41 @@ vi.mock('../../../services/socket', () => ({
     }
 }));
 
+vi.mock('../../../store/useConnectionsStore', () => ({
+    useConnectionsStore: Object.assign(vi.fn(), {
+        getState: vi.fn(() => ({
+            updateStatus: vi.fn(),
+            updateStats: vi.fn(),
+            setLastFollower: vi.fn(),
+            setLastRaid: vi.fn(),
+            connectionsStatus: {}
+        }))
+    })
+}));
+
 describe('useConnectionsSocket', () => {
     const mockUpdateStatus = vi.fn();
     const mockUpdateStats = vi.fn();
     const mockSetLastFollower = vi.fn();
     const mockSetLastRaid = vi.fn();
-    const mockStatusRef = { current: { twitch: { connected: true, isLive: false } } } as unknown as React.MutableRefObject<Record<string, ConnectionStatus>>;
-
-    const defaultProps = {
-        statusRef: mockStatusRef,
-        updateStatus: mockUpdateStatus,
-        updateStats: mockUpdateStats,
-        setLastFollower: mockSetLastFollower,
-        setLastRaid: mockSetLastRaid
-    };
 
     beforeEach(() => {
         vi.clearAllMocks();
+        const mockStore = {
+            updateStatus: mockUpdateStatus,
+            updateStats: mockUpdateStats,
+            setLastFollower: mockSetLastFollower,
+            setLastRaid: mockSetLastRaid,
+            connectionsStatus: {
+                twitch: { connected: true, isLive: false }
+            }
+        };
+        vi.mocked(useConnectionsStore.getState).mockReturnValue(mockStore as unknown as ReturnType<typeof useConnectionsStore.getState>);
+        vi.mocked(useConnectionsStore).mockReturnValue(mockStore as unknown as ReturnType<typeof useConnectionsStore>);
     });
 
     it('debería suscribirse a eventos de socket al montar y desuscribirse al desmontar', () => {
-        const { unmount } = renderHook(() => useConnectionsSocket(defaultProps));
+        const { unmount } = renderHook(() => useConnectionsSocket());
 
         expect(socket.on).toHaveBeenCalledWith('connection_status', expect.any(Function));
         expect(socket.on).toHaveBeenCalledWith('viewers_update', expect.any(Function));
@@ -42,11 +57,11 @@ describe('useConnectionsSocket', () => {
         expect(socket.off).toHaveBeenCalledWith('viewers_update', expect.any(Function));
     });
 
-    it('debería procesar actualizaciones de estado de conexión', () => {
-        renderHook(() => useConnectionsSocket(defaultProps));
-        
+    it('debería procesar actualizaciones de estado de conexión vía Store', () => {
+        renderHook(() => useConnectionsSocket());
+
         const handler = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'connection_status')?.[1] as (d: ConnectionStatusUpdate) => void;
-        
+
         const update: ConnectionStatusUpdate = {
             platform: 'twitch',
             status: 'connected',
@@ -67,11 +82,11 @@ describe('useConnectionsSocket', () => {
         }));
     });
 
-    it('debería procesar actualizaciones de espectadores', () => {
-        renderHook(() => useConnectionsSocket(defaultProps));
-        
+    it('debería procesar actualizaciones de espectadores vía Store', () => {
+        renderHook(() => useConnectionsSocket());
+
         const handler = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'viewers_update')?.[1] as (d: ViewersUpdate) => void;
-        
+
         const update: ViewersUpdate = {
             platform: 'twitch',
             count: 100,

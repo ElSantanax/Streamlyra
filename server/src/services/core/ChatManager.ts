@@ -114,4 +114,9 @@ export class ChatManager {
             { rethrow: false }
         );
     }
+
+    getPlatformStatus(userId: string, platform: Platform) {
+        const provider = this.getProvider(platform);
+        return provider?.getStatus?.(userId) || null;
+    }
 }

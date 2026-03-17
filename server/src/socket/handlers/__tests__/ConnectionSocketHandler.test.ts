@@ -42,8 +42,7 @@ describe('ConnectionSocketHandler', () => {
 
             expect(mockConnectionManager.handleIdentify).toHaveBeenCalledWith(
                 authenticatedUserId,
-                mockSocket,
-                mockIo
+                mockSocket
             );
         });
 

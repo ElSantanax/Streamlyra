@@ -25,7 +25,7 @@ export interface MeResponse {
 export interface ConnectionStatus {
   connected: boolean;
   username?: string;
-  status?: 'connecting' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
+  status?: 'connecting' | 'searching' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   statusMessage?: string;
   isLive?: boolean;
 }

@@ -6,6 +6,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 describe('useChatMessages', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        // Limpiamos el store global antes de cada test para asegurar un estado limpio
+        const { result } = renderHook(() => useChatMessages());
+        act(() => {
+            result.current.clearMessages();
+        });
     });
 
     afterEach(() => {

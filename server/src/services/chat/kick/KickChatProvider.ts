@@ -6,6 +6,7 @@ import { KickManager } from './KickManager';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { ConnectionService } from '../../connection/ConnectionService';
 import { logger } from '../../../utils/logger';
+import { GlobalConnectionStatus } from '../../../types';
 
 export class KickChatProvider implements ChatProvider {
     private manager: KickManager;
@@ -25,7 +26,8 @@ export class KickChatProvider implements ChatProvider {
 
         if (this.manager.isPolling(userId)) {
             logger.debug({ userId }, 'Kick already connected and polling, returning early');
-            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado');
+            const isLive = this.manager.isLive(userId);
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'connected', 'Conectado', isLive);
             this.connectingUsers.delete(userId);
             return;
         }
@@ -35,7 +37,6 @@ export class KickChatProvider implements ChatProvider {
 
             if (!connection) {
                 logger.debug({ userId }, 'No Kick connection found');
-                this.connectingUsers.delete(userId);
                 return;
             }
 
@@ -44,7 +45,6 @@ export class KickChatProvider implements ChatProvider {
             if (!accessToken) {
                 logger.error({ userId }, 'No Kick access token');
                 SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'Error sesión');
-                this.connectingUsers.delete(userId);
                 return;
             }
 
@@ -54,7 +54,6 @@ export class KickChatProvider implements ChatProvider {
             const channelInfo = await this.manager.getChannelInfo(accessToken, userId, io);
             if (!channelInfo) {
                 SafeSocketEmitter.emitConnectionStatus(io, userId, 'kick', 'error', 'No encontrado');
-                this.connectingUsers.delete(userId);
                 return;
             }
 
@@ -98,5 +97,19 @@ export class KickChatProvider implements ChatProvider {
         } catch (error) {
             logger.error({ err: error, userId }, 'KickChatProvider: Error during permanent deletion cleanup');
         }
+    }
+
+    getStatus(userId: string): { status: GlobalConnectionStatus; message?: string; isLive: boolean } | null {
+        if (this.connectingUsers.has(userId)) {
+            return { status: 'connecting', message: 'Buscando...', isLive: false };
+        }
+        if (this.manager.isPolling(userId)) {
+            return {
+                status: 'connected',
+                message: 'Conectado',
+                isLive: this.manager.isLive(userId)
+            };
+        }
+        return null;
     }
 }

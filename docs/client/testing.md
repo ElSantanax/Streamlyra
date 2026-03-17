@@ -10,13 +10,15 @@ Utilizamos **Vitest** junto con **React Testing Library** para probar componente
 
 - **Entorno**: `jsdom` para simular el navegador.
 - **Setup**: Configurado en `src/test/setup.ts` para extender los matchers de Jest/Vitest (como `toBeInTheDocument`).
-- **Mocks**: Se simulan las llamadas a la API y el comportamiento de los WebSockets para que las pruebas sean deterministas.
+- **Mocks de Sockets**: Se simula el comportamiento de los WebSockets en `services/socket` para que las pruebas sean deterministas.
 
-### Pruebas de Propiedades (`Fast-Check`)
+### Testing con Zustand y Estado Global
 
-Para casos complejos o críticos, utilizamos **Fast-Check** para realizar pruebas basadas en propiedades (Property-Based Testing). Esto nos permite generar cientos de combinaciones de datos aleatorios para encontrar errores sutiles que las pruebas manuales no verían.
+Al utilizar **Zustand** para el estado de alta frecuencia, es crucial seguir estas pautas en los tests:
 
-- **Generadores**: Ubicados en `src/test/generators.ts`, crean datos aleatorios de usuarios, mensajes y estados de conexión.
+1.  **Mocks de Store**: Se utiliza `vi.mock` para interceptar las llamadas al store. Es importante mockear tanto el hook (`useConnectionsStore`) como sus métodos estáticos como `getState()` si el código bajo prueba los utiliza.
+2.  **Limpieza de Estado**: Dado que el estado de Zustand puede persistir entre tests dentro de un mismo archivo, se debe implementar una limpieza sistemática en el ciclo `beforeEach` (ej: llamando a `store.reset()` o `clearMessages()`) para garantizar que cada test sea independiente y no sufra de colisiones de datos.
+3.  **Simulación de Selectores**: Los hooks que usan selectores atómicos deben ser testeados proporcionando mocks que devuelvan exactamente el fragmento de estado solicitado para evitar errores de tipo o lógica.
 
 ---
 
@@ -46,4 +48,8 @@ Para probar flujos completos de usuario (como el login y la navegación por el d
 
 1.  **Priorizar Integración**: Preferimos probar cómo interactúan varios componentes juntos (ej: Sidebar + ChatFeed) en lugar de solo componentes aislados.
 2.  **Mocks de API**: Siempre usar mocks para las peticiones de red para que los tests pasen rápido y sin necesidad de un backend levantado.
-3.  **Local Error Boundaries**: Tenemos tests específicos para comprobar que la aplicación no se rompe totalmente si un componente hijo falla.
+3.  **Aislamiento de Tests**: Garantizar que el estado global (Zustand) se resetee antes de cada prueba para evitar falsos positivos.
+
+---
+
+ElSantana

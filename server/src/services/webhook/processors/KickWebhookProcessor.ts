@@ -91,7 +91,7 @@ export class KickWebhookProcessor {
                 chatMessage = this.transformer.transformMessage(data as unknown as KickChatMessagePayload);
             }
 
-            logger.info(
+            logger.debug(
                 {
                     userId: connection.userId,
                     platform: 'kick',

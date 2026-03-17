@@ -1,10 +1,14 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: "Streamlyra.dev",
   description: "Sitio de documentación de Streamlyra",
   lang: 'es-ES',
+  markdown: {
+    
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     outline: [2, 3], // Muestra niveles de encabezado h2 y h3
@@ -15,7 +19,11 @@ export default defineConfig({
       next: 'Próxima página'
     },
 
-    nav: [],
+    nav: [
+      { text: 'Guía', link: '/introduccion' },
+      { text: 'Servidor', link: '/server/arquitectura' },
+      { text: 'Cliente', link: '/client/arquitectura' }
+    ],
 
     sidebar: [
       // ─────────────────────────────────────────────
@@ -32,10 +40,28 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 2: Infraestructura Base
+      // SECCIÓN 2: El Cliente (Frontend) - MOVIDO AQUÍ
       // ─────────────────────────────────────────────
       {
-        text: 'Infraestructura',
+        text: 'El Cliente (Frontend)',
+        items: [
+          { text: 'Análisis Profundo (Frontend)', link: '/client/analisis-profundo' },
+          { text: 'Arquitectura del Cliente', link: '/client/arquitectura' },
+          { text: 'Gestión de Estado y Contexto', link: '/client/estado-contexto' },
+          { text: 'Páginas y Rutas', link: '/client/paginas-rutas' },
+          { text: 'Catálogo de Componentes', link: '/client/componentes' },
+          { text: 'Comunicación con Servidor', link: '/client/servicios-api' },
+          { text: 'Estrategias de Testing', link: '/client/testing' },
+          { text: 'Tipos TypeScript del Cliente', link: '/client/tipos-typescript' },
+          { text: 'Diccionario de Archivos', link: '/client/diccionario-archivos' }
+        ]
+      },
+
+      // ─────────────────────────────────────────────
+      // SECCIÓN 3: Infraestructura Base
+      // ─────────────────────────────────────────────
+      {
+        text: 'Infraestructura del Servidor',
         items: [
           { text: 'Arquitectura del Servidor', link: '/server/arquitectura' },
           { text: 'Contenedor de Dependencias', link: '/server/contenedor-dependencias' },
@@ -46,7 +72,7 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 3: Autenticación y Sesiones
+      // SECCIÓN 4: Autenticación y Sesiones
       // ─────────────────────────────────────────────
       {
         text: 'Autenticación',
@@ -57,7 +83,7 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 4: Capas de Código (exterior → interior)
+      // SECCIÓN 5: Capas de Código (exterior → interior)
       // ─────────────────────────────────────────────
       {
         text: 'Capas del Servidor',
@@ -73,7 +99,7 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 5: Integración de Plataformas
+      // SECCIÓN 6: Integración de Plataformas
       // ─────────────────────────────────────────────
       {
         text: 'Integración de Plataformas',
@@ -87,7 +113,7 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 6: Comunicación en Tiempo Real
+      // SECCIÓN 7: Comunicación en Tiempo Real
       // ─────────────────────────────────────────────
       {
         text: 'Tiempo Real (Sockets)',
@@ -99,7 +125,7 @@ export default defineConfig({
       },
 
       // ─────────────────────────────────────────────
-      // SECCIÓN 7: Referencia y Calidad
+      // SECCIÓN 8: Referencia y Calidad
       // ─────────────────────────────────────────────
       {
         text: 'Referencia y Calidad',
@@ -111,24 +137,6 @@ export default defineConfig({
           { text: 'Testing', link: '/server/testing' },
           { text: 'Errores y Logging', link: '/server/errores-logs' },
           { text: 'Referencias de APIs', link: '/referencias' }
-        ]
-      },
-
-      // ─────────────────────────────────────────────
-      // SECCIÓN 8: El Cliente (Frontend)
-      // ─────────────────────────────────────────────
-      {
-        text: 'El Cliente (Frontend)',
-        items: [
-          { text: 'Análisis Profundo (Frontend)', link: '/client/analisis-profundo' },
-          { text: 'Arquitectura del Cliente', link: '/client/arquitectura' },
-          { text: 'Gestión de Estado y Contexto', link: '/client/estado-contexto' },
-          { text: 'Páginas y Rutas', link: '/client/paginas-rutas' },
-          { text: 'Catálogo de Componentes', link: '/client/componentes' },
-          { text: 'Comunicación con Servidor', link: '/client/servicios-api' },
-          { text: 'Estrategias de Testing', link: '/client/testing' },
-          { text: 'Tipos TypeScript del Cliente', link: '/client/tipos-typescript' },
-          { text: 'Diccionario de Archivos', link: '/client/diccionario-archivos' }
         ]
       }
     ],
@@ -151,4 +159,4 @@ export default defineConfig({
     lightModeSwitchTitle: 'Cambiar a modo claro',
     darkModeSwitchTitle: 'Cambiar a modo oscuro'
   }
-})
+}))

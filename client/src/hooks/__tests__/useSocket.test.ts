@@ -2,26 +2,46 @@ import { renderHook } from '@testing-library/react';
 import { useSocket } from '../useSocket';
 import { socket } from '../../services/socket';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ConnectionStatus, ChatMessage } from '../../types';
+import { useConnectionsStore } from '../../store/useConnectionsStore';
 
 vi.mock('../../services/socket', () => {
-  const mSocket = {
-    connected: false,
-    connect: vi.fn().mockImplementation(function(this: { connected: boolean }) { this.connected = true; }),
-    disconnect: vi.fn().mockImplementation(function(this: { connected: boolean }) { this.connected = false; }),
-    on: vi.fn(),
-    off: vi.fn(),
-    emit: vi.fn(),
-  };
-  return { socket: mSocket };
+    const mSocket = {
+        connected: false,
+        connect: vi.fn().mockImplementation(function (this: { connected: boolean }) { this.connected = true; }),
+        disconnect: vi.fn().mockImplementation(function (this: { connected: boolean }) { this.connected = false; }),
+        on: vi.fn(),
+        off: vi.fn(),
+        emit: vi.fn(),
+    };
+    return { socket: mSocket };
 });
 
+vi.mock('../../store/useConnectionsStore', () => ({
+    useConnectionsStore: Object.assign(vi.fn(), {
+        getState: vi.fn()
+    })
+}));
+
 describe('useSocket', () => {
+    const createMockState = (connected = true) => ({
+        connectionsStatus: {
+            twitch: { connected, isLive: false }
+        },
+        connectionHash: `twitch:${connected}:false`,
+        getConnectedPlatforms: () => (connected ? ['twitch'] : [])
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         socket.connected = false;
-        vi.spyOn(console, 'error').mockImplementation(() => {});
-        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => { });
+        vi.spyOn(console, 'warn').mockImplementation(() => { });
+
+        // Mock de Zustand que soporta selectores
+        vi.mocked(useConnectionsStore).mockImplementation(((selector?: unknown) => {
+            const state = createMockState(true);
+            return typeof selector === 'function' ? selector(state) : state;
+        }) as unknown as typeof useConnectionsStore);
     });
 
     afterEach(() => {
@@ -29,28 +49,33 @@ describe('useSocket', () => {
     });
 
     it('debería inicializar con el estado de conexión del socket', () => {
+        vi.mocked(useConnectionsStore).mockImplementation(((selector?: unknown) => {
+            const state = createMockState(false);
+            return typeof selector === 'function' ? selector(state) : state;
+        }) as unknown as typeof useConnectionsStore);
+
         const { result } = renderHook(() => useSocket({ userId: '123' }));
         expect(result.current.isConnected).toBe(false);
     });
 
     it('debería conectar el socket si hay userId y plataformas activas', () => {
-        const connections: Record<string, ConnectionStatus> = { twitch: { connected: true } };
-        renderHook(() => useSocket({ userId: '123', connections, connectionHash: 'hash1' }));
-        
+        renderHook(() => useSocket({ userId: '123' }));
         expect(socket.connect).toHaveBeenCalled();
     });
 
     it('no debería conectar el socket si no hay plataformas activas', () => {
-        const connections: Record<string, ConnectionStatus> = { twitch: { connected: false } };
-        renderHook(() => useSocket({ userId: '123', connections, connectionHash: 'hash1' }));
-        
+        vi.mocked(useConnectionsStore).mockImplementation(((selector?: unknown) => {
+            const state = createMockState(false);
+            return typeof selector === 'function' ? selector(state) : state;
+        }) as unknown as typeof useConnectionsStore);
+
+        renderHook(() => useSocket({ userId: '123' }));
         expect(socket.connect).not.toHaveBeenCalled();
     });
 
     it('debería desconectar el socket si userId desaparece', () => {
         socket.connected = true;
-        const connections: Record<string, ConnectionStatus> = { twitch: { connected: true } };
-        const { rerender } = renderHook(({ userId }) => useSocket({ userId, connections, connectionHash: 'h' }), {
+        const { rerender } = renderHook(({ userId }) => useSocket({ userId }), {
             initialProps: { userId: '123' as string | undefined }
         });
 
@@ -59,7 +84,7 @@ describe('useSocket', () => {
     });
 
     it('debería emitir identify cuando el socket se conecta', () => {
-        renderHook(() => useSocket({ userId: '123', connections: { t: { connected: true } } }));
+        renderHook(() => useSocket({ userId: '123' }));
 
         // Simular evento de conexión
         const handleConnect = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'connect')?.[1] as () => void;
@@ -70,57 +95,5 @@ describe('useSocket', () => {
         }
 
         expect(socket.emit).toHaveBeenCalledWith('identify', '123');
-    });
-
-    it('debería manejar mensajes de chat recibidos', () => {
-        const onChatMessage = vi.fn();
-        renderHook(() => useSocket({ 
-            userId: '123', 
-            onChatMessage,
-            connections: { twitch: { connected: true } }
-        }));
-
-        const handleChatMessage = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'chat_message')?.[1] as (msg: ChatMessage) => void;
-        expect(handleChatMessage).toBeDefined();
-
-        const mockMsg: ChatMessage = { platform: 'twitch', message: 'hola', id: '1', time: new Date().toISOString(), user: 'testuser' };
-        if (handleChatMessage) {
-            handleChatMessage(mockMsg);
-        }
-
-        expect(onChatMessage).toHaveBeenCalledWith(mockMsg);
-    });
-
-    it('debería ignorar mensajes de plataformas no conectadas', () => {
-        const onChatMessage = vi.fn();
-        renderHook(() => useSocket({ 
-            userId: '123', 
-            onChatMessage,
-            connections: { twitch: { connected: false } }
-        }));
-
-        const handleChatMessage = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'chat_message')?.[1] as (msg: ChatMessage) => void;
-        const mockMsg: ChatMessage = { platform: 'twitch', message: 'hola', id: '1', time: new Date().toISOString(), user: 'testuser' };
-        
-        if (handleChatMessage) {
-            handleChatMessage(mockMsg);
-        }
-
-        expect(onChatMessage).not.toHaveBeenCalled();
-        expect(console.warn).toHaveBeenCalled();
-    });
-
-    it('debería manejar actualizaciones de estado de mensaje', () => {
-        const onMessageStatusUpdate = vi.fn();
-        renderHook(() => useSocket({ userId: '123', onMessageStatusUpdate }));
-
-        const handleStatus = vi.mocked(socket.on).mock.calls.find(call => call[0] === 'message_status_update')?.[1] as (data: { messageId: string; status: 'sending' | 'sent' | 'error' }) => void;
-        const statusData = { messageId: 'm1', status: 'sent' as const };
-        
-        if (handleStatus) {
-            handleStatus(statusData);
-        }
-
-        expect(onMessageStatusUpdate).toHaveBeenCalledWith('m1', 'sent', undefined, undefined);
     });
 });

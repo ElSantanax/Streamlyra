@@ -36,21 +36,23 @@ Es el puente entre el servidor y la interfaz. Se encarga de:
 Este es el flujo por el que pasa un mensaje desde que llega hasta que se renderiza:
 
 1.  **Evento de Socket**: El servidor emite `chat_message`.
-2.  **Hook `useSocket`**: Recibe el objeto `ChatMessage`.
-3.  **Hook `useChatMessages`**: Recibe el mensaje y lo añade a un arreglo inyectado en el estado de React.
-    - Se aplica una política de **Retención**: Si hay más de 200 mensajes, se eliminan los más viejos para evitar que el navegador se ralentice.
-4.  **Componente `ChatFeed`**: React detecta el nuevo arreglo de mensajes y re-renderiza eficientemente la lista.
-5.  **Componente `MessageContent`**: Parsea el texto del mensaje para encontrar emotes de Twitch, YT o Kick y los reemplaza por imágenes.
+2.  **Hook `useSocket`**: Recibe el mensaje crudo.
+3.  **Store `useChatStore` (Zustand)**: El mensaje se inyecta en el store global.
+    - **Batching**: Los mensajes se agrupan en micro-lotes para evitar ráfagas que congelen la UI.
+    - **Retención Inteligente**: Se mantiene un límite estricto (ej: 200 mensajes) mediante un recorte automático del estado de Zustand.
+4.  **Componente `ChatFeed`**: React re-renderiza solo el área de mensajes observando los cambios atómicos del store.
+5.  **Transformación Visual**: `MessageContent` traduce emotes y enlaces en tiempo real.
 
 ---
 
-## Gestión de Conexiones (`ConnectionsProvider`)
+## Gestión de Conexiones (`useConnectionsStore`)
 
-Gestionar múltiples plataformas al mismo tiempo requiere una lógica de sincronización compleja:
+Gestionar múltiples plataformas simultáneamente requiere una sincronización atómica:
 
-1.  **Carga Inicial**: Se solicitan todas las conexiones vinculadas a la API del servidor.
-2.  **Estado "Live"**: El cliente no sabe si un usuario está en vivo al cargar. El servidor envía actualizaciones periódicas (vía Sockets o Polling interno) que el cliente captura.
-3.  **Optimización de Renderizado**: Los datos que cambian rápido (espectadores, likes) se separan en un contexto especializado (`ConnectionsStatsContext`) para que el resto de componentes del Dashboard no se re-rendericen innecesariamente.
+1.  **Inicialización**: Se cargan las conexiones desde la API y se inyectan en el store de Zustand.
+2.  **Sincronización de Estados**: El store maneja estados complejos como `searching` (buscando en vivo) o `waiting_stream`.
+3.  **Protección de Datos (Cache Logic)**: El sistema detecta si un dato proviene de un Polling (API) o un Push (Socket), evitando que una respuesta lenta de la API sobrescriba un estado más reciente del Socket (ej: que un "Offline" viejo pise un "Online" nuevo).
+4.  **Rendimiento**: Gracias a Zustand, las estadísticas (viewers, followers) se actualizan en componentes específicos sin re-renderizar todo el Dashboard.
 
 ---
 

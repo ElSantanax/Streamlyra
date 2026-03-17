@@ -10,6 +10,7 @@ import { KickPollingConfig } from '../../../config/kick.polling.config';
 
 export class KickManager {
     private poller: PollingManager = new PollingManager();
+    private liveStatus: Map<string, boolean> = new Map();
 
     async getChannelInfo(accessToken: string, userId?: string, io?: Server): Promise<{ broadcasterId: string; slug: string; viewerCount: number; isLive: boolean } | null> {
         try {
@@ -30,6 +31,7 @@ export class KickManager {
             }
 
             const isLive = !!channel.stream?.is_live;
+            this.liveStatus.set(userId || '', isLive);
 
             logger.debug(
                 {
@@ -70,10 +72,15 @@ export class KickManager {
 
     stopViewerPolling(userId: string): void {
         this.poller.stop(userId);
+        this.liveStatus.delete(userId);
     }
 
     isPolling(userId: string): boolean {
         return this.poller.isRunning(userId);
+    }
+
+    isLive(userId: string): boolean {
+        return this.liveStatus.get(userId) || false;
     }
 
     async registerWebhook(userId: string, accessToken: string, broadcasterId: string): Promise<void> {

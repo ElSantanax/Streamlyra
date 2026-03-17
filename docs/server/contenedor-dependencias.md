@@ -28,14 +28,17 @@ El `createContainer(io)` recibe la instancia de Socket.IO y construye todo en ca
 3. Mensajería
    └─ MessageSenderService (usa ConnectionService + servicios de plataforma)
 
-4. Gestión de Chat (proveedores)
+4. Gestión de Chat (proveedores y Manager)
    └─ TwitchChatProvider, YouTubeChatProvider, KickChatProvider, TikTokChatProvider
-   └─ ChatManager (registra todos los proveedores)
+   └─ ChatManager (registra todos los proveedores y maneja IO)
 
-5. Autenticación
-   └─ UserService → AuthDTOBuilder → PlatformAuthHandler
+5. Autenticación y Perfil
+   └─ UserService
+   └─ AuthDTOBuilder (usa ChatManager para estados en vivo)
+   └─ PlatformAuthHandler (usa UserService + AuthDTOBuilder)
    └─ AuthFlowProcessor (usa PlatformAuthHandler + ChatManager)
-   └─ AuthService
+   └─ UserProfileService (usa UserService + AuthDTOBuilder)
+   └─ AuthService (usa AuthFlowProcessor + UserProfileService)
 
 6. Webhooks
    └─ WebhookProcessor

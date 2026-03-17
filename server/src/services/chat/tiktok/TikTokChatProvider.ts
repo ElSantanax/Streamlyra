@@ -10,6 +10,7 @@ import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { ConnectionService } from '../../connection/ConnectionService';
 import { Connection } from '../../../models/Connection.model';
 import { logger } from '../../../utils/logger';
+import { GlobalConnectionStatus } from '../../../types';
 
 export class TikTokChatProvider implements ChatProvider {
     private readonly stateManager: TikTokConnectionStateManager;
@@ -102,6 +103,22 @@ export class TikTokChatProvider implements ChatProvider {
     async disconnect(userId: string): Promise<void> {
         logger.info({ userId }, 'TikTok: Force disconnect requested');
         await this.clearInternalState(userId);
+    }
+
+    getStatus(userId: string): { status: GlobalConnectionStatus; message?: string; isLive: boolean } | null {
+        if (this.stateManager.isConnecting(userId)) {
+            return { status: 'connecting', message: 'Buscando...', isLive: false };
+        }
+
+        if (!this.stateManager.hasActiveConnection(userId)) {
+            // Si está en modo manual y agotó intentos, el Manager ya puso waiting_stream en el socket,
+            // pero si la API nos pregunta, podemos inferirlo.
+            const isManual = this.stateManager.isManualMode(userId);
+            if (isManual) return { status: 'waiting_stream', message: 'Sin Live', isLive: false };
+            return null;
+        }
+
+        return this.getCurrentConnectionStatus(userId);
     }
 
     private async getConnection(userId: string): Promise<Connection | null> {
