@@ -1,4 +1,5 @@
 import { useChatStore } from '../../store/useChatStore';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Hook para gestionar los mensajes del chat.
@@ -14,7 +15,15 @@ export const useChatMessages = () => {
     removeMessagesByUserId,
     clearMessagesByPlatform,
     clearMessages
-  } = useChatStore();
+  } = useChatStore(useShallow(state => ({
+    messages: state.messages,
+    addMessage: state.addMessage,
+    updateMessageStatus: state.updateMessageStatus,
+    removeMessage: state.removeMessage,
+    removeMessagesByUserId: state.removeMessagesByUserId,
+    clearMessagesByPlatform: state.clearMessagesByPlatform,
+    clearMessages: state.clearMessages
+  })));
 
   return {
     messages,
