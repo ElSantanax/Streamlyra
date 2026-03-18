@@ -57,7 +57,7 @@ export class SocketConnectionManager {
             }
 
             if (isFirstSocket && !connectionPromise) {
-                logger.info({ userId: uid }, 'Primer socket: Iniciando conexión a plataformas');
+                logger.info({ userId: uid }, 'Primer socket: Iniciando conexión a plataformas en segundo plano');
 
                 connectionPromise = (async () => {
                     try {
@@ -69,7 +69,6 @@ export class SocketConnectionManager {
                         logger.info({ userId: uid }, 'Conexión a plataformas completada exitosamente');
                     } catch (error) {
                         logger.error({ err: error, userId: uid }, 'Error durante la conexión inicial a plataformas');
-                        throw error;
                     } finally {
                         this.lockManager.releaseLock(uid);
                     }
@@ -78,16 +77,10 @@ export class SocketConnectionManager {
                 this.lockManager.setLock(uid, connectionPromise);
             }
 
-            if (connectionPromise) {
-                logger.debug({ userId: uid, socketId: socket.id }, 'Esperando a que termine la conexión en curso...');
-                await connectionPromise;
-            }
-
             logger.info({ userId: uid, socketId: socket.id }, 'Usuario identificado y verificado');
             socket.emit('identified', { userId: uid, message: 'Conectado a plataformas' });
 
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
             logger.error({ err: error, userId, socketId: socket.id }, 'Error fatal en handleIdentify');
 
             const { remainingCount } = this.registry.rollbackRegistration(socket.id, userId as string);
@@ -96,7 +89,7 @@ export class SocketConnectionManager {
             }
 
             socket.emit('error', {
-                code: errorMessage === 'Connection timeout' ? 'CONNECTION_TIMEOUT' : 'CONNECTION_ERROR',
+                code: 'CONNECTION_ERROR',
                 message: 'Error conexión'
             });
         }

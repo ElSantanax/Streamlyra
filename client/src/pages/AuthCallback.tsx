@@ -5,6 +5,7 @@ import Spinner from '../components/common/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from '../lib/notifications';
 import { invalidateConnectionsCache } from '../hooks/useConnections';
+import { useConnectionsStore } from '../store/useConnectionsStore';
 import { useTranslation } from 'react-i18next';
 
 const AuthCallback = () => {
@@ -79,6 +80,8 @@ const AuthCallback = () => {
 
                     login(data.user);
                     invalidateConnectionsCache();
+
+                    void useConnectionsStore.getState().fetchConnections(true);
 
                     // Redirigir
                     const redirectUrl = localStorage.getItem('auth_redirect');

@@ -10,9 +10,7 @@ export class ConnectionSocketHandler {
     ) { }
 
     async setupHandler(socket: Socket, io: Server, authenticatedUserId: string) {
-        this.connectionManager.handleIdentify(authenticatedUserId, socket);
-
-        // Enviar analíticas guardadas en DB (si existen y no han expirado)
+        await this.connectionManager.handleIdentify(authenticatedUserId, socket);
         Promise.all([
             AnalyticsService.getLastFollower(authenticatedUserId),
             AnalyticsService.getLastRaid(authenticatedUserId)
