@@ -81,7 +81,7 @@ const AuthCallback = () => {
                     login(data.user);
                     invalidateConnectionsCache();
 
-                    void useConnectionsStore.getState().fetchConnections(true);
+                    await useConnectionsStore.getState().fetchConnections(true);
 
                     // Redirigir
                     const redirectUrl = localStorage.getItem('auth_redirect');
