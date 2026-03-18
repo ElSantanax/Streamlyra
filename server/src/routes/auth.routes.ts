@@ -15,7 +15,7 @@ export const createAuthRoutes = (authController: AuthController) => {
 
     logger.debug({}, 'Configurando rutas de autenticación');
 
-    router.get('/me', authenticateToken, authController.getMe);
+    router.get('/me', authLimiter, authenticateToken, authController.getMe);
 
     router.post('/twitch', authLimiter, optionalAuthenticate, validateZodBody(oauthCodeSchema), authController.twitchAuth);
 

@@ -132,9 +132,13 @@ export class ConnectionRepository implements IConnectionRepository {
             transaction
         });
 
-        const decrypted = await Promise.all(
+        const results = await Promise.allSettled(
             connections.map(conn => this.decryptAndSyncConnection(conn, transaction))
         );
+        
+        const decrypted = results
+            .filter((result): result is PromiseFulfilledResult<Connection | null> => result.status === 'fulfilled')
+            .map(result => result.value);
 
         return decrypted.filter((conn): conn is Connection => conn !== null);
     }

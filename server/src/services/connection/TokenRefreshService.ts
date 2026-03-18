@@ -74,10 +74,13 @@ export class TokenRefreshService {
         };
 
         const status = err.response?.status;
-        const code = err.code || err.message;
+        const code = err.code ? String(err.code) : '';
+        const message = err.message ? String(err.message) : '';
 
         const networkErrors = ['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'ERR_NETWORK'];
-        if (networkErrors.some(errMsg => String(code).includes(errMsg))) return true;
+        const isNetworkError = networkErrors.some(errS => code.includes(errS) || message.includes(errS));
+
+        if (isNetworkError) return true;
 
         if (typeof status === 'number') {
             return (status >= 500 && status <= 599) || status === 429;

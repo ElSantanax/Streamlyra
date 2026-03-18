@@ -21,6 +21,8 @@ i18n
             en: { translation: translationEN },
         },
         fallbackLng: 'es',
+        debug: false,
+        showSupportNotice: false,
         supportedLngs: ['es', 'en'],
         defaultNS: 'translation',
         detection: detectionOptions,
