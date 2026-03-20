@@ -38,6 +38,10 @@ Este documento es una guía exhaustiva de **cada archivo** en el núcleo del cli
 - **`Spinner.tsx`**: Indicador de carga animado y personalizable.
 - **`UserBadge.tsx`**: Renderiza iconos de rango (Moderador, VIP, etc) según la plataforma.
 
+### Interfaz base (`/ui`)
+- **`Button.tsx`**: Componente de botón altamente reutilizable con múltiples variantes y tamaños.
+- **`Dialog.tsx`**: Componente de diálogo modal (Alert, Confirm, Prompt). Refactorizado para usar sub-componentes internos y garantizar un estado limpio en cada apertura.
+
 ### Dashboard (`/dashboard`)
 - **`layout/DashboardHeader.tsx`**: Cabecera principal del panel de control, incluye botón de menú y estado de conexión.
 - **`layout/Sidebar.tsx`**: Menú lateral que lista las plataformas conectadas y sus estadísticas.

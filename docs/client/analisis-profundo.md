@@ -56,6 +56,21 @@ Gestionar múltiples plataformas simultáneamente requiere una sincronización a
 
 ---
 
+## Sistema de Diálogos Global
+
+Para evitar la repetición de lógica y estado de modales en cada componente, Streamlyra utiliza un patrón de **Servicio Imperativo con Promesas**:
+
+1.  **Servicio (`dialog.service.ts`)**: Un objeto singleton que expone métodos como `.confirm()`, `.alert()` y `.prompt()`. Estos métodos devuelven una **Promesa** que se resuelve cuando el usuario interactúa con el diálogo.
+2.  **Proveedor (`DialogProvider.tsx`)**: Un componente global en la raíz de la app que escucha los cambios en el servicio y renderiza el componente `Dialog` cuando es necesario.
+3.  **Componente (`Dialog.tsx`)**: Reutiliza la misma UI para todos los tipos de aviso, garantizando consistencia visual y accesibilidad (ARIA labels).
+4.  **Flujo Limpio**: El código que invoca el diálogo es asíncrono y directo:
+    ```tsx
+    const confirmed = await dialog.danger("¿Borrar?");
+    if (confirmed) { /* ... acción destructiva */ }
+    ```
+
+---
+
 ## Calidad y Pruebas con `Fast-Check`
 
 A diferencia de las pruebas unitarias tradicionales que usan un solo ejemplo de prueba, en Streamlyra usamos **Pruebas Basadas en Propiedades** (PBT) en el frontend:

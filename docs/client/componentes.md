@@ -17,6 +17,17 @@ Componentes genéricos que pueden usarse en cualquier parte de la aplicación.
 
 ---
 
+## Interfaz Base (`ui/`)
+
+Componentes visuales fundamentales para construir la interfaz.
+
+| Componente | Descripción |
+| :--- | :--- |
+| `Button` | Botón estilizado con variantes (primary, danger, ghost) y soporte para estados de carga. |
+| `Dialog` | Sistema de modales (Alert, Confirm, Prompt). Refactorizado para garantizar limpieza de estado. |
+
+---
+
 ## Panel de Control (`dashboard/`)
 
 Componentes específicos del área de administración del streamer.

@@ -64,6 +64,7 @@ export const SidebarIntegrations = memo(() => {
                         <input
                             type="text"
                             readOnly
+                            aria-label={t('dashboard.sidebar.integrations.obsChatTitle')}
                             value={showToken ? overlayUrl : "••••••••••••••••••••••••••••••"}
                             className="w-full bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs font-mono text-gray-300 focus:outline-none pr-20"
                         />
