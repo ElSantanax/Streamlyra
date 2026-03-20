@@ -17,7 +17,9 @@ export class TikTokConnectionManager {
     private static readonly CONNECTION_TIMEOUT_MS = 30000;
 
     async connect(username: string): Promise<TikTokLiveConnection> {
-        const tiktokChat = new TikTokLiveConnection(username);
+        const tiktokChat = new TikTokLiveConnection(username, {
+            enableExtendedGiftInfo: true
+        });
         let timeoutId: NodeJS.Timeout | undefined;
 
         try {

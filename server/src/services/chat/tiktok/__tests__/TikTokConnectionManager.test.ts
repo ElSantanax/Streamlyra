@@ -42,7 +42,7 @@ describe('TikTokConnectionManager', () => {
 
             await expect(promise).resolves.toBe(mockTikTokLiveConnection);
 
-            expect(TikTokLiveConnection).toHaveBeenCalledWith('testuser');
+            expect(TikTokLiveConnection).toHaveBeenCalledWith('testuser', { enableExtendedGiftInfo: true });
             expect(mockTikTokLiveConnection.connect).toHaveBeenCalled();
             expect(logger.info).toHaveBeenCalledWith({ username: 'testuser' }, 'Connected to TikTok');
         });

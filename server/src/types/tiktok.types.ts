@@ -29,11 +29,29 @@ export interface TikTokGiftEvent {
     profilePictureUrl: string;
     timestamp?: number;
     repeatEnd?: boolean;
+    diamondCount?: number;
     giftDetails?: {
         image?: {
             url_list: string[];
         };
     };
+}
+
+export interface TikTokEnvelopeEvent {
+    envelopeId: string;
+    nickname: string;
+    uniqueId: string;
+    profilePictureUrl?: string;
+    diamondCount?: number;
+    peopleCount?: number;
+}
+
+export interface TikTokMemberEvent {
+    userId: string;
+    uniqueId: string;
+    nickname: string;
+    profilePictureUrl: string;
+    action: number; // 3 = SUBSCRIBED
 }
 
 export interface TikTokLikeEvent {
@@ -69,6 +87,8 @@ export interface TikTokConnection {
     on(event: 'follow', listener: (data: TikTokFollowEvent) => void): this;
     on(event: 'share', listener: (data: TikTokShareEvent) => void): this;
     on(event: 'roomUser', listener: (data: TikTokRoomUserInfo) => void): this;
+    on(event: 'member', listener: (data: TikTokMemberEvent) => void): this;
+    on(event: 'envelope', listener: (data: TikTokEnvelopeEvent) => void): this;
     on(event: 'disconnected', listener: () => void): this;
     on(event: 'error', listener: (err: Error | unknown) => void): this;
     on(event: string, listener: (...args: unknown[]) => void): this;

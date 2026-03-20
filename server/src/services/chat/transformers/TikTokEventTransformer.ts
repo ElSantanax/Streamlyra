@@ -1,4 +1,4 @@
-import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent } from '../../../types/tiktok.types';
+import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent, TikTokEnvelopeEvent, TikTokMemberEvent } from '../../../types/tiktok.types';
 import { NormalizedChatMessage } from './EventTransformer';
 import { BaseEventTransformer } from './BaseEventTransformer';
 import { parseTikTokEmotes } from '../../../constants/tiktok-emotes';
@@ -20,11 +20,12 @@ interface TikTokInternalEvent {
     gift?: {
         name?: string;
         giftName?: string;
-        id?: string;
+        id?: string | number;
     };
-    name?: string;
-    giftName?: string;
-    id?: string;
+    extendedGiftInfo?: {
+        name?: string;
+        describe?: string;
+    };
     repeatCount?: number;
 }
 
@@ -127,10 +128,15 @@ export class TikTokEventTransformer extends BaseEventTransformer {
         const username = this.selectDisplayName(userObj.nickname || '', userObj.uniqueId || '');
         const userId = userObj.userId || data.userId || 'unknown';
 
-        const giftInfo = eventData.gift || eventData;
-        const giftName = giftInfo.name || giftInfo.giftName || data.giftName || 'Regalo';
+        const giftName =
+            eventData.extendedGiftInfo?.name ||
+            eventData.gift?.giftName ||
+            eventData.gift?.name ||
+            data.giftName ||
+            'Regalo';
+
         const repeatCount = eventData.repeatCount || data.repeatCount || 1;
-        const giftId = `tk_gift_${userId}_${giftInfo.id || data.giftId}_${data.timestamp || Date.now()}`;
+        const giftId = `tk_gift_${userId}_${eventData.gift?.id || data.giftId}_${data.timestamp || Date.now()}`;
 
         return {
             id: giftId,
@@ -159,6 +165,39 @@ export class TikTokEventTransformer extends BaseEventTransformer {
             user: username,
             message: '',
             specialMessage: '👤 NUEVO SEGUIDOR',
+            time: this.formatTime(new Date()),
+            color: '#FF0050',
+            isSpecial: true
+        };
+    }
+
+    transformEnvelope(data: TikTokEnvelopeEvent): NormalizedChatMessage {
+        const username = this.selectDisplayName(data.nickname || '', data.uniqueId || '');
+        const chestId = `tk_envelope_${data.envelopeId || Date.now()}`;
+        const amountStr = data.diamondCount ? ` (${data.diamondCount} 💎)` : '';
+
+        return {
+            id: chestId,
+            platform: 'tiktok',
+            user: username,
+            message: '',
+            specialMessage: `🧧 COFRE DE TESORO${amountStr}`,
+            time: this.formatTime(new Date()),
+            color: '#FF0050',
+            isSpecial: true
+        };
+    }
+
+    transformSubscribe(data: TikTokMemberEvent): NormalizedChatMessage {
+        const username = this.selectDisplayName(data.nickname || '', data.uniqueId || '');
+        const subId = `tk_sub_${data.uniqueId || Date.now()}`;
+
+        return {
+            id: subId,
+            platform: 'tiktok',
+            user: username,
+            message: '',
+            specialMessage: '⭐ NUEVO SUSCRIPTOR',
             time: this.formatTime(new Date()),
             color: '#FF0050',
             isSpecial: true

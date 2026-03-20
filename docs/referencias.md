@@ -11,7 +11,7 @@ Aquí encontrarás los enlaces directos a la documentación técnica oficial de 
 | **Kick**    | [Kick API Docs](https://docs.kick.com/)                                                | Autenticación PKCE, Chat, Webhooks        |
 | **TikTok**  | [TikTok Live Gift Explorer](https://github.com/zerodytrash/TikTok-Live-Connector) | Sin OAuth público — ver nota abajo        |
 
-> **Nota sobre TikTok**: TikTok no ofrece una API pública oficial para el chat en vivo. Streamlyra utiliza un cliente de la comunidad (basado en `tiktok-live-connector`) que se conecta directamente al stream mediante el `username` del streamer. No requiere gestión de tokens, solo el nombre de usuario configurado en el dashboard.
+> **Nota sobre TikTok**: TikTok no ofrece una API pública oficial para el chat en vivo. Streamlyra utiliza un cliente de la comunidad (basado en `tiktok-live-connector`) que se conecta directamente al stream mediante el `username` del streamer. Actualmente soporta: lectura de chat, seguimiento de regalos detallados (con nombres y diamantes), follows, detección de cofres (envelopes) y nuevas suscripciones.
 
 ---
 

@@ -13,7 +13,7 @@ Es una solución moderna para streamers y creadores de contenido que necesitan g
 
 > [!IMPORTANT]
 > **Nota sobre Kick**: La API de Kick aún no expone eventos de Raids/Hosting. Se implementará cuando esté disponible.
-> **Nota sobre TikTok**: Actualmente en modo solo lectura (listener). Soporta lectura de chat, regalos y follows.
+> **Nota sobre TikTok**: Actualmente en modo solo lectura (listener). Soporta lectura de chat, regalos detallados, follows, cofres de tesoro (envelopes) y notificaciones de suscripción.
 > **Nota sobre YouTube**: La API de YouTube no permite monitorear nuevos suscriptores en tiempo real de manera eficiente sin consumir cuotas excesivas. Solo se notifican "Nuevos Miembros" (Pago).
 
 ### Twitch Real-Time Followers (Smart Polling)
@@ -32,9 +32,10 @@ Streamlyra implementa un sistema visual unificado para eventos especiales (alert
 | --------------------- | ----------------------- | ---------------------- | -------------------------- |
 | **Follow**            | Borde Lateral Izquierdo | Marca de la Plataforma | **👤 NUEVO SEGUIDOR**      |
 | **Suscripción**       | Borde Lateral Izquierdo | Marca de la Plataforma | **🥳 NUEVA SUSCRIPCIÓN**   |
-| **Regalo / Sub Gift** | Borde Lateral Izquierdo | Marca de la Plataforma | **🎁 REGALO [Cantidad]**   |
-| **Raid / Host**       | Borde Lateral Izquierdo | Marca de la Plataforma | **🚨 RAID [Viewers]**      |
-| **Donación / Bits**   | Borde Lateral Izquierdo | Marca de la Plataforma | **💎 DONACIÓN [Cantidad]** |
+| **Regalo / Sub Gift** | Borde Lateral Izquierdo | Marca de la Plataforma | **🎁 REGALO [Count]x [Name]** |
+| **Cofre (TikTok)**    | Borde Lateral Izquierdo | Marca de la Plataforma | **🧧 COFRE DE TESORO**        |
+| **Raid / Host**       | Borde Lateral Izquierdo | Marca de la Plataforma | **🚨 RAID [Viewers]**         |
+| **Donación / Bits**   | Borde Lateral Izquierdo | Marca de la Plataforma | **💎 DONACIÓN [Cantidad]**    |
 
 > **Nota**: Los colores se adaptan automáticamente: Twitch (Violeta), YouTube (Rojo), Kick (Verde Neón), TikTok (Rosa/Rojo).
 

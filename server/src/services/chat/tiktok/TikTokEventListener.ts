@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { TikTokEventTransformer } from '../transformers/TikTokEventTransformer';
-import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent, TikTokConnection } from '../../../types/tiktok.types';
+import { TikTokChatEvent, TikTokGiftEvent, TikTokFollowEvent, TikTokConnection, TikTokEnvelopeEvent, TikTokMemberEvent } from '../../../types/tiktok.types';
 import { SafeSocketEmitter } from '../../../utils/SafeSocketEmitter';
 import { logger } from '../../../utils/logger';
 import { AnalyticsService } from '../../core/AnalyticsService';
@@ -15,36 +15,20 @@ export class TikTokEventListener {
         const conn = connection as unknown as TikTokConnection;
 
         conn.on('chat', (data: TikTokChatEvent) => {
-            if (!this.streamConfirmed.has(userId)) {
-                logger.info({ userId }, 'TikTok stream confirmed active (first chat message received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
-                this.streamConfirmed.add(userId);
-            }
-
+            this.confirmStreamActive(userId, 'first chat message', io);
             const normalizedMessage = this.transformer.transformChatMessage(data);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
         conn.on('gift', (data: TikTokGiftEvent) => {
             if (!data.repeatEnd) return;
-
-            if (!this.streamConfirmed.has(userId)) {
-                logger.info({ userId }, 'TikTok stream confirmed active (first gift received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
-                this.streamConfirmed.add(userId);
-            }
-
+            this.confirmStreamActive(userId, 'first gift', io);
             const normalizedMessage = this.transformer.transformGift(data);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
         });
 
         conn.on('follow', (data: TikTokFollowEvent) => {
-            if (!this.streamConfirmed.has(userId)) {
-                logger.info({ userId }, 'TikTok stream confirmed active (first follow received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
-                this.streamConfirmed.add(userId);
-            }
-
+            this.confirmStreamActive(userId, 'first follow', io);
             const normalizedMessage = this.transformer.transformFollow(data);
             SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
 
@@ -62,14 +46,30 @@ export class TikTokEventListener {
         });
 
         conn.on('roomUser', (info: { viewerCount: number }) => {
-            if (!this.streamConfirmed.has(userId)) {
-                logger.info({ userId }, 'TikTok stream confirmed active (viewer count received)');
-                SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
-                this.streamConfirmed.add(userId);
-            }
-
+            this.confirmStreamActive(userId, 'viewer count', io);
             SafeSocketEmitter.emitViewersUpdate(io, userId, 'tiktok', info.viewerCount, true);
         });
+
+        conn.on('envelope', (data: TikTokEnvelopeEvent) => {
+            this.confirmStreamActive(userId, 'first envelope', io);
+            const normalizedMessage = this.transformer.transformEnvelope(data);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
+        });
+
+        conn.on('member', (data: TikTokMemberEvent) => {
+            if (data.action !== 3) return; // Only process subscription (action 3)
+            this.confirmStreamActive(userId, 'first subscription', io);
+            const normalizedMessage = this.transformer.transformSubscribe(data);
+            SafeSocketEmitter.emitChatMessage(io, userId, normalizedMessage, 'tiktok');
+        });
+    }
+
+    private confirmStreamActive(userId: string, source: string, io: Server): void {
+        if (!this.streamConfirmed.has(userId)) {
+            logger.info({ userId }, `TikTok stream confirmed active (${source} received)`);
+            SafeSocketEmitter.emitConnectionStatus(io, userId, 'tiktok', 'connected', undefined, true);
+            this.streamConfirmed.add(userId);
+        }
     }
 
     clearStreamConfirmation(userId: string): void {
