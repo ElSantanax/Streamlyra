@@ -1,10 +1,11 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { PLATFORMS } from '../../../../constants/platforms';
 import { UserBadge } from '../../../common/UserBadge';
 import { StatusIndicator } from './components/StatusIndicator';
 import { MessageActions } from './components/MessageActions';
 import { MessageContent } from './components/MessageContent';
 import { MdDiamond } from 'react-icons/md';
+import { formatLocalTime } from '../../../../lib/formatters';
 import type { ChatMessageProps } from './types';
 
 const ChatMessage = memo(({
@@ -34,6 +35,8 @@ const ChatMessage = memo(({
     const isYouTube = platform === 'youtube';
     const isOwnMessage = user === 'Tú' || !!isOwner;
     const isTikTok = platform === 'tiktok';
+
+    const formattedTime = useMemo(() => formatLocalTime(time), [time]);
 
     const handleReply = useCallback(() => {
         if (onReply) onReply(user);
@@ -81,7 +84,7 @@ const ChatMessage = memo(({
                             </div>
                         )}
 
-                        <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{time}</span>
+                        <span className="text-[10px] md:text-xs text-gray-500 font-medium ml-0.5 md:ml-1 shrink-0">{formattedTime}</span>
                         <StatusIndicator status={status} errorMessage={errorMessage} />
                     </div>
 

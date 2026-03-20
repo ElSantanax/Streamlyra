@@ -4,7 +4,7 @@ export abstract class BaseEventTransformer {
     protected abstract readonly platformName: string;
 
     protected formatTime(date: Date): string {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toISOString();
     }
 
     protected createMessageId(prefix: string, identifier: string | number): string {

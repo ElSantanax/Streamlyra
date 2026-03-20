@@ -61,10 +61,7 @@ export class MessageSocketHandler {
                     platform: 'dashboard',
                     user: 'Tú',
                     message,
-                    time: new Date().toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }),
+                    time: new Date().toISOString(),
                     color: '#10B981',
                     isOwner: true,
                     status: 'sending'
