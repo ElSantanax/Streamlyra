@@ -74,4 +74,7 @@ export class Connection extends Model {
 
     @BelongsTo(() => User)
     declare user: User;
+
+    declare createdAt: Date;
+    declare updatedAt: Date;
 }

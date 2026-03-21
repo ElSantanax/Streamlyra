@@ -28,6 +28,7 @@ export interface ConnectionStatus {
   status?: 'connecting' | 'searching' | 'waiting_stream' | 'connected' | 'error' | 'disconnected';
   statusMessage?: string;
   isLive?: boolean;
+  connectedAt?: string;
 }
 
 export interface ConnectionStats {

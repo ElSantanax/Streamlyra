@@ -9,9 +9,6 @@ hero:
     - theme: brand
       text: Empezar ahora
       link: /introduccion
-    - theme: alt
-      text: Ver en GitHub
-      link: https://github.com/ElSantanax/Streamlyra
 
 features:
   - title: Multiplataforma

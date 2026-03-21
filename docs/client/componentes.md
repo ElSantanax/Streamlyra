@@ -37,7 +37,10 @@ Componentes específicos del área de administración del streamer.
 - **ChatFeed**: Orquestador que renderiza la lista de mensajes consumiendo del `useChatStore`. Maneja el scroll automático y la optimización de renderizado mediante actualizaciones por lotes (batching).
 - **ChatMessage**: Desglose visual de un mensaje individual. Incluye:
     - `MessageContent`: Procesa el texto para detectar y mostrar emoticonos, enlaces y menciones.
-    - `ChatActions`: Menú contextual para moderación, sincronizado con las acciones del store.
+    - `StatusIndicator`: Muestra el estado del mensaje (enviando, entregado, error).
+    - `MessageActions`: Menú contextual para moderación, sincronizado con las acciones del store.
+    - **Formateo de Tiempo**: Utiliza `formatLocalTime` para mostrar la hora del mensaje en la zona horaria del usuario.
+    - **Iconografía Adaptable**: Muestra iconos de plataforma (Twitch, Kick, YouTube, TikTok) con tamaños y colores específicos para cada una.
 - **ChatInput**: Campo de texto para enviar mensajes. Gestiona estados de envío locales y globales.
 
 ### Gestión de Conexiones (`connections/`)

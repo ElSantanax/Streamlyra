@@ -17,6 +17,7 @@ export interface ChatMessage {
   isMod?: boolean;
   isVIP?: boolean;
   isOwner?: boolean;
+  isSelf?: boolean;
   specialMessage?: string;
   status?: MessageStatus; // Estado del mensaje (solo para mensajes propios)
   errorMessage?: string; // Mensaje de error si falló

@@ -46,6 +46,7 @@ export class MessageSocketHandler {
                     'Processing send_message request'
                 );
 
+                const username = (socket.data as { username?: string }).username || 'Tú';
                 const messageId = `dashboard-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 const chatMessage: {
                     id: string;
@@ -55,15 +56,17 @@ export class MessageSocketHandler {
                     time: string;
                     color: string;
                     isOwner: boolean;
+                    isSelf: boolean;
                     status: string;
                 } = {
                     id: messageId,
                     platform: 'dashboard',
-                    user: 'Tú',
+                    user: username,
                     message,
                     time: new Date().toISOString(),
                     color: '#10B981',
                     isOwner: true,
+                    isSelf: true,
                     status: 'sending'
                 };
 

@@ -34,19 +34,19 @@ describe('UserRepository', () => {
 
             expect(User.findByPk).toHaveBeenCalledWith('user-123', {
                 include: [
-                    { model: Connection, attributes: ['provider', 'providerUsername'] },
-                    { 
-                        model: UserAnalytics, 
+                    { model: Connection, attributes: ['provider', 'providerUsername', 'createdAt'] },
+                    {
+                        model: UserAnalytics,
                         attributes: [
-                            'userId', 
-                            'lastFollowerName', 
-                            'lastFollowerPlatform', 
-                            'lastFollowerAt', 
-                            'lastRaidName', 
-                            'lastRaidPlatform', 
-                            'lastRaidViewers', 
+                            'userId',
+                            'lastFollowerName',
+                            'lastFollowerPlatform',
+                            'lastFollowerAt',
+                            'lastRaidName',
+                            'lastRaidPlatform',
+                            'lastRaidViewers',
                             'lastRaidAt'
-                        ] 
+                        ]
                     }
                 ],
                 transaction: undefined

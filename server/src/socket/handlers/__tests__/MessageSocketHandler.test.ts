@@ -19,7 +19,8 @@ describe('MessageSocketHandler', () => {
         mockSocket = {
             id: 'socket-123',
             on: jest.fn<void, [string, SocketEventHandler]>(),
-            emit: jest.fn()
+            emit: jest.fn(),
+            data: {}
         } as unknown as jest.Mocked<Socket>;
 
         mockIo = {

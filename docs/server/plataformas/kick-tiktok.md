@@ -21,15 +21,22 @@ Kick utiliza un sistema híbrido muy eficiente:
 
 La integración con TikTok destaca por su facilidad de uso para el streamer, basada en el popular conector de la comunidad.
 
-### Funcionamiento del Conectar
+### Eventos en Tiempo Real
 
-1. **Búsqueda**: El sistema intenta conectarse al nombre de usuario proporcionado.
-2. **Auto-Discovery**: Si el streamer no está en vivo, el sistema entra en un modo de espera inteligente, intentando reconectar cada cierto tiempo sin intervención del usuario.
-3. **Eventos**: Captura no solo el chat, sino también regalos, compartidos y nuevos seguidores de forma unificada.
+La integración con TikTok de Streamlyra es una de las más completas, capturando una amplia gama de interacciones en vivo:
 
-### Gestión de Estado
+1.  **Chat**: Mensajes estándar y emoticonos nativos de TikTok.
+2.  **Regalos (Gifts)**: Detecta el envío de regalos, incluyendo el nombre del regalo y la cantidad (multiplicador de repetición).
+3.  **Seguidores**: Notificaciones inmediatas cuando alguien sigue al streamer.
+4.  **Suscripciones**: Soporte para detectar nuevos suscriptores de la comunidad.
+5.  **Cofres del Tesoro (Envelopes)**: Captura cuando se sueltan cofres en el chat, incluyendo la cantidad de diamantes si está disponible.
 
-Tanto Kick como TikTok utilizan un `StateManager` específico que asegura que no haya múltiples conexiones abiertas para un mismo usuario, evitando duplicidad de mensajes y consumo innecesario de memoria en el servidor.
+### Gestión de Estado e Auto-Discovery
+
+1.  **Búsqueda Continua**: El sistema intenta conectarse al nombre de usuario proporcionado.
+2.  **Auto-Discovery**: Si el streamer no está en vivo, el sistema entra en un modo de espera inteligente (`searching`), intentando reconectar automáticamente cuando detecta actividad.
+3.  **Manual Boost**: Permite al usuario forzar una búsqueda inmediata desde el dashboard si el sistema automático aún no ha detectado el inicio del directo.
+4.  **Evitar Duplicidad**: El `TikTokConnectionStateManager` asegura que no haya múltiples conexiones abiertas para un mismo usuario, optimizando el consumo de recursos.
 
 ---
 

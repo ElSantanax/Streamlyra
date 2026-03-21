@@ -12,10 +12,11 @@ La autenticación es el pilar del cliente. Este es el flujo detallado:
 2.  **Validación**: Si hay un usuario en el `storage`, el hook `useAuth` inicia una llamada a `authService.getMe()`.
     - Si el servidor responde con los datos del usuario, el estado cambia a `authenticated`.
     - Si el servidor devuelve un error 401 (token expirado), se limpia el `storage` y el estado pasa a `unauthenticated`.
-3.  **Redirección**: El componente `ProtectedRoute` observa este estado:
+3.  **Sincronización (`AuthCallback`)**: Al regresar de OAuth, el `AuthCallback` intercambia el código, loguea al usuario y asegura la recarga forzada (`await fetchConnections(true)`) del estado de las conexiones antes de redirigir al Dashboard, evitando estados inconsistentes o destellos en la UI.
+4.  **Redirección**: El componente `ProtectedRoute` observa este estado:
     - Mientras el estado es `unknown` (validando), muestra el `Spinner`.
     - Si es `unauthenticated`, redirige automáticamente a la página de inicio o login.
-4.  **Gestión de Sesión**: Un singleton (`SessionManager`) escucha errores 401 en cualquier parte de la app para forzar el logout si el token es invalidado por el servidor durante el uso.
+5.  **Gestión de Sesión**: Un singleton (`SessionManager`) escucha errores 401 en cualquier parte de la app para forzar el logout si el token es invalidado por el servidor durante el uso.
 
 ---
 
@@ -62,7 +63,7 @@ Para evitar la repetición de lógica y estado de modales en cada componente, St
 
 1.  **Servicio (`dialog.service.ts`)**: Un objeto singleton que expone métodos como `.confirm()`, `.alert()` y `.prompt()`. Estos métodos devuelven una **Promesa** que se resuelve cuando el usuario interactúa con el diálogo.
 2.  **Proveedor (`DialogProvider.tsx`)**: Un componente global en la raíz de la app que escucha los cambios en el servicio y renderiza el componente `Dialog` cuando es necesario.
-3.  **Componente (`Dialog.tsx`)**: Reutiliza la misma UI para todos los tipos de aviso, garantizando consistencia visual y accesibilidad (ARIA labels).
+3.  **Componente (`Dialog.tsx`)**: Reutiliza la misma UI para todos los tipos de aviso, garantizando consistencia visual y accesibilidad (ARIA labels). Se refactorizó aislando el estado interno mediante un componente `DialogInnerContent` para asegurar una gestión limpia del input del usuario y el auto-focus.
 4.  **Flujo Limpio**: El código que invoca el diálogo es asíncrono y directo:
     ```tsx
     const confirmed = await dialog.danger("¿Borrar?");

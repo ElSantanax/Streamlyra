@@ -7,7 +7,7 @@ import { MessageContent } from '../components/dashboard/chat/ChatMessage/compone
 import type { ChatMessage } from '../types';
 
 const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string | undefined) || 'http://localhost:4000';
-const MESSAGE_HIDE_TIMEOUT = 25000; // 25 segundos antes de desaparecer
+const MESSAGE_HIDE_TIMEOUT = 25000;
 
 const OverlayChat = () => {
     const { token } = useParams<{ token: string }>();
@@ -17,7 +17,6 @@ const OverlayChat = () => {
     useEffect(() => {
         if (!token) return;
 
-        // Conectar usando el Overlay Token
         const socket = io(SOCKET_URL, {
             transports: ['websocket'],
             auth: { overlayToken: token }
@@ -31,32 +30,30 @@ const OverlayChat = () => {
 
         socket.on('chat_message', (msg: ChatMessage | ChatMessage[]) => {
             const rawNewMessages = Array.isArray(msg) ? msg : [msg];
+            const chatOnlyMessages = rawNewMessages.filter(m => m.message && m.message.trim() !== '');
 
-            // Garantizar que todos tengan un ID único
-            const newMessages = rawNewMessages.map(m => ({
+            if (chatOnlyMessages.length === 0) return;
+
+            const newMessages = chatOnlyMessages.map(m => ({
                 ...m,
                 id: m.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
             }));
 
             setMessages(prev => {
                 const uniqueNewMessages = newMessages.filter((newMsg, index, self) => {
-                    // Evitar repetir mensajes del streamer (isOwner) en pantalla
                     if (newMsg.isOwner) {
-                        // 1. Verificar si ya existe en los mensajes previos y aún está visible
-                        const existsInPrev = prev.some(prevMsg => 
-                            prevMsg.isOwner && 
-                            prevMsg.visible && 
+                        const existsInPrev = prev.some(prevMsg =>
+                            prevMsg.isOwner &&
+                            prevMsg.visible &&
                             prevMsg.message.trim() === newMsg.message.trim()
                         );
                         if (existsInPrev) return false;
 
-                        // 2. Verificar si viene duplicado en este mismo lote
                         const existsInSelf = self.findIndex(m => m.isOwner && m.message.trim() === newMsg.message.trim()) < index;
                         if (existsInSelf) return false;
                     }
 
-                    // Deduplicación general por ID y plataforma
-                    const existsById = prev.some(prevMsg => 
+                    const existsById = prev.some(prevMsg =>
                         prevMsg.id === newMsg.id && prevMsg.platform === newMsg.platform
                     );
                     if (existsById) return false;
@@ -67,14 +64,13 @@ const OverlayChat = () => {
                 if (uniqueNewMessages.length === 0) return prev;
 
                 const nextMessages = [...prev, ...uniqueNewMessages.map(m => ({ ...m, visible: true }))];
-                // Mantener solo los últimos 50 mensajes para rendimiento
+
                 if (nextMessages.length > 50) {
                     return nextMessages.slice(nextMessages.length - 50);
                 }
                 return nextMessages;
             });
 
-            // Programar desaparición
             newMessages.forEach(m => {
                 setTimeout(() => {
                     setMessages(current =>

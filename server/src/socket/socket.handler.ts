@@ -18,6 +18,7 @@ import { UserService } from '../services/user/UserService';
 declare module 'socket.io' {
     interface SocketData {
         userId?: string;
+        username?: string;
     }
 }
 

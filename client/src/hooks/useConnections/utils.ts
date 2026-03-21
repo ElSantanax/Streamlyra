@@ -14,7 +14,8 @@ export const parseMeResponse = (data: MeResponse | null) => {
                     username: fetched.username,
                     isLive: fetched.isLive,
                     status: fetched.status,
-                    statusMessage: fetched.statusMessage
+                    statusMessage: fetched.statusMessage,
+                    connectedAt: fetched.connectedAt
                 };
                 stats[platform] = {
                     viewers: fetched.viewers ?? 0,

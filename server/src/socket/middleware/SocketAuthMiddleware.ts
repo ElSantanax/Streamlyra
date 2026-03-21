@@ -14,7 +14,9 @@ export const createAuthMiddleware = (userService: UserService) => {
             try {
                 const user = await userService.findByOverlayToken(overlayToken);
                 if (user) {
-                    (socket.data as { userId?: string }).userId = user.id;
+                    const socketData = socket.data as { userId?: string; username?: string };
+                    socketData.userId = user.id;
+                    socketData.username = user.username;
                     logger.info({ socketId: socket.id, userId: user.id }, 'Socket authenticated via Overlay Token');
                     return next();
                 }
@@ -48,8 +50,10 @@ export const createAuthMiddleware = (userService: UserService) => {
         }
 
         try {
-            const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
-            (socket.data as { userId?: string }).userId = decoded.id;
+            const decoded = jwt.verify(token, config.jwtSecret) as { id: string; username: string };
+            const socketData = socket.data as { userId?: string; username?: string };
+            socketData.userId = decoded.id;
+            socketData.username = decoded.username;
             next();
         } catch (err) {
             logger.warn({ socketId: socket.id, err }, 'Socket authentication failed');

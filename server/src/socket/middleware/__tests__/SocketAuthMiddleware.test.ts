@@ -71,7 +71,7 @@ describe('SocketAuthMiddleware', () => {
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(mockUserService.findByOverlayToken).toHaveBeenCalledWith('valid-overlay-token');
-            expect(mockSocket.data).toEqual({ userId: 'user-123' });
+            expect(mockSocket.data).toEqual({ userId: 'user-123', username: 'testuser' });
             expect(mockNext).toHaveBeenCalledWith();
         });
 
@@ -83,64 +83,64 @@ describe('SocketAuthMiddleware', () => {
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(mockUserService.findByOverlayToken).toHaveBeenCalledWith('valid-overlay-token');
-            expect(mockSocket.data).toEqual({ userId: 'user-123' });
+            expect(mockSocket.data).toEqual({ userId: 'user-123', username: 'testuser' });
             expect(mockNext).toHaveBeenCalledWith();
         });
 
         it('debe continuar con JWT cuando overlay token es inválido', async () => {
             mockSocket.handshake!.auth = { overlayToken: 'invalid-token', token: 'jwt-token' };
             mockUserService.findByOverlayToken.mockResolvedValue(null);
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-456' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-456', username: 'jwtuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(mockUserService.findByOverlayToken).toHaveBeenCalledWith('invalid-token');
             expect(jwt.verify).toHaveBeenCalledWith('jwt-token', 'test-secret-key');
-            expect(mockSocket.data).toEqual({ userId: 'user-456' });
+            expect(mockSocket.data).toEqual({ userId: 'user-456', username: 'jwtuser' });
         });
 
         it('debe continuar con JWT cuando findByOverlayToken lanza error', async () => {
             mockSocket.handshake!.auth = { overlayToken: 'error-token', token: 'jwt-token' };
             mockUserService.findByOverlayToken.mockRejectedValue(new Error('Database error'));
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-789' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-789', username: 'jwtuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(jwt.verify).toHaveBeenCalledWith('jwt-token', 'test-secret-key');
-            expect(mockSocket.data).toEqual({ userId: 'user-789' });
+            expect(mockSocket.data).toEqual({ userId: 'user-789', username: 'jwtuser' });
         });
     });
 
     describe('autenticación por JWT', () => {
         it('debe autenticar correctamente con JWT en auth', async () => {
             mockSocket.handshake!.auth = { token: 'valid-jwt-token' };
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-123' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-123', username: 'testuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(jwt.verify).toHaveBeenCalledWith('valid-jwt-token', 'test-secret-key');
-            expect(mockSocket.data).toEqual({ userId: 'user-123' });
+            expect(mockSocket.data).toEqual({ userId: 'user-123', username: 'testuser' });
             expect(mockNext).toHaveBeenCalledWith();
         });
 
         it('debe autenticar correctamente con JWT en header Authorization', async () => {
             mockSocket.handshake!.headers = { authorization: 'Bearer valid-jwt-token' };
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-456' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-456', username: 'jwtuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(jwt.verify).toHaveBeenCalledWith('valid-jwt-token', 'test-secret-key');
-            expect(mockSocket.data).toEqual({ userId: 'user-456' });
+            expect(mockSocket.data).toEqual({ userId: 'user-456', username: 'jwtuser' });
         });
 
         it('debe autenticar correctamente con JWT en cookie', async () => {
             mockSocket.handshake!.headers = { cookie: 'auth_token=valid-jwt-token; other=value' };
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-789' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-789', username: 'jwtuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 
             expect(jwt.verify).toHaveBeenCalledWith('valid-jwt-token', 'test-secret-key');
-            expect(mockSocket.data).toEqual({ userId: 'user-789' });
+            expect(mockSocket.data).toEqual({ userId: 'user-789', username: 'jwtuser' });
         });
 
         it('debe rechazar conexión cuando JWT es inválido', async () => {
@@ -191,7 +191,7 @@ describe('SocketAuthMiddleware', () => {
 
             expect(mockUserService.findByOverlayToken).toHaveBeenCalledWith('overlay-token');
             expect(jwt.verify).not.toHaveBeenCalled();
-            expect(mockSocket.data).toEqual({ userId: 'user-123' });
+            expect(mockSocket.data).toEqual({ userId: 'user-123', username: 'testuser' });
         });
 
         it('debe priorizar overlay token en auth sobre query', async () => {
@@ -208,7 +208,7 @@ describe('SocketAuthMiddleware', () => {
         it('debe priorizar JWT en auth sobre header Authorization', async () => {
             mockSocket.handshake!.auth = { token: 'auth-jwt-token' };
             mockSocket.handshake!.headers = { authorization: 'Bearer header-jwt-token' };
-            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-123' });
+            (jwt.verify as jest.Mock).mockReturnValue({ id: 'user-123', username: 'testuser' });
 
             await authMiddleware(mockSocket as Socket, mockNext);
 

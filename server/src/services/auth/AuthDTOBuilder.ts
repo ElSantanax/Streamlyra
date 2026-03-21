@@ -78,7 +78,8 @@ export class AuthDTOBuilder {
                     isLive: platformStatus?.isLive ?? isLive,
                     status: (platformStatus?.status as GlobalConnectionStatus) || (isLive ? 'connected' : 'waiting_stream'),
                     statusMessage: platformStatus?.message,
-                    sessionStartTime: isLive ? session.startTime : null
+                    sessionStartTime: isLive ? session.startTime : null,
+                    connectedAt: conn.createdAt ? conn.createdAt.toISOString() : undefined
                 };
             });
         }

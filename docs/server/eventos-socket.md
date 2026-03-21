@@ -101,8 +101,8 @@ socket.on('chat_message', (data: NormalizedChatMessage) => {})
   isSub?: boolean,
   isVIP?: boolean,
   isOwner?: boolean,
-  isSpecial?: boolean,     // true en follows, raids, subs, regalos
-  specialMessage?: string, // Ej: "!RAID CON 200 ESPECTADORES!"
+  isSpecial?: boolean,     // true en follows, raids, subs, regalos, cofres
+  specialMessage?: string, // Ej: "!RAID CON 200 ESPECTADORES!", "🎁 REGALO: 5x Rose", "🧧 COFRE DE TESORO"
   messageId?: string,      // Para acciones de moderación
   roomId?: string,
   emotes?: Array<{

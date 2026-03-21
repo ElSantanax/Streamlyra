@@ -18,6 +18,7 @@ const ChatMessage = memo(({
     isMod,
     isVIP,
     isOwner,
+    isSelf,
     specialMessage,
     status,
     errorMessage,
@@ -33,7 +34,7 @@ const ChatMessage = memo(({
     const { Icon, color, textColor, iconColor, brandColor } = PLATFORMS[platform];
     const isSpecial = !!specialMessage || isOwner || isMod || isSub || isVIP || (bits !== undefined && bits > 0);
     const isYouTube = platform === 'youtube';
-    const isOwnMessage = user === 'Tú' || !!isOwner;
+    const isOwnMessage = user === 'Tú' || !!isOwner || !!isSelf;
     const isTikTok = platform === 'tiktok';
 
     const formattedTime = useMemo(() => formatLocalTime(time), [time]);
@@ -63,7 +64,7 @@ const ChatMessage = memo(({
                             className={`font-bold text-sm md:text-base tracking-tight truncate ${!userColor ? textColor : ''}`}
                             style={userColor ? { color: userColor } : undefined}
                         >
-                            {user}
+                            {isSelf ? 'Tú' : user}
                         </span>
 
                         <div className={`flex items-center justify-center size-5 md:size-6 rounded-full shrink-0 ${color} ${iconColor} shadow-sm ring-1 ring-white/10`}>
@@ -72,7 +73,7 @@ const ChatMessage = memo(({
                         </div>
 
                         {/* Badges - No mostrar si el usuario es "Tú" */}
-                        {isOwner && user !== 'Tú' && <UserBadge type="streamer" isYouTube={isYouTube} />}
+                        {isOwner && !isSelf && user !== 'Tú' && <UserBadge type="streamer" isYouTube={isYouTube} />}
                         {isMod && <UserBadge type="mod" isYouTube={isYouTube} />}
                         {isVIP && <UserBadge type="vip" isYouTube={isYouTube} />}
                         {isSub && <UserBadge type="sub" isYouTube={isYouTube} />}

@@ -86,6 +86,7 @@ Gestiona la memoria y el flujo de mensajes simultáneos con alto rendimiento.
 - **Mecanismo de Flush/Batching**: Los mensajes se acumulan en un buffer temporal y se "vuelcan" al estado principal cada 300ms. Esto previene que el hilo principal se bloquee durante ráfagas intensas de chat.
 - **Acciones de Moderación Global**: Permite eliminar mensajes o banear usuarios de forma atómica. Al eliminar un mensaje en el store, todos los componentes suscritos reflejan el cambio instantáneamente.
 - **Optimización de Memoria (MAX_MESSAGES)**: Implementa una limpieza automática (trimming) para mantener el arreglo de mensajes dentro de un límite (ej. 1000 mensajes), evitando fugas de memoria en sesiones largas.
+- **Hook `useChatMessages`**: Recientemente refactorizado de un manejador de estado independiente de React a un "thin proxy" que encapsula llamadas a `useChatStore` usando `useShallow`. Mantiene compatibilidad hacia atrás en los componentes antiguos, pero se orienta íntegramente al rendimiento centralizado de Zustand.
 
 ---
 

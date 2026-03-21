@@ -11,7 +11,7 @@ export class UserRepository implements IUserRepository {
     async findByIdWithConnections(id: string, transaction?: Transaction): Promise<User | null> {
         return User.findByPk(id, {
             include: [
-                { model: Connection, attributes: ['provider', 'providerUsername'] },
+                { model: Connection, attributes: ['provider', 'providerUsername', 'createdAt'] },
                 { model: UserAnalytics, attributes: ['userId', 'lastFollowerName', 'lastFollowerPlatform', 'lastFollowerAt', 'lastRaidName', 'lastRaidPlatform', 'lastRaidViewers', 'lastRaidAt'] }
             ],
             transaction

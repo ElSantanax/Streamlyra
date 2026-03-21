@@ -65,4 +65,5 @@ export interface ConnectionInfo {
     statusMessage?: string;
     isLive?: boolean;
     sessionStartTime?: string | null;
+    connectedAt?: string;
 }
