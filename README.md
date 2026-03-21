@@ -1,6 +1,6 @@
 <img width="1920" height="1080" alt="streamlyra" src="https://github.com/user-attachments/assets/5f663de3-f07d-49b9-bd25-0c18831f97b6" />
 
-Es una solución moderna para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
+Es una solución de código abierto para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
 
 ## Capacidades por Plataforma
 
