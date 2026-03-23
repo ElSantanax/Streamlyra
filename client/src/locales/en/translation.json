@@ -59,7 +59,8 @@
             "offline": "OFFLINE",
             "user": "User",
             "viewGuide": "View Feature Guide",
-            "discord": "Discord Community"
+            "discord": "Discord Community",
+            "github": "GitHub Repository"
         },
         "sidebar": {
             "analytics": {
