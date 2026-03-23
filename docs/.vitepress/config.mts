@@ -4,11 +4,28 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 // https://vitepress.dev/reference/site-config
 export default withMermaid(defineConfig({
   title: "Streamlyra.dev",
-  description: "Sitio de documentación de Streamlyra",
+  description: "Documentación oficial de Streamlyra: La herramienta de código abierto para centralizar y gestionar tus directos de Twitch, YouTube, Kick y TikTok en una sola interfaz.",
   lang: 'es-ES',
   head: [
-    ['link', { rel: 'icon', href: '/icons/streamlyra.svg' }]
+    ['link', { rel: 'icon', href: '/icons/streamlyra.svg' }],
+    ['meta', { name: 'theme-color', content: '#3eaf7c' }],
+    ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
+    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
+    ['meta', { name: 'keywords', content: 'streamlyra, streaming, documentation, twitch, youtube, kick, tiktok, open source, dashboard, multicat, stream chat' }],
+    ['meta', { name: 'author', content: 'José Santana' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'Streamlyra.dev | Documentación Técnica' }],
+    ['meta', { property: 'og:description', content: 'Explora la guía completa de Streamlyra: Gestión de chats multiplataforma, arquitectura robusta en TypeScript y configuración paso a paso para streamers y desarrolladores.' }],
+    ['meta', { property: 'og:image', content: 'https://streamlyradev.vercel.app/img/docs.png' }],
+    ['meta', { property: 'og:url', content: 'https://streamlyradev.vercel.app' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: 'Streamlyra.dev | Documentación Técnica' }],
+    ['meta', { name: 'twitter:description', content: 'Guía completa para gestionar chats multiplataforma de Twitch, YouTube, Kick y TikTok con Streamlyra.' }],
+    ['meta', { name: 'twitter:image', content: 'https://streamlyradev.vercel.app/img/docs.png' }]
   ],
+  sitemap: {
+    hostname: 'https://streamlyradev.vercel.app'
+  },
   markdown: {
 
   },
