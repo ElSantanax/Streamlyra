@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Streamlyra"
   text: "Gestion de streaming simplificada"
-  tagline: "Centraliza tus plataformas en una sola herramienta de codigo abierto."
+  tagline: "Centraliza tus plataformas en una sola herramienta de código abierto."
   actions:
     - theme: brand
       text: Empezar ahora

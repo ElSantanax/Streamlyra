@@ -6,11 +6,15 @@ export default withMermaid(defineConfig({
   title: "Streamlyra.dev",
   description: "Sitio de documentación de Streamlyra",
   lang: 'es-ES',
+  head: [
+    ['link', { rel: 'icon', href: '/icons/streamlyra.svg' }]
+  ],
   markdown: {
-    
+
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
+    logo: '/icons/streamlyra.svg',
     outline: [2, 3], // Muestra niveles de encabezado h2 y h3
     outlineTitle: 'En esta página',
 
