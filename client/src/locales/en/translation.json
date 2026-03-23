@@ -57,7 +57,9 @@
             "logout": "Log Out",
             "online": "ONLINE",
             "offline": "OFFLINE",
-            "user": "User"
+            "user": "User",
+            "viewGuide": "View Feature Guide",
+            "discord": "Discord Community"
         },
         "sidebar": {
             "analytics": {
@@ -222,5 +224,24 @@
                 }
             }
         }
+    },
+    "guide": {
+        "title": "Feature Guide",
+        "subtitle": "Current status of platform integrations",
+        "table": {
+            "platform": "Platform",
+            "read": "Read Chat",
+            "send": "Send",
+            "moderation": "Moderate",
+            "subsGifts": "Events",
+            "followers": "Follows",
+            "raids": "Raids"
+        },
+        "notes": {
+            "kick": "Kick: API doesn't expose Raid events yet.",
+            "tiktok": "TikTok: Read-only mode (sending messages is not supported).",
+            "youtube": "YouTube: No real-time follower alerts (members only)."
+        },
+        "close": "Close Guide"
     }
 }

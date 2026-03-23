@@ -57,7 +57,9 @@
       "logout": "Cerrar Sesión",
       "online": "ONLINE",
       "offline": "OFFLINE",
-      "user": "Usuario"
+      "user": "Usuario",
+      "viewGuide": "Ver Guía de Funcionalidades",
+      "discord": "Comunidad en Discord"
     },
     "sidebar": {
       "analytics": {
@@ -222,5 +224,24 @@
         }
       }
     }
+  },
+  "guide": {
+    "title": "Guía de Funcionalidades",
+    "subtitle": "Estado actual de las integraciones por plataforma",
+    "table": {
+      "platform": "Plataforma",
+      "read": "Leer Chat",
+      "send": "Enviar",
+      "moderation": "Moderar",
+      "subsGifts": "Eventos",
+      "followers": "Follows",
+      "raids": "Raids"
+    },
+    "notes": {
+      "kick": "Kick: La API aún no expone eventos de Raids.",
+      "tiktok": "TikTok: Modo solo lectura (no permite enviar mensajes desde aquí).",
+      "youtube": "YouTube: No hay alertas de nuevos seguidores (solo miembros)."
+    },
+    "close": "Cerrar Guía"
   }
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -9,12 +9,14 @@ import PlatformButton from '../components/connection/PlatformButton';
 import { FaTwitch, FaQuestionCircle } from 'react-icons/fa';
 
 const BackgroundDecorations = lazy(() => import('../components/common/BackgroundDecorations'));
+const GuideModal = lazy(() => import('../components/common/GuideModal'));
 
 const PlatformConnection = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
     const { t } = useTranslation();
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
 
     // Prevenir acceso a páginas de auth cuando ya está autenticado
     useEffect(() => {
@@ -88,13 +90,23 @@ const PlatformConnection = () => {
                     <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-medium">
                         <span>
                             {t('platformConnection.helpText')}{' '}
-                            <a className="text-primary hover:underline font-bold" href="#">
+                            <button
+                                onClick={() => setIsGuideOpen(true)}
+                                className="text-primary hover:underline font-bold cursor-pointer"
+                            >
                                 {t('platformConnection.helpLink')}
-                            </a>
+                            </button>
                         </span>
                         <FaQuestionCircle className="text-primary" />
                     </div>
                 </div>
+
+                <Suspense fallback={null}>
+                    <GuideModal
+                        isOpen={isGuideOpen}
+                        onClose={() => setIsGuideOpen(false)}
+                    />
+                </Suspense>
             </main>
         </div>
     );

@@ -77,8 +77,8 @@ export const SidebarConnections = memo(({
                 const statusA = connectionsStatus[a];
                 const statusB = connectionsStatus[b];
 
-                const timeA = statusA.connectedAt ? new Date(statusA.connectedAt).getTime() : (statusA.status === 'connecting' ? Date.now() : 0);
-                const timeB = statusB.connectedAt ? new Date(statusB.connectedAt).getTime() : (statusB.status === 'connecting' ? Date.now() : 0);
+                const timeA = statusA.connectedAt ? new Date(statusA.connectedAt).getTime() : (statusA.status === 'connecting' ? Number.MAX_SAFE_INTEGER : 0);
+                const timeB = statusB.connectedAt ? new Date(statusB.connectedAt).getTime() : (statusB.status === 'connecting' ? Number.MAX_SAFE_INTEGER : 0);
 
                 if (timeA !== timeB) return timeA - timeB;
                 return a.localeCompare(b);

@@ -17,6 +17,7 @@ import Sidebar from '../components/dashboard/layout/Sidebar';
 import ChatInput from '../components/dashboard/chat/ChatInput/index';
 import AddPlatformModal from '../components/dashboard/connections/AddPlatformModal';
 import ChatFeed from '../components/dashboard/chat/ChatFeed';
+import GuideModal from '../components/common/GuideModal';
 
 const DashboardContent = () => {
     const navigate = useNavigate();
@@ -44,6 +45,7 @@ const DashboardContent = () => {
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
 
     const toggleSidebar = useCallback((open: boolean) => {
         setIsSidebarOpen(open);
@@ -112,6 +114,7 @@ const DashboardContent = () => {
             <DashboardHeader
                 onMenuClick={handleOpenSidebar}
                 onAddPlatform={handleOpenAddPlatform}
+                onOpenGuide={() => setIsGuideOpen(true)}
                 isConnected={isConnected}
             />
 
@@ -194,6 +197,11 @@ const DashboardContent = () => {
                     </Suspense>
                 </LocalErrorBoundary>
             )}
+
+            <GuideModal
+                isOpen={isGuideOpen}
+                onClose={() => setIsGuideOpen(false)}
+            />
         </div>
     );
 };

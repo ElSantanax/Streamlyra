@@ -1,20 +1,22 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { MdLink, MdHelpOutline, MdLogout, MdMenu } from 'react-icons/md';
+import { MdLink, MdLogout, MdMenu } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import Logo from '../../common/Logo';
 import { Dropdown, DropdownItem, DropdownDivider } from '../../ui';
 import { useToggle, useAuth } from '../../../hooks';
 import UserMenuHeader from './UserMenuHeader';
 import LanguageSelector from './LanguageSelector';
+import HelpSelector from './HelpSelector';
 
 interface DashboardHeaderProps {
     onMenuClick?: () => void;
     onAddPlatform?: () => void;
+    onOpenGuide?: () => void;
     isConnected?: boolean;
 }
 
-const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false }: DashboardHeaderProps) => {
+const DashboardHeader = memo(({ onMenuClick, onAddPlatform, onOpenGuide, isConnected = false }: DashboardHeaderProps) => {
     const [isMenuOpen, , openMenu, closeMenu] = useToggle(false);
     const { user, logout } = useAuth();
     const { t, i18n } = useTranslation();
@@ -85,9 +87,10 @@ const DashboardHeader = memo(({ onMenuClick, onAddPlatform, isConnected = false 
                         onClose={closeMenu}
                     />
 
-                    <DropdownItem icon={<MdHelpOutline size={18} />}>
-                        {t('dashboard.header.helpAndSupport')}
-                    </DropdownItem>
+                    <HelpSelector
+                        onViewGuide={onOpenGuide || (() => { })}
+                        onClose={closeMenu}
+                    />
 
                     <DropdownDivider />
 
