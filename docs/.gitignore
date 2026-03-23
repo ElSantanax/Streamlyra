@@ -32,3 +32,4 @@ dist-ssr
 # VitePress
 .vitepress/cache/
 .vercel
+.env*.local
