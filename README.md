@@ -124,8 +124,8 @@ Accede a la aplicación en `http://localhost:5173`
 
 ## Enlaces Rápidos
 
-- 🌐 **[Sitio Web / Demo en Vivo](https://streamlyra.vercel.app/)**
-- 📚 **[Sitio de Documentación](https://streamlyradev.vercel.app/)** 🚀
+- **[Sitio Web](https://streamlyra.vercel.app/)**
+- **[Sitio de Documentación](https://streamlyradev.vercel.app/)**
 
 ## Documentación Local
 
