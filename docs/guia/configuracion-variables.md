@@ -1,8 +1,15 @@
 # Configuracion de Variables
 
-Para poner en marcha **Streamlyra**, necesitas configurar las variables de entorno tanto en el servidor como en el cliente. Sigue estos pasos para obtener las credenciales y configurar los archivos correctamente.
+Para poner en marcha **Streamlyra**, el primer paso es preparar los archivos de entorno y obtener las credenciales necesarias. 
 
-## 1. Consolas de Desarrollador
+## 1. Crear Archivos de Entorno
+
+Antes de obtener las claves, crea los archivos de entorno manualmente en las carpetas correspondientes:
+
+- **Servidor:** `/server/.env`
+- **Cliente:** `/client/.env.local`
+
+## 2. Consolas de Desarrollador
 
 Obten tus credenciales en los paneles oficiales de cada plataforma:
 
@@ -11,10 +18,14 @@ Obten tus credenciales en los paneles oficiales de cada plataforma:
 | **Twitch**  | [Twitch Developer Console](https://dev.twitch.tv/console) | `CLIENT_ID`, `CLIENT_SECRET`                 |
 | **YouTube** | [Google Cloud Console](https://console.cloud.google.com/) | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` |
 | **Kick**    | [Kick Developer Portal](https://docs.kick.com/)           | `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET`       |
-| **Neon**    | [Neon Console](https://console.neon.tech/)                | `DATABASE_URL` (PostgreSQL)                  |
+| **Neon**    | [Neon Console](https://console.neon.tech/)                | `DATABASE_URL` (PostgreSQL de Neon.tech)     |
 | **ngrok**   | [ngrok Dashboard](https://dashboard.ngrok.com/)           | `APP_URL` (Webhooks locales)                 |
 
-## 2. Generacion de Secretos Locales
+::: info TIP: Base de Datos Neon
+Al crear tu proyecto en Neon, asegúrate de copiar la **Connection String** completa que empieza por `postgresql://`. Esta es la que irá en la variable `DATABASE_URL`.
+:::
+
+## 3. Generacion de Secretos Locales
 
 Ejecuta estos comandos en tu terminal para generar las claves de seguridad:
 
@@ -30,7 +41,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-## 3. Ejemplo de Archivos .env
+## 4. Ejemplo de Archivos .env
 
 ### Servidor (server/.env)
 
@@ -60,7 +71,7 @@ APP_URL=tu_url_de_ngrok
 KICK_WEBHOOK_SKIP_SIGNATURE=true
 ```
 
-### Cliente (client/.env)
+### Cliente (client/.env.local)
 
 ```properties
 VITE_TWITCH_CLIENT_ID=tu_twitch_client_id

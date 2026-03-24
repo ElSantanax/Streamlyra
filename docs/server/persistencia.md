@@ -29,7 +29,3 @@ Utilizamos **Sequelize-Typescript** para definir nuestras tablas. Las clases dec
 - **`UserAnalytics`**: Almacena datos históricos como el último seguidor o raid (con expiración automática de 7 días).
 - **`YouTubeQuota`**: Controla el gasto diario de la API de Google.
 - **`TwitchWebhook`**: Gestiona el estado y secretos de las suscripciones a EventSub.
-
----
-
-ElSantana

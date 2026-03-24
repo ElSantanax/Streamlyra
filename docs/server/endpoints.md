@@ -37,7 +37,3 @@ Endpoints destinados a recibir eventos en tiempo real directamente desde las pla
 - **CSRF Protection**: Todas las peticiones mutables (`POST`, `PUT`, `DELETE`) requieren un token CSRF válido enviado en los headers.
 - **Rate Limiting**: Los endpoints de autenticación y webhooks tienen límites de peticiones para prevenir abusos.
 - **Validación**: Utilizamos **Zod** para validar estrictamente el cuerpo de las peticiones antes de procesarlas.
-
----
-
-ElSantana

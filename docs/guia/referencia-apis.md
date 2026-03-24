@@ -28,8 +28,4 @@ Para probar las APIs antes de integrarlas en el código:
 
 ## Configuración de Credenciales
 
-Consulta la página de [Variables de Entorno](/configuracion-variables) para saber exactamente qué claves necesitas de cada plataforma y cómo configurarlas en el archivo `.env`.
-
----
-
-ElSantana
+Consulta la página de [Variables de Entorno](/guia/configuracion-variables) para saber exactamente qué claves necesitas de cada plataforma y cómo configurarlas en el archivo `.env`.

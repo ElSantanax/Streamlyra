@@ -21,11 +21,11 @@ Antes de comenzar la instalación, asegúrese de tener instalado:
 
 - **Node.js**: Versión 18.x o superior
 - **Gestor de Paquetes**: npm v9.x o superior
-- **Base de Datos**: Una instancia de PostgreSQL (o cuenta en Neon.tech)
+- **Base de Datos**: Cuenta en [Neon.tech](https://neon.tech) (PostgreSQL gestionado)
 - **Acceso a Internet**: Necesario para la autenticación con las APIs de streaming
 
 ## Siguientes Pasos
 
-1. Configura el entorno siguiendo la guía de [Configuración de Variables](/configuracion-variables).
+1. Configura el entorno siguiendo la guía de [Configuración de Variables](/guia/configuracion-variables).
 2. Comprende cómo funciona el motor del proyecto en la sección de [Arquitectura del Servidor](/server/arquitectura).
-3. Si deseas contribuir, revisa la [Guía de Contribución](/contribucion).
+3. Si deseas contribuir, revisa la [Guía de Contribución](/guia/contribucion).

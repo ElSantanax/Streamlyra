@@ -32,8 +32,6 @@ Configura **Pino**. Diferencia entre la salida "bonita" para terminales de desar
 
 Funciones de ayuda para calcular la expiración de tokens, generar URLs de redirección y procesar respuestas de servidores OAuth de forma estandarizada.
 
----
-
 ## Constantes del Proyecto (`src/constants/`)
 
 ### `platforms.ts`
@@ -44,12 +42,6 @@ Define el "lenguaje oficial" del servidor sobre qué plataformas existen (`twitc
 
 Diccionarios de mapeo para los iconos y reacciones de cada plataforma. Durante la normalización del chat, el servidor utiliza estas constantes para transformar códigos internos de las APIs en URLs de imágenes que el frontend pueda renderizar.
 
----
-
 ## Manejo de Errores Globales (`src/utils/AppError.ts`)
 
 Define la clase `AppError`, que permite al servidor diferenciar entre errores fatales (que deben detener todo) y errores operativos (como "usuario no encontrado"), que solo deben devolver un código 400 o 404 al cliente.
-
----
-
-ElSantana

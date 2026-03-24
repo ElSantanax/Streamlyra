@@ -4,8 +4,6 @@ Esta página documenta todos los eventos del sistema de WebSockets de Streamlyra
 
 > Los eventos fluyen en dos direcciones: el **servidor → cliente** (eventos que el frontend recibe) y el **cliente → servidor** (eventos que el frontend envía).
 
----
-
 ## Eventos: Cliente → Servidor
 
 Estos son los eventos que el **frontend envía** al servidor.
@@ -73,8 +71,6 @@ Igual que el anterior, pero para TikTok.
 ```typescript
 socket.emit("tiktok_boost_discovery");
 ```
-
----
 
 ## Eventos: Servidor → Cliente
 
@@ -232,8 +228,6 @@ socket.on("error", (data) => {});
 // { code: 'SOCKET_ERROR', message: string }
 ```
 
----
-
 ## Flujo Típico de Conexión
 
 ```
@@ -245,7 +239,3 @@ socket.on("error", (data) => {});
 6. Servidor emite 'chat_message' cada vez que llega un mensaje
 7. Servidor emite 'viewers_update' periódicamente
 ```
-
----
-
-ElSantana

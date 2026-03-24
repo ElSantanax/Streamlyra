@@ -49,7 +49,3 @@ Para la gestión de eventos en vivo, utilizamos **Socket.io**.
 - **Sequelize**: ORM para la gestión de PostgreSQL.
 - **Socket.io**: Motor de comunicación bidireccional.
 - **Pino**: Sistema de logging de alto rendimiento.
-
----
-
-ElSantana

@@ -41,7 +41,7 @@ export default withMermaid(defineConfig({
     },
 
     nav: [
-      { text: 'Guía', link: '/introduccion' },
+      { text: 'Guía', link: '/guia/introduccion' },
       { text: 'Servidor', link: '/server/arquitectura' },
       { text: 'Cliente', link: '/client/arquitectura' }
     ],
@@ -53,10 +53,10 @@ export default withMermaid(defineConfig({
       {
         text: 'Empezando',
         items: [
-          { text: 'Introducción', link: '/introduccion' },
-          { text: 'Instalación y Setup Local', link: '/instalacion' },
-          { text: 'Variables de Entorno', link: '/configuracion-variables' },
-          { text: 'Guía de Contribución', link: '/contribucion' }
+          { text: 'Introducción', link: '/guia/introduccion' },
+          { text: 'Instalación y Setup Local', link: '/guia/instalacion' },
+          { text: 'Variables de Entorno', link: '/guia/configuracion-variables' },
+          { text: 'Guía de Contribución', link: '/guia/contribucion' }
         ]
       },
 
@@ -129,7 +129,8 @@ export default withMermaid(defineConfig({
           { text: 'Clientes y Factories', link: '/server/clientes-plataformas' },
           { text: 'Twitch', link: '/server/plataformas/twitch' },
           { text: 'YouTube', link: '/server/plataformas/youtube' },
-          { text: 'Kick y TikTok', link: '/server/plataformas/kick-tiktok' }
+          { text: 'Kick y TikTok', link: '/server/plataformas/kick-tiktok' },
+          { text: 'TikTok: Verificación (RFC)', link: '/server/plataformas/tiktok-verificacion' }
         ]
       },
 
@@ -157,21 +158,19 @@ export default withMermaid(defineConfig({
           { text: 'Diccionario de Archivos', link: '/server/diccionario-archivos' },
           { text: 'Testing', link: '/server/testing' },
           { text: 'Errores y Logging', link: '/server/errores-logs' },
-          { text: 'Referencias de APIs', link: '/referencias' }
+          { text: 'Referencias de APIs', link: '/guia/referencia-apis' }
         ]
       }
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/ElSantanax/Streamlyra' }
+      { icon: 'github', link: 'https://github.com/ElSantanax/Streamlyra' },
+      { icon: 'discord', link: 'https://discord.gg/a7f3Snvr5Q' }
     ],
 
-    lastUpdated: {
-      text: 'Actualizado el',
-      formatOptions: {
-        dateStyle: 'short',
-        timeStyle: 'medium'
-      }
+    footer: {
+      message: 'Liberado bajo la Licencia MIT.',
+      copyright: 'Copyright © 2026-presente José Santana'
     },
 
     returnToTopLabel: 'Volver arriba',

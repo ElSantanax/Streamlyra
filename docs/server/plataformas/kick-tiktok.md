@@ -37,7 +37,3 @@ La integración con TikTok de Streamlyra es una de las más completas, capturand
 2.  **Auto-Discovery**: Si el streamer no está en vivo, el sistema entra en un modo de espera inteligente (`searching`), intentando reconectar automáticamente cuando detecta actividad.
 3.  **Manual Boost**: Permite al usuario forzar una búsqueda inmediata desde el dashboard si el sistema automático aún no ha detectado el inicio del directo.
 4.  **Evitar Duplicidad**: El `TikTokConnectionStateManager` asegura que no haya múltiples conexiones abiertas para un mismo usuario, optimizando el consumo de recursos.
-
----
-
-ElSantana

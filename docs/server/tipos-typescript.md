@@ -111,8 +111,6 @@ interface ConnectionInfo {
 }
 ```
 
----
-
 ## Tipos de Mensajes (`src/types/message.types.ts`)
 
 Contratos para el envío de mensajes y moderación desde el dashboard.
@@ -167,8 +165,6 @@ interface ModerationActionRequest {
 }
 ```
 
----
-
 ## Tipos de Autenticación (`src/types/auth.types.ts`)
 
 ### `OAuthService` (Interfaz)
@@ -189,7 +185,3 @@ interface OAuthService {
 ```
 
 `TwitchService`, `YouTubeService` y `KickService` implementan esta interfaz. El `PlatformServiceFactory` explota esto para intercambiarlos de forma genérica.
-
----
-
-ElSantana

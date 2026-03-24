@@ -53,7 +53,3 @@ El `ConnectionRepository` (`src/repositories/implementations/ConnectionRepositor
 
 1. **Transformación de Eventos**: Cada plataforma tiene un `Transformer` que convierte formatos propietarios (ej. el complejo objeto de YouTube) en el `NormalizedMessage` de Streamlyra.
 2. **Emisión Segura**: El `SafeSocketEmitter` centraliza el envío hacia el cliente, asegurando que los eventos lleguen solo al `userId` correcto y con el formato esperado.
-
----
-
-ElSantana

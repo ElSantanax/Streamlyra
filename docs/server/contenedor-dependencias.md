@@ -62,7 +62,3 @@ No expone todo. Solo entrega al servidor lo estrictamente necesario para el corr
 | `webhookController`    | Manejar rutas HTTP de webhooks              |
 | `twitchManager`        | Gestionar subscripciones EventSub de Twitch |
 | `userService`          | Autenticación por socket y datos de perfil  |
-
----
-
-ElSantana

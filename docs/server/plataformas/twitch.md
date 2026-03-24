@@ -32,7 +32,3 @@ El `TwitchManager` es el encargado de que las suscripciones a eventos estén sie
 2. **Validación**: Se verifica la firma HMAC.
 3. **Transformación**: El `TwitchEventTransformer` convierte el JSON de Twitch al formato estándar de Streamlyra.
 4. **Emisión**: Se envía a través de Sockets al cliente.
-
----
-
-ElSantana

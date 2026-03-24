@@ -69,7 +69,3 @@ Singleton que controla el consumo diario de la API de YouTube Data v3. El límit
 - `getAdaptiveInterval()`: Devuelve el intervalo de polling recomendado según la cuota restante.
 
 > **Nota de desarrollo**: En entorno `development`, `hasQuota()` siempre devuelve `true`, para no bloquear el trabajo local por límites de cuota.
-
----
-
-ElSantana

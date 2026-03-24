@@ -24,7 +24,3 @@ El punto de entrada para los eventos externos.
 ## Patrón de Diseño
 
 Todos nuestros controladores siguen el principio de **Inyección de Dependencias**. No instancian sus propios servicios, sino que los reciben en el constructor. Esto facilita enormemente el **Testing Unitario**, permitiendo pasar servicios "ficticios" (mocks) para probar la lógica del controlador aisladamente.
-
----
-
-ElSantana

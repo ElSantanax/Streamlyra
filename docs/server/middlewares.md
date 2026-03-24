@@ -2,8 +2,6 @@
 
 Los middlewares son la **primera línea de defensa** de Streamlyra. Toda petición HTTP pasa por ellos antes de llegar a cualquier controlador. El servidor tiene dos grupos: los middlewares generales y los de validación de webhooks (uno por plataforma).
 
----
-
 ## Middlewares Generales (`src/middleware/`)
 
 ### `auth.middleware.ts`
@@ -23,8 +21,6 @@ Exporta dos funciones con distintos niveles de exigencia:
 - Valida que el payload decodificado tenga exactamente `{ id: string, username: string }`. Si tiene otra forma, rechaza con 403 para evitar tokens con estructura arbitraria.
 - En caso de `TokenExpiredError`, devuelve un mensaje explícito al usuario para que sepa que debe volver a iniciar sesión.
 
----
-
 ### `csrf.middleware.ts`
 
 Protección contra **ataques Cross-Site Request Forgery**.
@@ -33,8 +29,6 @@ Protección contra **ataques Cross-Site Request Forgery**.
 - **Comparación Temporal Constante**: Usa `timingSafeEqual` de Node.js para comparar tokens. Esto evita los ataques de temporización donde un atacante puede adivinar el token midiendo el tiempo de respuesta.
 - **Exclusiones automáticas**: Los métodos `GET`, `HEAD` y `OPTIONS` son ignorados. Las rutas de webhooks también están excluidas porque las plataformas externas no pueden enviar cookies CSRF.
 
----
-
 ### `zod.middleware.ts`
 
 Validación y **sanitización de datos** de entrada.
@@ -42,8 +36,6 @@ Validación y **sanitización de datos** de entrada.
 - Exporta `validateZodBody(schema)`, una función de orden superior que recibe un esquema Zod y devuelve un middleware.
 - Si la validación **falla**: devuelve un error 400 con un mensaje legible para humanos en español (ej. `"email es requerido"`, `"message: String must contain at least 1 character"`).
 - Si la validación **pasa**: reemplaza `req.body` con los datos ya parseados y tipados por Zod. Esto elimina cualquier campo extra no esperado.
-
----
 
 ### `rateLimit.middleware.ts`
 
@@ -59,8 +51,6 @@ Exporta tres limitadores configurados independientemente:
 
 > **Importante**: En entorno `test` (`NODE_ENV=test`), todos los limitadores se deshabilitan automáticamente para no interferir con los tests.
 
----
-
 ## Middlewares de Webhooks (`src/middleware/webhooks/`)
 
 ### `utils.ts` — Utilidades Compartidas
@@ -70,8 +60,6 @@ Contiene tipos e helpers usados por los tres middlewares de webhooks:
 - **`RequestWithWebhookData`**: Extiende el `Request` de Express para transportar los datos del webhook ya validados hacia el controlador.
 - **`extractHeader(req, names[])`**: Busca un header probando varios nombres posibles (útil porque Kick, por ejemplo, puede enviar `Kick-Event-Signature` o `X-Kick-Signature`).
 - **`validateTimestamp(timestamp)`**: Previene **Replay Attacks** rechazando mensajes con más de 10 minutos de antigüedad. También registra un aviso si el desfase es mayor a 1 minuto (Clock Skew).
-
----
 
 ### `twitch.middleware.ts` — Validación de EventSub
 
@@ -105,8 +93,6 @@ El proceso de validación al recibir un evento de Twitch es:
 9. Si todo pasó → adjuntar datos en req.webhookData y llamar next()
 ```
 
----
-
 ### `youtube.middleware.ts` — Validación de PubSubHubbub
 
 Maneja **dos métodos HTTP** porque YouTube PubSub funciona diferente a Twitch:
@@ -128,8 +114,6 @@ Maneja **dos métodos HTTP** porque YouTube PubSub funciona diferente a Twitch:
 5. Calcula y compara la firma HMAC-SHA1 del body.
 6. Actualiza el timestamp de última notificación (en background, sin bloquear la respuesta).
 7. Adjunta `{ channelId, body }` en `req.youtubeWebhookData` y llama a `next()`.
-
----
 
 ### `kick.middleware.ts` — Validación de Webhooks de Kick
 
@@ -154,7 +138,3 @@ Headers que acepta (probados en orden):
 5. Si todo pasa → adjunta datos en `req.webhookData` y llama a `next()`.
 
 > **Nota**: Existe un flag de configuración `skipKickSignatureVerification` para entornos de desarrollo donde sea difícil replicar las firmas de Kick localmente.
-
----
-
-ElSantana

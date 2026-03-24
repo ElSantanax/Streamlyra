@@ -4,7 +4,7 @@ Streamlyra utiliza **PostgreSQL** como motor de base de datos relacional, gestio
 
 ## Resumen Técnico
 
-- **Tecnología**: PostgreSQL (Vía Neon.tech o local).
+- **Tecnología**: PostgreSQL (Vía Neon.tech).
 - **ORM**: Sequelize con decoradores de TypeScript.
 - **Conexión**: Gestionada en `src/config/db.ts` con soporte para SSL en producción y un sistema de reintentos automático al arrancar.
 
@@ -49,7 +49,3 @@ Actualmente, el servidor utiliza `db.sync()` durante el arranque para asegurar q
 ## Consultas y Repositorios
 
 Para mantener la separación de responsabilidades, los modelos **no se llaman directamente** desde los controladores. En su lugar, utilizamos la capa de **Repositories** (`src/repositories/implementations`) que encapsula la lógica de acceso a datos de Sequelize.
-
----
-
-ElSantana

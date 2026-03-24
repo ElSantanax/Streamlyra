@@ -44,7 +44,3 @@ La fachada que los demás servicios usan para obtener tokens válidos. Delega en
 - `getAllConnections(userId)`: Lista todas las cuentas vinculadas.
 - `removeConnection(userId, platform)`: Desvincula una plataforma.
 - `getAccount(userId, platform)`: Obtiene una conexión específica, con su token ya desencriptado.
-
----
-
-ElSantana

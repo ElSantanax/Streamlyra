@@ -38,7 +38,3 @@ Para prevenir ataques de fuerza bruta y denegación de servicio (DoS):
 ## Validación de Esquemas (Zod)
 
 Todas las entradas de la API se validan antes de llegar a la lógica de negocio usando **Zod**. Si un cliente envía datos malformados o sospechosos, el servidor responde automáticamente con un error `400 Bad Request`, evitando procesar entradas no confiables.
-
----
-
-ElSantana

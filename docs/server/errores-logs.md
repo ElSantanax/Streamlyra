@@ -32,7 +32,3 @@ Utilizamos **Pino** como motor de logging debido a su bajo consumo de recursos y
 - `warn`: Fallos de autenticación, CSRF inválidos, errores de validación (Zod).
 - `error`: Fallos en llamadas a APIs externas, errores de conexión a la DB, excepciones no controladas.
 - `fatal`: Errores críticos que impiden el funcionamiento (ej. configuración corrupta).
-
----
-
-ElSantana

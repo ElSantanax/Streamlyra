@@ -52,7 +52,3 @@ Para evitar un archivo de socket gigante, dividimos la responsabilidad en:
 1. **Eficiencia**: Solo emitimos datos a los usuarios que tienen las plataformas correspondientes conectadas.
 2. **Normalización**: El cliente siempre recibe el mismo formato de objeto `Message`, sin importar si proviene de Twitch o YouTube.
 3. **Resiliencia**: El `SocketConnectionManager` se asegura de que los `ChatProviders` se activen o desactiven correctamente según la presencia de clientes conectados.
-
----
-
-ElSantana

@@ -8,11 +8,11 @@ hero:
   actions:
     - theme: brand
       text: Empezar ahora
-      link: /introduccion
+      link: /guia/introduccion
 
 features:
   - title: Multiplataforma
-    details: Conecta Twitch, YouTube y Kick simultaneamente sin complicaciones.
+    details: Conecta Twitch, YouTube, Kick y TikTok simultaneamente sin complicaciones.
   - title: Basado en TypeScript
     details: Arquitectura robusta y escalable utilizando Node.js y React.
   - title: Código Abierto

@@ -122,18 +122,6 @@ Accede a la aplicación en `http://localhost:5173`
 
 ¿Interesado en contribuir a Streamlyra? Revisa nuestra [Guía de Contribución](./CONTRIBUTING.md) para saber cómo puedes participar, sin importar tu nivel de experiencia.
 
-## Enlaces Rápidos
-
-- **[Sitio Web](https://streamlyra.vercel.app/)**
-- **[Sitio de Documentación](https://streamlyradev.vercel.app/)**
-
-## Documentación Local
-
-- [Introducción](./docs/introduccion.md) - ¿Qué es Streamlyra y cómo funciona?
-- [Instalación](./docs/instalacion.md) - Guía detallada de setup local
-- [Variables de Entorno](./docs/configuracion-variables.md) - Referencia de configuración
-- [Referencias](./docs/referencias.md) - APIs y recursos externos utilizados
-
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](./LICENSE) para más detalles.

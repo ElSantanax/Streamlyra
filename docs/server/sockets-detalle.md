@@ -84,7 +84,3 @@ Cuando el usuario presiona "Cerrar Sesión", el cliente emite un evento `logout`
 ## Middleware: `SocketAuthMiddleware.ts`
 
 Antes de que cualquier conexión sea aceptada, este middleware verifica el JWT de la cookie de sesión. Si no hay cookie válida, la conexión es rechazada inmediatamente sin llegar a ningún handler.
-
----
-
-ElSantana

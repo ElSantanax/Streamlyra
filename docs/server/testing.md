@@ -55,7 +55,3 @@ Buscamos mantener una cobertura alta en las áreas críticas, especialmente en:
 1. **Transformadores de Datos**: Asegurar que los mensajes de diferentes plataformas se normalicen correctamente.
 2. **Servicios de Autenticación**: Garantizar que el flujo de OAuth y la gestión de tokens sean seguros.
 3. **Manejadores de Sockets**: Validar la autenticación de conexiones y el ruteo de eventos.
-
----
-
-ElSantana

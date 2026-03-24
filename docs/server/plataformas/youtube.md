@@ -51,7 +51,3 @@ El sistema de sondeo (`YouTubeChatPoller`) incluye una lógica de **Suavizado de
 
 - Si el servidor recibe 20 mensajes nuevos tras una espera de 15s, no los envía todos al cliente de golpe.
 - Los dosifica uniformemente a lo largo de los siguientes 12 segundos (80% del intervalo) para que el chat del streamer fluya de manera constante y natural.
-
----
-
-ElSantana

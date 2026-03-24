@@ -77,7 +77,3 @@ YouTube exige que las suscripciones de PubSubHubbub se renueven periódicamente 
 1. Buscar suscripciones próximas a expirar (en las próximas 2 horas).
 2. Renovarlas una por una (con 500ms de espera entre cada una para no saturar la API).
 3. Reportar cuántas se renovaron exitosamente y cuántas fallaron.
-
----
-
-ElSantana

@@ -26,8 +26,6 @@ Define el **contrato** que deben cumplir todos los transformadores mediante mét
 | `transformMessage()`          | **Abstracto**: Cada plataforma debe implementarlo              |
 | `transformSpecialEvent()`     | **Abstracto**: Para eventos como follows, raids, regalos       |
 
----
-
 ## `TwitchEventTransformer.ts`
 
 Maneja dos fuentes de datos distintas de Twitch:
@@ -54,8 +52,6 @@ Para mensajes del nuevo sistema EventSub. Trabaja con `fragments` del mensaje pa
 
 **Color de marca**: `#9146FF` (morado Twitch)
 
----
-
 ## `YouTubeEventTransformer.ts`
 
 Transforma los items de la Lista de Chat de YouTube Live. Un mismo endpoint puede devolver distintos tipos de evento:
@@ -71,8 +67,6 @@ Transforma los items de la Lista de Chat de YouTube Live. Un mismo endpoint pued
 También parsea los **emotes nativos de YouTube** usando el diccionario en `constants/youtube-emotes.ts`.
 
 **Color de marca**: `#FF0000` (rojo YouTube)
-
----
 
 ## `KickEventTransformer.ts`
 
@@ -97,8 +91,6 @@ Extrae datos del objeto `KickChatMessagePayload`.
 
 **Color de marca**: `#53fc18` (verde Kick)
 
----
-
 ## `TikTokEventTransformer.ts`
 
 El más peculiar, ya que la librería de comunidad entrega objetos con estructura inconsistente. Por eso implementa `selectDisplayName`:
@@ -119,8 +111,6 @@ El más peculiar, ya que la librería de comunidad entrega objetos con estructur
 | `transformFollow` | `👤 NUEVO SEGUIDOR`            |
 
 **Color de marca**: `#FF0050` (rosa/rojo TikTok)
-
----
 
 ## El Objeto `NormalizedChatMessage`
 
@@ -148,7 +138,3 @@ interface NormalizedChatMessage {
   bits?: number; // Bits donados (solo Twitch)
 }
 ```
-
----
-
-ElSantana

@@ -61,7 +61,3 @@ TikTok no tiene OAuth público disponible. La autenticación funciona mediante e
 2. El servidor valida el formato (2-24 caracteres, sin `@`, solo alfanumérico).
 3. Se crea un "token placeholder" internamente para identificar la conexión.
 4. El `TikTokDiscoveryManager` luego busca automáticamente si ese usuario está en vivo.
-
----
-
-ElSantana

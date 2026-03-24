@@ -6,12 +6,12 @@ Esta guía explica cómo levantar Streamlyra en tu máquina local desde cero.
 
 Asegúrate de tener instalado:
 
-| Herramienta | Versión mínima  | Verificar con    |
-| ----------- | --------------- | ---------------- |
-| Node.js     | 20.x o superior | `node --version` |
-| npm         | 9.x o superior  | `npm --version`  |
-| PostgreSQL  | 14.x o superior | `psql --version` |
-| Git         | Cualquiera      | `git --version`  |
+| Herramienta  | Versión mínima  | Verificar con                  |
+| ------------ | --------------- | ------------------------------ |
+| Node.js      | 20.x o superior | `node --version`               |
+| npm          | 9.x o superior  | `npm --version`                |
+| Neon Account | N/A             | [neon.tech](https://neon.tech) |
+| Git          | Cualquiera      | `git --version`                |
 
 ## 1. Clonar el Repositorio
 
@@ -20,47 +20,22 @@ git clone https://github.com/ElSantanax/Streamlyra.git
 cd Streamlyra
 ```
 
-## 2. Configurar la Base de Datos
+## 2. Configuración (.env)
 
-Crea una base de datos PostgreSQL para el proyecto:
+Crea los archivos de configuración en blanco en las carpetas correspondientes:
 
-```bash
-psql -U postgres
-CREATE DATABASE streamlyra_db;
-CREATE USER streamlyra_user WITH PASSWORD 'tu_password_segura';
-GRANT ALL PRIVILEGES ON DATABASE streamlyra_db TO streamlyra_user;
-\q
-```
+- **Servidor:** `server/.env`
+- **Cliente:** `client/.env.local`
 
-## 3. Variables de Entorno
+Para obtener las claves de base de datos (Neon), Twitch y YouTube, sigue nuestra:
 
-Copia el archivo de ejemplo y complétalo:
+**[Guía Detallada de Variables de Entorno](/guia/configuracion-variables)**
 
-```bash
-cp server/.env.example server/.env
-```
+::: tip IMPORTANTE
+Solo necesitas completar las variables de base de datos y secretos (`JWT_SECRET`, `ENCRYPTION_KEY`) para que el sistema logre arrancar inicialmente.
+:::
 
-Abre `server/.env` y configura al mínimo estas variables para poder arrancar:
-
-```bash
-# Base de Datos
-DATABASE_URL=postgresql://streamlyra_user:tu_password@localhost:5432/streamlyra_db
-
-# Secretos (genera valores aleatorios seguros)
-JWT_SECRET=un_string_muy_largo_y_aleatorio
-ENCRYPTION_KEY=un_string_de_exactamente_64_caracteres_hexadecimales_aqui_ok
-
-# Entorno
-NODE_ENV=development
-PORT=3000
-
-# URL pública del servidor (para webhooks)
-SERVER_URL=http://localhost:3000
-```
-
-> Consulta la página de [Variables de Entorno](/configuracion-variables) para la lista completa con explicaciones de cada variable de cada plataforma.
-
-## 4. Instalar Dependencias
+## 3. Instalar Dependencias
 
 ```bash
 # Instalar dependencias del servidor
@@ -70,7 +45,7 @@ cd server && npm install
 cd ../client && npm install
 ```
 
-## 5. Iniciar el Servidor
+## 4. Iniciar el Servidor
 
 ```bash
 # Desde la carpeta /server
@@ -87,7 +62,7 @@ Servidor HTTP escuchando en puerto 3000
 Socket.io inicializado
 ```
 
-## 6. Iniciar el Cliente
+## 5. Iniciar el Cliente
 
 En otra terminal:
 

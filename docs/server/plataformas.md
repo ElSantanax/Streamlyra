@@ -47,7 +47,3 @@ Streamlyra utiliza OAuth2 para la mayoría de las plataformas. El flujo general 
 2. Crear un servicio en `src/services/platforms` para las llamadas a la API.
 3. Implementar un `ChatProvider` en `src/services/chat`.
 4. Registrar el nuevo proveedor en el `ChatManager` dentro de `src/services/container.ts`.
-
----
-
-ElSantana

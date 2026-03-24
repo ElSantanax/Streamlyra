@@ -40,7 +40,3 @@ if (!process.env.DATABASE_URL) {
 ## Plataformas (OAuth)
 
 La configuración de cada plataforma (IDs de cliente y Secrets) se encuentra desacoplada en `src/config/oauth.config.ts`, permitiendo añadir o modificar integraciones sin tocar el núcleo de la lógica.
-
----
-
-ElSantana

@@ -8,8 +8,6 @@ Este documento es una referencia completa de la estructura de archivos en `serve
 - **`server.ts`**: Configura la instancia de HTTP, Socket.io y el contenedor de dependencias. Ejecuta tareas de arranque como la migración de tokens.
 - **`app.ts`**: Configura la aplicación Express, middlewares globales (CORS, JSON, Cookies) y registra las rutas.
 
----
-
 ## Directorios de Soporte
 
 ### `/config` (Configuración)
@@ -40,8 +38,6 @@ Este documento es una referencia completa de la estructura de archivos en `serve
 - **`encryptionService.ts`**: Lógica AES-256-GCM para tokens.
 - **`logger.ts`**: Configuración de Pino para registro de eventos.
 
----
-
 ## Capas de Lógica
 
 ### `/controllers` (Controladores)
@@ -71,8 +67,6 @@ Definiciones de tablas mediante Sequelize-Typescript.
 
 - **`User.model.ts`**, **`Connection.model.ts`**, etc.
 
----
-
 ## El Corazón del Sistema: `/services`
 
 Este es el directorio más denso (~100 archivos). Se divide en:
@@ -84,15 +78,9 @@ Este es el directorio más denso (~100 archivos). Se divide en:
 - **`security/`**: Servicios de encriptación y hashing.
 - **`cron/`**: Tareas programadas (ej. renovación de suscripciones de YouTube).
 
----
-
 ## Comunicación en Tiempo Real: `/socket`
 
 - **`socket.handler.ts`**: Switch central para eventos de socket.
 - **`handlers/`**: Lógica segregada por dominio (mensajes, moderación, conexiones).
 - **`services/`**: Lógica de soporte del socket. Destaca el `SocketConnectionManager`, encargado de la resiliencia del usuario mediante el Periodo de Gracia ante desconexiones.
 - **`middleware/`**: Autenticación específica para conexiones de WebSocket.
-
----
-
-ElSantana
