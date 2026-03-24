@@ -37,7 +37,7 @@ const Features = () => {
                     {features.map((feature) => (
                         <div
                             key={feature.titleKey}
-                            className="flex flex-col gap-6 rounded-2xl border border-surface-border bg-surface-dark p-8 hover:shadow-lg hover:bg-surface-dark/80 transition-all group shadow-sm"
+                            className="dashed-card flex flex-col gap-6 p-8 transition-all group"
                         >
                             <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-transform">
                                 <feature.Icon className="text-3xl" />
