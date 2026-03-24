@@ -97,7 +97,7 @@ const OverlayChat = () => {
                     return (
                         <div
                             key={`${msg.id || index}-${msg.platform}`}
-                            className="flex flex-col gap-1 p-3 rounded-lg bg-black/60 border-l-4 backdrop-blur-sm animate-in fade-in slide-in-from-left duration-500"
+                            className="flex flex-col gap-1 p-3 rounded-lg bg-black/60 border-l-4 backdrop-blur-sm animate-in fade-in duration-500"
                             style={{ borderLeftColor: brandColor }}
                         >
                             <div className="flex items-center gap-2">

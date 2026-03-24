@@ -124,7 +124,7 @@ const ChatFeed = memo(({
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
                         <button
                             onClick={scrollToBottom}
-                            className={`bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white shadow-2xl shadow-black/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in slide-in-from-bottom-2 fade-in hover:bg-surface-light group-hover:opacity-100 ${unreadCount > 0
+                            className={`bg-surface-dark/95 backdrop-blur-sm border border-primary/30 text-white shadow-2xl shadow-black/50 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 pointer-events-auto animate-in fade-in hover:bg-surface-light group-hover:opacity-100 ${unreadCount > 0
                                 ? 'px-4 py-2 rounded-full gap-2'
                                 : 'w-10 h-10 rounded-full'
                                 }`}

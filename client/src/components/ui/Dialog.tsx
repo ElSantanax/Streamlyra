@@ -74,7 +74,7 @@ export const Dialog = ({
     >
       <div
         ref={modalRef}
-        className="relative w-full max-w-md bg-card-dark border border-surface-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md bg-card-dark border border-surface-border rounded-2xl shadow-2xl overflow-hidden animate-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <DialogInnerContent
