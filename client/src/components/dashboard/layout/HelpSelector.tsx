@@ -12,7 +12,7 @@ const HelpSelector = ({ onViewGuide, onClose }: HelpSelectorProps) => {
     const [isOpen, toggleOpen] = useToggle(false);
     const { t } = useTranslation();
 
-    const discordLink = "https://discord.gg/streamlyra"; 
+    const discordLink = "https://discord.gg/a7f3Snvr5Q";
     const githubLink = "https://github.com/ElSantanax/Streamlyra";
 
     return (

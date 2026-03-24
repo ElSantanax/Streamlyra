@@ -2,6 +2,19 @@
 
 Es una solución de código abierto para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
 
+<p align="center">
+  <a href="https://streamlyra.vercel.app/">
+    <img src="https://img.shields.io/badge/Sitio%20Web-Streamlyra-2ea44f?style=for-the-badge&logo=vercel&logoColor=white" alt="Sitio Web">
+  </a>
+  <a href="https://streamlyradev.vercel.app/">
+    <img src="https://img.shields.io/badge/Documentación-Streamlyra-blue?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentación">
+  </a>
+  <a href="https://discord.gg/a7f3Snvr5Q">
+    <img src="https://img.shields.io/badge/Discord-Streamlyra-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+  </a>
+</p>
+
+
 ## Capacidades por Plataforma
 
 | Plataforma  | Leer Chat | Enviar Mensajes | Moderación | Subs & Gifts | Seguidores | Raids | OAuth2 |
@@ -109,7 +122,12 @@ Accede a la aplicación en `http://localhost:5173`
 
 ¿Interesado en contribuir a Streamlyra? Revisa nuestra [Guía de Contribución](./CONTRIBUTING.md) para saber cómo puedes participar, sin importar tu nivel de experiencia.
 
-## Documentación Adicional
+## Enlaces Rápidos
+
+- 🌐 **[Sitio Web / Demo en Vivo](https://streamlyra.vercel.app/)**
+- 📚 **[Sitio de Documentación](https://streamlyradev.vercel.app/)** 🚀
+
+## Documentación Local
 
 - [Introducción](./docs/introduccion.md) - ¿Qué es Streamlyra y cómo funciona?
 - [Instalación](./docs/instalacion.md) - Guía detallada de setup local
