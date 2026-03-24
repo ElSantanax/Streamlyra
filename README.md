@@ -3,13 +3,13 @@
 Es una solución de código abierto para streamers y creadores de contenido que necesitan gestionar múltiples plataformas de streaming simultáneamente. Centraliza todos los chats en una interfaz unificada con capacidades de moderación y análisis en tiempo real.
 
 <p align="center">
-  <a href="https://streamlyra.vercel.app/">
+  <a href="https://streamlyra.vercel.app/" target="_blank">
     <img src="https://img.shields.io/badge/Sitio%20Web-Streamlyra-2ea44f?style=for-the-badge&logo=vercel&logoColor=white" alt="Sitio Web">
   </a>
-  <a href="https://streamlyradev.vercel.app/">
+  <a href="https://streamlyradev.vercel.app/" target="_blank">
     <img src="https://img.shields.io/badge/Documentación-Streamlyra-blue?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentación">
   </a>
-  <a href="https://discord.gg/a7f3Snvr5Q">
+  <a href="https://discord.gg/a7f3Snvr5Q" target="_blank">
     <img src="https://img.shields.io/badge/Discord-Streamlyra-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
   </a>
 </p>
