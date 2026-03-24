@@ -15,8 +15,6 @@ Componentes genéricos que pueden usarse en cualquier parte de la aplicación.
 | `ProtectedRoute` | Envoltorio para rutas que requieren que el usuario esté autenticado. |
 | `ErrorBoundary` | Gestión centralizada de errores en el renderizado de React (Global y Local). |
 
----
-
 ## Interfaz Base (`ui/`)
 
 Componentes visuales fundamentales para construir la interfaz.
@@ -25,8 +23,6 @@ Componentes visuales fundamentales para construir la interfaz.
 | :--- | :--- |
 | `Button` | Botón estilizado con variantes (primary, danger, ghost) y soporte para estados de carga. |
 | `Dialog` | Sistema de modales (Alert, Confirm, Prompt). Refactorizado para garantizar limpieza de estado. |
-
----
 
 ## Panel de Control (`dashboard/`)
 
@@ -47,8 +43,6 @@ Componentes específicos del área de administración del streamer.
 
 - **AddPlatformModal**: Ventana emergente que guía al usuario para vincular una nueva cuenta de streaming.
 - **ConnectionItem**: Muestra el estado individual consumiendo del `useConnectionsStore`. Soporta estados detallados como `searching` (buscando en vivo) o `waiting_stream`.
-
----
 
 ## Prácticas de Componentes
 

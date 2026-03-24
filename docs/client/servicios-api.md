@@ -14,8 +14,6 @@ En lugar de usar `fetch` directamente en los componentes, utilizamos una clase `
 - **Seguridad CSRF**: Adjunta automáticamente el token CSRF desde las cookies (`X-CSRF-Token`) en peticiones de mutación (POST, DELETE).
 - **Tipado Fuerte**: Todas las peticiones son genéricas, permitiendo definir el tipo de respuesta esperado.
 
----
-
 ## Servicios Disponibles
 
 ### AuthService (`auth.service.ts`)
@@ -28,8 +26,6 @@ Gestiona la autenticación y el perfil del usuario.
 Gestiona la vinculación y desvinculación de plataformas de streaming.
 - `getConnections()`: Lista todas las cuentas vinculadas.
 - `disconnect(platform)`: Elimina la vinculación con una plataforma específica.
-
----
 
 ## Comunicación en Tiempo Real (`services/socket`)
 

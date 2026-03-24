@@ -54,8 +54,6 @@ git push origin nombre-de-tu-rama
 
 Luego, ve al repositorio original en GitHub y veras un aviso para abrir un "Pull Request".
 
----
-
 ## Reglas del Proyecto
 
 - **Simplicidad**: Sigue el principio KISS. Evita sobre-ingenieria.

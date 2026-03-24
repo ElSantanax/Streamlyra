@@ -13,16 +13,12 @@ Asegúrate de tener instalado:
 | PostgreSQL  | 14.x o superior | `psql --version` |
 | Git         | Cualquiera      | `git --version`  |
 
----
-
 ## 1. Clonar el Repositorio
 
 ```bash
 git clone https://github.com/ElSantanax/Streamlyra.git
 cd Streamlyra
 ```
-
----
 
 ## 2. Configurar la Base de Datos
 
@@ -35,8 +31,6 @@ CREATE USER streamlyra_user WITH PASSWORD 'tu_password_segura';
 GRANT ALL PRIVILEGES ON DATABASE streamlyra_db TO streamlyra_user;
 \q
 ```
-
----
 
 ## 3. Variables de Entorno
 
@@ -66,8 +60,6 @@ SERVER_URL=http://localhost:3000
 
 > Consulta la página de [Variables de Entorno](/configuracion-variables) para la lista completa con explicaciones de cada variable de cada plataforma.
 
----
-
 ## 4. Instalar Dependencias
 
 ```bash
@@ -77,8 +69,6 @@ cd server && npm install
 # Instalar dependencias del cliente
 cd ../client && npm install
 ```
-
----
 
 ## 5. Iniciar el Servidor
 
@@ -97,8 +87,6 @@ Servidor HTTP escuchando en puerto 3000
 Socket.io inicializado
 ```
 
----
-
 ## 6. Iniciar el Cliente
 
 En otra terminal:
@@ -110,15 +98,11 @@ npm run dev
 
 El cliente estará disponible en `http://localhost:5173` por defecto.
 
----
-
 ## Notas de Desarrollo
 
 - **Webhooks en local**: Para recibir webhooks de Twitch/Kick en tu máquina, necesitas exponer el puerto 3000 con una herramienta como [ngrok](https://ngrok.com/) o [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/). Actualiza `SERVER_URL` con la URL generada.
 - **YouTube en local**: Las cuotas están desactivadas automáticamente en `NODE_ENV=development`. No necesitas preocuparte por los límites mientras desarrollas.
 - **TikTok**: No requiere ninguna credencial de API. Solo necesitas un username válido de TikTok.
-
----
 
 ## Ejecutar Tests
 
@@ -129,7 +113,3 @@ npm test
 # Con cobertura
 npm run test:coverage
 ```
-
----
-
-ElSantana

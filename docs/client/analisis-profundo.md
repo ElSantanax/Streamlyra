@@ -2,8 +2,6 @@
 
 Este documento detalla el funcionamiento interno de las piezas clave del cliente de Streamlyra y cómo interactúan entre sí.
 
----
-
 ## Ciclo de Vida de Autenticación (`AuthProvider`)
 
 La autenticación es el pilar del cliente. Este es el flujo detallado:
@@ -18,8 +16,6 @@ La autenticación es el pilar del cliente. Este es el flujo detallado:
     - Si es `unauthenticated`, redirige automáticamente a la página de inicio o login.
 5.  **Gestión de Sesión**: Un singleton (`SessionManager`) escucha errores 401 en cualquier parte de la app para forzar el logout si el token es invalidado por el servidor durante el uso.
 
----
-
 ## Comunicación en Tiempo Real
 
 Streamlyra utiliza una arquitectura híbrida entre HTTP (REST) y Sockets (Socket.io).
@@ -29,8 +25,6 @@ Es el puente entre el servidor y la interfaz. Se encarga de:
 - **Autenticación del Canal**: Cuando el usuario entra al Dashboard, el socket se conecta enviando las credenciales de sesión.
 - **Normalización**: Recibe eventos crudos del servidor y los transforma si es necesario antes de disparar callbacks.
 - **Resiliencia**: Si la conexión se pierde, el Dashboard muestra un indicador visual (de `DashboardHeader`) y el hook intenta reconectar automáticamente.
-
----
 
 ### Procesamiento del Chat Unificado
 
@@ -44,8 +38,6 @@ Este es el flujo por el que pasa un mensaje desde que llega hasta que se renderi
 4.  **Componente `ChatFeed`**: React re-renderiza solo el área de mensajes observando los cambios atómicos del store.
 5.  **Transformación Visual**: `MessageContent` traduce emotes y enlaces en tiempo real.
 
----
-
 ## Gestión de Conexiones (`useConnectionsStore`)
 
 Gestionar múltiples plataformas simultáneamente requiere una sincronización atómica:
@@ -54,8 +46,6 @@ Gestionar múltiples plataformas simultáneamente requiere una sincronización a
 2.  **Sincronización de Estados**: El store maneja estados complejos como `searching` (buscando en vivo) o `waiting_stream`.
 3.  **Protección de Datos (Cache Logic)**: El sistema detecta si un dato proviene de un Polling (API) o un Push (Socket), evitando que una respuesta lenta de la API sobrescriba un estado más reciente del Socket (ej: que un "Offline" viejo pise un "Online" nuevo).
 4.  **Rendimiento**: Gracias a Zustand, las estadísticas (viewers, followers) se actualizan en componentes específicos sin re-renderizar todo el Dashboard.
-
----
 
 ## Sistema de Diálogos Global
 
@@ -70,8 +60,6 @@ Para evitar la repetición de lógica y estado de modales en cada componente, St
     if (confirmed) { /* ... acción destructiva */ }
     ```
 
----
-
 ## Calidad y Pruebas con `Fast-Check`
 
 A diferencia de las pruebas unitarias tradicionales que usan un solo ejemplo de prueba, en Streamlyra usamos **Pruebas Basadas en Propiedades** (PBT) en el frontend:
@@ -80,7 +68,6 @@ A diferencia de las pruebas unitarias tradicionales que usan un solo ejemplo de 
 - **Lógica**: `fast-check` genera cadenas aleatorias de texto, incluyendo emojis, caracteres Unicode, enlaces malformados y scripts.
 - **Garantía**: Si el componente sobrevive a miles de estas entradas aleatorias sin lanzar excepciones, consideramos que es robusto.
 
----
 
 ## Diseño y Estética
 
@@ -88,7 +75,3 @@ La UI sigue un patrón de **"Glassmorphism"** moderado:
 - **Colores**: Usamos una paleta oscura (`zinc-950`) con acentos en púrpura (`violet-600`) para la marca.
 - **Feedback Visual**: Cada baneo o borrado de mensaje muestra una notificación (Toast) para confirmar que la acción de moderación fue exitosa.
 - **Overlays**: La página `/overlay/chat` está diseñada para ser 100% transparente para que no bloquee el video en OBS.
-
----
-
-ElSantana

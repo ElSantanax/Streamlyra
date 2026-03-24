@@ -13,8 +13,6 @@ Streamlyra utiliza `react-router-dom` para gestionar la navegación. Las rutas e
 | `/connect` | `PlatformConnection` | Protegido | Gestión de cuentas vinculadas. |
 | `/overlay/chat/:token` | `OverlayChat` | Especial | Chat optimizado para OBS/Streaming (usa token de acceso). |
 
----
-
 ## Detalle de Páginas Críticas
 
 ### Dashboard
@@ -38,8 +36,6 @@ Esta página es puramente lógica y sirve como punto final de los flujos OAuth.
 - Almacena el token en la sesión local.
 - Solicita los datos del usuario al servidor para completar el perfil.
 - Redirige al usuario al `/dashboard`.
-
----
 
 ## Protección de Rutas (`ProtectedRoute`)
 

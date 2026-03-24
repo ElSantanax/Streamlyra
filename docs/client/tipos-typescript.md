@@ -24,8 +24,6 @@ Representa el estado y las estadísticas de una plataforma vinculada.
 - `viewers`: Número actual de espectadores en vivo.
 - `isLive`: Indica si la transmisión está activa.
 
----
-
 ## Chat y Mensajería (`chat.types.ts`)
 
 Este es el tipo más importante del sistema, ya que normaliza los mensajes de todas las plataformas (Twitch, YouTube, Kick).
@@ -54,8 +52,6 @@ interface ChatMessage {
 
 ### `ConnectionStatusUpdate`
 Tipo utilizado para las actualizaciones de estado que llegan a través de WebSockets o Polling.
-
----
 
 ## Mensajería Interna (`message.types.ts`)
 

@@ -20,8 +20,6 @@ Al utilizar **Zustand** para el estado de alta frecuencia, es crucial seguir est
 2.  **Limpieza de Estado**: Dado que el estado de Zustand puede persistir entre tests dentro de un mismo archivo, se debe implementar una limpieza sistemática en el ciclo `beforeEach` (ej: llamando a `store.reset()` o `clearMessages()`) para garantizar que cada test sea independiente y no sufra de colisiones de datos.
 3.  **Simulación de Selectores**: Los hooks que usan selectores atómicos deben ser testeados proporcionando mocks que devuelvan exactamente el fragmento de estado solicitado para evitar errores de tipo o lógica.
 
----
-
 ## Pruebas Extreme-to-Extreme (`Cypress`)
 
 Para probar flujos completos de usuario (como el login y la navegación por el dashboard), se utiliza **Cypress**.
@@ -31,8 +29,6 @@ Para probar flujos completos de usuario (como el login y la navegación por el d
     - Login exitoso y redirección.
     - Apertura de modales.
     - Cambio de idioma (i18n).
-
----
 
 ## Comandos de Testing
 
@@ -49,7 +45,3 @@ Para probar flujos completos de usuario (como el login y la navegación por el d
 1.  **Priorizar Integración**: Preferimos probar cómo interactúan varios componentes juntos (ej: Sidebar + ChatFeed) en lugar de solo componentes aislados.
 2.  **Mocks de API**: Siempre usar mocks para las peticiones de red para que los tests pasen rápido y sin necesidad de un backend levantado.
 3.  **Aislamiento de Tests**: Garantizar que el estado global (Zustand) se resetee antes de cada prueba para evitar falsos positivos.
-
----
-
-ElSantana

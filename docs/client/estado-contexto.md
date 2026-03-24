@@ -13,8 +13,6 @@ El `AuthProvider` gestiona la identidad y sesión del usuario. Dado que los dato
 - **Hook: `useAuth`**: Provee acceso a `user`, `status`, `isAuthenticated` y funciones de `login`/`logout`.
 - **Integración con Sockets**: Al cerrar sesión, emite un evento `logout` al servidor para limpiar recursos inmediatamente (omitir periodo de gracia).
 
----
-
 ## Arquitectura de Flujo de Datos
 
 El siguiente diagrama ilustra cómo fluyen los datos desde el servidor hasta los componentes de la interfaz, pasando por los mecanismos de sincronización y los stores de estado global.
@@ -64,8 +62,6 @@ graph TD
     style Servidor fill:#1a1a1a,stroke:#ef4444,stroke-width:2px
 ```
 
----
-
 ## Zustand Stores (Alta Frecuencia)
 
 Para datos en tiempo real y componentes que requieren actualizaciones rápidas sin re-renders masivos, hemos migrado a **Zustand**. Estos son los archivos centrales:
@@ -88,18 +84,12 @@ Gestiona la memoria y el flujo de mensajes simultáneos con alto rendimiento.
 - **Optimización de Memoria (MAX_MESSAGES)**: Implementa una limpieza automática (trimming) para mantener el arreglo de mensajes dentro de un límite (ej. 1000 mensajes), evitando fugas de memoria en sesiones largas.
 - **Hook `useChatMessages`**: Recientemente refactorizado de un manejador de estado independiente de React a un "thin proxy" que encapsula llamadas a `useChatStore` usando `useShallow`. Mantiene compatibilidad hacia atrás en los componentes antiguos, pero se orienta íntegramente al rendimiento centralizado de Zustand.
 
----
-
 ## Beneficios de la Arquitectura con Zustand
 
 1.  **Rendimiento Extremo**: Eliminación del "Context Hell". Un mensaje de chat ya no provoca que se refresque la barra de herramientas o el buscador.
 2.  **Lógica Desacoplada**: Los hooks como `useConnectionsSocket` envían datos directamente a los stores sin necesidad de pasar por la pirámide de componentes de React.
 3.  **Estado Predictible**: Al centralizar la lógica en stores puramente de TypeScript, el comportamiento ante errores y estados complejos es más fácil de depurar.
 
----
-
 ## DialogProvider (lib/dialog)
 
 Provee una interfaz imperativa para mostrar diálogos de confirmación en toda la aplicación mediante `dialogService`, evitando la necesidad de declarar estados "open/close" en cada página.
-
-ElSantana

@@ -2,30 +2,22 @@
 
 Este documento es una guía exhaustiva de **cada archivo** en el núcleo del cliente (`client/src`). Si buscas entender qué hace exactamente un componente, hook o servicio, este es el lugar.
 
----
-
 ## Raíz (`/src`)
 
 - **`App.tsx`**: Orquestador principal de la aplicación. Configura el sistema de rutas (`react-router-dom`), envuelve con los proveedores de contexto (`AuthProvider`, `DialogProvider`) y los gestores de estado (`ConnectionsManager`).
 - **`main.tsx`**: Punto de entrada de React. Inicializa el DOM, configura el `GlobalErrorBoundary` y arranca la configuración de internacionalización (`i18n`).
 - **`index.css`**: Definiciones globales de estilos. Incluye las directivas de Tailwind CSS, variables de color personalizadas y estilos base para animaciones.
 
----
-
 ## Stores de Estado (`/store`)
 
 - **`useConnectionsStore.ts`**: Store central (Zustand) para el estado de las conexiones. Gestiona si una plataforma está vinculada, si está en vivo, estadísticas de espectadores y lógica de caché para evitar sobrescrituras de datos de la API sobre estados transitorios de sockets.
 - **`useChatStore.ts`**: Store (Zustand) que gestiona el flujo de mensajes. Implementa una cola con "flushing" periódico para optimizar el renderizado ante grandes ráfagas de mensajes.
-
----
 
 ## Configuración (`/config`)
 
 - **`env.ts`**: Carga y valida las variables de entorno (como `VITE_API_URL`) usando tipos seguros.
 - **`i18n.ts`**: Configuración de `react-i18next`. Define el idioma por defecto, carga las traducciones y detecta el lenguaje del navegador.
 - **`routes.ts`**: Define conjuntos de rutas (públicas, privadas, de auth) para ser usadas por el componente `ProtectedRoute`.
-
----
 
 ## Componentes (`/components`)
 
@@ -64,8 +56,6 @@ Este documento es una guía exhaustiva de **cada archivo** en el núcleo del cli
 - **`AddPlatformModal.tsx`**: Modal que guía el proceso de vinculación.
 - **`ConnectionItem.tsx`**: Tarjeta visual para una plataforma conectada, soporta estados detallados (`waiting_stream`, `searching`).
 
----
-
 ## Hooks (`/hooks`)
 
 - **`index.ts`**: Punto de acceso centralizado a todos los hooks.
@@ -85,16 +75,12 @@ Este documento es una guía exhaustiva de **cada archivo** en el núcleo del cli
 - **`constants.ts`**: Valores iniciales y configuraciones por defecto.
 - **`utils.ts`**: Parsers para normalizar las respuestas de la API hacia el store.
 
----
-
 ## Servicios (`/services`)
 
 - **`api/client.ts`**: Cliente Fetch central con manejo de CSRF y Auth.
 - **`api/auth.service.ts`**: Servicios de autenticación y vinculación de plataformas.
 - **`session/SessionManager.ts`**: Gestión de la validez de la sesión local.
 - **`socket/socket.ts`**: Configuración de `socket.io-client`.
-
----
 
 ## Librerías y Utilidades (`/lib`)
 
@@ -104,22 +90,14 @@ Este documento es una guía exhaustiva de **cada archivo** en el núcleo del cli
 - **`formatters/emote.formatter.ts`**: Procesamiento de emotes en el chat.
 - **`notifications/toast.ts`**: Sistema de notificaciones visuales.
 
----
-
 ## Tipos (`/types`)
 
 - **`index.ts`**: Exportación centralizada.
 - **`user.types.ts`**: Interfaces de usuario y conexiones.
 - **`chat.types.ts`**: Estructura de mensajes y actualizaciones de estado.
 
----
-
 ## Pruebas (`/test`)
 
 - **`setup.ts`**: Configuración de Vitest.
 - **`generators.ts`**: Generadores de datos mock.
 - **`mocks.ts`**: Implementación de servicios mock para tests.
-
----
-
-ElSantana
