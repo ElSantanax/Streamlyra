@@ -21,9 +21,31 @@ La sesión del usuario se gestiona mediante tokens **JWT (JSON Web Tokens)** alm
 
 Implementamos un sistema de **doble cookie/header** para validar peticiones mutables (`POST`, `PUT`, `DELETE`):
 
-1. El servidor envía un `csrf_token` en una cookie no-HttpOnly (para que el cliente pueda leerla).
-2. El cliente debe reenviar este token en el header `x-csrf-token`.
+1. El servidor envía un `csrf_token` en una cookie **no-HttpOnly** (para que el cliente pueda leerla).
+2. El cliente debe reenviar este token en el header `X-CSRF-Token`.
 3. El servidor compara ambos valores utilizando `crypto.timingSafeEqual` para prevenir ataques de temporización.
+
+**Capas de seguridad activas:**
+
+```
+Request → CORS → CSRF → Endpoint
+          ↓      ↓
+          ✓      ✓ Valida token cookie == header
+          Valida origin
+```
+
+**Protecciones implementadas:**
+
+- **CORS** valida que las requests vengan del frontend autorizado
+- **CSRF** valida que el token cookie coincida con el header
+- **Timing-safe comparison** previene timing attacks
+- **SameSite cookies** previenen CSRF básico
+- **Rate limiting** previene brute force
+
+**Exclusiones:**
+- Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren CSRF
+- Webhooks (`/api/webhooks`) están excluidos (validados por firmas HMAC)
+- Peticiones sin autenticación no requieren CSRF
 
 > [!NOTE]
 > Los webhooks (como `/api/webhooks`) están excluidos de la validación CSRF ya que provienen de servidores externos confiables y se validan mediante firmas criptográficas propias de la plataforma (ej. firmas HMAC de Twitch).

@@ -121,7 +121,7 @@ export class KickWebhookProcessor {
                 }
             } else if (eventType === 'livestream.status.updated') {
                 const statusData = data as unknown as KickLivestreamStatusEvent;
-                logger.info(
+                logger.debug(
                     { userId: connection.userId, isLive: statusData.is_live, title: statusData.title },
                     'Actualizando estado de stream de Kick vía webhook'
                 );

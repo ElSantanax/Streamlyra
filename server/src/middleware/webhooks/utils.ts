@@ -20,8 +20,9 @@ export interface RequestWithWebhookData extends RequestWithRawBody {
 
 /**
  * Margen de tolerancia para timestamps (5 min) para mitigar Replay Attacks.
+ * Estándar de industria recomendado por Twitch y otras plataformas.
  */
-export const MAX_TIMESTAMP_AGE_MS = 10 * 60 * 1000;
+export const MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
 
 export const extractHeader = (req: Request, headerNames: readonly string[]): string => {
     for (const name of headerNames) {

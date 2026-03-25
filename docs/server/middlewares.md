@@ -25,9 +25,20 @@ Exporta dos funciones con distintos niveles de exigencia:
 
 Protección contra **ataques Cross-Site Request Forgery**.
 
-- **Doble Token**: Combina una cookie `httpOnly` + un header `X-CSRF-Token` en cada petición de escritura.
-- **Comparación Temporal Constante**: Usa `timingSafeEqual` de Node.js para comparar tokens. Esto evita los ataques de temporización donde un atacante puede adivinar el token midiendo el tiempo de respuesta.
-- **Exclusiones automáticas**: Los métodos `GET`, `HEAD` y `OPTIONS` son ignorados. Las rutas de webhooks también están excluidas porque las plataformas externas no pueden enviar cookies CSRF.
+- **Doble Token**: Combina una cookie `csrf_token` (no-HttpOnly para que el cliente pueda leerla) + un header `X-CSRF-Token` en cada petición de escritura.
+- **Comparación Temporal Constante**: Usa `crypto.timingSafeEqual` de Node.js para comparar tokens. Esto evita los ataques de temporización donde un atacante puede adivinar el token midiendo el tiempo de respuesta.
+- **Exclusiones automáticas**: 
+  - Los métodos `GET`, `HEAD` y `OPTIONS` son ignorados (métodos seguros).
+  - Las rutas de webhooks (`/api/webhooks`) están excluidas porque las plataformas externas no pueden enviar cookies CSRF.
+  - Las peticiones sin autenticación no requieren CSRF (solo se valida si existe cookie `auth_token`).
+
+**Capas de protección:**
+```
+Request → CORS (valida origin) → CSRF (valida token) → Endpoint
+          ↓                      ↓
+          Bloquea si origin      Bloquea si no hay token
+          no es válido           o no coincide
+```
 
 ### `zod.middleware.ts`
 
@@ -59,7 +70,7 @@ Contiene tipos e helpers usados por los tres middlewares de webhooks:
 
 - **`RequestWithWebhookData`**: Extiende el `Request` de Express para transportar los datos del webhook ya validados hacia el controlador.
 - **`extractHeader(req, names[])`**: Busca un header probando varios nombres posibles (útil porque Kick, por ejemplo, puede enviar `Kick-Event-Signature` o `X-Kick-Signature`).
-- **`validateTimestamp(timestamp)`**: Previene **Replay Attacks** rechazando mensajes con más de 10 minutos de antigüedad. También registra un aviso si el desfase es mayor a 1 minuto (Clock Skew).
+- **`validateTimestamp(timestamp)`**: Previene **Replay Attacks** rechazando mensajes con más de **5 minutos** de antigüedad (estándar de industria recomendado por Twitch). También registra un aviso si el desfase es mayor a 1 minuto (Clock Skew).
 
 ### `twitch.middleware.ts` — Validación de EventSub
 

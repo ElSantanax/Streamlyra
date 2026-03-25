@@ -20,7 +20,7 @@ export class YouTubeWebhookProcessor {
                 return;
             }
 
-            logger.info({
+            logger.debug({
                 channelId: notification.channelId,
                 videoId: notification.videoId,
                 title: notification.title
@@ -34,7 +34,7 @@ export class YouTubeWebhookProcessor {
             }
 
             for (const connection of connections) {
-                logger.info({ userId: connection.userId }, 'YouTube: Webhook disparando Boost de descubrimiento');
+                logger.debug({ userId: connection.userId }, 'YouTube: Webhook disparando Boost de descubrimiento');
 
                 void this.chatManager.boostProviderDiscovery(connection.userId, 'youtube')
                     .catch(err => logger.error({ err, userId: connection.userId }, 'Error al ejecutar boost desde webhook'));
