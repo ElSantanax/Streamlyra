@@ -9,9 +9,10 @@ El `AuthProvider` gestiona la identidad y sesión del usuario. Dado que los dato
 ### Funcionalidades principales
 
 - **Persistencia**: Mantiene al usuario conectado entre recargas de página.
-- **Validación**: Verifica la validez del token con el servidor al iniciar la aplicación.
+- **Autenticación en Tiempo Real**: Valida el token con el servidor al iniciar.
+- **Blindaje de Sesión (`isLoggingOut`)**: Utiliza una referencia interna para bloquear re-autenticaciones accidentales durante el proceso de salida, evitando el bug de "auto-re-login".
 - **Hook: `useAuth`**: Provee acceso a `user`, `status`, `isAuthenticated` y funciones de `login`/`logout`.
-- **Integración con Sockets**: Al cerrar sesión, emite un evento `logout` al servidor para limpiar recursos inmediatamente (omitir periodo de gracia).
+- **Logout Atómico**: Realiza la limpieza local inmediata (localStorage, state, navigate) y notifica al servidor en segundo plano para garantizar una respuesta instantánea.
 
 ## Arquitectura de Flujo de Datos
 
@@ -72,6 +73,7 @@ Es el orquestador del estado de las plataformas conectadas.
 
 - **Estado Atómico**: Almacena un mapa de `connectionsStatus` y `connectionsStats` indexados por plataforma.
 - **Selectores Memorizados**: Los componentes usan `useShallow` y selectores granulares para escuchar cambios solo en las propiedades que necesitan (ej: solo el conteo de espectadores de Twitch).
+- **Desconexión Optimista (Optimistic UI)**: Al desvincular una plataforma, el store limpia localmente el estado de forma inmediata. Esto hace que la plataforma desaparezca visualmente al instante sin esperar la confirmación de red, mejorando la fluidez percibida.
 - **Consistencia de Datos**: Al recibir datos de la API (polling), el store mezcla la información con los eventos de tiempo real del Socket, priorizando los estados transitorios (como `searching`) para evitar que la UI retroceda a estados "Offline" erróneamente.
 - **Hash de Conexión**: Mantiene un `connectionHash` calculado que permite a hooks como `useSocket` reaccionar a cambios estructurales en las conexiones sin depender de la referencia del objeto.
 

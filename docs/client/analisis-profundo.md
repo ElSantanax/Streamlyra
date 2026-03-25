@@ -14,7 +14,12 @@ La autenticación es el pilar del cliente. Este es el flujo detallado:
 4.  **Redirección**: El componente `ProtectedRoute` observa este estado:
     - Mientras el estado es `unknown` (validando), muestra el `Spinner`.
     - Si es `unauthenticated`, redirige automáticamente a la página de inicio o login.
-5.  **Gestión de Sesión**: Un singleton (`SessionManager`) escucha errores 401 en cualquier parte de la app para forzar el logout si el token es invalidado por el servidor durante el uso.
+5.  **Cierre de Sesión Atómico**: El botón de Logout dispara un proceso coordinado:
+    - Se activa una referencia `isLoggingOut` para blindar el componente contra validaciones automáticas concurrentes.
+    - Se limpia el estado local (User/Status) de forma instantánea.
+    - Se redirige a `/` antes de esperar la respuesta del servidor.
+    - El servidor borra las cookies JWT y CSRF en milisegundos, notificando a los proveedores de chat en segundo plano.
+6.  **Gestión de Sesión**: Un singleton (`SessionManager`) escucha errores 401 en cualquier parte de la app para forzar el logout si el token es invalidado por el servidor durante el uso.
 
 ## Comunicación en Tiempo Real
 

@@ -69,10 +69,14 @@ export const SidebarConnections = memo(({
 
     const activePlatforms = useMemo(() => {
         return (Object.keys(connectionsStatus) as PlatformKey[])
-            .filter(p =>
-                connectionsStatus[p].connected ||
-                ['connecting', 'error', 'waiting_stream'].includes(connectionsStatus[p].status || '')
-            )
+            .filter(p => {
+                const status = connectionsStatus[p];
+                return (
+                    status.connected ||
+                    status.connectedAt || // Si ha estado conectada antes, está vinculada
+                    ['connecting', 'searching', 'error', 'waiting_stream'].includes(status.status || '')
+                );
+            })
             .sort((a, b) => {
                 const statusA = connectionsStatus[a];
                 const statusB = connectionsStatus[b];

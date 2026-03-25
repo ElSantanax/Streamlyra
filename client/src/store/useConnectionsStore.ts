@@ -17,8 +17,7 @@ import {
     activePromise,
     setCachedData,
     setLastFetchTime,
-    setActivePromise,
-    invalidateConnectionsCache
+    setActivePromise
 } from '../hooks/useConnections/cache';
 
 interface ConnectionsState {
@@ -198,22 +197,32 @@ export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
     },
 
     disconnectPlatform: async (platform: PlatformKey) => {
+        // 1. Limpieza local inmediata (Optimistic UI) para que desaparezca de la barra lateral al instante
+        set((state) => ({
+            connectionsStatus: {
+                ...state.connectionsStatus,
+                [platform]: initialStatus[platform]
+            },
+            connectionsStats: {
+                ...state.connectionsStats,
+                [platform]: initialStats[platform]
+            }
+        }));
+
         try {
+            // 2. Ejecutar la desvinculación en el servidor
             await authService.disconnectPlatform(platform);
 
-            if (cachedData && cachedData.connections && cachedData.connections[platform]) {
-                cachedData.connections[platform].connected = false;
-                cachedData.connections[platform].isLive = false;
-                cachedData.connections[platform].viewers = 0;
-                setLastFetchTime(0);
-            } else {
-                invalidateConnectionsCache();
+            // 3. Limpiar caché global tras éxito
+            if (cachedData?.connections) {
+                delete cachedData.connections[platform];
+                setLastFetchTime(0); // Forzar refetch en el futuro por si acaso
             }
 
-            get().updateStatus(platform, { connected: false, isLive: false, status: 'disconnected' });
-            get().updateStats(platform, { viewers: 0 });
         } catch (err) {
             console.error('Error disconnecting platform:', err);
+            // En caso de error crítico, podríamos invalidar el caché para recuperar el estado real
+            setLastFetchTime(0);
             throw err;
         }
     },

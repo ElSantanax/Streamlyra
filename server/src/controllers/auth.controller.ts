@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../utils/AppError';
 import { Platform } from '../constants/platforms';
 import { config } from '../config';
+import { logger } from '../utils/logger';
 
 /**
  * Controlador de autenticación - Maneja peticiones HTTP para autenticación de usuarios
@@ -65,7 +66,6 @@ export class AuthController {
             throw new AppError('Usuario no encontrado', 404);
         }
 
-        // Desactivar caché HTTP para evitar inconsistencias en acciones rápidas (conectar/desconectar)
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");
@@ -111,7 +111,7 @@ export class AuthController {
     };
 
     logout = async (req: AuthRequest, res: Response): Promise<void> => {
-        await this.authService.logout(req.user?.id);
+        const userId = req.user?.id;
 
         res.clearCookie('auth_token', {
             httpOnly: true,
@@ -128,6 +128,13 @@ export class AuthController {
             domain: config.cookie.domain,
             path: '/',
         });
+
+        if (userId) {
+            void this.authService.logout(userId).catch(err => {
+                logger.error({ err, userId }, 'Error durante la limpieza de chats en logout (vía fondo)');
+            });
+        }
+
         res.json({ success: true, message: 'Sesión cerrada exitosamente' });
     };
 

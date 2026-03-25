@@ -24,7 +24,8 @@ La fachada pública que usan los controladores. Coordina los tres sub-sistemas d
 
 - `handleOAuthFlow()`: Para Twitch, YouTube y Kick.
 - `handleTikTokFlow()`: Flujo especial sin OAuth para TikTok (solo username).
-- `handleLogout()`, `getProfile()`.
+- `handleLogout()`: Invalida el perfil del usuario. Tras la última optimización, este proceso es **no bloqueante**. Limpia la sesión del stream y los chats en segundo plano para que el servidor responda de inmediato al cliente.
+- `getProfile()`: Recupera el estado completo de la sesión.
 
 ### `AuthFlowProcessor.ts`
 

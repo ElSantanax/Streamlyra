@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [isChecking, setIsChecking] = useState(false);
   const inFlightAuthCheck = useRef<Promise<User | null> | null>(null);
+  const isLoggingOut = useRef(false);
   const lastBootstrapPathRef = useRef<string | null>(null);
 
   const isAuthenticated = status === 'authenticated';
@@ -41,20 +42,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const checkAuth = useCallback(async () => {
-    if (inFlightAuthCheck.current) return inFlightAuthCheck.current;
+    if (inFlightAuthCheck.current || isLoggingOut.current) return inFlightAuthCheck.current;
 
     setIsChecking(true);
 
     inFlightAuthCheck.current = (async () => {
       try {
         const response = await authService.getMe();
+        if (isLoggingOut.current) return null;
         setUser(response.user);
         setStatus('authenticated');
         return response.user;
       } catch {
-        sessionManager.clearLocalSession();
-        removeUser();
-        setStatus('unauthenticated');
+        if (!isLoggingOut.current) {
+          sessionManager.clearLocalSession();
+          removeUser();
+          setStatus('unauthenticated');
+        }
         return null;
       } finally {
         setIsChecking(false);
@@ -66,18 +70,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [removeUser, setUser]);
 
   const logout = useCallback(async () => {
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
+
     try {
       if (socket.connected) {
         socket.emit('logout');
       }
-      await authService.logout();
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
+
       sessionManager.clearLocalSession();
       removeUser();
       setStatus('unauthenticated');
-      navigate('/');
+      navigate('/', { replace: true });
+
+      void authService.logout().catch(() => { });
+
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setTimeout(() => {
+        isLoggingOut.current = false;
+      }, 500);
     }
   }, [navigate, removeUser]);
 
@@ -114,7 +127,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (!isProtected) {
-      // Si hay usuario, mantenemos el estado de autenticado aunque esté en una ruta pública
       if (user && status !== 'authenticated') {
         setStatus('authenticated');
       } else if (!user && status !== 'unauthenticated') {
