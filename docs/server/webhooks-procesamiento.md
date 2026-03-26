@@ -4,32 +4,33 @@ Cuando una plataforma externa (Twitch, YouTube, Kick) quiere notificar a Streaml
 
 ## Flujo Completo de un Webhook
 
-```
-Twitch/YouTube/Kick
-      │
-      ▼ HTTP POST /api/webhooks/{plataforma}
-[Middleware de Validación]
-  ├─ twitch.middleware.ts → Verifica HMAC-SHA256
-  ├─ youtube.middleware.ts → Verifica firma / responde challenge
-  └─ kick.middleware.ts → Verifica firma
-      │
-      ▼ (Solo si la firma es válida)
-[WebhookController]
-  └─ Llama a WebhookProcessor
-      │
-      ▼
-[WebhookProcessor]
-  └─ WebhookProcessorFactory.getProcessor(plataforma)
-      │
-      ▼
-[Procesador Específico]
-  ├─ TwitchWebhookProcessor
-  ├─ YouTubeWebhookProcessor
-  └─ KickWebhookProcessor
-      │
-      ▼ (Identifica usuario, transforma evento, emite por Socket)
-[SafeSocketEmitter]
-  └─ io.to(userId).emit('chat_message' / 'alert' / ...)
+```mermaid
+graph TD
+    Client["Twitch / YouTube / Kick"] -->|"HTTP POST /api/webhooks/{plataforma}"| MW{"Middleware de Validación"}
+    
+    MW -->|"Twitch"| MW_T["twitch.middleware.ts<br/>(Verifica HMAC-SHA256)"]
+    MW -->|"YouTube"| MW_Y["youtube.middleware.ts<br/>(Verifica firma / challenge)"]
+    MW -->|"Kick"| MW_K["kick.middleware.ts<br/>(Verifica firma y descarta duplicados)"]
+    
+    MW_T --> Valid{"Firma Válida?"}
+    MW_Y --> Valid
+    MW_K --> Valid
+    
+    Valid -->|"Sí"| Ctrl["WebhookController"]
+    
+    Ctrl -->|"Delegación"| WProcessor["WebhookProcessor"]
+    
+    WProcessor -->|"WebhookProcessorFactory"| SpecProcessor{"Selecciona Procesador"}
+    
+    SpecProcessor -->|"Twitch"| P_T["TwitchWebhookProcessor"]
+    SpecProcessor -->|"YouTube"| P_Y["YouTubeWebhookProcessor"]
+    SpecProcessor -->|"Kick"| P_K["KickWebhookProcessor"]
+    
+    P_T --> Action["Identifica usuario y<br/>transforma evento"]
+    P_Y --> Action
+    P_K --> Action
+    
+    Action -->|"Emite por Socket"| SSE["SafeSocketEmitter<br/>io.to(userId).emit(...)"]
 ```
 
 ## `WebhookProcessorFactory.ts`

@@ -86,6 +86,10 @@ export const validateKickWebhook = async (
             throw new AppError('Invalid signature', 401);
         }
 
+        if (KickWebhookService.isDuplicate(messageId)) {
+            return res.status(200).send('OK (Duplicate)');
+        }
+
         req.webhookData = {
             signature,
             timestamp,

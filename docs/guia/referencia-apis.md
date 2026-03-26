@@ -8,7 +8,7 @@ Aquí encontrarás los enlaces directos a la documentación técnica oficial de 
 | :---------- | :------------------------------------------------------------------------------------- | :---------------------------------------- |
 | **Twitch**  | [Twitch API Docs](https://dev.twitch.tv/docs/api/)                                     | EventSub (Webhooks), OAuth 2.0, Helix API |
 | **YouTube** | [YouTube Data API v3](https://developers.google.com/youtube/v3)                        | Live Streaming API, OAuth 2.0, Cuotas     |
-| **Kick**    | [Kick API Docs](https://docs.kick.com/)                                                | Autenticación PKCE, Chat, Webhooks        |
+| **Kick**    | [Kick API Docs](https://kick.com/settings/developer)                                   | Autenticación PKCE, Chat, Webhooks        |
 | **TikTok**  | [TikTok Live Gift Explorer](https://github.com/zerodytrash/TikTok-Live-Connector) | Sin OAuth público — ver nota abajo        |
 
 > **Nota sobre TikTok**: TikTok no ofrece una API pública oficial para el chat en vivo. Streamlyra utiliza un cliente de la comunidad (basado en `tiktok-live-connector`) que se conecta directamente al stream mediante el `username` del streamer. Actualmente soporta: lectura de chat, seguimiento de regalos detallados (con nombres y diamantes), follows, detección de cofres (envelopes) y nuevas suscripciones.

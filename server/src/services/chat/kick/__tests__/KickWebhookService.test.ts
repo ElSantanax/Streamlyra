@@ -21,6 +21,8 @@ describe('KickWebhookService', () => {
         publicKey: string | null;
         lastKeyFetch: number;
         fetchPromise: Promise<string | null> | null;
+        processedMessages: Set<string>;
+        MAX_CACHE_SIZE: number;
     }
 
     const resetServiceState = () => {
@@ -28,6 +30,7 @@ describe('KickWebhookService', () => {
         svc.publicKey = null;
         svc.lastKeyFetch = 0;
         svc.fetchPromise = null;
+        svc.processedMessages.clear();
     };
 
     beforeEach(() => {
@@ -135,6 +138,45 @@ describe('KickWebhookService', () => {
                 expect.objectContaining({ messageId }),
                 'Error verificando firma de Kick'
             );
+        });
+    });
+
+    describe('isDuplicate', () => {
+        const messageId = 'msg-123';
+
+        it('debe retornar false la primera vez que procesa un ID', () => {
+            const result = KickWebhookService.isDuplicate(messageId);
+            expect(result).toBe(false);
+        });
+
+        it('debe retornar true si el ID ya fue procesado', () => {
+            KickWebhookService.isDuplicate(messageId);
+            const result = KickWebhookService.isDuplicate(messageId);
+            expect(result).toBe(true);
+            expect(logger.debug).toHaveBeenCalledWith(
+                { messageId },
+                'Kick Webhooks: Mensaje duplicado ignorado'
+            );
+        });
+
+        it('debe limitar el tamaño del caché a MAX_CACHE_SIZE y eliminar los más viejos (FIFO)', () => {
+            const svc = KickWebhookService as unknown as ExposedKickWebhookService;
+            const MAX_SIZE = svc.MAX_CACHE_SIZE;
+
+            for (let i = 0; i < MAX_SIZE; i++) {
+                KickWebhookService.isDuplicate(`msg-${i}`);
+            }
+
+            expect(KickWebhookService.isDuplicate('msg-0')).toBe(true);
+
+            KickWebhookService.isDuplicate('msg-new');
+
+            expect(KickWebhookService.isDuplicate('msg-0')).toBe(false);
+        });
+
+        it('debe manejar messageId vacío retornando false', () => {
+            const result = KickWebhookService.isDuplicate('');
+            expect(result).toBe(false);
         });
     });
 });

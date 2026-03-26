@@ -11,6 +11,9 @@ export class KickWebhookService {
 
     private static fetchPromise: Promise<string | null> | null = null;
 
+    private static processedMessages = new Set<string>();
+    private static readonly MAX_CACHE_SIZE = 1000;
+
     private static async getPublicKey(): Promise<string | null> {
         const now = Date.now();
         if (this.publicKey && (now - this.lastKeyFetch < 600000)) {
@@ -84,5 +87,23 @@ export class KickWebhookService {
         }
     }
 
+    static isDuplicate(messageId: string): boolean {
+        if (!messageId) return false;
 
+        if (this.processedMessages.has(messageId)) {
+            logger.debug({ messageId }, 'Kick Webhooks: Mensaje duplicado ignorado');
+            return true;
+        }
+
+        this.processedMessages.add(messageId);
+
+        if (this.processedMessages.size > this.MAX_CACHE_SIZE) {
+            const firstElement = this.processedMessages.values().next().value;
+            if (firstElement !== undefined) {
+                this.processedMessages.delete(firstElement);
+            }
+        }
+
+        return false;
+    }
 }

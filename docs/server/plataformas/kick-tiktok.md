@@ -14,7 +14,7 @@ Kick utiliza un sistema híbrido muy eficiente:
 
 ### Webhooks y Polling
 
-- **Webhooks**: Utilizamos webhooks para eventos administrativos y de sistema.
+- **Webhooks**: Utilizamos webhooks para eventos administrativos y de sistema. Se incluye una capa de prevención de eventos duplicados en el servidor para mayor eficiencia.
 - **Visualizaciones**: Implementamos un sondeo de espectadores (`Viewer Polling`) para mantener actualizado el contador de personas en vivo en el dashboard.
 
 ## TikTok: Auto-Discovery

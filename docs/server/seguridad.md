@@ -27,11 +27,13 @@ Implementamos un sistema de **doble cookie/header** para validar peticiones muta
 
 **Capas de seguridad activas:**
 
-```
-Request → CORS → CSRF → Endpoint
-          ↓      ↓
-          ✓      ✓ Valida token cookie == header
-          Valida origin
+```mermaid
+graph LR
+    Req["Request"] --> CORS{"CORS"}
+    CORS -->|"✓ Valida origin"| CSRF{"CSRF"}
+    CORS -.->|"invalido"| B1["Rechaza"]
+    CSRF -->|"✓ Valida token cookie == header"| End["Endpoint"]
+    CSRF -.->|"inválido"| B2["Rechaza"]
 ```
 
 **Protecciones implementadas:**

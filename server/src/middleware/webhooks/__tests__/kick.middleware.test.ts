@@ -136,6 +136,27 @@ describe('Kick Webhook Middleware', () => {
         });
     });
 
+    it('debe retornar 200 OK (Duplicate) si el mensaje ya fue procesado', async () => {
+        (mockReq.header as jest.Mock).mockImplementation((name: string) => {
+            if (name.includes('Signature')) return 'valid-sig';
+            if (name.includes('Timestamp')) return new Date().toISOString();
+            if (name.includes('Id')) return 'msg123';
+            return 'event-type';
+        });
+        (KickWebhookService.verifySignature as jest.Mock).mockResolvedValue(true);
+        (KickWebhookService.isDuplicate as jest.Mock).mockReturnValue(true);
+
+        await validateKickWebhook(
+            mockReq as RequestWithWebhookData,
+            mockRes as Response,
+            mockNext
+        );
+
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.send).toHaveBeenCalledWith('OK (Duplicate)');
+        expect(mockNext).not.toHaveBeenCalled();
+    });
+
     it('debe llamar a next(error) ante un fallo inesperado', async () => {
         (mockReq.header as jest.Mock).mockImplementation(() => { throw new Error('Unexpected'); });
 

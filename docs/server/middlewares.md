@@ -33,11 +33,13 @@ Protección contra **ataques Cross-Site Request Forgery**.
   - Las peticiones sin autenticación no requieren CSRF (solo se valida si existe cookie `auth_token`).
 
 **Capas de protección:**
-```
-Request → CORS (valida origin) → CSRF (valida token) → Endpoint
-          ↓                      ↓
-          Bloquea si origin      Bloquea si no hay token
-          no es válido           o no coincide
+```mermaid
+graph LR
+    Req["Request"] --> CORS{"CORS"}
+    CORS -->|"valida origin"| CSRF{"CSRF"}
+    CORS -.->|"origen inválido"| B1["Bloquea"]
+    CSRF -->|"valida token"| End["Endpoint"]
+    CSRF -.->|"falta o no coincide"| B2["Bloquea"]
 ```
 
 ### `zod.middleware.ts`
@@ -145,7 +147,8 @@ Headers que acepta (probados en orden):
 1. Extrae y valida los headers (probando los nombres alternativos).
 2. Valida el timestamp (≤ 10 min).
 3. Verifica que `rawBody` esté disponible (requerido para calcular la firma).
-4. Calcula HMAC con la clave pública de Kick.
-5. Si todo pasa → adjunta datos en `req.webhookData` y llama a `next()`.
+4. Calcula HMAC con la clave pública de Kick y valida la firma.
+5. Verifica si el mensaje ya fue procesado (deduplicación).
+6. Si todo pasa → adjunta datos en `req.webhookData` y llama a `next()`.
 
 > **Nota**: Existe un flag de configuración `skipKickSignatureVerification` para entornos de desarrollo donde sea difícil replicar las firmas de Kick localmente.
