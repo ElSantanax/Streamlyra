@@ -29,7 +29,8 @@ export function createApp(authController: AuthController, webhookController: Web
         origin: config.frontendUrl,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'csrf-token'],
+        exposedHeaders: ['X-CSRF-Token']
     }));
 
     app.use(cookieParser());

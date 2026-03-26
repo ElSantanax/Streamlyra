@@ -42,7 +42,8 @@ export const SidebarIntegrations = memo(() => {
             login({ ...user, overlayToken });
             toast.success(t('dashboard.sidebar.integrations.regenerateSuccess'));
         } catch (error) {
-            console.error('Error regenerating token:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error regenerating token';
+            console.error('Error regenerating token:', errorMessage);
             toast.error(t('dashboard.sidebar.integrations.regenerateError'));
         } finally {
             setIsRegenerating(false);

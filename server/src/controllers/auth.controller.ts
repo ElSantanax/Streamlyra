@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { Response } from 'express';
 import { AuthService } from '../services/auth/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -13,17 +12,6 @@ import { logger } from '../utils/logger';
 export class AuthController {
     constructor(private authService: AuthService) { }
 
-    private setCsrfCookie(res: Response) {
-        res.cookie('csrf_token', crypto.randomBytes(32).toString('hex'), {
-            httpOnly: false,
-            secure: config.cookie.secure,
-            sameSite: config.cookie.sameSite,
-            domain: config.cookie.domain,
-            path: '/',
-            maxAge: config.cookie.maxAge,
-        });
-    }
-
     private async handleOAuthAuth(platform: Platform, req: AuthRequest, res: Response): Promise<void> {
         const { code, code_verifier } = req.body as { code: string; code_verifier?: string };
         const result = await this.authService.handleOAuthAuth(platform, code, code_verifier, req.user?.id);
@@ -36,9 +24,6 @@ export class AuthController {
             path: '/',
             maxAge: config.cookie.maxAge
         });
-
-        this.setCsrfCookie(res);
-
 
         const { token: _token, ...responseData } = result;
         res.json(responseData);
@@ -103,8 +88,6 @@ export class AuthController {
             path: '/',
             maxAge: config.cookie.maxAge
         });
-
-        this.setCsrfCookie(res);
 
         const { token: _token, ...responseData } = result;
         res.json(responseData);

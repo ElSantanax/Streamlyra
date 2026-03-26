@@ -40,10 +40,11 @@ const shouldValidateCsrf = (req: AuthRequest): boolean => {
 export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) return next();
 
-    const token = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
+    let token = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
 
     if (!token) {
-        res.cookie(CSRF_CONFIG.COOKIE_NAME, generateToken(), {
+        token = generateToken();
+        res.cookie(CSRF_CONFIG.COOKIE_NAME, token, {
             httpOnly: false, // Permitir acceso a JS para que el cliente pueda leerlo
             secure: config.cookie.secure,
             sameSite: config.cookie.sameSite,
@@ -52,6 +53,9 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
             maxAge: config.cookie.maxAge
         });
     }
+
+    // Exponer el token en los headers para clientes cross-origin
+    res.setHeader(CSRF_CONFIG.HEADER_NAME, token);
 
     next();
 };

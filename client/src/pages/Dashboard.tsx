@@ -86,7 +86,8 @@ const DashboardContent = () => {
         try {
             await disconnectPlatform(platform);
         } catch (error) {
-            console.error('Error disconnecting platform:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error disconnecting platform';
+            console.error('Error disconnecting platform:', errorMessage);
         }
     }, [disconnectPlatform]);
 

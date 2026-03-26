@@ -86,7 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       void authService.logout().catch(() => { });
 
     } catch (error) {
-      console.error('Error during logout:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error during logout';
+      console.error('Error during logout:', errorMessage);
     } finally {
       setTimeout(() => {
         isLoggingOut.current = false;

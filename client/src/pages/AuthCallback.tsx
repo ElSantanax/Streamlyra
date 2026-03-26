@@ -24,7 +24,7 @@ const AuthCallback = () => {
         calledRef.current = true;
 
         if (error) {
-            console.error('Error de autenticación:', error);
+            console.error('Error de autenticación:', error); // Este es seguro, viene del query param
 
             // Limpiar datos temporales de Kick si existen
             if (state.startsWith('kick')) {
@@ -89,8 +89,8 @@ const AuthCallback = () => {
                     navigate(redirectUrl || '/dashboard');
 
                 } catch (err: unknown) {
-                    console.error('Fallo al completar el login:', err);
                     const errorMessage = err instanceof Error ? err.message : 'Error en la autenticación';
+                    console.error('Fallo al completar el login:', errorMessage);
 
                     // Manejar caso de usuario no encontrado
                     if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {

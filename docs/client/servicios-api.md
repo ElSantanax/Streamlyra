@@ -11,7 +11,12 @@ En lugar de usar `fetch` directamente en los componentes, utilizamos una clase `
 - **Base URL Centralizada**: Toma la URL del backend desde las variables de entorno (`VITE_API_URL`).
 - **Gestión de Credenciales**: Configurado con `credentials: 'include'` para soportar cookies HTTP-Only (necesarias para la sesión y CSRF).
 - **Intercepción de Errores**: Captura automáticamente errores 401 (No Autorizado) y activa el flujo de cierre de sesión si la ruta es protegida.
-- **Seguridad CSRF**: Adjunta automáticamente el token CSRF desde las cookies (`X-CSRF-Token`) en peticiones de mutación (POST, DELETE).
+- **Seguridad CSRF Cross-Origin**: 
+  - Almacena el token CSRF en memoria cuando el servidor lo expone vía header `X-CSRF-Token` (si está presente)
+  - La lectura del header es defensiva (si no existe `response.headers`, no se considera error de red)
+  - Prioriza el token en memoria sobre las cookies (necesario para entornos cross-origin donde las cookies no son accesibles por JavaScript)
+  - Adjunta automáticamente el token en el header `X-CSRF-Token` en peticiones de mutación (POST, PUT, DELETE)
+  - Fallback a lectura de cookies para entornos same-origin
 - **Tipado Fuerte**: Todas las peticiones son genéricas, permitiendo definir el tipo de respuesta esperado.
 
 ## Servicios Disponibles

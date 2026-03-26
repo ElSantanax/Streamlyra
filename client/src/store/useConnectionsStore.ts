@@ -220,7 +220,8 @@ export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
             }
 
         } catch (err) {
-            console.error('Error disconnecting platform:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Error disconnecting platform';
+            console.error('Error disconnecting platform:', errorMessage);
             // En caso de error crítico, podríamos invalidar el caché para recuperar el estado real
             setLastFetchTime(0);
             throw err;

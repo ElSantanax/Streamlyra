@@ -122,7 +122,6 @@ describe('AuthController', () => {
                 undefined,
                 'user-123'
             );
-            expect(mockResponse.cookie).toHaveBeenCalledWith('csrf_token', 'mock-csrf-token', expect.any(Object));
         });
     });
 

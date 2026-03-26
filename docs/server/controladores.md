@@ -8,10 +8,12 @@ Los controladores en Streamlyra son los responsables de interpretar las peticion
 
 Gestiona todo el ciclo de vida de la sesión del usuario.
 
-- **Login/Vincular Plataformas**: Recibe el código de OAuth, lo pasa al servicio de flujo de autenticación y devuelve el perfil actualizado.
-- **Logout**: Limpia las cookies de sesión y CSRF.
+- **Login/Vincular Plataformas**: Recibe el código de OAuth, lo pasa al servicio de flujo de autenticación y devuelve el perfil actualizado. Establece la cookie `auth_token` con el JWT de sesión.
+- **Logout**: Limpia las cookies de sesión (`auth_token`) y CSRF (`csrf_token`).
 - **Gestión de Perfil**: Endpoint `/me` para que el frontend obtenga los datos del usuario logueado.
 - **Overlays**: Regeneración del token secreto para OBS.
+
+> **Nota**: El controlador ya no maneja directamente la generación de tokens CSRF. Esta responsabilidad fue movida completamente al middleware `setCsrfCookie` para evitar duplicación de código y garantizar consistencia en toda la aplicación.
 
 ### 2. `WebhookController.ts`
 

@@ -28,7 +28,8 @@ function makeReq(overrides: Partial<AuthRequest> = {}): AuthRequest {
 
 function makeRes(): jest.Mocked<Response> {
     return {
-        cookie: jest.fn()
+        cookie: jest.fn(),
+        setHeader: jest.fn()
     } as unknown as jest.Mocked<Response>;
 }
 

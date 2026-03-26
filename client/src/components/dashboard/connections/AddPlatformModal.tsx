@@ -79,7 +79,7 @@ const AddPlatformModal: React.FC<AddPlatformModalProps> = ({
             const message = getUserFriendlyMessage(error);
             setTiktokError(message);
             toast.error(message);
-            console.error('Error connecting tiktok:', error);
+            console.error('Error connecting tiktok:', message);
         }
     };
 

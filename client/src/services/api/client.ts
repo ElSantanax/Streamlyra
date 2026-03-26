@@ -18,6 +18,7 @@ interface RequestOptions extends RequestInit {
 
 class HttpClient {
   private baseUrl: string;
+  private currentCsrfToken: string | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -37,10 +38,10 @@ class HttpClient {
     const method = (fetchOptions.method ?? 'GET').toString().toUpperCase();
     const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
     if (isMutating) {
-      const csrfToken = document.cookie
+      const csrfToken = this.currentCsrfToken || document.cookie
         .split('; ')
         .find((c) => c.startsWith('csrf_token='))
-        ?.split('=')[1];
+        ?.substring('csrf_token='.length);
 
       if (csrfToken) {
         requestHeaders['X-CSRF-Token'] = decodeURIComponent(csrfToken);
@@ -55,6 +56,12 @@ class HttpClient {
         headers: requestHeaders,
         credentials: 'include', // Importante para HttpOnly cookies
       });
+
+      const responseCsrf =
+        response.headers?.get('X-CSRF-Token') || response.headers?.get('x-csrf-token');
+      if (responseCsrf) {
+        this.currentCsrfToken = responseCsrf;
+      }
 
       // Manejar sesión expirada (401) SOLAMENTE si requiere auth
       if (response.status === 401 && requiresAuth) {

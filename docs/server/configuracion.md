@@ -26,6 +26,15 @@ Configuramos las cookies de sesión basándonos en el entorno:
 - **Producción**: Cookies con `Secure: true`, `SameSite: None` (para permitir cross-site si el dominio es distinto) y `HttpOnly`.
 - **Desarrollo**: `Secure: false` y `SameSite: Lax`.
 
+### Configuración CORS para CSRF Cross-Origin
+
+Para soportar aplicaciones donde el frontend y backend están en dominios diferentes (ej. frontend en Vercel, backend en Render), la configuración de CORS incluye:
+
+- **`exposedHeaders: ['X-CSRF-Token']`**: Permite que el cliente JavaScript lea el token CSRF del header de respuesta
+- **`allowedHeaders: ['X-CSRF-Token', 'csrf-token']`**: Permite que el cliente envíe el token CSRF en los headers de petición
+
+Esta configuración es esencial para el funcionamiento del sistema de protección CSRF en entornos cross-origin, donde las cookies no son accesibles por JavaScript debido a las políticas de seguridad del navegador.
+
 ## Validación en Tiempo de Ejecución
 
 En `src/config/validation.ts`, utilizamos una lógica que detiene el servidor si faltan variables esenciales. Esto evita que la aplicación falle silenciosamente cuando intenta usar un servicio no configurado.

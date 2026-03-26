@@ -25,12 +25,26 @@ Exporta dos funciones con distintos niveles de exigencia:
 
 Protección contra **ataques Cross-Site Request Forgery**.
 
-- **Doble Token**: Combina una cookie `csrf_token` (no-HttpOnly para que el cliente pueda leerla) + un header `X-CSRF-Token` en cada petición de escritura.
-- **Comparación Temporal Constante**: Usa `crypto.timingSafeEqual` de Node.js para comparar tokens. Esto evita los ataques de temporización donde un atacante puede adivinar el token midiendo el tiempo de respuesta.
-- **Exclusiones automáticas**: 
-  - Los métodos `GET`, `HEAD` y `OPTIONS` son ignorados (métodos seguros).
-  - Las rutas de webhooks (`/api/webhooks`) están excluidas porque las plataformas externas no pueden enviar cookies CSRF.
-  - Las peticiones sin autenticación no requieren CSRF (solo se valida si existe cookie `auth_token`).
+**Exporta dos middlewares:**
+
+1. **`setCsrfCookie`**: Genera y establece el token CSRF
+   - Genera un token aleatorio de 32 bytes si no existe
+   - Lo almacena en una cookie `csrf_token` (no-HttpOnly para permitir lectura en same-origin)
+   - **Expone el token en el header de respuesta `X-CSRF-Token`** para clientes cross-origin que no pueden leer cookies
+   - Se ejecuta en todas las peticiones excepto webhooks
+
+2. **`verifyCsrf`**: Valida el token en peticiones mutables
+   - **Doble Token**: Compara la cookie `csrf_token` con el header `X-CSRF-Token` enviado por el cliente
+   - **Comparación Temporal Constante**: Usa `crypto.timingSafeEqual` para prevenir timing attacks
+   - **Exclusiones automáticas**: 
+     - Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren validación
+     - Rutas de webhooks (`/api/webhooks`) están excluidas (validadas por firmas HMAC)
+     - Peticiones sin autenticación no requieren CSRF (solo valida si existe cookie `auth_token`)
+
+**Soporte Cross-Origin:**
+El middleware está diseñado para funcionar tanto en entornos same-origin como cross-origin:
+- **Same-origin**: El cliente lee el token de la cookie y lo envía en el header
+- **Cross-origin**: El cliente lee el token del header de respuesta, lo almacena en memoria y lo envía en peticiones subsecuentes
 
 **Capas de protección:**
 ```mermaid

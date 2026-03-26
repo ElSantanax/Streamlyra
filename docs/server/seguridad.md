@@ -21,9 +21,18 @@ La sesión del usuario se gestiona mediante tokens **JWT (JSON Web Tokens)** alm
 
 Implementamos un sistema de **doble cookie/header** para validar peticiones mutables (`POST`, `PUT`, `DELETE`):
 
-1. El servidor envía un `csrf_token` en una cookie **no-HttpOnly** (para que el cliente pueda leerla).
-2. El cliente debe reenviar este token en el header `X-CSRF-Token`.
-3. El servidor compara ambos valores utilizando `crypto.timingSafeEqual` para prevenir ataques de temporización.
+1. El servidor genera un token CSRF aleatorio de 32 bytes
+2. El servidor envía el token de dos formas:
+   - En una cookie `csrf_token` (no-HttpOnly para lectura en same-origin)
+   - En el header de respuesta `X-CSRF-Token` (para clientes cross-origin)
+3. El cliente almacena el token (en memoria para cross-origin, o lee de cookie en same-origin)
+4. El cliente reenvía el token en el header `X-CSRF-Token` en peticiones mutables
+5. El servidor compara ambos valores (cookie vs header) utilizando `crypto.timingSafeEqual` para prevenir timing attacks
+
+**Soporte Cross-Origin:**
+Esta implementación funciona tanto en entornos same-origin como cross-origin (ej. frontend en Vercel, backend en Render):
+- En **same-origin**: El cliente puede leer la cookie directamente
+- En **cross-origin**: El cliente lee el token del header `X-CSRF-Token` expuesto por CORS y lo almacena en memoria
 
 **Capas de seguridad activas:**
 
