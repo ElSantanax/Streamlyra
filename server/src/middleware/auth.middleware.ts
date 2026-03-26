@@ -32,18 +32,18 @@ const extractToken = (req: AuthRequest): string | null => {
  */
 const verifyToken = (token: string): { id: string; username: string } => {
     const decoded = jwt.verify(token, config.jwtSecret);
-    
+
     // Validar que el payload tenga la estructura esperada
     if (typeof decoded === 'string' || !decoded || typeof decoded !== 'object') {
-        throw new AppError('Token con estructura inválida', 403);
+        throw new AppError('Token con estructura inválida', 401);
     }
-    
+
     const payload = decoded as Record<string, unknown>;
-    
+
     if (typeof payload.id !== 'string' || typeof payload.username !== 'string') {
-        throw new AppError('Token con estructura inválida', 403);
+        throw new AppError('Token con estructura inválida', 401);
     }
-    
+
     return { id: payload.id, username: payload.username };
 };
 
@@ -64,11 +64,11 @@ export const authenticateToken = (req: AuthRequest, _res: Response, next: NextFu
     } catch (error) {
         if (error instanceof TokenExpiredError) {
             logger.warn({ expiredAt: error.expiredAt }, 'Token expirado');
-            return next(new AppError('Token expirado. Por favor, inicia sesión nuevamente.', 403));
+            return next(new AppError('Token expirado. Por favor, inicia sesión nuevamente.', 401));
         }
         if (error instanceof JsonWebTokenError) {
             logger.warn({ message: error.message }, 'Token inválido');
-            return next(new AppError('Token inválido.', 403));
+            return next(new AppError('Token inválido.', 401));
         }
         if (error instanceof AppError) {
             return next(error);

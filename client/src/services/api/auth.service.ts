@@ -23,16 +23,17 @@ export const authService = {
       body.code_verifier = codeVerifier;
     }
 
-    return apiClient.post<AuthResponse>(endpoint, body, true);
+    return apiClient.post<AuthResponse>(endpoint, body, false);
   },
 
   /**
    * Obtener información del usuario actual
    */
   async getMe(): Promise<MeResponse> {
-    // Importante: este endpoint se usa para bootstrap de sesión.
-    // Si el usuario no está autenticado, debe responder 401 sin forzar redirección global.
-    return apiClient.get<MeResponse>(endpoints.auth.me, false);
+    // El cliente (client.ts) ya previene redirecciones cíclicas en rutas públicas.
+    // Usar requiresAuth=true permite que si expira en background estando en el Dashboard,
+    // el usuario sea redirigido correctamente.
+    return apiClient.get<MeResponse>(endpoints.auth.me, true);
   },
 
   /**

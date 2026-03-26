@@ -54,9 +54,10 @@ graph LR
 - **Rate limiting** previene brute force
 
 **Exclusiones:**
-- Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren CSRF
-- Webhooks (`/api/webhooks`) están excluidos (validados por firmas HMAC)
-- Peticiones sin autenticación no requieren CSRF
+- Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren CSRF.
+- Webhooks (`/api/webhooks`) están excluidos (validados por firmas HMAC).
+- Rutas de autenticación inicial (`/api/auth/twitch`, `/api/auth/me`) están excluidas para permitir el primer contacto del usuario y la sincronización inicial de tokens.
+- Peticiones sin autenticación (`!!getCookie(req, 'auth_token') === false`) no requieren CSRF por diseño del middleware.
 
 > [!NOTE]
 > Los webhooks (como `/api/webhooks`) están excluidos de la validación CSRF ya que provienen de servidores externos confiables y se validan mediante firmas criptográficas propias de la plataforma (ej. firmas HMAC de Twitch).

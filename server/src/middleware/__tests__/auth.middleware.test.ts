@@ -68,7 +68,7 @@ describe('authenticateToken', () => {
         expect(mockNext).toHaveBeenCalledWith(
             expect.objectContaining({
                 message: 'Token expirado. Por favor, inicia sesión nuevamente.',
-                statusCode: 403,
+                statusCode: 401,
             })
         );
     });
@@ -81,7 +81,7 @@ describe('authenticateToken', () => {
         expect(mockNext).toHaveBeenCalledWith(
             expect.objectContaining({
                 message: 'Token inválido.',
-                statusCode: 403,
+                statusCode: 401,
             })
         );
     });
@@ -95,7 +95,7 @@ describe('authenticateToken', () => {
         expect(mockNext).toHaveBeenCalledWith(
             expect.objectContaining({
                 message: 'Token con estructura inválida',
-                statusCode: 403,
+                statusCode: 401,
             })
         );
     });

@@ -54,6 +54,7 @@ const AuthCallback = () => {
         if (code) {
             const authenticate = async () => {
                 try {
+                    // Intercambiar código por sesión
                     let platform: 'twitch' | 'youtube' | 'kick' = 'twitch';
                     if (state.startsWith('youtube')) platform = 'youtube';
                     else if (state.startsWith('kick')) platform = 'kick';
@@ -93,7 +94,7 @@ const AuthCallback = () => {
                     console.error('Fallo al completar el login:', errorMessage);
 
                     // Manejar caso de usuario no encontrado
-                    if (errorMessage.includes('not encontrado') || errorMessage.includes('no encontrado')) {
+                    if (errorMessage.toLowerCase().includes('no encontrado')) {
                         localStorage.removeItem('user');
                         toast.error('Usuario no encontrado. Por favor, intenta conectar nuevamente.');
                         navigate('/login');

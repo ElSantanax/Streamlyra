@@ -39,9 +39,9 @@ class HttpClient {
     const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
     if (isMutating) {
       const csrfToken = this.currentCsrfToken || document.cookie
-        .split('; ')
-        .find((c) => c.startsWith('csrf_token='))
-        ?.substring('csrf_token='.length);
+        .split(';')
+        .find((c) => c.trim().startsWith('csrf_token='))
+        ?.split('=')[1];
 
       if (csrfToken) {
         requestHeaders['X-CSRF-Token'] = decodeURIComponent(csrfToken);

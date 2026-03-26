@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isChecking, setIsChecking] = useState(false);
   const inFlightAuthCheck = useRef<Promise<User | null> | null>(null);
   const isLoggingOut = useRef(false);
-  const lastBootstrapPathRef = useRef<string | null>(null);
+  const hasCheckedAuthRef = useRef(false);
 
   const isAuthenticated = status === 'authenticated';
 
@@ -117,32 +117,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const path = location.pathname;
-
-    if (isPublicAuthRoute(path)) return;
-
     const isProtected = isProtectedRoute(path);
+    const isPublicAuth = isPublicAuthRoute(path);
 
-    if (user) {
-      if (status === 'unauthenticated') setStatus('authenticated');
-      return;
-    }
-
-    if (!isProtected) {
+    if (!isProtected && !isPublicAuth) {
       if (user && status !== 'authenticated') {
         setStatus('authenticated');
       } else if (!user && status !== 'unauthenticated') {
         setStatus('unauthenticated');
       }
-      lastBootstrapPathRef.current = null;
       return;
     }
 
-    if (status === 'authenticated') return;
+    if (hasCheckedAuthRef.current) return;
+    hasCheckedAuthRef.current = true;
 
-    if (lastBootstrapPathRef.current === path) return;
-    lastBootstrapPathRef.current = path;
+    if (!user && status !== 'unknown') {
+      setStatus('unknown');
+    }
 
-    if (status !== 'unknown') setStatus('unknown');
     void checkAuth();
   }, [checkAuth, location.pathname, status, user]);
 
