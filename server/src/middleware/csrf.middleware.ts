@@ -10,7 +10,7 @@ const CSRF_CONFIG = {
     HEADER_NAME: 'x-csrf-token',
     AUTH_COOKIE_NAME: 'auth_token',
     SAFE_METHODS: ['GET', 'HEAD', 'OPTIONS'] as const,
-    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch', '/api/auth/me'],
+    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch', '/api/auth/me', '/api/auth/logout'],
     TOKEN_LENGTH: 32
 } as const;
 
@@ -53,14 +53,14 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
             path: '/',
             maxAge: config.cookie.maxAge
         };
-        
+
         logger.debug({
             path: req.path,
             cookieOptions,
             origin: req.headers.origin,
             tokenPreview: `${token.substring(0, 10)}...`
         }, 'Setting CSRF cookie');
-        
+
         res.cookie(CSRF_CONFIG.COOKIE_NAME, token, cookieOptions);
     }
 
@@ -75,7 +75,7 @@ export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunctio
  */
 export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction): void => {
     const shouldValidate = shouldValidateCsrf(req);
-    
+
     logger.debug({
         path: req.path,
         method: req.method,
@@ -86,7 +86,7 @@ export const verifyCsrf = (req: AuthRequest, _res: Response, next: NextFunction)
         cookies: Object.keys(req.cookies || {}),
         origin: req.headers.origin
     }, 'CSRF validation check');
-    
+
     if (!shouldValidate) return next();
 
     const cookieToken = getCookie(req, CSRF_CONFIG.COOKIE_NAME);

@@ -36,7 +36,7 @@ describe('authService', () => {
 
         const response = await authService.exchangeCode('twitch', 'test-code');
 
-        expect(apiClient.post).toHaveBeenCalledWith('/auth/twitch', { code: 'test-code' }, true);
+        expect(apiClient.post).toHaveBeenCalledWith('/auth/twitch', { code: 'test-code' }, false);
         expect(response).toEqual(mockResponse);
     });
 
@@ -46,7 +46,7 @@ describe('authService', () => {
 
         const response = await authService.exchangeCode('kick', 'test-code', 'verifier-123');
 
-        expect(apiClient.post).toHaveBeenCalledWith('/auth/kick', { code: 'test-code', code_verifier: 'verifier-123' }, true);
+        expect(apiClient.post).toHaveBeenCalledWith('/auth/kick', { code: 'test-code', code_verifier: 'verifier-123' }, false);
         expect(response).toEqual(mockResponse);
     });
 
@@ -56,8 +56,8 @@ describe('authService', () => {
 
         const response = await authService.getMe();
 
-        // Important: false ensures 401s do not force global redirection
-        expect(apiClient.get).toHaveBeenCalledWith('/auth/me', false);
+        // Important: true ensures 401s force global redirection if not on login pages
+        expect(apiClient.get).toHaveBeenCalledWith('/auth/me', true);
         expect(response).toEqual(mockMe);
     });
 

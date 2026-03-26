@@ -22,6 +22,8 @@ class HttpClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    // Recuperar token guardado si existe (útil en cross-origin)
+    this.currentCsrfToken = localStorage.getItem('csrf_internal_token');
   }
 
   private async request<T>(
@@ -61,6 +63,7 @@ class HttpClient {
         response.headers?.get('X-CSRF-Token') || response.headers?.get('x-csrf-token');
       if (responseCsrf) {
         this.currentCsrfToken = responseCsrf;
+        localStorage.setItem('csrf_internal_token', responseCsrf);
       }
 
       // Manejar sesión expirada (401) SOLAMENTE si requiere auth
