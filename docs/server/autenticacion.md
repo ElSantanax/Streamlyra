@@ -37,10 +37,11 @@ El orquestador interno de los flujos. Su trabajo principal:
 
 ### `core/PlatformAuthHandler.ts`
 
-Resuelve la lógica de "upsert" del usuario:
+Resuelve la lógica de "upsert" del usuario y asegura la propiedad de las conexiones:
 
-- Si viene un `currentUserId` (usuario ya logueado), **vincula** la nueva cuenta a su perfil existente.
-- Si no hay sesión activa, **crea un nuevo usuario** con los datos del perfil de la plataforma.
+- **Vinculación Segura**: Si viene un `currentUserId` (usuario ya logueado), primero valida que el `providerId` de la plataforma no pertenezca a OTRO usuario. Si hay conflicto, lanza un error `409 Conflict`.
+- **Creación de Nuevo Usuario**: Si no hay sesión activa, crea un nuevo usuario con los datos del perfil de la plataforma.
+- **Transaccionalidad**: Todas las operaciones de vinculación ocurren dentro de una transacción de base de datos para evitar estados corruptos.
 
 ### `core/UserProfileService.ts`
 

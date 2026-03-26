@@ -10,9 +10,13 @@ const CSRF_CONFIG = {
     HEADER_NAME: 'x-csrf-token',
     AUTH_COOKIE_NAME: 'auth_token',
     SAFE_METHODS: ['GET', 'HEAD', 'OPTIONS'] as const,
-    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch', '/api/auth/me', '/api/auth/logout', '/api/auth/platform'],
+    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch'],
     TOKEN_LENGTH: 32
 } as const;
+
+const isPathExcluded = (path: string): boolean => {
+    return CSRF_CONFIG.EXCLUDED_PATHS.some(excluded => path.startsWith(excluded));
+};
 
 const getCookie = (req: AuthRequest, name: string): string | undefined => {
     const cookies = req.cookies as Record<string, unknown> | undefined;
@@ -29,7 +33,7 @@ const shouldValidateCsrf = (req: AuthRequest): boolean => {
     const isMutating = !(CSRF_CONFIG.SAFE_METHODS as readonly string[]).includes(method);
 
     if (!isMutating) return false;
-    if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) return false;
+    if (isPathExcluded(req.path)) return false;
 
     // Solo validar si el usuario está autenticado
     return !!getCookie(req, CSRF_CONFIG.AUTH_COOKIE_NAME);
@@ -39,7 +43,7 @@ const shouldValidateCsrf = (req: AuthRequest): boolean => {
  * Establece la cookie CSRF para que el cliente pueda leerla y enviarla en headers.
  */
 export const setCsrfCookie = (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (CSRF_CONFIG.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) return next();
+    if (isPathExcluded(req.path)) return next();
 
     let token = getCookie(req, CSRF_CONFIG.COOKIE_NAME);
 

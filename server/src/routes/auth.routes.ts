@@ -25,11 +25,11 @@ export const createAuthRoutes = (authController: AuthController) => {
 
     router.post('/tiktok', authLimiter, authenticateToken, validateZodBody(tiktokSchema), authController.tiktokAuth);
 
-    router.delete('/platform', authenticateToken, validateZodBody(disconnectPlatformSchema), authController.disconnectPlatform);
+    router.delete('/platform', authLimiter, authenticateToken, validateZodBody(disconnectPlatformSchema), authController.disconnectPlatform);
 
-    router.post('/logout', authenticateToken, authController.logout);
+    router.post('/logout', authLimiter, authenticateToken, authController.logout);
 
-    router.post('/overlay-token/regenerate', authenticateToken, authController.regenerateOverlayToken);
+    router.post('/overlay-token/regenerate', authLimiter, authenticateToken, authController.regenerateOverlayToken);
 
     return router;
 };

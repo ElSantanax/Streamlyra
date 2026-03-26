@@ -56,8 +56,13 @@ graph LR
 **Exclusiones:**
 - Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren CSRF.
 - Webhooks (`/api/webhooks`) están excluidos (validados por firmas HMAC).
-- Rutas de autenticación inicial (`/api/auth/twitch`, `/api/auth/me`) están excluidas para permitir el primer contacto del usuario y la sincronización inicial de tokens.
 - Peticiones sin autenticación (`!!getCookie(req, 'auth_token') === false`) no requieren CSRF por diseño del middleware.
+- **Ruta de Login**: `/api/auth/twitch`, `/api/auth/youtube`, etc., están excluidas temporalmente para permitir el establecimiento inicial de la cookie tras el flujo OAuth.
+
+**Protección de Propiedad de Conexión (Anti-Stealing)**:
+El sistema valida que una cuenta de plataforma no sea vinculada a un usuario si ya pertenece a otro. 
+- Si un usuario logueado intenta vincular una red social reclamada, el servidor rechaza con `409 Conflict`.
+- Esto previene el robo accidental o malicioso de integraciones entre usuarios.
 
 > [!NOTE]
 > Los webhooks (como `/api/webhooks`) están excluidos de la validación CSRF ya que provienen de servidores externos confiables y se validan mediante firmas criptográficas propias de la plataforma (ej. firmas HMAC de Twitch).

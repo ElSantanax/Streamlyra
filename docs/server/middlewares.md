@@ -25,21 +25,25 @@ Exporta dos funciones con distintos niveles de exigencia:
 
 Protección contra **ataques Cross-Site Request Forgery**.
 
+**Lógica de Exclusión Centralizada (`isPathExcluded`)**:
+Se utiliza una lógica unificada para determinar qué rutas no requieren CSRF (Webhooks y login inicial de Twitch/YouTube). Cualquier otra ruta mutante (POST/PUT/DELETE) está protegida por defecto.
+
 **Exporta dos middlewares:**
 
 1. **`setCsrfCookie`**: Genera y establece el token CSRF
-   - Genera un token aleatorio de 32 bytes si no existe
-   - Lo almacena en una cookie `csrf_token` (no-HttpOnly para permitir lectura en same-origin)
-   - **Expone el token en el header de respuesta `X-CSRF-Token`** para clientes cross-origin que no pueden leer cookies
-   - Se ejecuta en todas las peticiones excepto webhooks
+   - Genera un token aleatorio de 32 bytes si no existe.
+   - Lo almacena en una cookie `csrf_token` (no-HttpOnly para permitir lectura en same-origin).
+   - **Expone el token en el header de respuesta `X-CSRF-Token`** para asegurar que el cliente reciba el token en la primera llamada segura (`GET /api/auth/me`).
+   - Se ejecuta en todas las peticiones excepto las definidas en `isPathExcluded`.
 
 2. **`verifyCsrf`**: Valida el token en peticiones mutables
-   - **Doble Token**: Compara la cookie `csrf_token` con el header `X-CSRF-Token` enviado por el cliente
-   - **Comparación Temporal Constante**: Usa `crypto.timingSafeEqual` para prevenir timing attacks
+   - **Doble Token**: Compara la cookie `csrf_token` con el header `X-CSRF-Token` enviado por el cliente.
+   - **Comparación Temporal Constante**: Usa `crypto.timingSafeEqual` para prevenir timing attacks.
    - **Exclusiones automáticas**: 
-     - Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren validación
-     - Rutas de webhooks (`/api/webhooks`) están excluidas (validadas por firmas HMAC)
-     - Peticiones sin autenticación no requieren CSRF (solo valida si existe cookie `auth_token`)
+     - Métodos seguros (`GET`, `HEAD`, `OPTIONS`) no requieren validación.
+     - Rutas según `isPathExcluded` (Webhooks).
+     - **IMPORTANTE**: Rutas críticas como `/api/auth/logout` y `/api/auth/platform` (desconexión) **SÍ** requieren validación CSRF para prevenir desconexiones no autorizadas.
+     - Peticiones sin autenticación no requieren CSRF (solo valida si existe cookie `auth_token`).
 
 **Soporte Cross-Origin:**
 El middleware está diseñado para funcionar tanto en entornos same-origin como cross-origin:
@@ -73,7 +77,7 @@ Exporta tres limitadores configurados independientemente:
 | Limitador        | Límite                  | Aplica a                                                   |
 | ---------------- | ----------------------- | ---------------------------------------------------------- |
 | `apiLimiter`     | 100 req / 15 min por IP | Rutas generales de la API (excluye auth y webhooks)        |
-| `authLimiter`    | 20 req / 15 min por IP  | Solo rutas de `/api/auth` (login, callbacks OAuth)         |
+| `authLimiter`    | 20 req / 15 min por IP  | Todas las rutas de `/api/auth` (incluyendo logout/platform) |
 | `webhookLimiter` | 600 req / 1 min por IP  | Solo `/api/webhooks` (ráfagas de Twitch/Kick son normales) |
 
 > **Importante**: En entorno `test` (`NODE_ENV=test`), todos los limitadores se deshabilitan automáticamente para no interferir con los tests.

@@ -5,6 +5,7 @@ import { IUserRepository } from '../../repositories/interfaces/IUserRepository';
 import { IConnectionRepository } from '../../repositories/interfaces/IConnectionRepository';
 import { Transaction } from 'sequelize';
 import { logger } from '../../utils/logger';
+import { AppError } from '../../utils/AppError';
 import crypto from 'crypto';
 import { hashToken } from '../../utils/tokenUtils';
 import { encryptionService } from '../security/EncryptionService';
@@ -52,15 +53,32 @@ export class UserService {
         currentUserId?: string,
         transaction?: Transaction
     ): Promise<{ user: User, isNew: boolean, existingConnection?: Connection }> {
+        // Primero buscamos si la conexión ya existe en la base de datos
+        const existingConnection = await this.connectionRepository.findByProvider(profile.provider, profile.providerId, transaction);
+
+        // Caso: El usuario ya está logueado e intenta vincular esta plataforma
         if (currentUserId) {
+            // SEGURIDAD: Si la cuenta pertenece a OTRO usuario -> LANZAR ERROR
+            if (existingConnection && String(existingConnection.userId) !== String(currentUserId)) {
+                logger.warn({
+                    currentUserId,
+                    existingOwner: existingConnection.userId,
+                    provider: profile.provider,
+                    providerId: profile.providerId
+                }, 'Intento de vinculación de cuenta ajena detectado');
+
+                throw new AppError(`Esta cuenta de ${profile.provider} ya está vinculada a otro usuario.`, 409);
+            }
+
+            // Si es suya o no existe, procedemos con su cuenta actual
             const user = await this.userRepository.findByIdWithConnections(currentUserId, transaction);
-            if (user) return { user, isNew: false };
+            if (user) return { user, isNew: false, existingConnection: existingConnection || undefined };
         }
 
-        const existingConnection = await this.connectionRepository.findByProvider(profile.provider, profile.providerId, transaction);
+        // Caso: Login (el usuario no está logueado)
         if (existingConnection) {
             const user = await this.userRepository.findByIdWithConnections(existingConnection.userId, transaction);
-            if (user) return { user, isNew: false, existingConnection };
+            if (user) return { user, isNew: false, existingConnection: existingConnection || undefined };
         }
 
         if (profile.email) {
