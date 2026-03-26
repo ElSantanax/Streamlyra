@@ -10,7 +10,7 @@ const CSRF_CONFIG = {
     HEADER_NAME: 'x-csrf-token',
     AUTH_COOKIE_NAME: 'auth_token',
     SAFE_METHODS: ['GET', 'HEAD', 'OPTIONS'] as const,
-    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch', '/api/auth/me', '/api/auth/logout'],
+    EXCLUDED_PATHS: ['/api/webhooks', '/api/auth/twitch', '/api/auth/me', '/api/auth/logout', '/api/auth/platform'],
     TOKEN_LENGTH: 32
 } as const;
 
