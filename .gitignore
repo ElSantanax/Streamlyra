@@ -23,7 +23,7 @@ dist-ssr
 *.sw?
 *.env
 *.env.local
-*.kiro/steering
+*.kiro
 *.github
 
 # Testing
